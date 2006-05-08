@@ -9,19 +9,26 @@ VPATH = $(SOURCEDIR)
 OUTFILE = cegccthrd
 
 CC = arm-wince-pe-gcc
-CFLAGS = -g -DGNUWINCE -DDEBUG
+
+CFLAGS = -g -DGNUWINCE
+CFLAGS +=-DDEBUG
+#CFLAGS +=-DDEBUG_PRINTF
+
 LDFLAGS += -Wl,-Map,${OUTFILE}.map
 #LDFLAGS += -Wl,--verbose
 
 CFILES = mthr.c mthr_init.c
 
-OBJECTS = $(addsuffix .o, $(basename $(CFILES)))
+OBJECTS = $(addsuffix .o, $(basename $(CFILES))) version.rc.o
 
 all: stripped/${OUTFILE}.dll
 
 install: all
 	cp -vf ${OUTFILE}.dll $(PREFIX)/arm-wince-pe/bin
 	cp -vf lib${OUTFILE}.dll.a $(PREFIX)/arm-wince-pe/lib
+
+version.rc.o: version.rc
+	arm-wince-pe-windres version.rc -o $@
 
 installdev: all
 	pput -v -v -f stripped/${OUTFILE}.dll \Windows

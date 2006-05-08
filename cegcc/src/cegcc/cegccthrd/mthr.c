@@ -77,8 +77,9 @@ ___mingwthr_add_key_dtor ( DWORD key, void (*dtor) (void *))
 
 #ifdef DEBUG
   NKDbgPrintfW(L"%S: allocating: (%ld, %x)\n", __FUNCTION__, key, dtor);
-  printf ("%s: allocating: (%ld, %x)\n", 
-          __FUNCTION__, key, dtor);
+#ifdef DEBUG_PRINTF
+  printf ("%s: allocating: (%ld, %x)\n", __FUNCTION__, key, dtor);
+#endif
 #endif
 
   return 0;
@@ -111,8 +112,9 @@ ___mingwthr_remove_key_dtor ( DWORD key )
 
 #ifdef DEBUG
         NKDbgPrintfW(L"%S: removing: (%ld)\n", __FUNCTION__, key);
-        printf ("%s: removing: (%ld)\n", 
-                __FUNCTION__, key );
+#ifdef DEBUG_PRINTF
+        printf ("%s: removing: (%ld)\n", __FUNCTION__, key );
+#endif
 #endif
 
         free( cur_key );
@@ -148,7 +150,9 @@ __mingwthr_run_key_dtors (void)
 
 #ifdef DEBUG
   NKDbgPrintfW(L"%S: Entering Thread id 0x%08x\n", __FUNCTION__, GetCurrentThreadId() );
+#ifdef DEBUG_PRINTF
   printf ("%s: Entering Thread id 0x%08x\n", __FUNCTION__, GetCurrentThreadId() );
+#endif
 #endif
 
   EnterCriticalSection (&__mingwthr_cs);
@@ -160,7 +164,9 @@ __mingwthr_run_key_dtors (void)
      {
 #ifdef DEBUG
        NKDbgPrintfW(L"   (%ld, %x)\n", keyp->key, keyp->dtor);
+#ifdef DEBUG_PRINTF
        printf ("   (%ld, %x)\n", keyp->key, keyp->dtor);
+#endif
 #endif
         if (value)
            (*keyp->dtor) (value);
@@ -170,8 +176,10 @@ __mingwthr_run_key_dtors (void)
      {
         NKDbgPrintfW(L"   TlsGetValue FAILED  (%ld, %x)\n", 
                 keyp->key, keyp->dtor);
+#ifdef DEBUG_PRINTF
         printf ("   TlsGetValue FAILED  (%ld, %x)\n", 
                 keyp->key, keyp->dtor);
+#endif
      }
 #endif
      keyp = keyp->next;
@@ -181,7 +189,9 @@ __mingwthr_run_key_dtors (void)
 
 #ifdef DEBUG
   NKDbgPrintfW ("%S: Exiting Thread id 0x%08x\n", __FUNCTION__, GetCurrentThreadId() );
+#ifdef DEBUG_PRINTF
   printf ("%s: Exiting Thread id 0x%08x\n", __FUNCTION__, GetCurrentThreadId() );
+#endif
 #endif
 }
   
