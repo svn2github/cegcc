@@ -60,6 +60,7 @@ installdll: stripped/$(DLLNAME)
 clean:
 	rm -rf _tmp
 	rm -rf stripped
+	rm -f version.aps
 	rm -f $(DLLNAME) $(IMPLIB) $(DLLNAME).def $(DLLNAME).map
 
 mktmp:
