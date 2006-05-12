@@ -1,0 +1,16 @@
+#ifndef _WCE_H_
+#define _WCE_H_
+
+#include "sys/wcetypes.h"
+#include "sys/wcebase.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+#ifdef __cplusplus
+}
+#endif
+#endif  /* _WCE_H_ */

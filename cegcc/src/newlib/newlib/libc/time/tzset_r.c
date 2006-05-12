@@ -12,6 +12,9 @@ static char __tzname_dst[11];
 static char *prev_tzenv = NULL;
 
 _VOID
+_EXFUN (_tzset_hook_r, (struct _reent *reent_ptr));
+
+_VOID
 _DEFUN (_tzset_r, (reent_ptr),
         struct _reent *reent_ptr)
 {
@@ -24,10 +27,7 @@ _DEFUN (_tzset_r, (reent_ptr),
   if ((tzenv = _getenv_r (reent_ptr, "TZ")) == NULL)
       {
 	TZ_LOCK;
-	_timezone = 0;
-	_daylight = 0;
-	_tzname[0] = "GMT";
-	_tzname[1] = "GMT";
+	_tzset_hook_r(reent_ptr);
 	TZ_UNLOCK;
 	return;
       }

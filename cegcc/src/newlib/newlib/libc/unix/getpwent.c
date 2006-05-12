@@ -16,6 +16,24 @@ static char gecos[1024];
 static char dir[1024];
 static char shell[1024];
 
+#ifdef UNDER_CE
+#include <sys/sysconf.h>
+/* returns local var, so don't cache the result, only use in functions calls */
+static char* get_passwd_file()
+{
+	char path[MAX_PATH];
+	path[0] = 0;
+	XCEGetEnvironmentVariableFromRegA ("UNIXROOTDIR", path, sizeof(path));
+	if(!strcmp (path, "\\") == 0 || strcmp (path, "/"))
+ 		path[0] = 0;
+	strcat(path, "\\etc\\passwd");
+	return path;
+}
+#define _PASSWDFILE_ get_passwd_file()
+#else
+# define _PASSWDFILE_ "/etc/passwd"
+#endif
+
 struct passwd *
 getpwnam (name)
      const char *name;
@@ -23,7 +41,7 @@ getpwnam (name)
   FILE *fp;
   char buf[1024];
 
-  if ((fp = fopen ("/etc/passwd", "r")) == NULL)
+  if ((fp = fopen (_PASSWDFILE_, "r")) == NULL)
     {
       return NULL;
     }
@@ -116,7 +134,7 @@ setpwent ()
   if (passwd_fp != NULL)
     fclose (passwd_fp);
 
-  passwd_fp = fopen ("/etc/passwd", "r");
+  passwd_fp = fopen (_PASSWDFILE_, "r");
 }
 
 void
