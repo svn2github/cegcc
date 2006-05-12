@@ -320,6 +320,10 @@ case "${host}" in
   arc-*-*)
 	sys_dir=arc
 	;;
+  arm-wince-pe)
+	sys_dir=wince
+	unix_dir=unix
+	;;
   arm-*-*)
 	sys_dir=arm
 	if [ "x${newlib_may_supply_syscalls}" = "xno" ] ; then
@@ -500,6 +504,10 @@ case "${host}" in
   arc-*-*)
 	syscall_dir=syscalls
 	;;
+  arm-wince-pe)
+	syscall_dir=syscalls
+	newlib_cflags="${newlib_cflags} -march=armv4 -DGNUWINCE -DSARM -DABORT_PROVIDED -DMALLOC_PROVIDED -DWANT_PRINTF_LONG_LONG -D_COMPILING_NEWLIB -DREENTRANT_SYSCALLS_PROVIDED -DNO_FORK"
+	;;	
   arm-*-pe)
 	syscall_dir=syscalls
 	newlib_cflags="${newlib_cflags} -DABORT_PROVIDED -DHAVE_GETTIMEOFDAY"
