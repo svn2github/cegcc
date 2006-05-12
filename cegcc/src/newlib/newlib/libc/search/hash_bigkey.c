@@ -41,6 +41,8 @@ static char sccsid[] = "@(#)hash_bigkey.c	8.3 (Berkeley) 5/31/94";
 #include <sys/cdefs.h>
 
 /* Macros for min/max.  */
+#undef MIN
+#undef MAX
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
