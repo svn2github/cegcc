@@ -16,7 +16,7 @@
 #define TYPE(x) .type SYM(x),function
 #define SIZE(x) .size SYM(x), . - SYM(x)
 #else
-#define TYPE(x)
+#define TYPE(x) .def SYM(x); .scl 2; .type 32; .endef
 #define SIZE(x)
 #endif
 
