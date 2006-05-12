@@ -167,6 +167,14 @@
 #include <cygwin/config.h>
 #endif
 
+#if defined(UNDER_CE)
+# define __DYNAMIC_REENT__
+# if defined(_COMPILING_NEWLIB)
+//#  define __EXPORT __declspec(dllexport)
+#  define __EXPORT
+# endif
+#endif
+
 #if defined(__rtems__)
 #define __FILENAME_MAX__ 255
 #define _READ_WRITE_RETURN_TYPE _ssize_t
@@ -174,6 +182,10 @@
 
 #ifndef __IMPORT
 #define __IMPORT
+#endif
+
+#ifndef __EXPORT
+#define __EXPORT
 #endif
 
 /* Define return type of read/write routines.  In POSIX, the return type
