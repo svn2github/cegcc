@@ -160,6 +160,27 @@ _DEFUN_VOID(_cleanup)
  */
 
 _VOID
+_DEFUN(__s_reinit, (s),
+       struct _reent *s)
+{
+  __sinit_lock_acquire ();
+  std (s->_stdin,  __SRD, 0, s);
+
+  /* on platforms that have true file system I/O, we can verify whether stdout 
+     is an interactive terminal or not.  For all other platforms, we will
+     default to line buffered mode here.  */
+#ifdef HAVE_FCNTL
+  std (s->_stdout, __SWR, 1, s);
+#else
+  std (s->_stdout, __SWR | __SLBF, 1, s);
+#endif
+
+  std (s->_stderr, __SWR | __SNBF, 2, s);
+
+  __sinit_lock_release ();
+}
+
+_VOID
 _DEFUN(__sinit, (s),
        struct _reent *s)
 {
