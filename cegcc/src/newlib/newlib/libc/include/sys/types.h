@@ -209,7 +209,7 @@ typedef unsigned short nlink_t;
    includes the W32api winsock[2].h header must know what it is doing;
    it must not call the cygwin32 select function.
 */
-# if !(defined (_POSIX_SOURCE) || defined (_WINSOCK_H) || defined (__USE_W32_SOCKETS)) 
+# if !(defined (_POSIX_SOURCE) || defined (_WINSOCK_H) || defined (__USE_W32_SOCKETS) || defined (UNDER_CE)) 
 #  define _SYS_TYPES_FD_SET
 #  define	NBBY	8		/* number of bits in a byte */
 /*
