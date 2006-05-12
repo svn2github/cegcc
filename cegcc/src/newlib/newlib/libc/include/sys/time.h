@@ -13,10 +13,16 @@ extern "C" {
 #endif
 
 #ifndef _WINSOCK_H
+
+#ifndef _TIMEVAL_DEFINED
+#define _TIMEVAL_DEFINED
+
 struct timeval {
   long tv_sec;
   long tv_usec;
 };
+
+#endif
 
 struct timezone {
   int tz_minuteswest;
