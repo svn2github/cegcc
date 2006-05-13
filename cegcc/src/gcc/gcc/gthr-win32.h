@@ -65,9 +65,16 @@ Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
 
 #define __GTHREADS 1
 
+//#undef UNDER_CE
+//#define UNDER_CE
+
 #include <errno.h>
-#ifdef __MINGW32__
+#if defined __MINGW32__ && !defined UNDER_CE
 #include <_mingw.h>
+#endif
+
+#ifdef UNDER_CE
+#include <gthr-wince.h>
 #endif
 
 #ifdef _LIBOBJC
@@ -77,7 +84,9 @@ Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
 #ifndef __OBJC__
 #define __OBJC__
 #endif
+#ifndef UNDER_CE
 #include <windows.h>
+#endif
 /* Now undef the windows BOOL.  */
 #undef BOOL
 
@@ -360,7 +369,7 @@ typedef struct {
 #define __GTHREAD_RECURSIVE_MUTEX_INIT_DEFAULT {-1, 0, 0, 0}
 
 #if __MINGW32_MAJOR_VERSION >= 1 || \
-  (__MINGW32_MAJOR_VERSION == 0 && __MINGW32_MINOR_VERSION > 2)
+  (__MINGW32_MAJOR_VERSION == 0 && __MINGW32_MINOR_VERSION > 2) || defined(UNDER_CE)
 #define MINGW32_SUPPORTS_MT_EH 1
 /* Mingw runtime >= v0.3 provides a magic variable that is set to nonzero
    if -mthreads option was specified, or 0 otherwise. This is to get around
@@ -525,7 +534,9 @@ __gthread_recursive_mutex_unlock (__gthread_recursive_mutex_t *mutex)
 
 #else /* ! __GTHREAD_HIDE_WIN32API */
 
+#ifndef UNDER_CE
 #include <windows.h>
+#endif
 #include <errno.h>
 
 static inline int
@@ -573,6 +584,8 @@ __gthread_key_create (__gthread_key_t *key, void (*dtor) (void *))
       /* Mingw runtime will run the dtors in reverse order for each thread
          when the thread exits.  */
       status = __mingwthr_key_dtor (*key, dtor);
+#else
+      (void)dtor;
 #endif
     }
   else
