@@ -240,6 +240,14 @@ case "${host}" in
     GLIBCXX_CHECK_COMPLEX_MATH_SUPPORT
     GLIBCXX_CHECK_ICONV_SUPPORT
     ;;
+  *arm-wince-pe)
+    AC_CHECK_HEADERS([sys/types.h locale.h float.h])
+#    AC_DEFINE(_GLIBCXX_HAVE_SYS_IOCTL_H)
+#   AC_DEFINE(HAVE_SYS_IOCTL_H)
+    GLIBCXX_CHECK_LINKER_FEATURES
+    GLIBCXX_CHECK_COMPLEX_MATH_SUPPORT
+    #GLIBCXX_CHECK_WCHAR_T_SUPPORT
+    ;;
   *-netbsd*)
     AC_CHECK_HEADERS([nan.h ieeefp.h endian.h sys/isa_defs.h \
       machine/endian.h machine/param.h sys/machine.h sys/types.h \
