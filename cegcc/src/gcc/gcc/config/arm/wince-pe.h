@@ -219,3 +219,9 @@ the end of the file.  */
 
 /* Windows uses explicit import from shared libraries.  */
 #define MULTIPLE_SYMBOL_SPACES 1
+
+#undef SIZE_TYPE
+#define SIZE_TYPE "unsigned int"
+
+#undef PTRDIFF_TYPE
+#define PTRDIFF_TYPE "int"
