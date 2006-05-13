@@ -525,7 +525,18 @@ start_record_layout (tree t)
 #ifdef STRUCTURE_SIZE_BOUNDARY
   /* Packed structures don't need to have minimum size.  */
   if (! TYPE_PACKED (t))
+  {
+	  /* pragma pack in effect? */
+#if 0
+/*pedro: */
+	  unsigned align = maximum_field_alignment!=0?
+						maximum_field_alignment:
+						(unsigned)STRUCTURE_SIZE_BOUNDARY;
+      rli->record_align = MAX (rli->record_align, align);
+#else
     rli->record_align = MAX (rli->record_align, (unsigned) STRUCTURE_SIZE_BOUNDARY);
+#endif
+   }
 #endif
 
   rli->offset = size_zero_node;
