@@ -16,6 +16,8 @@ LIB1ASMFUNCS = _udivsi3 _divsi3 _umodsi3 _modsi3 _dvmd_tls _bb_init_func \
 #	_divdi3 _udivmoddi4 _udivdi3 _umoddi3 _moddi3 _muldi3 _negdi2 \
 #	_cmpdi2 _fixdfdi _fixsfdi _fixunsdfdi _fixunssfdi
 
+# We hide calls to w32api needed for w32 thread support here:
+LIB2FUNCS_EXTRA = $(srcdir)/config/arm/gthr-win32.c
 
 # We want fine grained libraries, so use the new code to build the
 # floating point emulation libraries.
