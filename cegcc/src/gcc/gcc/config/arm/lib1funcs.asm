@@ -45,20 +45,25 @@ Boston, MA 02110-1301, USA.  */
 #define SYM(x) CONCAT1 (__USER_LABEL_PREFIX__, x)
 
 #ifdef __ELF__
-#ifdef __thumb__
-#define __PLT__  /* Not supported in Thumb assembler (for now).  */
+# ifdef __thumb__
+#  define __PLT__  /* Not supported in Thumb assembler (for now).  */
+# else
+#  define __PLT__ (PLT)
+# endif
+# define TYPE(x) .type SYM(x),function
+# define SIZE(x) .size SYM(x), . - SYM(x)
+# define LSYM(x) .x
 #else
-#define __PLT__ (PLT)
+# define __PLT__
+# define TYPE(x) .def SYM(x); .scl 2; .type 32; .endef
+# define SIZE(x)
+# define LSYM(x) x
 #endif
-#define TYPE(x) .type SYM(x),function
-#define SIZE(x) .size SYM(x), . - SYM(x)
-#define LSYM(x) .x
-#else
-#define __PLT__
-#define TYPE(x)
-#define SIZE(x)
-#define LSYM(x) x
-#endif
+
+/* 
+# define SIZE(x) .def SYM(x); .size . - SYM(x); .endef
+# define TYPE(x)
+*/
 
 /* Function end macros.  Variants for interworking.  */
 
@@ -304,6 +309,7 @@ SYM (__\name):
 
 .macro	FUNC_ALIAS new old
 	.globl	SYM (__\new)
+	TYPE (__\new)
 #if defined (__thumb__)
 	.thumb_set	SYM (__\new), SYM (__\old)
 #else
@@ -313,6 +319,7 @@ SYM (__\name):
 
 .macro	ARM_FUNC_ALIAS new old
 	.globl	SYM (__\new)
+	TYPE (__\new)
 	EQUIV	SYM (__\new), SYM (__\old)
 #if defined(__INTERWORKING_STUBS__)
 	.set	SYM (_L__\new), SYM (_L__\old)

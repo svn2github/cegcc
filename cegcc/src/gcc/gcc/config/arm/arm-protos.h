@@ -174,8 +174,22 @@ extern void thumb_set_return_address (rtx, rtx);
 #endif
 
 /* Defined in pe.c.  */
-extern int arm_dllexport_name_p (const char *);
-extern int arm_dllimport_name_p (const char *);
+extern void arm_pe_output_labelref (FILE *stream, const char *name);
+extern int arm_pe_dllexport_name_p (const char *);
+extern int arm_pe_dllimport_name_p (const char *);
+extern void arm_pe_record_external_function (tree, const char *);
+extern void arm_pe_declare_function_type (FILE *, const char *, int);
+extern void arm_pe_record_exported_symbol (const char *, int);
+extern void arm_pe_file_end (void);
+extern int arm_pe_dllexport_name_p (const char *);
+extern int arm_pe_dllimport_name_p (const char *);
+
+extern bool arm_pe_valid_dllimport_attribute_p (tree);
+
+/* In pe-cxx.c and pe-stubs.c  */
+extern void arm_pe_adjust_class_at_definition (tree);
+extern bool arm_pe_type_dllimport_p (tree);
+extern bool arm_pe_type_dllexport_p (tree);
 
 #ifdef TREE_CODE
 extern void arm_pe_unique_section (tree, int);

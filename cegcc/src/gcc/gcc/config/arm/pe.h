@@ -25,10 +25,13 @@
 
 #define ARM_PE_FLAG_CHAR '@'
 
+#define DLL_IMPORT_PREFIX "@i."
+#define DLL_EXPORT_PREFIX "@e."
+
 /* Ensure that @x. will be stripped from the function name.  */
 #undef SUBTARGET_NAME_ENCODING_LENGTHS
 #define SUBTARGET_NAME_ENCODING_LENGTHS  \
-  case ARM_PE_FLAG_CHAR: return 3;
+  case ARM_PE_FLAG_CHAR: return strlen(DLL_IMPORT_PREFIX);
 
 #undef  USER_LABEL_PREFIX
 #define USER_LABEL_PREFIX "_"
@@ -80,15 +83,14 @@
 
 /* Output a reference to a label.  */
 #undef  ASM_OUTPUT_LABELREF
-#define ASM_OUTPUT_LABELREF(STREAM, NAME)  \
-  asm_fprintf (STREAM, "%U%s", arm_strip_name_encoding (NAME))
+#define ASM_OUTPUT_LABELREF arm_pe_output_labelref
 
 /* Output a function definition label.  */
 #undef  ASM_DECLARE_FUNCTION_NAME
 #define ASM_DECLARE_FUNCTION_NAME(STREAM, NAME, DECL)   	\
   do								\
     {								\
-      if (arm_dllexport_name_p (NAME))				\
+      if (arm_pe_dllexport_name_p (NAME))				\
 	{							\
 	  drectve_section ();					\
 	  fprintf (STREAM, "\t.ascii \" -export:%s\"\n",	\
@@ -107,13 +109,13 @@
 #define ASM_OUTPUT_COMMON(STREAM, NAME, SIZE, ROUNDED)	\
   do							\
     {							\
-      if (arm_dllexport_name_p (NAME))			\
+      if (arm_pe_dllexport_name_p (NAME))			\
 	{						\
 	  drectve_section ();				\
 	  fprintf ((STREAM), "\t.ascii \" -export:%s\"\n",\
 		   arm_strip_name_encoding (NAME));	\
 	}						\
-      if (! arm_dllimport_name_p (NAME))		\
+      if (! arm_pe_dllimport_name_p (NAME))		\
 	{						\
 	  fprintf ((STREAM), "\t.comm\t"); 		\
 	  assemble_name ((STREAM), (NAME));		\
@@ -128,7 +130,7 @@
 #define ASM_DECLARE_OBJECT_NAME(STREAM, NAME, DECL) 	\
   do							\
     {							\
-      if (arm_dllexport_name_p (NAME))			\
+      if (arm_pe_dllexport_name_p (NAME))			\
 	{						\
 	  enum in_section save_section = in_section;	\
 	  drectve_section ();				\
@@ -184,11 +186,27 @@ switch_to_section (enum in_section section, tree decl)		\
       case in_unlikely_executed_text: unlikely_text_section (); break; \
       case in_data: data_section (); break;			\
       case in_named: named_section (decl, NULL, 0); break;	\
-      case in_readonly_data: readonly_data_section (); break;	\
+      case in_bss: bss_section (); break;	\
       case in_ctors: ctors_section (); break;			\
       case in_dtors: dtors_section (); break;			\
+      case in_readonly_data: readonly_data_section (); break;	\
       case in_drectve: drectve_section (); break;		\
       default: abort (); break;					\
     }								\
 }
 
+#define TARGET_VALID_DLLIMPORT_ATTRIBUTE_P arm_pe_valid_dllimport_attribute_p
+#define TARGET_CXX_ADJUST_CLASS_AT_DEFINITION arm_pe_adjust_class_at_definition
+
+#define ASM_WEAKEN_LABEL(FILE, NAME)	\
+  do					\
+    {					\
+      fputs ("\t.weak\t", (FILE));	\
+      assemble_name ((FILE), (NAME));	\
+      fputc ('\n', (FILE));		\
+    }					\
+  while (0)
+
+#ifdef HAVE_GAS_WEAK
+#define SUPPORTS_WEAK 1
+#endif
