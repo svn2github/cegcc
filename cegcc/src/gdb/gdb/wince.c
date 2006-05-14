@@ -47,6 +47,7 @@
 #include <netdb.h>
 #include <cygwin/in.h>
 #include <cygwin/socket.h>
+#include <arpa/inet.h>
 
 #include "buildsym.h"
 #include "symfile.h"
@@ -58,9 +59,17 @@
 #include "wince-stub.h"
 #include <time.h>
 #include "regcache.h"
+#include "completer.h"
+#include "cli/cli-decode.h"
 #ifdef MIPS
 #include "mips-tdep.h"
 #endif
+
+#ifdef ARM
+#include "arm-tdep.h"
+#endif
+
+void child_clear_solibs (void);
 
 /* If we're not using the old Cygwin header file set, define the
    following which never should have been in the generic Win32 API
@@ -79,21 +88,20 @@
 #else
 #define CONTEXT_DEBUGGER CONTEXT_DEBUGGER0
 #endif
-/* The string sent by cygwin when it processes a signal.
-   FIXME: This should be in a cygwin include file.  */
-#define CYGWIN_SIGNAL_STRING "cygwin: signal"
 
-#define CHECK(x)	check (x, __FILE__,__LINE__)
-#define DEBUG_EXEC(x)	if (debug_exec)		printf x
-#define DEBUG_EVENTS(x)	if (debug_events)	printf x
-#define DEBUG_MEM(x)	if (debug_memory)	printf x
-#define DEBUG_EXCEPT(x)	if (debug_exceptions)	printf x
+extern void cygwin_conv_to_posix_path(const char *path, char *posix_path);
+
+#define CHECK(x)	do { check (x, __FILE__,__LINE__); } while (0)
+#define DEBUG_EXEC(x)	do { if (debug_exec)		printf x; } while (0)
+#define DEBUG_EVENTS(x)	do { if (debug_events)	printf x; } while (0)
+#define DEBUG_MEM(x)	do { if (debug_memory)	printf x; } while (0)
+#define DEBUG_EXCEPT(x)	do { if (debug_exceptions)	printf x; } while (0)
 
 static int connection_initialized = 0;	/* True if we've initialized a
 					   RAPI session.  */
 
 /* The directory where the stub and executable files are uploaded.  */
-static const char *remote_directory = "\\gdb";
+static char *remote_directory = "\\gdb";
 
 /* The types automatic upload available.  */
 static enum
@@ -155,6 +163,19 @@ static thread_info thread_head =
 {NULL};
 static thread_info * thread_rec (DWORD id, int get_context);
 
+/* Maintain a linked list of "so" information. */
+struct so_stuff
+{
+  struct so_stuff *next;
+  DWORD load_addr;
+  int loaded;
+  struct objfile *objfile;
+  char name[1];
+} solib_start, *solib_end;
+
+/* Remember the maximum DLL length for printing in info dll command. */
+int max_dll_name_len = 0;
+
 /* The process and thread handles for the above context.  */
 
 static DEBUG_EVENT current_event;	/* The current debug event from
@@ -186,7 +207,7 @@ static int debug_exceptions = 0;	/* show target exceptions */
 
    This is used by the regptr function.  */
 #define context_offset(x) ((int)&(((PCONTEXT)NULL)->x))
-static const int mappings[NUM_REGS + 1] =
+static const int mappings[] =
 {
 #ifdef __i386__
   context_offset (Eax),
@@ -427,7 +448,7 @@ static int s;			/* communication socket */
    Displays the error message in a dialog box and exits when user clicks
    on OK.  */
 static void
-vstub_error (LPCSTR fmt, va_list * args)
+vstub_error (LPCSTR fmt, va_list args)
 {
   char buf[4096];
   vsprintf (buf, fmt, args);
@@ -1094,7 +1115,7 @@ child_add_thread (DWORD id, HANDLE h)
   th->h = h;
   th->next = thread_head.next;
   thread_head.next = th;
-  add_thread (id);
+  add_thread (pid_to_ptid(id));
   return th;
 }
 
@@ -1123,8 +1144,8 @@ child_delete_thread (DWORD id)
   thread_info *th;
 
   if (info_verbose)
-    printf_unfiltered ("[Deleting %s]\n", target_pid_to_str (id));
-  delete_thread (id);
+    printf_unfiltered ("[Deleting %s]\n", target_pid_to_str (pid_to_ptid (id)));
+  delete_thread (pid_to_ptid (id));
 
   for (th = &thread_head;
        th->next != NULL && th->next->id != id;
@@ -1144,8 +1165,8 @@ static void
 check (BOOL ok, const char *file, int line)
 {
   if (!ok)
-    printf_filtered ("error return %s:%d was %d\n", 
-		     file, line, GetLastError ());
+    printf_filtered ("error return %s:%d was %d\n",
+             file, line, (int)GetLastError ());
 }
 
 static void
@@ -1193,21 +1214,18 @@ child_store_inferior_registers (int r)
 /* Wait for child to do something.  Return pid of child, or -1 in case
    of error; store status through argument pointer OURSTATUS.  */
 
+static void
+register_loaded_dll (const char *name, DWORD load_addr);
+
 static int
-handle_load_dll (void *dummy)
+read_dll_name (const char* imagename, char* dll_name, int* ret_len, int unicode)
 {
-  LOAD_DLL_DEBUG_INFO *event = &current_event.u.LoadDll;
   char dll_buf[MAX_PATH + 1];
-  char *p, *bufp, *imgp, *dll_name, *dll_basename;
-  int len;
-
-  dll_buf[0] = dll_buf[sizeof (dll_buf) - 1] = '\0';
-  if (!event->lpImageName)
-    return 1;
-
-  len = 0;
-  for (bufp = dll_buf, imgp = event->lpImageName;
-       bufp < dll_buf + sizeof (dll_buf);
+  char *p, *bufp /*,  *dll_name */, *dll_basename;
+  const char *imgp;
+  int len = 0;
+  for (bufp = dll_buf, imgp = imagename;
+       bufp < dll_buf + (sizeof(dll_buf)/sizeof(dll_buf[0]));
        bufp += 16, imgp += 16)
     {
       gdb_wince_len nbytes = 0;
@@ -1215,13 +1233,13 @@ handle_load_dll (void *dummy)
 				  imgp, bufp, 16, &nbytes);
 
       if (!nbytes && bufp == dll_buf)
-	return 1;		/* couldn't read it */
+	return 0;		/* couldn't read it */
       for (p = bufp; p < bufp + nbytes; p++)
 	{
 	  len++;
 	  if (*p == '\0')
 	    goto out;
-	  if (event->fUnicode)
+	  if (unicode)
 	    p++;
 	}
       if (!nbytes)
@@ -1230,23 +1248,27 @@ handle_load_dll (void *dummy)
 
 out:
   if (!len)
-    return 1;
+    return 0;
 #if 0
   dll_buf[len] = '\0';
 #endif
-  dll_name = alloca (len);
-
+/*  dll_name = alloca (len); 
   if (!dll_name)
     return 1;
+*/
 
-  if (!event->fUnicode)
+  if (!unicode)
     memcpy (dll_name, dll_buf, len);
   else
-    WideCharToMultiByte (CP_ACP, 0, (LPCWSTR) dll_buf,
-			 len, dll_name, len, 0, 0);
+    WideCharToMultiByte (CP_ACP, 0, (LPCWSTR) dll_buf, len,
+			 dll_name, len, 0, 0);
 
-  while ((p = strchr (dll_name, '\\')))
-    *p = '/';
+  cygwin_conv_to_posix_path (dll_name, dll_buf);
+  memcpy (dll_name, dll_buf, len);
+
+  *ret_len = len;
+//  while ((p = strchr (dll_name, '\\')))
+//    *p = '/';
 
   /* FIXME!! It would be nice to define one symbol which pointed to
      the front of the dll if we can't find any symbols.  */
@@ -1256,16 +1278,176 @@ out:
   else
     dll_basename++;
 
+  return 1;
+}
+
+static int
+handle_load_dll (void *dummy)
+{
+  LOAD_DLL_DEBUG_INFO *event = &current_event.u.LoadDll;
+  char dll_name[MAX_PATH + 1];
+  int ret_len = 0;
+  if (!read_dll_name (event->lpImageName, dll_name, &ret_len, event->fUnicode))
+  {
+	 printf_unfiltered("Dll loading: error extracting name\n");
+	 return 0;
+  }
+
   /* The symbols in a dll are offset by 0x1000, which is the
      the offset from 0 of the first byte in an image - because
      of the file header and the section alignment.
+*/
+  DWORD dllbase = (DWORD)event->lpBaseOfDll + 0x1000;
+  printf_unfiltered ("Dll loaded: 0x%08x:%s\n",
+	  (unsigned int)dllbase, 
+	  dll_name);
+//  printf_unfiltered ("\n");
 
-     FIXME: Is this the real reason that we need the 0x1000 ? */
-
-  printf_unfiltered ("%x:%s", event->lpBaseOfDll, dll_name);
-  printf_unfiltered ("\n");
+  register_loaded_dll (dll_name, dllbase);
 
   return 1;
+}
+
+static int
+handle_unload_dll (void *dummy)
+{
+  UNLOAD_DLL_DEBUG_INFO *event = &current_event.u.UnloadDll;
+  DWORD lpBaseOfDll = (DWORD) event->lpBaseOfDll + 0x1000;
+
+  struct so_stuff *so;
+
+  for (so = &solib_start; so->next != NULL; so = so->next)
+    if (so->next->load_addr == lpBaseOfDll)
+      {
+	struct so_stuff *sodel = so->next;
+    printf_unfiltered ("Dll unloaded: 0x%08x:%s\n", (int)lpBaseOfDll, sodel->name);
+
+	so->next = sodel->next;
+	if (!so->next)
+	  solib_end = so;
+	if (sodel->objfile)
+	  free_objfile (sodel->objfile);
+	xfree(sodel);
+	return 1;
+      }
+  error ("Error: dll starting at %8p not found.\n", (void*)lpBaseOfDll);
+
+  return 0;
+}
+
+static void
+register_loaded_dll (const char *name, DWORD load_addr)
+{
+  struct so_stuff *so;
+  char ppath[MAX_PATH + 1];
+  char buf[MAX_PATH + 1];
+  char cwd[MAX_PATH + 1];
+  char *p;
+  WIN32_FIND_DATAA w32_fd;
+  HANDLE h = FindFirstFileA(name, &w32_fd);
+  size_t len;
+
+  if (h == INVALID_HANDLE_VALUE)
+    strcpy (buf, name);
+  else
+    {
+      FindClose (h);
+      strcpy (buf, name);
+      if (GetCurrentDirectoryA (MAX_PATH + 1, cwd))
+	{
+	  p = strrchr (buf, '\\');
+	  if (p)
+	    p[1] = '\0';
+	  SetCurrentDirectoryA (buf);
+	  GetFullPathNameA (w32_fd.cFileName, MAX_PATH, buf, &p);
+	  SetCurrentDirectoryA (cwd);
+	}
+    }
+
+  cygwin_conv_to_posix_path (buf, ppath);
+  so = (struct so_stuff *) xmalloc (sizeof (struct so_stuff) + strlen (ppath) + 8 + 1);
+  if (!so) return;
+  so->loaded = 0;
+  so->load_addr = load_addr;
+  so->next = NULL;
+  so->objfile = NULL;
+  strcpy (so->name, ppath);
+
+  solib_end->next = so;
+  solib_end = so;
+  len = strlen (ppath);
+  if (len > max_dll_name_len)
+    max_dll_name_len = len;
+}
+
+/* Call symbol_file_add with stderr redirected.  We don't care if there
+   are errors. */
+static struct objfile *
+safe_symbol_file_add (char *name, int from_tty,
+		      struct section_addr_info *addrs,
+		      int mainline, int flags)
+{
+  struct section_addr_info section_addrs;
+  struct so_stuff *so = &solib_start;
+
+  while ((so = so->next)) {
+    char *p;
+    p = strrchr(so->name, '/');
+    if (!p) p = so->name; else ++p;
+    if (strcasecmp (p, name) == 0) {
+      if (so->loaded)
+        return 0;
+      else break;
+    }
+  }
+
+  if (!so) return 0;
+
+  memset (&section_addrs, 0, sizeof (section_addrs));
+  section_addrs.other[0].name = ".text";
+  section_addrs.other[0].addr = so->load_addr;
+
+  so->objfile = symbol_file_add (so->name, from_tty, &section_addrs, mainline, flags);
+  so->loaded = 1;
+  return so->objfile;
+}
+
+/* Load DLL symbol info. */
+void
+dll_symbol_command (char *args, int from_tty)
+{
+  int n;
+  dont_repeat ();
+
+  if (args == NULL)
+    error ("dll-symbols requires a file name");
+
+  n = strlen (args);
+  if (n > 4 && strcasecmp (args + n - 4, ".dll") != 0)
+    {
+      char *newargs = (char *) alloca (n + 4 + 1);
+      strcpy (newargs, args);
+      strcat (newargs, ".dll");
+      args = newargs;
+    }
+
+  safe_symbol_file_add (args, from_tty, NULL, 0, OBJF_SHARED | OBJF_USERLOADED);
+}
+
+/* List currently loaded DLLs. */
+void
+info_dll_command (char *ignore, int from_tty)
+{
+  struct so_stuff *so = &solib_start;
+
+  if (!so->next)
+    return;
+
+  printf_filtered ("%*s  Load Address\n", -max_dll_name_len, "DLL Name");
+  while ((so = so->next) != NULL)
+    printf_filtered ("%*s  %08lx\n", -max_dll_name_len, so->name, so->load_addr);
+
+  return;
 }
 
 /* Handle DEBUG_STRING output from child process.  */
@@ -1295,11 +1477,11 @@ handle_output_debug_string (struct target_waitstatus *ourstatus)
   if (q != NULL)
     {
       *q = '\0';
-      if (*--q = '\r')
+      if (*--q == '\r')
 	*q = '\0';
     }
 
-  warning (s);
+  warning ("%s",s);
 
   return;
 }
@@ -1345,7 +1527,7 @@ handle_exception (struct target_waitstatus *ourstatus)
       ourstatus->value.sig = TARGET_SIGNAL_TRAP;
       break;
     case EXCEPTION_ILLEGAL_INSTRUCTION:
-      DEBUG_EXCEPT (("gdb: Target exception SINGLE_ILL at 0x%08x\n",
+      DEBUG_EXCEPT (("gdb: Target exception SINGLE_ILL at 0x%8p\n",
 		     /* (unsigned)? */ current_event.u.Exception.ExceptionRecord.ExceptionAddress));
       ourstatus->value.sig = check_for_step (&current_event, 
 					     TARGET_SIGNAL_ILL);
@@ -1356,8 +1538,8 @@ handle_exception (struct target_waitstatus *ourstatus)
 	 only break if we see the exception a second time.  */
 
       printf_unfiltered 
-	("gdb: unknown target exception 0x%08x at 0x%08x\n",
-	 current_event.u.Exception.ExceptionRecord.ExceptionCode,
+	("gdb: unknown target exception 0x%08x at 0x%8p\n",
+	 (unsigned int)current_event.u.Exception.ExceptionRecord.ExceptionCode,
 	 current_event.u.Exception.ExceptionRecord.ExceptionAddress);
       ourstatus->value.sig = TARGET_SIGNAL_UNKNOWN;
       break;
@@ -1431,7 +1613,7 @@ get_child_debug_event (int pid, struct target_waitstatus *ourstatus,
 			     current_event.u.CreateThread.hThread);
       if (info_verbose)
 	printf_unfiltered ("[New %s]\n",
-			   target_pid_to_str (current_event.dwThreadId));
+			   target_pid_to_str (pid_to_ptid (current_event.dwThreadId)));
       break;
 
     case EXIT_THREAD_DEBUG_EVENT:
@@ -1448,6 +1630,8 @@ get_child_debug_event (int pid, struct target_waitstatus *ourstatus,
 		     (unsigned) current_event.dwProcessId,
 		     (unsigned) current_event.dwThreadId,
 		     "CREATE_PROCESS_DEBUG_EVENT"));
+	  printf("Process Created\n");
+
       current_process_handle = current_event.u.CreateProcessInfo.hProcess;
 
       main_thread_id = current_event.dwThreadId;
@@ -1462,6 +1646,7 @@ get_child_debug_event (int pid, struct target_waitstatus *ourstatus,
 		     (unsigned) current_event.dwProcessId,
 		     (unsigned) current_event.dwThreadId,
 		     "EXIT_PROCESS_DEBUG_EVENT"));
+	  printf("Process Exited\n");
       ourstatus->kind = TARGET_WAITKIND_EXITED;
       ourstatus->value.integer = current_event.u.ExitProcess.dwExitCode;
       close_handle (current_process_handle);
@@ -1484,7 +1669,9 @@ get_child_debug_event (int pid, struct target_waitstatus *ourstatus,
 		     (unsigned) current_event.dwProcessId,
 		     (unsigned) current_event.dwThreadId,
 		     "UNLOAD_DLL_DEBUG_EVENT"));
-      break;			/* FIXME: don't know what to do here */
+      catch_errors (handle_unload_dll, NULL, (char *) "", RETURN_MASK_ALL);
+      registers_changed ();	/* mark all regs invalid */
+      break;
 
     case EXCEPTION_DEBUG_EVENT:
       DEBUG_EVENTS (("gdb: kernel event for pid=%d tid=%d code=%s)\n",
@@ -1507,12 +1694,19 @@ get_child_debug_event (int pid, struct target_waitstatus *ourstatus,
 		     "OUTPUT_DEBUG_STRING_EVENT"));
       handle_output_debug_string ( ourstatus);
       break;
+	case RIP_EVENT:
+      DEBUG_EVENTS (("gdb: kernel event for pid=%d tid=%d code=%s)\n",
+		     (unsigned) current_event.dwProcessId,
+		     (unsigned) current_event.dwThreadId,
+		     "RIP_EVENT"));
+	  printf_unfiltered("Child process died unexpectadly\n");
+	  break;
     default:
       printf_unfiltered ("gdb: kernel event for pid=%d tid=%d\n",
-			 current_event.dwProcessId,
-			 current_event.dwThreadId);
+			 (int)current_event.dwProcessId,
+			 (int)current_event.dwThreadId);
       printf_unfiltered ("                 unknown event code %d\n",
-			 current_event.dwDebugEventCode);
+			 (int)current_event.dwDebugEventCode);
       break;
     }
 
@@ -1648,7 +1842,7 @@ upload_to_device (const char *to, const char *from)
   err = CeGetLastError ();
   if (h == NULL || h == INVALID_HANDLE_VALUE)
     error (_("error opening file \"%s\".  Windows error %d."),
-	   remotefile, err);
+	   remotefile, (int)err);
 
   CeGetFileTime (h, &crtime, &actime, &wrtime);
   utime = to_time_t (&wrtime);
@@ -1671,15 +1865,16 @@ upload_to_device (const char *to, const char *from)
       int n;
 
       /* Upload the file.  */
+	  printf_unfiltered("Uploading to remote device: %s\n", remotefile);
       while ((n = read (fd, buf, sizeof (buf))) > 0)
 	if (!CeWriteFile (h, buf, (DWORD) n, &nbytes, NULL))
 	  error (_("error writing to remote device - %d."),
-		 CeGetLastError ());
+		 (int)CeGetLastError ());
     }
 
   close (fd);
   if (!CeCloseHandle (h))
-    error (_("error closing remote file - %d."), CeGetLastError ());
+    error (_("error closing remote file - %d."), (int)CeGetLastError ());
 
   return remotefile;
 }
@@ -1696,6 +1891,7 @@ wince_initialize (void)
   int s0;
   PROCESS_INFORMATION pi;
 
+  if (upload_when != UPLOAD_NEVER) {
   if (!connection_initialized)
     switch (CeRapiInit ())
       {
@@ -1705,7 +1901,9 @@ wince_initialize (void)
       default:
 	CeRapiUninit ();
 	error (_("Can't initialize connection to remote device."));
+	break;
       }
+  }
 
   /* Upload the stub to the handheld device.  */
   stub_file_name = upload_to_device ("wince-stub.exe", WINCE_STUB);
@@ -1727,7 +1925,8 @@ wince_initialize (void)
   tmp = 1;
   (void) setsockopt (s0, SOL_SOCKET, SO_REUSEADDR, 
 		     (char *) &tmp, sizeof (tmp));
-
+  tmp = 1;
+  setsockopt (s, IPPROTO_TCP, TCP_NODELAY, (char *) &tmp, sizeof (tmp));
 
   /* Set up the information for connecting to the host gdb process.  */
   memset (&sin, 0, sizeof (sin));
@@ -1741,19 +1940,45 @@ wince_initialize (void)
     error (_("Couldn't open socket for listening."));
 
   /* Start up the stub on the remote device.  */
+printf_unfiltered("Starting on device: \"%s %s\"\n", stub_file_name, args);
+  if (upload_when != UPLOAD_NEVER) {
+    /* If we don't upload, don't bother to start via RAPI either */
   if (!CeCreateProcess (towide (stub_file_name, NULL), 
 			towide (args, NULL),
 			NULL, NULL, 0, 0, 
 			NULL, NULL, NULL, &pi))
     error (_("Unable to start remote stub '%s'.  Windows CE error %d."),
-	   stub_file_name, CeGetLastError ());
+	   stub_file_name, (int)CeGetLastError ());
+  } else {
+    printf_unfiltered("Please start stub with correct argument on the device\n");
+  }
 
   /* Wait for a connection */
 
+printf_unfiltered("Waiting for connection...\n");
   if ((s = accept (s0, NULL, NULL)) < 0)
     error (_("couldn't set up server for connection."));
+  else
+	printf_unfiltered("Connected\n");
 
   close (s0);
+}
+
+
+void ShowError(char* lpszFunction)
+{
+	char* lpMsgBuf;
+	DWORD dw = GetLastError(); 
+
+	FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+		NULL,
+		dw,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(char*) &lpMsgBuf,
+		0, NULL );
+
+	printf("%s failed with error %d: %s", lpszFunction, (int)dw, lpMsgBuf); 
+	LocalFree(lpMsgBuf);
 }
 
 /* Start an inferior win32 child process and sets inferior_ptid to its pid.
@@ -1797,9 +2022,13 @@ child_create_inferior (char *exec_file, char *args, char **env,
 
   memset (&pi, 0, sizeof (pi));
   /* Execute the process.  */
+  printf_unfiltered("Creating process...\n");
   if (!create_process (exec_file, exec_and_args, flags, &pi))
+  {
+    ShowError("CreateProcess");
     error (_("Error creating process %s, (error %d)."), 
-	   exec_file, GetLastError ());
+	   exec_file, (int)GetLastError ());
+  }
 
   exception_count = 0;
   event_count = 0;
@@ -1812,11 +2041,13 @@ child_create_inferior (char *exec_file, char *args, char **env,
   push_target (&deprecated_child_ops);
   child_init_thread_list ();
   child_add_thread (pi.dwThreadId, pi.hThread);
+  child_clear_solibs();
   init_wait_for_inferior ();
   clear_proceed_status ();
   target_terminal_init ();
   target_terminal_inferior ();
 
+  printf_unfiltered("Waiting for process to load completely...\n");
   /* Run until process and threads are loaded */
   while (!get_child_debug_event (PIDGET (inferior_ptid), &dummy,
 				 CREATE_PROCESS_DEBUG_EVENT, &ret))
@@ -1832,7 +2063,9 @@ child_mourn_inferior (void)
   (void) child_continue (DBG_CONTINUE, -1);
   unpush_target (&deprecated_child_ops);
   stop_stub ();
+  if (upload_when != UPLOAD_NEVER) {
   CeRapiUninit ();
+  }
   connection_initialized = 0;
   generic_mourn_inferior ();
 }
@@ -1844,13 +2077,13 @@ child_xfer_memory (CORE_ADDR memaddr, gdb_byte *our,
 		   struct mem_attrib *attrib,
 		   struct target_ops *target)
 {
+  int res;
   if (len <= 0)
     return 0;
 
-  if (write)
-    res = remote_write_bytes (memaddr, our, len);
-  else
-    res = remote_read_bytes (memaddr, our, len);
+  res = write?
+	     remote_write_bytes (memaddr, our, len):
+		 remote_read_bytes (memaddr, our, len);
 
   return res;
 }
@@ -1922,7 +2155,7 @@ child_can_run (void)
 }
 
 static void
-child_close (void)
+child_close (int quitting)
 {
   DEBUG_EVENTS (("gdb: child_close, inferior_ptid=%d\n",
 		 PIDGET (inferior_ptid)));
@@ -1935,6 +2168,26 @@ child_load (char *file, int from_tty)
 {
   upload_to_device (file, file);
 }
+
+/* Clear list of loaded DLLs. */
+void
+child_clear_solibs (void)
+{
+  struct so_stuff *so, *so1 = solib_start.next;
+
+  while ((so = so1) != NULL)
+    {
+      so1 = so->next;
+      xfree (so);
+    }
+
+  solib_start.next = NULL;
+  solib_start.objfile = NULL;
+  solib_end = &solib_start;
+  max_dll_name_len = sizeof ("DLL Name") - 1;
+}
+
+struct target_ops child_ops;
 
 static void
 init_child_ops (void)
@@ -1966,12 +2219,15 @@ init_child_ops (void)
   deprecated_child_ops.to_mourn_inferior = child_mourn_inferior;
   deprecated_child_ops.to_can_run = child_can_run;
   deprecated_child_ops.to_thread_alive = win32_child_thread_alive;
+
   deprecated_child_ops.to_stratum = process_stratum;
   deprecated_child_ops.to_has_all_memory = 1;
   deprecated_child_ops.to_has_memory = 1;
   deprecated_child_ops.to_has_stack = 1;
   deprecated_child_ops.to_has_registers = 1;
   deprecated_child_ops.to_has_execution = 1;
+  deprecated_child_ops.to_sections = 0;
+  deprecated_child_ops.to_sections_end = 0;
   deprecated_child_ops.to_magic = OPS_MAGIC;
 }
 
@@ -1985,7 +2241,7 @@ init_child_ops (void)
     strcpy (remote_upload, upload_options[upload_when].name);
 
 static void
-set_upload_type (char *ignore, int from_tty)
+set_upload_type (char *ignore, int from_tty, struct cmd_list_element *c)
 {
   int i, len;
   char *bad_option;
@@ -2023,7 +2279,7 @@ _initialize_wince (void)
   add_setshow_string_noescape_cmd ("remotedirectory", no_class,
 				   &remote_directory, _("\
 Set directory for remote upload."), _("\
-Show directory for remote upload."), NULL,
+Show directory for remote upload."), 
 				   NULL, /* FIXME: i18n: */
 				   NULL, NULL,
 				   &setlist, &showlist);
@@ -2032,11 +2288,11 @@ Show directory for remote upload."), NULL,
   add_setshow_string_noescape_cmd ("remoteupload", no_class,
 				   &remote_upload, _("\
 Set how to upload executables to remote device."), _("\
-Show how to upload executables to remote device."), NULL,
+Show how to upload executables to remote device."),
 				   NULL, /* FIXME: i18n: */
 				   set_upload_type, NULL,
 				   &setlist, &showlist);
-  set_upload_type (NULL, 0);
+  set_upload_type (NULL, 0, 0);
 
   add_setshow_boolean_cmd ("debugexec", class_support, &debug_exec, _("\
 Set whether to display execution in child process."), _("\
@@ -2076,6 +2332,26 @@ Show whether to display kernel exceptions in child process."), NULL,
 			   NULL,
 			   NULL, /* FIXME: i18n: */
 			   &setlist, &showlist);
+
+  add_info
+    ("dll", info_dll_command, "Status of loaded DLLs.");
+  add_info_alias ("sharedlibrary", "dll", 1);
+
+  {
+	  struct cmd_list_element *c;
+	  c = add_com ("upload", class_files, dll_symbol_command,
+		  "Upload file to device.");
+	  c->completer = filename_completer;
+  }
+
+  {
+    struct cmd_list_element *c;
+    c = add_com ("dll-symbols", class_files, dll_symbol_command,
+  	       "Load dll library symbols from FILE.");
+    c->completer = filename_completer;
+  }
+
+  add_com_alias ("sharedlibrary", "dll-symbols", class_alias, 1);
 
   add_target (&deprecated_child_ops);
 }

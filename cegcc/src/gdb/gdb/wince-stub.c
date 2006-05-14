@@ -23,9 +23,12 @@
 
 /* by Christopher Faylor (cgf@cygnus.com) */
 
+#include <winsock.h>
 #include <stdarg.h>
 #include <windows.h>
-#include <winsock.h>
+
+typedef unsigned int in_addr_t;
+
 #include "wince-stub.h"
 
 #define MALLOC(n) (void *) LocalAlloc (LMEM_MOVEABLE | LMEM_ZEROINIT, (UINT)(n))
@@ -228,7 +231,7 @@ putresult (LPCWSTR huh, gdb_wince_result res, int s, gdb_wince_id what, const vo
   putmemory (huh, s, what, mem, len);
 }
 
-static HANDLE curproc;		/* Currently unused, but nice for debugging */
+static HANDLE curproc;
 
 /* Emulate CreateProcess.  Returns &pi if no error. */
 static void
@@ -251,7 +254,23 @@ create_process (int s)
 			NULL,
 			&pi);
   putresult (L"CreateProcess", res, s, GDB_CREATEPROCESS, &pi, sizeof (pi));
-  curproc = pi.hProcess;
+
+#if 0
+  if (!res)
+  {
+	  wchar_t buf[100];
+	  wsprintf(buf, L"Error creating process. Error: %d", (int)GetLastError());
+	  MessageBoxW (NULL, buf, L"GDB", MB_ICONERROR);
+  }
+#endif
+
+  if (curproc)
+  {
+	  // which conditions trigger this?
+	  MessageBoxW (NULL, L"There was already a curproc", L"GDB", MB_ICONERROR);
+  }
+  else
+	  curproc = pi.hProcess;
 }
 
 /* Emulate TerminateProcess.  Returns return value of TerminateProcess if
@@ -264,9 +283,13 @@ terminate_process (int s)
   gdb_wince_result res;
   HANDLE h = gethandle (L"TerminateProcess handle", s, GDB_TERMINATEPROCESS);
 
-  res = TerminateProcess (h, 0) || 1;	/* Doesn't seem to work on SH so default to TRUE */
+//  res = TerminateProcess (h, 0) || 1;	/* Doesn't seem to work on SH so default to TRUE */
+  res = TerminateProcess (h, 0);
   putresult (L"Terminate process result", res, s, GDB_TERMINATEPROCESS,
 	     &res, sizeof (res));
+  /* So, we just bye-bye */
+  WSACleanup ();
+  ExitThread (1);
 }
 
 static int stepped = 0;
@@ -325,6 +348,9 @@ wait_for_debug_event (int s)
     {
       res = WaitForDebugEvent (&ev, ms);
 
+	  if (ev.dwProcessId != (DWORD)curproc)
+		  goto ignore;
+
       if (ev.dwDebugEventCode == OUTPUT_DEBUG_STRING_EVENT)
 	{
 	  if (skip_next)
@@ -335,6 +361,10 @@ wait_for_debug_event (int s)
 	  if (skip_next = skip_message (&ev))
 	    goto ignore;
 	}
+	  else if (ev.dwDebugEventCode == EXIT_PROCESS_DEBUG_EVENT)
+	  {
+		  curproc = NULL;
+	  }
 
       putresult (L"WaitForDebugEvent event", res, s, GDB_WAITFORDEBUGEVENT,
 		 &ev, sizeof (ev));
@@ -344,7 +374,6 @@ wait_for_debug_event (int s)
       ContinueDebugEvent (ev.dwProcessId, ev.dwThreadId, DBG_CONTINUE);
     }
 
-  return;
 }
 
 /* Emulate GetThreadContext.  Returns CONTEXT structure on success. */
@@ -534,10 +563,11 @@ dispatch (int s)
 int WINAPI
 WinMain (HINSTANCE hi, HINSTANCE hp, LPWSTR cmd, int show)
 {
-  struct hostent *h;
+  struct hostent *h = NULL;
+  in_addr_t in_a;
   int s;
-  struct WSAData wd;
-  struct sockaddr_in sin;
+  struct WSAData wd = {0};
+  struct sockaddr_in sin = {0};
   int tmp;
   LPWSTR whost;
   char host[80];
@@ -562,8 +592,17 @@ WinMain (HINSTANCE hi, HINSTANCE hp, LPWSTR cmd, int show)
      host lookup failed, try the Windows CE magic ppp_peer lookup.  ppp_peer
      is supposed to be the Windows host sitting on the other end of the
      serial cable. */
-  if (whost && *whost && (h = gethostbyname (host)) != NULL)
-    /* nothing to do */ ;
+  if (whost && *whost) {
+	 // gethostbyname function cannot resolve IP address strings passed to it.
+     if (*host >= '0' && *host <= '9') {
+       in_a = inet_addr(host);
+     }
+     else {
+       h = gethostbyname (host);
+       if (h == NULL)
+         stub_error (L"Couldn't get IP address of host system.  Error %d", WSAGetLastError ());
+     }
+  }
   else if ((h = gethostbyname ("ppp_peer")) == NULL)
     stub_error (L"Couldn't get IP address of host system.  Error %d", WSAGetLastError ());
 
@@ -574,12 +613,25 @@ WinMain (HINSTANCE hi, HINSTANCE hp, LPWSTR cmd, int show)
   /* Allow rapid reuse of the port. */
   tmp = 1;
   setsockopt (s, SOL_SOCKET, SO_REUSEADDR, (char *) &tmp, sizeof (tmp));
+  tmp = 1;
+  setsockopt (s, IPPROTO_TCP, TCP_NODELAY, (char *) &tmp, sizeof (tmp));
 
   /* Set up the information for connecting to the host gdb process. */
   memset (&sin, 0, sizeof (sin));
-  sin.sin_family = h->h_addrtype;
-  memcpy (&sin.sin_addr, h->h_addr, h->h_length);
-  sin.sin_port = htons (7000);	/* FIXME: This should be configurable */
+  if (h) {
+    sin.sin_family = h->h_addrtype;
+    memcpy (&sin.sin_addr, h->h_addr, h->h_length);
+  } else {
+    sin.sin_family = AF_INET;
+    memcpy (&sin.sin_addr, (char*)&in_a, sizeof(in_a));
+       WCHAR buf[100];
+	   int sin_addr;
+	   memcpy(&sin_addr, &sin.sin_addr, sizeof(sin_addr));
+       wsprintf(buf, L"!%08x", sin_addr);
+       MessageBoxW (NULL, buf, L"GDB", MB_ICONERROR);
+  }
+#define DEFAULT_PORT 7000
+  sin.sin_port = htons (DEFAULT_PORT);	/* FIXME: This should be configurable */
 
   /* Connect to host */
   if (connect (s, (struct sockaddr *) &sin, sizeof (sin)) < 0)
