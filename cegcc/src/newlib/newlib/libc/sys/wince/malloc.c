@@ -286,7 +286,7 @@ static int slrelease(int *sl);
 
 static long getpagesize(void);
 static long getregionsize(void);
-static void *sbrk(long size);
+static void *sbrk(int size);
 static void *mmap(void *ptr, long size, long prot, long type, long handle, long arg);
 static long munmap(void *ptr, long size);
 
@@ -5066,7 +5066,7 @@ static int region_list_remove (region_list_entry **last) {
 /* #define SBRK_SCALE  4  */
 
 /* sbrk for windows */
-static void *sbrk (long size) {
+static void *sbrk (ptrdiff_t size) {
     static long g_pagesize, g_my_pagesize;
     static long g_regionsize, g_my_regionsize;
     static region_list_entry *g_last;
