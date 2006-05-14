@@ -8,7 +8,7 @@
 #include "sys/wcefile.h"
 #include "sys/wceerror.h"
 
-HANDLE __IMPORT
+HANDLE
 XCECreateFileW(
                LPCWSTR wfname,
                DWORD dwDesiredAccess,
@@ -78,7 +78,7 @@ XCECreateFileW(
   return hFile;
 }
 
-HANDLE __IMPORT
+HANDLE
 XCECreateFileA(
                LPCSTR fname,
                DWORD dwDesiredAccess,
