@@ -1,10 +1,10 @@
 #!/bin/sh
 
 BUILD_DIR="build-gcc"
-GCC_VERSION=trunk
+GCC_VERSION=
 BASE_DIRECTORY=${PWD}
 
-SOURCE_DIR=${BASE_DIRECTORY}/gcc-${GCC_VERSION}
+SOURCE_DIR=${BASE_DIRECTORY}/gcc${GCC_VERSION}
 
 mkdir -p ${BUILD_DIR} || exit
 
@@ -16,6 +16,10 @@ export PATH=${PATH}:${PREFIX}/bin
 # BUILD GCC
 
 echo "BUILDING GCC --------------------------"
+
+echo SOURCE_DIR=${SOURCE_DIR}
+echo BUILD_DIR=${BUILD_DIR}
+echo PREFIX=${PREFIX}
 
 echo ""
 echo "Building dummy libcegcc.dll.a ----------------------"
@@ -32,6 +36,7 @@ echo ""
 echo ""
 
 cd ${BUILD_DIR} || exit
+
 ${SOURCE_DIR}/configure			 \
   --with-gcc                     \
   --with-gnu-ld                  \
