@@ -4,6 +4,8 @@
 #include "sys/wcetypes.h"
 #include <_ansi.h>
 
+#ifndef _WINBASE_
+
 typedef struct _FILETIME {
   DWORD dwLowDateTime;
   DWORD dwHighDateTime;
@@ -49,6 +51,8 @@ BOOL  SetTimeZoneInformation(CONST TIME_ZONE_INFORMATION *);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif

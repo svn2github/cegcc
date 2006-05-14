@@ -22,13 +22,30 @@ typedef void          *PVOID;
 typedef void          *HANDLE;
 typedef HANDLE*       PHANDLE;
 
-typedef void          *HINSTANCE;
-typedef void          *HMODULE;
+#ifndef _WINDEF_
+
+typedef void           VOID;
+
+typedef void*         HINSTANCE;
+typedef void*         HMODULE;
+typedef void*         HKEY;
+typedef HKEY*         PHKEY;
+
+/* The HWND typedef */
+typedef void  *HWND;
+typedef void  *HDC;
+
+typedef void        *RECT;
+#endif
+
+typedef const RECT* LPCRECT;
 
 #define IN
 #define FAR
 #define OUT
 #define OPTIONAL
+
+#if 0
 
 #ifndef __cdecl
 #define __cdecl
@@ -40,6 +57,8 @@ typedef void          *HMODULE;
 
 #ifndef __stdcall
 #define __stdcall
+#endif
+
 #endif
 
 #undef  far
@@ -59,6 +78,7 @@ typedef int            BOOL;
 #endif
 #endif
 typedef UCHAR          BYTE;
+typedef BYTE*         PBYTE;
 typedef USHORT         WORD;
 typedef char           CHAR;
 typedef CHAR          *PCHAR;
@@ -66,8 +86,7 @@ typedef float          FLOAT;
 typedef FLOAT         *PFLOAT;
 typedef BOOL          *PBOOL;
 typedef BOOL          *LPBOOL;
-typedef CHAR          *PBYTE;
-typedef CHAR          *LPBYTE;
+typedef BYTE          *LPBYTE;
 typedef int            INT;
 typedef unsigned int   UINT;
 typedef UINT          *PUINT;
@@ -79,28 +98,32 @@ typedef LONG          *LPLONG;
 typedef LONG          *PLONG;
 typedef ULONG         *PDWORD;
 typedef ULONG         *LPDWORD;
-typedef void          *HKEY;
-typedef HKEY          *PHKEY;
-typedef void           VOID;
 typedef void          *LPVOID;
 typedef const void    *LPCVOID;
 
 typedef long long      QWORD;
 typedef long long     *PQWORD;
 
+#ifdef __cplusplus
+typedef wchar_t         WCHAR;
+#else
 typedef USHORT         WCHAR;
-typedef USHORT         TCHAR;
-typedef USHORT        *PWCHAR;
-typedef CHAR          *PSTR;
-typedef USHORT        *PWSTR;
-typedef USHORT        *LPWSTR;
-typedef const USHORT  *PCWSTR;
-typedef const USHORT  *LPCWSTR;
-typedef const USHORT  *LPTSTR;
+#endif
+
+typedef CHAR*         PSTR;
+typedef WCHAR         TCHAR;
+typedef WCHAR*        PWCHAR;
+typedef WCHAR*        PWSTR;
+typedef WCHAR*        LPWSTR;
+typedef WCHAR*        LPTSTR;
+typedef const WCHAR*  PCWSTR;
+typedef const WCHAR*  LPCWSTR;
 typedef const CHAR    *LPCSTR, *PCSTR;
 typedef const CHAR   **LPPCSTR, *PPCSTR;
-typedef PCHAR          LPSTORAGE;
 typedef PCHAR          LPSTR;
+
+struct IStorage;
+typedef struct IStorage* LPSTORAGE;
 
 /* Function pointer types used in various interfaces */
 typedef void (*LPFNDESTROYED) (void);
@@ -117,17 +140,9 @@ typedef USHORT LANGID;
 /* Registry Types */
 typedef DWORD  ACCESS_MASK;
 
-/* The HWND typedef */
-typedef void  *HWND;
-typedef void  *HDC;
-
-typedef void        *RECT;
-typedef const void  *LPCRECT;
-
 #define MAKEWORD(a, b)      ((WORD)(((BYTE)(a)) | ((WORD)((BYTE)(b))) << 8))
 
 #ifdef __cplusplus
 }
 #endif
 #endif /* _WCETYPES_H_ */
-

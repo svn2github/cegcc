@@ -1,6 +1,8 @@
 #ifndef _WCEBASE_H_
 #define _WCEBASE_H_
 
+#pragma GCC system_header
+
 #include <sys/config.h>
 #include <sys/wcetypes.h>
 
@@ -87,6 +89,8 @@
 #define DLL_PROCESS_EXITING 4
 #define DLL_SYSTEM_STARTED 5
 #define DLL_MEMORY_LOW 6
+
+#ifndef _WINBASE_
 
 typedef struct _SECURITY_ATTRIBUTES {
   DWORD nLength;
@@ -234,6 +238,9 @@ typedef struct _MODULEENTRY32 {
   DWORD	dwFlags;
 } MODULEENTRY32, *PMODULEENTRY32, *LPMODULEENTRY32;
 
+#endif
+
+#ifndef _WINDEF_
 typedef struct _POINT
 {
   LONG x;
@@ -250,6 +257,7 @@ typedef struct _MSG
   POINT pt;
 } MSG;
 
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -267,22 +275,27 @@ int    ExtEscape(HDC, int, int, LPCSTR, int, LPSTR);
 BOOL   FlushFileBuffers(HANDLE);
 BOOL   FlushInstructionCache(HANDLE, LPCVOID, DWORD);
 LPWSTR GetCommandLineW();
-HDC    GetDC();
-DWORD  GetExitCodeProcess(HANDLE, LPDWORD);
+HDC    GetDC(HWND);
+BOOL   GetExitCodeProcess(HANDLE, DWORD*);
 DWORD  GetLastError();
-DWORD  GetModuleFileNameW(HANDLE, LPWSTR, DWORD);
-HANDLE GetModuleHandleW(LPWSTR);
-VOID  *GetProcAddressA(HANDLE, LPSTR);
-VOID  *GetProcAddressW(HANDLE, LPWSTR);
+DWORD  GetModuleFileNameW(HINSTANCE, LPWSTR, DWORD);
+HINSTANCE GetModuleHandleW(LPCWSTR);
+
+typedef int (*FARPROC)();
+
+FARPROC GetProcAddressA(HINSTANCE, LPCSTR);
+FARPROC GetProcAddressW(HINSTANCE, LPCWSTR);
 VOID   GetSystemInfo(LPSYSTEM_INFO);
 DWORD  GetSystemPowerStatusEx2(PSYSTEM_POWER_STATUS_EX2, DWORD, BOOL);
 DWORD  GetTickCount();
 LONG   InterlockedIncrement(LPLONG);
 LONG   InterlockedDecrement(LPLONG);
 LONG   InterlockedExchange(LPLONG, LONG);
-LONG   InterlockedTestExchange(LPLONG, LONG, LONG);
-HANDLE LoadLibraryW(LPWSTR);
-HANDLE LoadLibraryExW(LPWSTR, HANDLE, DWORD);
+#define InterlockedTestExchange(TGT, oldval, newval) \
+  InterlockedCompareExchange((TGT), (newval), (oldval))
+//LONG   InterlockedTestExchange(LPLONG, LONG, LONG);
+HINSTANCE LoadLibraryW(LPCWSTR);
+HINSTANCE LoadLibraryExW(LPCWSTR, HANDLE, DWORD);
 HANDLE OpenProcess(DWORD, BOOL, DWORD);
 BOOL   ReadProcessMemory(HANDLE, LPCVOID, LPVOID, DWORD, LPDWORD);
 int    ReleaseDC(HWND, HDC);
@@ -295,6 +308,8 @@ BOOL   TerminateProcess(HANDLE, DWORD);
 /* Toolhelp Methods */
 HANDLE CreateToolhelp32Snapshot(DWORD, DWORD);
 BOOL   CloseToolhelp32Snapshot(HANDLE);
+
+#ifndef _WINBASE_
 BOOL   Process32First(HANDLE, LPPROCESSENTRY32);
 BOOL   Process32Next(HANDLE, LPPROCESSENTRY32);
 BOOL   Thread32First(HANDLE, LPTHREADENTRY32);
@@ -303,6 +318,7 @@ BOOL   Module32First(HANDLE, LPMODULEENTRY32);
 BOOL   Module32Next(HANDLE, LPMODULEENTRY32);
 BOOL   Heap32ListFirst(HANDLE, LPHEAPLIST32);
 BOOL   Heap32ListNext(HANDLE, LPHEAPLIST32);
+#endif
 
 #ifdef __cplusplus
 }

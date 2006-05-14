@@ -49,6 +49,8 @@ typedef LPTHREAD_START_ROUTINE PTHREAD_START_ROUTINE;
 #define ResetEvent(x) EventModify(x, EVENT_RESET)
 #define SetEvent(x) EventModify(x, EVENT_SET)
 
+#ifndef _WINBASE_
+
 typedef struct CRITICAL_SECTION {
   unsigned int LockCount;     /* Nesting count on critical section */
   HANDLE OwnerThread;         /* Handle of owner thread */
@@ -56,6 +58,8 @@ typedef struct CRITICAL_SECTION {
   DWORD needtrap;					        /* Trap in when freeing critical section */
   DWORD dwReserved;				       /* currently unused */
 } CRITICAL_SECTION, *LPCRITICAL_SECTION;
+
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,7 +84,7 @@ BOOL TryEnterCriticalSection(LPCRITICAL_SECTION);
 VOID DeleteCriticalSection(LPCRITICAL_SECTION);
 
 /* Micro$oft Synchronization Routines */
-HANDLE CreateEvent(LPSECURITY_ATTRIBUTES, BOOL, BOOL, LPCSTR);
+//HANDLE CreateEvent(LPSECURITY_ATTRIBUTES, BOOL, BOOL, LPCSTR);
 HANDLE CreateEventW(LPSECURITY_ATTRIBUTES, BOOL, BOOL, LPCWSTR);
 HANDLE CreateMutexW(LPSECURITY_ATTRIBUTES, BOOL, LPCWSTR);
 HANDLE CreateSemaphoreW(LPSECURITY_ATTRIBUTES, LONG, LONG, LPCWSTR);

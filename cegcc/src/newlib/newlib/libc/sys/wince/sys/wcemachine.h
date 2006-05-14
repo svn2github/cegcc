@@ -19,6 +19,8 @@
  * Thread structure for CPUs which have no floating point support.
  */
 
+#ifndef _WINNT_
+
 typedef struct _CONTEXT {
 /* The flags values within this flag control the contents of
  * a CONTEXT record.
@@ -69,6 +71,8 @@ typedef struct _CONTEXT {
 
 typedef CONTEXT *PCONTEXT, *LPCONTEXT;
 #endif  /* SARM */
+
+#endif
 
 #ifdef __cplusplus
 extern "C" {
