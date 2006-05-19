@@ -7,11 +7,24 @@ OUTPUT=out.`date +%y%m%d`
 
 export NIGHTLY_DIR WEB_DIR
 
-# rm -f $NIGHTLY_DIR/message
-$HOME_DIR/cegcc-update-website >$TMP_DIR/$OUTPUT 2>&1
+#
+# Phase one - update the script that does the real work.
+#
+cd $NIGHTLY_DIR/scripts
+svn update
+#
+# Phase two - run it.
+#
+cd $HOME_DIR
+sh $NIGHTLY_DIR/scripts/cegcc-update-website >$TMP_DIR/$OUTPUT 2>&1
 
 #
-# Clean up old logging
+# This is the old version - harder to maintain.
+#
+# $HOME_DIR/cegcc-update-website >$TMP_DIR/$OUTPUT 2>&1
+
+#
+# Before terminating, clean up old logging.
 #
 find $TMP_DIR -type f -ctime +7 -exec rm -f {} \;
 #
