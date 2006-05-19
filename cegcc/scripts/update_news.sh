@@ -1,5 +1,5 @@
-#!/usr/bin/bash
-
+#!/bin/sh
+cd $HOME_DIR/tmp
 ATOM=atom.xml
 HTML=news_table.html
 

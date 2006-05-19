@@ -11,6 +11,10 @@ svn update
 cd $NIGHTLY_DIR/docs
 svn update
 #
+# Run the update_news script
+#
+sh $NIGHTLY_DIR/scripts/update_news.sh
+#
 cp $NIGHTLY_DIR/website/* $WEB_DIR
 cp $NIGHTLY_DIR/website/images/* $WEB_DIR/images
 cp $NIGHTLY_DIR/docs/* $WEB_DIR/docs
