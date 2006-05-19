@@ -6,7 +6,6 @@
 #
 # Variables NIGHTLY_DIR and WEB_DIR are received from the other script.
 #
-date
 cd $NIGHTLY_DIR/website
 svn update
 cd $NIGHTLY_DIR/docs
