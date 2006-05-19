@@ -13,6 +13,8 @@ svn update
 #
 # Run the update_news script
 #
+export NIGHTLY_DIR WEB_DIR HOME_DIR
+#
 sh $NIGHTLY_DIR/scripts/update_news.sh
 #
 cp $NIGHTLY_DIR/website/* $WEB_DIR
