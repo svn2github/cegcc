@@ -1,0 +1,18 @@
+#!/bin/sh
+#
+# This is started by
+#       cegcc-update-website-startup
+# and its output is saved in a file.
+#
+# Variables NIGHTLY_DIR and WEB_DIR are received from the other script.
+#
+date
+cd $NIGHTLY_DIR/website
+svn update
+cd $NIGHTLY_DIR/docs
+svn update
+#
+cp $NIGHTLY_DIR/website/* $WEB_DIR
+cp $NIGHTLY_DIR/website/images/* $WEB_DIR/images
+cp $NIGHTLY_DIR/docs/* $WEB_DIR/docs
+exit 0

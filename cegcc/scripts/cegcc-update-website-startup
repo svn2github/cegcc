@@ -1,0 +1,20 @@
+#!/bin/sh
+HOME_DIR=/home/users/dannybackx
+TMP_DIR=$HOME_DIR/tmp
+NIGHTLY_DIR=$HOME_DIR/nightly-dir
+WEB_DIR=/home/groups/cegcc/htdocs
+OUTPUT=out.`date +%y%m%d`
+
+export NIGHTLY_DIR WEB_DIR
+
+# rm -f $NIGHTLY_DIR/message
+$HOME_DIR/cegcc-update-website >$TMP_DIR/$OUTPUT 2>&1
+
+#
+# Clean up old logging
+#
+find $TMP_DIR -type f -ctime +7 -exec rm -f {} \;
+#
+# Terminate cleanly
+#
+exit 0
