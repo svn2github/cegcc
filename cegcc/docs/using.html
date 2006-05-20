@@ -1,0 +1,101 @@
+<HTML>
+<HEAD>
+<TITLE>Using CeGCC to compile your Windows CE application</TITLE>
+</HEAD>
+<BODY>
+<P>
+This document describes how to cross-compile Windows CE applications
+using the tools provided by <A HREF="http://cegcc.berlios.de">the CeGCC project</A>.
+Part of this document is dependent on the host environment,
+another part is generic.
+<P>
+What does that sentence mean ?
+The host environment is the environment in which you compile your sources
+to produce an executable that can run on Windows CE.
+The CeGCC project actively supports two such environments :
+<UL>
+<LI>a Windows environment with <A HREF="http://cygwin.com">Cygwin</A>
+<LI>a Linux environment
+</UL>
+<P>
+<H1>Getting started</H1>
+<P>
+In this chapter, we'll show how to compile a very simple source.
+<H2>Simplistic example</H2>
+<P>
+You can type or copy-and-paste this source :
+<P>
+<PRE>
+#include <windows.h>
+
+int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
+{
+          MessageBoxW(0, L"HELLO!", L"H3LLO!", 0);
+}
+</PRE>
+<P>
+We've created a file named <B>dialog.c</B> that contains this code.
+To compile it, run this command :
+<P>
+<PRE>
+arm-wince-pe-gcc -o dialog.exe dialog.c -D_WINSOCKAPI_
+</PRE>
+<P>
+<H2>Commands provided</H2>
+arm-wince-pe-addr2line
+arm-wince-pe-ar
+arm-wince-pe-as
+arm-wince-pe-c++filt
+arm-wince-pe-cpp
+arm-wince-pe-dlltool
+arm-wince-pe-gcc
+arm-wince-pe-gcc-4.1.0
+arm-wince-pe-gccbug
+arm-wince-pe-gcov
+arm-wince-pe-ld
+arm-wince-pe-nm
+arm-wince-pe-objcopy
+arm-wince-pe-objdump
+arm-wince-pe-ranlib
+arm-wince-pe-readelf
+arm-wince-pe-size
+arm-wince-pe-strings
+arm-wince-pe-strip
+arm-wince-pe-windres
+cesetup
+<H1>How to build a Makefile that works</H1>
+<H1>CeGCC specifics</H1>
+<H2>Predefined macros</H2>
+<H2>Libraries</H2>
+<H2>Linux specific</H2>
+<H2>Cygwin specific<H2>
+<H1>Recommended way to port sources</H1>
+
+<P>
+<PRE>
+dannypc: {288} arm-wince-pe-gcc -o f.exe fibo.c -L. -I/usr/ppc/arm-wince-pe/include/windows -v -D_WINSOCKAPI_
+Using built-in specs.
+Target: arm-wince-pe
+Configured with: /home/danny/src/cegcc/svn.berlios.de/cegcc/branches/linux-build/cegcc/src/gcc/configure --prefix=/usr/ppc --enable-languages=c,c++ --disable-multilib --without-headers --disable-interwork --with-newlib --enable-checking --target=arm-wince-pe i686-pc-linux-gnu
+Thread model: single
+gcc version 4.1.0
+ /usr/ppc/libexec/gcc/arm-wince-pe/4.1.0/cc1 -quiet -v -I/usr/ppc/arm-wince-pe/include/windows -D__CEGCC32__ -D__CEGCC__ -Dunix -D__unix__ -D__unix -idirafter ../include/w32api -idirafter ../../include/w32api -D_WINSOCKAPI_ fibo.c -quiet -dumpbase fibo.c -auxbase fibo -version -o /home/danny/tmp/ccAQqX2l.s
+ ignoring nonexistent directory "/usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/sys-include"
+ ignoring nonexistent directory "../include/w32api"
+ ignoring nonexistent directory "../../include/w32api"
+ #include "..." search starts here:
+ #include <...> search starts here:
+  /usr/ppc/arm-wince-pe/include/windows
+   /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/include
+    /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/include
+    End of search list.
+    GNU C version 4.1.0 (arm-wince-pe)
+            compiled by GNU C version 4.0.1 (4.0.1-5mdk for Mandriva Linux release 2006.0).
+	    GGC heuristics: --param ggc-min-expand=30 --param ggc-min-heapsize=4096
+	    Compiler executable checksum: 300a6f7b3412a31b87ad0dc68a6245cd
+	    fibo.c:15: warning: '__stdcall__' attribute directive ignored
+	     /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/bin/as -mfpu=vfp -o /home/danny/tmp/ccOO3zRh.o /home/danny/tmp/ccAQqX2l.s
+	      /usr/ppc/libexec/gcc/arm-wince-pe/4.1.0/collect2 -Bdynamic -o f.exe /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/crt0.o /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/crtst.o -L. -L/usr/ppc/lib/gcc/arm-wince-pe/4.1.0 -L/usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib /home/danny/tmp/ccOO3zRh.o -lcegcc -lgcc -lm -lc -lcoredll -lcegcc -lgcc
+</PRE>
+</BODY>
+</HTML>
