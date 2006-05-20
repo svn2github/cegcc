@@ -1,0 +1,65 @@
+/ChangeLog-0001/1.1/Fri Jan  2 11:16:20 2004//
+/ChangeLog-0203/1.2/Fri Apr 16 23:56:29 2004//
+/ChangeLog-2004/1.1/Mon Jan 16 23:15:05 2006//
+/ChangeLog-2005/1.1/Mon Jan 16 23:15:05 2006//
+/ChangeLog-9197/1.3/Sat Oct 25 16:26:30 2003//
+/ChangeLog-9899/1.2/Tue Mar 13 06:14:26 2001//
+/MAINTAINERS/1.1/Wed Jul  5 19:28:06 2000//
+/NEWS/1.65/Wed Apr  5 15:40:40 2006//
+/README/1.3/Fri Aug 23 08:03:32 2002//
+/TODO/1.1.1.1/Mon May  3 07:29:06 1999//
+/acinclude.m4/1.3/Sun May 15 18:19:45 2005//
+/configure.host/1.43/Tue Jul 19 12:43:19 2005//
+/configure.in/1.36/Tue Apr 11 10:36:26 2006//
+/configure.tgt/1.187/Wed Apr  5 12:41:57 2006//
+/deffile.h/1.10/Tue Jan 31 22:08:14 2006//
+/deffilep.y/1.22/Sat Apr  1 04:51:23 2006//
+/dep-in.sed/1.5/Sun Oct 30 17:40:28 2005//
+/elf-hints-local.h/1.1/Tue Apr 11 10:36:26 2006//
+/fdl.texi/1.3/Thu May 12 07:32:02 2005//
+/genscripts.sh/1.21/Wed Apr  5 15:40:40 2006//
+/h8-doc.texi/1.2/Tue Apr 15 08:51:54 2003//
+/ld.h/1.30/Fri Sep 30 11:42:04 2005//
+/ldcref.c/1.14/Thu Mar 16 12:20:16 2006//
+/ldctor.c/1.10/Thu May 12 07:32:02 2005//
+/ldctor.h/1.7/Thu May 12 07:32:02 2005//
+/ldemul.c/1.24/Thu Nov 17 00:10:05 2005//
+/ldemul.h/1.18/Thu Nov 17 00:10:05 2005//
+/ldexp.c/1.57/Wed Dec  7 14:43:54 2005//
+/ldexp.h/1.19/Fri Aug  5 13:52:13 2005//
+/ldfile.c/1.40/Thu May 12 07:32:02 2005//
+/ldfile.h/1.15/Thu May 12 07:32:02 2005//
+/ldgram.y/1.48/Thu Oct 13 17:29:57 2005//
+/ldint.texinfo/1.9/Thu May 12 07:32:02 2005//
+/ldlang.h/1.60/Sat Dec 24 07:48:30 2005//
+/ldlex.h/1.5/Thu May 12 07:32:03 2005//
+/ldlex.l/1.33/Fri Aug  5 13:52:13 2005//
+/ldmain.c/1.106/Thu Apr  6 18:52:45 2006//
+/ldmain.h/1.12/Thu May 12 07:32:03 2005//
+/ldmisc.c/1.29/Fri Mar 31 11:23:55 2006//
+/ldmisc.h/1.8/Thu May 12 07:32:03 2005//
+/ldver.c/1.11/Thu May 12 07:32:03 2005//
+/ldver.h/1.6/Thu May 12 07:32:03 2005//
+/ldwrite.c/1.23/Thu Nov 17 00:10:05 2005//
+/ldwrite.h/1.3/Thu May 12 07:32:03 2005//
+/lexsup.c/1.87/Sun Oct 30 18:08:52 2005//
+/mri.c/1.20/Thu May 12 07:32:03 2005//
+/mri.h/1.5/Thu May 12 07:32:03 2005//
+/stamp-h.in/1.1.1.1/Mon May  3 07:29:07 1999//
+/sysdep.h/1.6/Thu Jun  9 18:39:34 2005//
+D/emulparams////
+D/emultempl////
+D/po////
+D/scripttempl////
+D/testsuite////
+/config.in/1.17/Thu Apr 27 17:25:41 2006//
+/configure/1.62/Thu Apr 27 17:25:41 2006//
+/ldlang.c/1.217/Thu Apr 27 17:25:41 2006//
+/pe-dll.h/1.13/Thu Apr 27 17:28:45 2006//
+/Makefile.am/1.210/Wed May 10 19:58:34 2006//
+/Makefile.in/1.224/Wed May 10 19:58:34 2006//
+/aclocal.m4/1.15/Wed May 10 19:58:34 2006//
+/gen-doc.texi/1.8/Wed May 10 19:58:34 2006//
+/ChangeLog/1.1508/Thu May 11 20:12:34 2006//
+/ld.texinfo/1.162/Thu May 11 20:12:34 2006//
+/pe-dll.c/1.84/Thu May 11 20:13:32 2006//
