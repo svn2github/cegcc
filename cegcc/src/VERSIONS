@@ -1,0 +1,16 @@
+Versions of the subdirectories below are :
+- gcc 4.1.0 from 
+	ftp://ftp.gnu.org/pub/gnu/gcc/gcc-4.1.0
+	gcc-core-4.1.0.tar.bz2
+	gcc-g++-4.1.0.tar.bz2
+- newlib 1.14.0
+	ftp://sources.redhat.com/pub/newlib/index.html
+	ftp://sources.redhat.com/pub/newlib/newlib-1.14.0.tar.gz
+- gdb 6.4
+- binutils from cvs, 16 May 2006
+	I am using this version because there is no recent released version of
+	binutils that works for ARM.
+	cvs -d :pserver:anoncvs@sourceware.org:/cvs/src ...
+	ftp://ftp.gnu.org/pub/gnu/gdb/gdb-6.4.tar.bz2
+- w32api 3.7
+	http://prdownloads.sourceforge.net/mingw/w32api-3.7-src.tar.gz?download
