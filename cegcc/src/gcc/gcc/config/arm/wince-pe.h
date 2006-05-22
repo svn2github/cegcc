@@ -1,7 +1,9 @@
 /* Definitions of target machine for GNU compiler, for ARM with WINCE-PE obj format.
-   Copyright (C) 2003, 2004, 2005 Free Software Foundation, Inc.
+   Copyright (C) 2003, 2004, 2005, 2006 Free Software Foundation, Inc.
    Contributed by Nick Clifton <nickc@redhat.com>
-   
+
+   Further development by Pedro Alves <pedro_alves@portugalmail.pt>
+
    This file is part of GCC.
 
    GCC is free software; you can redistribute it and/or modify it
@@ -225,3 +227,7 @@ the end of the file.  */
 
 #undef PTRDIFF_TYPE
 #define PTRDIFF_TYPE "int"
+
+/* Define as short unsigned for compatibility with MS runtime.  */
+#undef WINT_TYPE
+#define WINT_TYPE "short unsigned int"
