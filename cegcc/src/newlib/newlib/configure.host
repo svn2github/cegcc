@@ -506,7 +506,13 @@ case "${host}" in
 	;;
   arm-wince-pe)
 	syscall_dir=syscalls
-	newlib_cflags="${newlib_cflags} -march=armv4 -DGNUWINCE -DSARM -DABORT_PROVIDED -DMALLOC_PROVIDED -DWANT_PRINTF_LONG_LONG -D_COMPILING_NEWLIB -DREENTRANT_SYSCALLS_PROVIDED -DNO_FORK"
+	#no really srcdir yet, but will be. for now it makes my life easier to point into ${prefix}
+	test -z "$cegcc_srcdir" && cegcc_srcdir=`cd ${prefix}/arm-wince-pe/include; pwd`
+	export cegcc_srcdir
+	newlib_cflags="${newlib_cflags} -mwin32 -idirafter ${cegcc_srcdir}/w32api -march=armv4 -DGNUWINCE -DSARM -DABORT_PROVIDED -DMALLOC_PROVIDED -DWANT_PRINTF_LONG_LONG -D_COMPILING_NEWLIB -DREENTRANT_SYSCALLS_PROVIDED -DNO_FORK"
+	default_newlib_io_long_long="yes"
+	default_newlib_io_long_double="yes"
+	default_newlib_io_pos_args="yes"
 	;;	
   arm-*-pe)
 	syscall_dir=syscalls
