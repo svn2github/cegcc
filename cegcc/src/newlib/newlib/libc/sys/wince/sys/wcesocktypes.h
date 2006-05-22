@@ -2,7 +2,6 @@
 #define _WCESOCKTYPES_H_
 
 #include <sys/types.h>
-
 typedef unsigned int  SOCKET;
 
 #ifdef __cplusplus
@@ -13,7 +12,7 @@ extern "C" {
 # define FD_SETSIZE 64
 #endif
 
-#ifndef _WINSOCKAPI_
+#if !(defined (_WINSOCKAPI_) || defined(__USE_W32_SOCKETS))
 
 typedef struct fd_set {
 	unsigned int fd_count;
