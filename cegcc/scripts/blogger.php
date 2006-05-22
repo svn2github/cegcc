@@ -61,8 +61,8 @@ foreach ($entries as $entry) {
 	
   $date = $entry->get_modified();
 
-$table1 = <<<PARA
-<table width="99%" cellpadding="2" cellspacing="0" border="0" id="table1">
+$table = <<<PARA
+<table width="99%" cellpadding="2" cellspacing="0" border="0" id="news_item$inum">
   <tr>
     <td valign="top" bgcolor="#c8c8ee">&nbsp;&nbsp; <font size="4" color="#222222" face="arial,helvetica">
         <b><a>$title</a> </b></font>
@@ -78,7 +78,7 @@ $table1 = <<<PARA
 <p></p>
 PARA;
 
-echo $table1;
+echo $table;
 
 }
 
