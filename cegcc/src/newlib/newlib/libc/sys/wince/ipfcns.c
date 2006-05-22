@@ -1,11 +1,11 @@
+#include <winsock2.h>
+#include <iptypes.h>
+#include <ipifcons.h>
+
 #include <stdio.h>
 #include <errno.h>
 
-#include <sys/wcebase.h>
-#include <sys/wceerror.h>
-#include <sys/wcetrace.h>
-#include <sys/wcenetwork.h>
-#include <sys/wceipfcns.h>
+#include "sys/wcetrace.h"
 
 #include <malloc.h>
 
@@ -126,7 +126,7 @@ PrintAdapterInfo(IP_ADAPTER_INFO *ai)
 int
 AdapterInfoIPIsValid(IP_ADAPTER_INFO *ai)
 {
-  char *buf1[BUFLEN];
+  char buf1[BUFLEN];
   unsigned char *cp;
   int rval = 0;
 
