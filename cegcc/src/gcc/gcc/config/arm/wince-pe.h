@@ -95,8 +95,6 @@
   }								\
   while (0)
 
-//  %{static:-Bstatic} %{!static:-Bdynamic} 
-
 #undef  SUBTARGET_CPP_SPEC
 #define SUBTARGET_CPP_SPEC " -D__pe__ "
 
@@ -117,19 +115,16 @@
 #undef LIBGCC_SPEC
 #define LIBGCC_SPEC \
   "%{mthreads:-lcegccthrd} %{!mno-cegcc: %{!static: -lcegcc } } -lgcc"
-/* "%{!mno-cegcc: %{!static: -lcegcc } } -lgcc" */
 
 /* We have to dynamic link to get to the system DLLs.  All of libc, libm,
 the Unix stuff is in cegcc.dll.  The import library is called
 'libcegcc.dll.a'. For Windows applications, include more libraries, but
-always include coredll.  We'd like to specific subsystem windows to
+always include coredll.  We'd like to specify subsystem windows to
 ld, but that doesn't work just yet.  */
 
 #undef LIB_SPEC
 #define LIB_SPEC "\
-  %{!mno-cegcc: -lm -lc } -lcoredll"
-
-/* %{mthreads:--whole-archive -lcegccthrd --no-whole-archive} %{!mno-cegcc: -lm -lc } -lcoredll" */
+  %{!mno-cegcc: %{static: -lm -lc} } -lcoredll"
 
 #undef LINK_SPEC
 #define LINK_SPEC "\
@@ -140,10 +135,6 @@ ld, but that doesn't work just yet.  */
   %{static:-Bstatic} %{!static:-Bdynamic} \
   %{shared|mdll: -e DllMainCRTStartup} \
   "
-
-/* remove, it's on pe.h */
-/* Support the "dllimport" attribute.  */
-/* #define TARGET_DLLIMPORT_DECL_ATTRIBUTES 1 */
 
 /* still needed ? */
 #define ARM_WINCE 1
