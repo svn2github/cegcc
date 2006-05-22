@@ -1,10 +1,10 @@
+#include <windows.h>
+
 #include <stdlib.h>
 #include <sys/cs.h>
 #include <sys/llst.h>
 
-#include <sys/wcebase.h>
-#include <sys/wcethread.h>
-#include <sys/wcetrace.h>
+#include "sys/wcetrace.h"
 
 #define CS_SCLASS_SIZE     (32768)
 #define CS_CHUNKLIST_SIZE  (64)

@@ -1,5 +1,4 @@
-#include <sys/wcenetwork.h>
-#include <sys/wcesocktypes.h>
+#define __USE_W32_SOCKETS
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -15,11 +14,9 @@
 #include <sys/io.h>
 #include <sys/fifo.h>
 
-#include "sys/wcebase.h"
-#include "sys/wceerror.h"
-#include "sys/wcefile.h"
-#include "sys/wcethread.h"
 #include "sys/wcetrace.h"
+
+#include <winsock2.h>
 
 void* _fifo_alloc();
 
@@ -42,11 +39,16 @@ static pSetFilePointer *_SetFilePointer=SetFilePointer;
 static pReadFile *_ReadFile=ReadFile;
 static pWriteFile *_WriteFile=WriteFile;
 
+#if 1
+typedef int (* CONSOLE_READ_FUNC)(int, unsigned char *, int);
+typedef int (* CONSOLE_WRITE_FUNC)(int, const unsigned char *, int);
+typedef int (* CONSOLE_IOCTL_FUNC)(int, int, void *);
+
 HWND console_hwnd;
 CONSOLE_READ_FUNC  console_read_func;
 CONSOLE_WRITE_FUNC console_write_func;
 CONSOLE_IOCTL_FUNC console_ioctl_func;
-
+#endif
 
 void SetFileFuncs(void* CF, void *SFP, void *RF, void* WF, void *CH)
 {

@@ -1,16 +1,14 @@
 // ascii2addr.c
 //
 // Time-stamp: <12/02/01 16:56:51 keuchel@keuchelnt>
-
-#include "sys/wcebase.h"
-#include "sys/wcenetwork.h"
-#include "sys/wceerror.h"
+#include <winsock2.h>
 
 #include <errno.h>
 
+#define WSAGetLastError() GetLastError()
 #define WSASetLastError(X) SetLastError(X)
 
-__IMPORT int ascii2addr(int af, const char *ascii, void *result)
+int ascii2addr(int af, const char *ascii, void *result)
 {
 	struct in_addr *ina;
 	char strbuf[4*sizeof("123")]; /* long enough for V4 only */

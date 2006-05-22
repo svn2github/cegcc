@@ -6,10 +6,9 @@
 #include <signal.h>
 
 #include <sys/sysconf.h>
-#include "sys/wcebase.h"
+
 #include "sys/wcetrace.h"
-#include "sys/wcethread.h"
-#include "sys/wcekernel.h"
+
 #include "sys/shared.h"
 #include "sys/io.h"
 #include "sys/fixpath.h"

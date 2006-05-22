@@ -6,9 +6,6 @@
 #include <utime.h>
 #include <errno.h>
 
-#include "sys/wcebase.h"
-#include "sys/wceerror.h"
-#include "sys/wcefile.h"
 #include "sys/wcetrace.h"
 #include "sys/io.h"
 

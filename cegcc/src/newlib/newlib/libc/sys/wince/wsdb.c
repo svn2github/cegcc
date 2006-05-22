@@ -2,11 +2,15 @@
 //
 // Time-stamp: <09/08/01 21:47:18 keuchel@w2k>
 
-#include "sys/wcebase.h"
-#include "sys/wcenetwork.h"
-
 #include <errno.h>
 #include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+char* XCEGetUnixPath(const char *path);
 
 struct servent {
 	char* s_name;

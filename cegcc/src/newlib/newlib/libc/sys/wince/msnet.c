@@ -1,16 +1,17 @@
-#include "sys/wcebase.h"
-#include "sys/wceerror.h"
 #include "sys/wcetrace.h"
-#include "sys/wcenetwork.h"
 #include "sys/ceshared.h"
 
 #include <sys/types.h>
 #include <sys/io.h>
+#include <sys/time.h>
 
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <errno.h>
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 #define CHECKFD(afd) \
   if (afd < 0 || afd >= MAXFDS || _fdtab[afd].fd == -1) { \
@@ -21,6 +22,24 @@
     errno = EBADF; \
     return -1; \
   }
+
+#define WSADESCRIPTION_LEN 256
+#define WSASYS_STATUS_LEN 128
+
+typedef struct WSAData {
+  WORD                    wVersion;
+  WORD                    wHighVersion;
+  char                    szDescription[WSADESCRIPTION_LEN+1];
+  char                    szSystemStatus[WSASYS_STATUS_LEN+1];
+  unsigned short          iMaxSockets;
+  unsigned short          iMaxUdpDg;
+  char*                   lpVendorInfo;
+} WSADATA, * LPWSADATA;
+
+int WSAStartup(WORD version, WSADATA *wsadata);
+
+#define INVALID_SOCKET (SOCKET)(~0)
+#define SOCKET_ERROR (-1)
 
 static BOOL MSNET_initialized = FALSE;
 static WSADATA MSNET_wsadata;

@@ -1,4 +1,4 @@
-#include <sys/wcebase.h>
+#include <windows.h>
 
 //#define DEBUG_DLL_LOAGING
 

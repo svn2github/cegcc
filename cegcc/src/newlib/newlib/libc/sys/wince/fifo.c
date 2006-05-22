@@ -1,14 +1,12 @@
+#include <windows.h>
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
 
-#include <sys/wcebase.h>
-#include <sys/wcetrace.h>
-#include <sys/wceerror.h>
-#include <sys/wcefile.h>
-#include <sys/wcememory.h>
+#include "sys/wcetrace.h"
 #include <sys/mqueue.h>
 #include <sys/fifo.h>
 #include <sys/keycode.h>

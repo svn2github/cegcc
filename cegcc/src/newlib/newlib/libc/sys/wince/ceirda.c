@@ -2,9 +2,11 @@
 //
 // Time-stamp: <03/01/02 22:16:02 keuchel@netwave.de>
 
-//#include <af_irda.h>
-#include "sys/ceirda.h"
-#include "sys/wcenetwork.h"
+#include <af_irda.h>
+//#include "sys/ceirda.h"
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 #include <malloc.h>
 

@@ -31,7 +31,7 @@ __BEGIN_DECLS
  * to encode the in/out status of the parameter; for now
  * we restrict parameters to at most 128 bytes.
  */
-#define IOCPARM_MASK   (0x7ff)          /* parameters must be < 2k bytes */
+#define IOCPARM_MASK   (0x7f)          /* parameters must be < 128 bytes */
 #define	IOCGROUP(x)	   (((x) >> 8) & 0xff)
 #define IOC_VOID       (0x20000000)     /* no parameters */
 #define IOC_OUT        (0x40000000)     /* copy out parameters */

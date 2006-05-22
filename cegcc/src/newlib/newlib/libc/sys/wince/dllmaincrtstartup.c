@@ -1,15 +1,13 @@
-#include "sys/wcebase.h"
+#include <windows.h>
 
 extern void __call_exitprocs(int code, void*);
 extern void __gccmain(void);
-
-extern int DllMain( HANDLE hinstDLL, DWORD dwReason, LPVOID lpvReserved );
 
 //#define DEBUG_DLL_LOAGING
 
 #define NAME_LEN    64
 
-extern __declspec(dllimport) 
+extern 
 BOOL __handle_ce_reent_(HANDLE hinstDLL, DWORD dwReason, LPVOID lpvReserved);
 
 DWORD __libc_ThreadIndex;

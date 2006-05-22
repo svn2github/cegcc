@@ -1,5 +1,6 @@
 #ifndef _SYS_FIFO_H_
 #define _SYS_FIFO_H_
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -29,14 +30,16 @@ typedef struct _fifomsg_s {
 typedef struct _fifoent_s {
   int    fd;
   int    refcnt;
-#if defined(WIN32) || defined (UNDER_CE)
-  HANDLE hnd;
-  HANDLE mutex;
+#if defined(WIN32)
+  void* hnd;
+  void* mutex;
+#else
+# error "Needs UNDER_CE test above"
 #endif
 } _fifoent_t;
 
 typedef struct _fifotab_s {
-  HANDLE mutex;
+  void* mutex;
   _fifoent_t fifotab[MAXFIFOS];
 } _fifotab_t, *_FIFOTAB;
 

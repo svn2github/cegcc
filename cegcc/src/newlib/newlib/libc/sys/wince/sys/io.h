@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include <sys/wcetypes.h>
+#include <wtypes.h>
 #include <sys/devops.h>
 
 #define MAXFDS   (100)

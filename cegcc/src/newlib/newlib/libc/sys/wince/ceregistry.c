@@ -2,12 +2,14 @@
 //
 // Time-stamp: <15/02/02 20:50:46 keuchel@netwave.de>
 
-#include "sys/wceregistry.h"
-#include "sys/wcebase.h"
-
 #include <stdlib.h>
 
-LONG __IMPORT
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#define COUNTOF(X) (sizeof(X)/sizeof(X[0]))
+
+LONG
 XCERegCreateKeyExA(HKEY hKey,         
 				const char *subkey,  
 				DWORD dwRes,
@@ -30,7 +32,7 @@ XCERegCreateKeyExA(HKEY hKey,
 	return res;
 }
 
-LONG __IMPORT
+LONG 
 XCERegOpenKeyExA(HKEY hKey,         
 			  const char *subkey,  
 			  DWORD ulOptions,   
@@ -48,7 +50,7 @@ XCERegOpenKeyExA(HKEY hKey,
 	return res;
 }
 
-LONG __IMPORT
+LONG 
 XCERegQueryValueExA(  
 				 HKEY hKey,           
 				 const char *valname,  
@@ -113,7 +115,7 @@ XCERegQueryValueExA(
 	return 0;
 }
 
-LONG __IMPORT
+LONG 
 XCERegSetValueExA(  
 			   HKEY hKey,           
 			   const char *valname,  
@@ -149,7 +151,7 @@ XCERegSetValueExA(
 	return res;
 }
 
-LONG __IMPORT
+LONG 
 XCERegEnumValueA(
 			  HKEY hKey,              
 			  DWORD dwIndex,          
@@ -220,12 +222,10 @@ XCERegEnumValueA(
 	return res;
 }
 
-typedef char* LPCTSTR;
-
-LONG __IMPORT
+LONG 
 XCERegDeleteKeyA(
 			  HKEY  hKey,
-			  LPCTSTR  lpszSubKey 
+			  LPCSTR  lpszSubKey 
 			  )
 {
 	WCHAR *lpszSubKeyW;
@@ -239,7 +239,7 @@ XCERegDeleteKeyA(
 	return RegDeleteKeyW(hKey, lpszSubKeyW);
 }
 
-LONG __IMPORT 
+LONG  
 XCERegEnumKeyExA(
 			  HKEY  hKey,	
 			  DWORD  iSubkey,
@@ -281,10 +281,10 @@ XCERegEnumKeyExA(
 
 //////////////////////////////////////////////////////////////////////
 
-LONG __IMPORT
+LONG 
 XCERegCreateKeyA(
 			  HKEY  hKey,
-			  LPCTSTR  lpszSubKey,
+			  LPCSTR  lpszSubKey,
 			  PHKEY  phkResult
 			  )
 {
@@ -294,10 +294,10 @@ XCERegCreateKeyA(
 		&dwDisp);
 }
 
-LONG __IMPORT
+LONG 
 XCERegOpenKeyA(
 			HKEY  hKey,
-			LPCTSTR  lpszSubKey,
+			LPCSTR  lpszSubKey,
 			PHKEY  phkResult
 			)
 {
@@ -306,7 +306,7 @@ XCERegOpenKeyA(
 	return XCERegOpenKeyExA(hKey, lpszSubKey, 0, 0, phkResult);
 }
 
-LONG __IMPORT
+LONG 
 XCERegCloseKey(HKEY hKey)
 {
 	// just for tracing...
@@ -314,7 +314,7 @@ XCERegCloseKey(HKEY hKey)
 }
 
 
-LONG __IMPORT 
+LONG  
 XCERegEnumKeyA(
 			HKEY  hKey,	
 			DWORD  iSubKey,
@@ -333,7 +333,7 @@ XCERegEnumKeyA(
 	return res;
 }
 
-LONG __IMPORT
+LONG 
 XCERegDeleteValueA(
 				HKEY hKey,	
 				LPSTR lpszValue 	

@@ -3,10 +3,8 @@
 #include <string.h>
 #include <errno.h>
 
-#include <sys/wcebase.h>
-#include <sys/wcetime.h>
-#include <sys/wceregistry.h>
-#include <sys/wcetrace.h>
+#include "sys/wcetrace.h"
+
 #include <sys/findpath.h>
 
 #if 0

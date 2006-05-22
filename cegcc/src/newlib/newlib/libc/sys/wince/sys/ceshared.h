@@ -1,7 +1,7 @@
 #ifndef CESHARED_H
 #define CESHARED_H 1
 
-#include "wcebase.h"
+#include <wtypes.h>
 
 #define MAXPIPES        10
 #define MAXCONSOLES     10
@@ -47,7 +47,6 @@ struct pipe_entry {
 // child will read it.
 
 #include "shared.h"
-#include "wcefile.h"
 
 struct procstart_entry {
   BOOL showwindow;

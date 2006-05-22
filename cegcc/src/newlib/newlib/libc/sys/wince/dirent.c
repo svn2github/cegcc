@@ -1,12 +1,12 @@
+#include <windows.h>
+
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/stat.h>
 #include <string.h>
 
-#include <sys/wcebase.h>
-#include <sys/wceerror.h>
-#include <sys/wcefile.h>
-#include <sys/wcetrace.h>
+#include "sys/wcetrace.h"
+
 #include <sys/fixpath.h>
 #include <sys/dirent.h>
 

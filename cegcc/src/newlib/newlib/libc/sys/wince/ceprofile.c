@@ -1,21 +1,8 @@
 #include "sys/ceprofile.h"
-#include "sys/wcebase.h"
+
+#include <wtypes.h>
 
 XCEPROFILEENTRY __proftab[XCE_MAXPROFILE];
-
-typedef union _LARGE_INTEGER {
-	struct {
-		DWORD LowPart;
-		LONG HighPart;
-	};
-	struct {
-		DWORD LowPart;
-		LONG HighPart;
-	} u;
-	long long QuadPart;
-} LARGE_INTEGER;
-
-typedef LARGE_INTEGER *PLARGE_INTEGER;
 
 void
 XCEProfileDump()

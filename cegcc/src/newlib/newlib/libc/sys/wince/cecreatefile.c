@@ -6,7 +6,11 @@
 #include <errno.h>
 
 #include "sys/wcefile.h"
-#include "sys/wceerror.h"
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#define COUNTOF(X) (sizeof(X)/sizeof(X[0]))
 
 HANDLE
 XCECreateFileW(

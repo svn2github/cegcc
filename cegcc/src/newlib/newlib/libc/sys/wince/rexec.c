@@ -1,3 +1,6 @@
+#include <winsock2.h>
+
+
 /* rexec.c --- rexec for winsock
  *
  * Time-stamp: <22/02/01 07:23:38 keuchel@w2k>
@@ -8,31 +11,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-
-#include "sys/wceerror.h"
-#include "sys/socket.h"
-
-#include <netdb.h>
-
 #include <stdarg.h>
 
-#define WSAGetLastError GetLastError
+#define __THROW
 
 #define bcopy(from, to, len) memcpy(to, from, len)
 
+/*
+ * sdk doesn't have these, what to do?
+ */
+#define WSAEAGAIN 23
 #define SENDFLAG 0
 #define RECVFLAG 0
 
-#define IPPORT_RESERVED  1024
+#define WSAGetLastError() GetLastError()
 
-#define WSAEAGAIN 23
-
-#define INVALID_SOCKET -1
-#define SOCKET_ERROR -1
-
-//#define wserror(X)
-
-__IMPORT 
 int rexec (char **__restrict ahost, int rport,
 						   __const char *__restrict user,
 						   __const char *__restrict pass,
@@ -142,7 +135,7 @@ int rexec (char **__restrict ahost, int rport,
       wchar_t wnum[8];
 
       int s2 = rresvport (&lport), s3;
-      socklen_t len = sizeof (from);
+      size_t len = sizeof (from);
 
       if (s2 == INVALID_SOCKET)
 	goto bad;
@@ -238,7 +231,7 @@ bad:
   return (INVALID_SOCKET);
 }
 
-__IMPORT int rresvport (int *alport) __THROW
+int rresvport (int *alport) __THROW
 {
   struct sockaddr_in sin;
   int s;

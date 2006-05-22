@@ -3,12 +3,8 @@
 #include <stdio.h>
 #include <errno.h>
 
-#include <sys/wcebase.h>
-#include <sys/wceerror.h>
-#include <sys/wcetrace.h>
-#include <sys/wcefile.h>
-#include <sys/wcethread.h>
-#include <sys/wcememory.h>
+#include "sys/wcetrace.h"
+
 #include <sys/shared.h>
 #include <sys/spawn.h>
 #include <sys/io.h>

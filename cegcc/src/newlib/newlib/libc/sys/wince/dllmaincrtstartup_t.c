@@ -1,6 +1,5 @@
-#include "sys/wcebase.h"
+#include <windows.h>
 
-extern int DllMain( HANDLE hinstDLL, DWORD dwReason, LPVOID lpvReserved );
 int __DllMainCRTStartup(HANDLE hinstDLL, DWORD dwReason, LPVOID lpvReserved);
 
 //#define DEBUG_DLL_LOAGING

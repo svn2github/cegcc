@@ -4,11 +4,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <sys/wcebase.h>
-#include <sys/wcefile.h>
-#include <sys/wcetrace.h>
+#include "sys/wcetrace.h"
 
 #include "sys/ceutil.h"
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 int chroot(const char *path)
 {

@@ -3,11 +3,16 @@
 #include <sys/timeb.h>
 #include <sys/times.h>
 
-#include "sys/wcebase.h"
-#include "sys/wcetime.h"
+#include "sys/timefcns.h"
+
 #include "sys/wcetrace.h"
 
-#include "sys/timefcns.h"
+#include <windows.h>
+
+/*
+ * Should this be signed or unsigned?
+ */
+typedef LONGLONG QWORD;
 
 typedef union {
   QWORD ft_scalar;

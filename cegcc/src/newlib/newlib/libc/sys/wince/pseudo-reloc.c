@@ -15,8 +15,7 @@
 */
 
 
-//#include <windows.h>
-#include "sys/wcebase.h"
+#include <windows.h>
 
 extern char __RUNTIME_PSEUDO_RELOC_LIST__;
 extern char __RUNTIME_PSEUDO_RELOC_LIST_END__;
@@ -28,8 +27,6 @@ typedef struct
     DWORD target;
   }
 runtime_pseudo_reloc;
-
-int MessageBoxW ( HWND hWnd , LPCWSTR lpText, LPCWSTR lpCaption, UINT uType);
 
 #define DEBUG_PSEUDO_RELOC
 #define DEBUG_PSEUDO_RELOC_PRINTF

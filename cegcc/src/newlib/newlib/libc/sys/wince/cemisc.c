@@ -1,11 +1,10 @@
 #include <stdlib.h>
 
-#include <sys/wcebase.h>
-#include <sys/wcethread.h>
-#include <sys/wcefile.h>
-#include <sys/wcememory.h>
 #include <sys/wcetrace.h>
 #include <sys/sysconf.h>
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 #if 0
 /* TRACE WRAPPERS The following are trace wrappers and should be removed */

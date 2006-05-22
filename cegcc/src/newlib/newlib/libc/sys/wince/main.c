@@ -1,6 +1,5 @@
-#include "sys/wcebase.h"
-
-int WinMain(HANDLE hInstance, HANDLE hPrevInstance, WCHAR* lpCmdLine, int nShowCmd);
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 int main (int argc, char** argv)
 {

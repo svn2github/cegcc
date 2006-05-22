@@ -10,14 +10,12 @@
 #endif
 #include "sys/mqueue.h"
 
-#if defined(GNUWINCE)
-# undef WIN32
-# define WIN32
 
-#include "sys/wcebase.h"
-#include "sys/wcefile.h"
-#include "sys/wceerror.h"
-#include "sys/wcememory.h"
+#if defined(GNUWINCE)
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
 #include "sys/wcetrace.h"
 
 #define NAMELEN  (32)

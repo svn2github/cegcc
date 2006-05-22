@@ -1,7 +1,6 @@
 #ifndef _SHARED_H_
 #define _SHARED_H_
 
-#include "sys/wcebase.h"
 #include "sys/fifo.h"
 
 #define MAX_ENVIRONBLK  (2048)
@@ -12,7 +11,7 @@
 
 typedef struct _pginfo_s {
   int  pgid;
-  BOOL showwindow;
+  int showwindow;
   char cwd[126];
   char environ[MAX_ENVIRONBLK];
   int  stdinfd;
@@ -21,7 +20,7 @@ typedef struct _pginfo_s {
 } _pginfo_t, *_PGINFO;
 
 typedef struct _shmblk_s {
-  HANDLE mutex;
+  void* mutex;
   _pginfo_t pginfo;
 } _shmblk_t, *_SHMBLK;
 
@@ -31,8 +30,8 @@ extern "C" {
 
 _SHMBLK _shared_init(int pgid);
 void    _shared_dump(_SHMBLK shmblk);
-BOOL    _shared_getshowwindow();
-void    _shared_setshowwindow(_SHMBLK shmblk, BOOL show);
+int    _shared_getshowwindow();
+void    _shared_setshowwindow(_SHMBLK shmblk, int show);
 void    _shared_setenvironblk(_SHMBLK shmblk, char **env);
 void    _shared_getenvironblk(_SHMBLK shmblk, char **env);
 void    _shared_reset(_SHMBLK shmblk);

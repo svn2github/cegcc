@@ -2,44 +2,26 @@
 //
 // Time-stamp: <08/09/01 10:43:16 keuchel@netwave.de>
 
+#include <windows.h>
+
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "sys/wcetrace.h"
-#include "sys/wcebase.h"
-#include "sys/wcefile.h"
+
 #include "sys/ceshared.h"
-
-
-
-typedef struct _STARTUPINFOA {
-  DWORD   cb;
-  LPSTR   lpReserved;
-  LPSTR   lpDesktop;
-  LPSTR   lpTitle;
-  DWORD   dwX;
-  DWORD   dwY;
-  DWORD   dwXSize;
-  DWORD   dwYSize;
-  DWORD   dwXCountChars;
-  DWORD   dwYCountChars;
-  DWORD   dwFillAttribute;
-  DWORD   dwFlags;
-  WORD    wShowWindow;
-  WORD    cbReserved2;
-  LPBYTE  lpReserved2;
-  HANDLE  hStdInput;
-  HANDLE  hStdOutput;
-  HANDLE  hStdError;
-} STARTUPINFOA, *LPSTARTUPINFOA;
 
 #define INFINITE 0xffffffffL
 #define STARTF_USESHOWWINDOW 0x00000001
 #define STARTF_USESIZE       0x00000002
 #define STARTF_USESTDHANDLES 0x00000100
 #define SW_HIDE 0
+
+#define STD_INPUT_HANDLE  0
+#define STD_OUTPUT_HANDLE 1
+#define STD_ERROR_HANDLE  2
 
 // NOTE: This function cannot be used as the real SearchPath!!!
 static int

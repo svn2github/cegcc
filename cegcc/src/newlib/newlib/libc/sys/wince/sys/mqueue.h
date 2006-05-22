@@ -8,11 +8,6 @@
 #include <sys/types.h>
 #include <pthread.h>
 
-#if defined(UNDER_CE) 
-#include <sys/wcebase.h>
-#include <sys/wcethread.h>
-#endif
-
 #include <fcntl.h>
 #if !defined(LINUX)
 union sigval
@@ -70,11 +65,15 @@ struct msg_hdr
 /* one mq_info{} malloc'ed per process per mq_open() */
 struct mq_info
 {
-#if defined(WIN32) || defined(UNDER_CE)
-  HANDLE lock;
-  HANDLE wait;
-  HANDLE signal;
-  HANDLE mqi_fmap;              /* file mapping object */
+#if defined(WIN32)
+  /*
+   * try not to polute the namespace.
+   * typedef void* HANDLE;
+  */
+  void* lock;
+  void* wait;
+  void* signal;
+  void* mqi_fmap;              /* file mapping object */
 #endif
   struct mq_hdr *mqi_hdr;       /* start of mmap'ed region */
   long mqi_magic;               /* magic number if open */

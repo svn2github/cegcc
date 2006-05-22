@@ -5,10 +5,10 @@
 #include <errno.h>
 #include <setjmp.h>
 
-#include <sys/wcetypes.h>
-#include <sys/wcefile.h>
-#include <sys/wceerror.h>
-#include <sys/wcetrace.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#include "sys/wcetrace.h"
 
 int __umask;
 int __IsForkChild=0;

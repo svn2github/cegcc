@@ -1,11 +1,6 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-#include <sys/wcebase.h>
-#include <sys/wceerror.h>
-#include <sys/wcethread.h>
-#include <sys/wcetrace.h>
-
 #if defined(MALLOC_PROVIDED)
 void *
 _calloc_r(struct _reent *reent, size_t nitems, size_t size)

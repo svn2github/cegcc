@@ -5,7 +5,9 @@
 #include "sys/wcefile.h"
 #include <wchar.h>
 
-DWORD __IMPORT
+#define COUNTOF(X) (sizeof(X)/sizeof(X[0]))
+
+DWORD
 XCEGetFileAttributesW(const wchar_t *wfname)
 {
   wchar_t wpath[MAX_PATH];
@@ -17,7 +19,7 @@ XCEGetFileAttributesW(const wchar_t *wfname)
   return dwRes;
 }
 
-BOOL __IMPORT
+BOOL
 XCESetFileAttributesW(const wchar_t *wfname, DWORD dwAttr)
 {
   wchar_t wpath[MAX_PATH];
@@ -29,7 +31,7 @@ XCESetFileAttributesW(const wchar_t *wfname, DWORD dwAttr)
   return res;
 }
 
-DWORD __IMPORT
+DWORD
 XCEGetFileAttributesA(const char *fname)
 {
 	wchar_t wfname[MAX_PATH];
@@ -42,7 +44,7 @@ XCEGetFileAttributesA(const char *fname)
 	return dwRes;
 }
 
-BOOL __IMPORT
+BOOL
 XCESetFileAttributesA(const char *fname, DWORD dwAttr)
 {
 	wchar_t wfname[MAX_PATH];

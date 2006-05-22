@@ -6,9 +6,10 @@
 #include <pwd.h>
 #include <sys/types.h>
 
-#include <sys/wcebase.h>
 #include <sys/wcetrace.h>
-#include <sys/wcefile.h>
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 static char loginbuf[126];
 

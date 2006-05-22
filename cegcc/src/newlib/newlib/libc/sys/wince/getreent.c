@@ -5,11 +5,12 @@
 	where DLL_THREAD_ATTACH/DLL_THREAD_DETTACH aren't called
 */
 
-#include <reent.h>
-#include <sys/wcebase.h>
-#include <sys/wcethread.h>
-
 #include "getreent.h"
+
+#include <reent.h>
+#include <windows.h>
+
+#define TLS_OUT_OF_INDEXES ((DWORD)0xffffffff)
 
 static DWORD libc_thread_index = TLS_OUT_OF_INDEXES;
 

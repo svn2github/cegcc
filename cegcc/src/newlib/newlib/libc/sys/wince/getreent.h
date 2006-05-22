@@ -2,8 +2,6 @@
 #define CE_GETREENT_H
 
 #include <reent.h>
-#include <sys/wcebase.h>
-#include <sys/wcefile.h>
 #include <wchar.h>
 
 /* inherit from _reent, and add new members 
@@ -43,6 +41,6 @@ struct _cereent
 #endif
 
 void __freereent (void);
-BOOL __init_ce_reent(void);
+int __init_ce_reent(void);
 struct _reent *__create_reent (void);
 

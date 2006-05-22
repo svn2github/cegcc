@@ -3,8 +3,7 @@
 #include <sys/fifo.h>
 #include <sys/spawn.h>
 
-#include <sys/wcebase.h>
-#include <sys/wcetrace.h>
+#include "sys/wcetrace.h"
 
 #define MAXARGS   (32)
 

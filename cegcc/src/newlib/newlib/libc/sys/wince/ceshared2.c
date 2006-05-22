@@ -3,15 +3,22 @@
 // Time-stamp: <23/02/02 11:36:31 keuchel@netwave.de>
 
 #include "sys/ceshared.h"
-#include "sys/wcebase.h"
-#include "sys/wcememory.h"
-#include "sys/wceerror.h"
 #include "sys/wcetrace.h"
 #include "sys/wcefile.h"
 
 #include <errno.h>
 
-#define min(a, b)	(a) < (b) ? a : b
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+/* Cache manipulation constants */
+#define CACHE_SYNC_DISCARD       1
+#define CACHE_SYNC_INSTRUCTIONS  2
+#define CACHE_SYNC_WRITEBACK	   4
+
+#define STD_INPUT_HANDLE  0
+#define STD_OUTPUT_HANDLE 1
+#define STD_ERROR_HANDLE  2
 
 HANDLE XCECreateEventA(LPSECURITY_ATTRIBUTES lpEventAttributes, BOOL bManualReset, BOOL bInitialState, const char *lpName);
 

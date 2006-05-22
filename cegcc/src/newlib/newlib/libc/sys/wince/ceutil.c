@@ -1,12 +1,15 @@
-#include "sys/wcebase.h"
-#include "sys/wceregistry.h"
 #include "sys/ceutil.h"
 
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
-__IMPORT void XCEShowMessageW(const wchar_t *fmt, ...)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#define COUNTOF(X) (sizeof(X)/sizeof(X[0]))
+
+void XCEShowMessageW(const wchar_t *fmt, ...)
 {
 	va_list ap;
 	wchar_t buf[512];
@@ -26,7 +29,7 @@ __IMPORT void XCEShowMessageW(const wchar_t *fmt, ...)
 	MessageBoxW(NULL, buf, L"Message", MB_OK);
 }
 
-__IMPORT void XCEShowMessageA(const char *fmt, ...)
+void XCEShowMessageA(const char *fmt, ...)
 {
 	va_list ap;
 	char buf[512];
@@ -48,7 +51,7 @@ __IMPORT void XCEShowMessageA(const char *fmt, ...)
 	MessageBoxW(NULL, wbuf, L"Message", MB_OK);
 }
 
-__IMPORT void XCETraceA(const char* fmt, ...)
+void XCETraceA(const char* fmt, ...)
 {
 	va_list ap;
 	char buf[512];
@@ -63,12 +66,12 @@ __IMPORT void XCETraceA(const char* fmt, ...)
 	OutputDebugStringW(wbuf);
 }
 
-__IMPORT void XCETrace(const char* fmt, ...)
+void XCETrace(const char* fmt, ...)
 {
 	XCETraceA(fmt);
 }
 
-__IMPORT void XCETraceW(const wchar_t* fmt, ...)
+void XCETraceW(const wchar_t* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);

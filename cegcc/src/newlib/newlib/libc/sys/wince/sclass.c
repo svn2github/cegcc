@@ -4,7 +4,6 @@
  *---------------------------------------------------------------------------*/
 #include <stdlib.h>
 
-#include <sys/wcebase.h>
 #include <sys/sclass.h>
 
 SCLASS

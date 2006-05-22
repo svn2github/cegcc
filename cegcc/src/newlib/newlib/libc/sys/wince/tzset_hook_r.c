@@ -9,11 +9,10 @@
 
 //#include "local.h"
 
-#include "sys/wcebase.h"
-#include "sys/wcetime.h"
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 unsigned long _dstbias;
-
 
 _VOID
 _DEFUN (_tzset_hook_r, (reent_ptr),

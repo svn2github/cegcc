@@ -59,9 +59,9 @@ Supporting OS subroutines required: <<_exit>>, <<_execve>>, <<_fork_r>>,
 #include <unistd.h>
 #include <reent.h>
 
-#include "sys/wceprocess.h"
+#include <wtypes.h>
 
-__IMPORT int XCEExecuteProcessA(const char *commandline, BOOL bWait, LPDWORD lpdwProcId);
+int XCEExecuteProcessA(const char *commandline, BOOL bWait, LPDWORD lpdwProcId);
 
 int _system_r (struct _reent *ptr, const char *s)
 {

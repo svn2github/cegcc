@@ -1,8 +1,9 @@
 
 // based on celib's code from keuchel@netwave.de
 
-#include "sys/wceregistry.h"
 #include "sys/shared.h"
+
+#include <windows.h>
 
 #define ERROR_NO_MORE_ITEMS              259L
 

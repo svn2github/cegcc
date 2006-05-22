@@ -1,8 +1,6 @@
 #include <unistd.h>
 #include <errno.h>
-
-#include <sys/wcebase.h>
-#include <sys/wcefile.h>
+#include <windef.h>
 
 long pathconf(const char *path, int name)
 {

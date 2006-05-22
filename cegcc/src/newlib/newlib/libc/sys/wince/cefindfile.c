@@ -4,29 +4,16 @@
 
 #include <wchar.h>
 
-#include "sys/wcebase.h"
-#include "sys/wcefile.h"
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
-#include "sys/sysconf.h"
+#define COUNTOF(X) (sizeof(X)/sizeof((X)[0]))
 
-typedef struct _WIN32_FIND_DATAA {
-	DWORD dwFileAttributes;
-	FILETIME ftCreationTime;
-	FILETIME ftLastAccessTime;
-	FILETIME ftLastWriteTime;
-	DWORD nFileSizeHigh;
-	DWORD nFileSizeLow;
-	DWORD dwReserved0;
-	DWORD dwReserved1;
-	CHAR  cFileName[ MAX_PATH ];
-	CHAR  cAlternateFileName[ 14 ];
-} WIN32_FIND_DATAA, *PWIN32_FIND_DATAA, *LPWIN32_FIND_DATAA;
-
-HANDLE __IMPORT
+HANDLE
 XCEFindFirstFileW(const wchar_t *oldpath, LPWIN32_FIND_DATAW lpfd);
 
 
-HANDLE __IMPORT
+HANDLE 
 XCEFindFirstFileA(const char *lpName, LPWIN32_FIND_DATAA lpfd)
 {
   HANDLE hFind;
@@ -62,7 +49,7 @@ XCEFindFirstFileA(const char *lpName, LPWIN32_FIND_DATAA lpfd)
   return hFind;
 }
 
-BOOL __IMPORT
+BOOL 
 XCEFindNextFileA(HANDLE hFind, LPWIN32_FIND_DATAA lpfd)
 {
   WIN32_FIND_DATAW fdw;
@@ -103,7 +90,7 @@ XCEFindNextFileA(HANDLE hFind, LPWIN32_FIND_DATAA lpfd)
   return res;
 }
 
-HANDLE __IMPORT
+HANDLE 
 XCEFindFirstFileW(const wchar_t *oldpath, LPWIN32_FIND_DATAW lpfd)
 {
   wchar_t newpath[MAX_PATH];

@@ -1,8 +1,11 @@
+#include <windows.h>
+#include <winnls.h>
+
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "sys/wcebase.h"
+#define COUNTOF(X) (sizeof(X)/sizeof(X[0]))
 
 void
 _DEFUN (__assert, (file, line, failedexpr),

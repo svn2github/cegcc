@@ -7,7 +7,9 @@
 
 #include "sys/wcefile.h"
 
-HANDLE __IMPORT
+#define COUNTOF(X) (sizeof(X)/sizeof((X)[0]))
+
+HANDLE
 XCECreateFileForMappingW(LPCWSTR wfname,
 					  DWORD dwDesiredAccess,
 					  DWORD dwShareMode,
@@ -17,7 +19,7 @@ XCECreateFileForMappingW(LPCWSTR wfname,
 					  HANDLE hTemplateFile
 					  );
 
-HANDLE __IMPORT
+HANDLE
 XCECreateFileForMappingA(
 	       LPCSTR fname,
 	       DWORD dwDesiredAccess,
@@ -40,7 +42,7 @@ XCECreateFileForMappingA(
   return hFile;
 }
 
-HANDLE __IMPORT
+HANDLE
 XCECreateFileForMappingW(
     LPCWSTR wfname,
     DWORD dwDesiredAccess,

@@ -2,9 +2,8 @@
 //
 // Time-stamp: <17/04/01 21:44:57 keuchel@w2k>
 
-#include "sys/wcebase.h"
-#include "sys/sysconf.h"
-#include <wchar.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 char *XCEFixPathA(const char *pathin, char *pathout);
 wchar_t *XCEFixPathW(const wchar_t *wpathin, wchar_t *wpathout);

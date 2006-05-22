@@ -4,23 +4,14 @@
 #include <stdarg.h>
 #include <alloca.h>
 
-#include <sys/wcebase.h>
-#include <sys/wcetrace.h>
-#include <sys/wcefile.h>
+#include "sys/wcetrace.h"
+#include "sys/wcefile.h"
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 #ifndef CE_NOTRACE
 
-extern int MultiByteToWideChar(UINT CodePage,         // code page
-										DWORD dwFlags,         // character-type options
-										LPCSTR lpMultiByteStr, // string to map
-										int cbMultiByte,       // number of bytes in string
-										LPWSTR lpWideCharStr,  // wide-character buffer
-										int cchWideChar        // size of buffer
-										);
-
-extern void OutputDebugStringW(WCHAR* lpOutputString);
-
-#define CP_ACP  0 // ANSI code page
 
 static HANDLE __wcetracehnd = NULL;
 static int   __wcetrace = 0;
@@ -166,12 +157,6 @@ WCETRACE(int level, const char *fmt, ...)
 void __WCETraceError(int trace, DWORD error, const char* func)
 {
   wchar_t* wbuf;
-
-#define FORMAT_MESSAGE_ALLOCATE_BUFFER 0x00000100
-#define FORMAT_MESSAGE_FROM_SYSTEM     0x00001000
-#define MAKELANGID(p, s) ((ushort)(((((ushort)(s)) << 10)|(ushort)(p))))
-#define LANG_NEUTRAL 0
-#define SUBLANG_DEFAULT 1
 
   FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
     NULL,

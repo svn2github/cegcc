@@ -9,6 +9,11 @@
 #include "sys/wcetrace.h"
 #include <sys/param.h>
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#define COUNTOF(X) (sizeof(X)/sizeof(X[0]))
+
 // per process as on WinNT
 // ### TODO, we need a mutex here
 

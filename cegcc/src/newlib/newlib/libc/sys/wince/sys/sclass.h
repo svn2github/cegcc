@@ -1,6 +1,5 @@
 #ifndef _SCLASS_H_
 #define _SCLASS_H_
-#include <sys/wcebase.h>
 
 typedef struct sclass_s *SCLASS;    /* Class */
 typedef struct item_s *ITEM;        /* ITEM */

@@ -13,17 +13,22 @@
 # define DUMP_ERROR() do; while (0)
 #endif
 
-#include "sys/wcethread.h"
 #include "sys/wcetrace.h"
 #include "getreent.h"
 
-#include <malloc.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#include <stdint.h>
 
 static DWORD _threadstart(void *);
 static DWORD _threadstartex(void * ptd);
 
 typedef void( *start_address_t )( void * );
 typedef unsigned( *start_address_ex_t )( void * );
+
+void _endthreadex (unsigned retcode);
+void _endthread (void);
 
 typedef struct thread_starter_args
 {

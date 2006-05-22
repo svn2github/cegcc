@@ -22,16 +22,9 @@
  * 
  */
 
-#ifndef GNUWINCE
-# define WIN32_LEAN_AND_MEAN
-# include <windows.h>
-# undef WIN32_LEAN_AND_MEAN
-#else
-#include <sys/wcebase.h>
-#include <sys/wcethread.h>
-#include <sys/wceerror.h>
-# define DEBUG
-#endif
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#undef WIN32_LEAN_AND_MEAN
 
 typedef int (*__mingwthr_key_dtor_t) (DWORD key, void (*dtor) (void *));
 typedef int (*__mingwthr_remove_key_dtor_t)(DWORD key);

@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <sys/llst.h>
 
+#include <wtypes.h>
+
 LLST
 _llst_create(int size)
 /*---------------------------------------------------------------------------*

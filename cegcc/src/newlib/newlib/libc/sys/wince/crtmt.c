@@ -12,7 +12,8 @@
  *
  */
 
-#include "sys/wcebase.h"
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 /*
  * defined in _crt_mt.c

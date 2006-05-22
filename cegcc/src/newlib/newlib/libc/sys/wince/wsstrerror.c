@@ -2,15 +2,14 @@
 //
 // Time-stamp: <03/01/02 22:22:54 keuchel@netwave.de>
 
-#include "sys/wcebase.h"
-#include "sys/wceerror.h"
+#include <winsock2.h>
 
 #include <stdlib.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 
-#define WSAGetLastError GetLastError
+#define WSAGetLastError() GetLastError()
 
 #define _E(x,y) {x, y}
 

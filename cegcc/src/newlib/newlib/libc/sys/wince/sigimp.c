@@ -2,8 +2,10 @@
 #include <signal.h>
 #include <errno.h>
 
-#include <sys/wcebase.h>
-#include <sys/wcetrace.h>
+#include "sys/wcetrace.h"
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 #if 0
 SIGHANDLER _sighandlers[NSIG];

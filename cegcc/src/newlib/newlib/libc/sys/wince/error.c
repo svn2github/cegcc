@@ -1,8 +1,7 @@
+#include <windows.h>
+
 #include <stdlib.h>
 #include <errno.h>
-
-#include "sys/wcefile.h"
-#include "sys/wceerror.h"
 
 int
 _winerr2errno(DWORD werror)

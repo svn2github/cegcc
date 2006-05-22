@@ -2,15 +2,15 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "sys/wcebase.h"
-#include "sys/wceerror.h"
-#include "sys/wcefile.h"
-#include "sys/wcememory.h"
 #include "sys/wcetrace.h"
+
 #include "sys/shared.h"
 #include "sys/mqueue.h"
 #include "sys/spawn.h"
 #include "sys/fifo.h"
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 #define SYNC CacheSync(CACHE_SYNC_DISCARD|CACHE_SYNC_INSTRUCTIONS)
 
