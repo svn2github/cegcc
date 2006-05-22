@@ -490,6 +490,16 @@ _DEFUN(_VFPRINTF_R, (data, fp, fmt0, ap),
 	iovp = iov; \
 }
 
+    /* When sizeof (wint_t) < sizeof (int), we need to pass int type to va_arg, else, we 
+       may get a runtime abort.
+       gcc warns with:
+        warning: 'wint_t' is promoted to 'int' when passed through '...'
+        warning: (so you should pass 'int' not 'wint_t' to 'va_arg')
+        note: if this code is reached, the program will abort
+    */
+#define SAFE_VA_ARG(ap, type) \
+  ( sizeof(type) < sizeof(int) ? (type)va_arg (ap, int) : va_arg (ap, type) )
+
 	/* Macros to support positional arguments */
 #ifndef _NO_POS_ARGS
 #define GET_ARG(n, ap, type) \
@@ -500,11 +510,11 @@ _DEFUN(_VFPRINTF_R, (data, fp, fmt0, ap),
       : arg_index++ < numargs \
          ? args[n].val_##type \
          : numargs < MAX_POS_ARGS \
-           ? args[numargs++].val_##type = va_arg (ap, type) \
-           : va_arg (ap, type) \
+           ? args[numargs++].val_##type = SAFE_VA_ARG (ap, type) \
+           : SAFE_VA_ARG (ap, type) \
   )
 #else
-#define GET_ARG(n, ap, type) (va_arg (ap, type))
+#define GET_ARG(n, ap, type) (SAFE_VA_ARG (ap, type))
 #endif
     
 	/*
@@ -1672,7 +1682,7 @@ _DEFUN(get_arg, (data, n, fmt, ap, numargs_p, args, arg_type, last_fmt),
 			args[numargs++].val_quad_t = va_arg (*ap, quad_t);
 			break;
 		      case WIDE_CHAR:
-			args[numargs++].val_wint_t = va_arg (*ap, wint_t);
+			args[numargs++].val_wint_t = SAFE_VA_ARG (*ap, wint_t);
 			break;
 		      case CHAR:
 		      case SHORT_INT:
@@ -1757,7 +1767,7 @@ _DEFUN(get_arg, (data, n, fmt, ap, numargs_p, args, arg_type, last_fmt),
 	  args[numargs++].val__LONG_DOUBLE = va_arg (*ap, _LONG_DOUBLE);
 	  break;
 	case WIDE_CHAR:
-	  args[numargs++].val_wint_t = va_arg (*ap, wint_t);
+	  args[numargs++].val_wint_t = SAFE_VA_ARG (*ap, wint_t);
 	  break;
 	case INT:
 	case SHORT_INT:
