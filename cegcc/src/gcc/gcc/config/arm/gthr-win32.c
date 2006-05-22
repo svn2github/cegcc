@@ -37,15 +37,7 @@ Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
 #include <_mingw.h>
 #endif
 
-#ifdef UNDER_CE
-#include <sys/wcebase.h>
-#include <sys/wcethread.h>
-#define CreateSemaphore CreateSemaphoreW
-#define NULL 0
-
-#else
 #include <windows.h>
-#endif
 
 #ifndef __GTHREAD_HIDE_WIN32API
 # define __GTHREAD_HIDE_WIN32API 1
