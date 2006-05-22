@@ -19,12 +19,13 @@ function read_atom_xml($filename) {
 
 $atom_filename = 'atom.xml';
 
-echo "<a name=\"blogs\"></a><h2>News;</h2>\n";
+echo "<h2>News</h2>";
 
 /**********************************************************************
   CONSTRUCT A FEED OBJECT AND ENTRY OBJECTS FOR ALL AVAILABLE ENTRIES
 **********************************************************************/
-// Collect entries from the first feed
+
+// Collect entries from the cached feed
 $rfeed = read_atom_xml($atom_filename);
 if ($rfeed === false)
 {
@@ -36,9 +37,6 @@ $feed = new AtomFeed(false, false, $rfeed);
 
 // Create objects from all available entries
 $entries = $feed->get_entries();
-
-// Get the first available entry object
-$entry = $entries[0];
 
 $maxdisplay = 2;
 echo '<h2>Last ' . $maxdisplay . ' Entries</h2>';
