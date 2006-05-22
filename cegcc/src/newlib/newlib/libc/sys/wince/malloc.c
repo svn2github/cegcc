@@ -1,12 +1,6 @@
-//#define USE_DL_PREFIX
-
 #ifdef GNUWINCE
-#undef WIN32
 #undef USE_MALLOC_LOCK
-#undef ARM
-#define WIN32
 #define USE_MALLOC_LOCK
-#define ARM
 #include <sys/wcetrace.h>
 #endif
 
@@ -245,15 +239,8 @@
 
 #ifdef WIN32
 
-#ifdef GNUWINCE
-#include <sys/wcebase.h>
-#include <sys/wcethread.h>
-#include <sys/wcememory.h>
-#include <sys/wceerror.h>
-#else
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#endif
 
 /* Win32 doesn't supply or need the following headers */
 #define LACKS_UNISTD_H
@@ -286,7 +273,7 @@ static int slrelease(int *sl);
 
 static long getpagesize(void);
 static long getregionsize(void);
-static void *sbrk(int size);
+static void *sbrk(ptrdiff_t size);
 static void *mmap(void *ptr, long size, long prot, long type, long handle, long arg);
 static long munmap(void *ptr, long size);
 
@@ -2913,8 +2900,6 @@ static Void_t* sYSMALLOc(nb, av) INTERNAL_SIZE_T nb; mstate av;
 
   size_t          pagemask  = av->pagesize - 1;
 
-  Void_t *rval;
-
   /*
     If there is space available in fastbins, consolidate and retry
     malloc from scratch rather than getting memory from system.  This
@@ -2993,8 +2978,7 @@ static Void_t* sYSMALLOc(nb, av) INTERNAL_SIZE_T nb; mstate av;
 
         check_chunk(p);
         
-        rval = chunk2mem(p);
-        return rval;
+  		return chunk2mem(p);
       }
     }
   }
@@ -3412,8 +3396,6 @@ Void_t* mALLOc(size_t bytes)
   mchunkptr       fwd;              /* misc temp for linking */
   mchunkptr       bck;              /* misc temp for linking */
 
-  Void_t *rval;
-
   /*
     Convert request size to internal form by adding SIZE_SZ bytes
     overhead plus possibly more to obtain necessary alignment and/or
@@ -3443,8 +3425,7 @@ Void_t* mALLOc(size_t bytes)
     if ( (victim = *fb) != 0) {
       *fb = victim->fd;
       check_remalloced_chunk(victim, nb);
-      rval = chunk2mem(victim);
-      return(rval);
+	  return chunk2mem(victim);
     }
   }
 
@@ -3467,8 +3448,7 @@ Void_t* mALLOc(size_t bytes)
       bck->fd = bin;
       
       check_malloced_chunk(victim, nb);
-      rval = chunk2mem(victim);
-      return(rval);
+	  return chunk2mem(victim);
     }
   }
 
@@ -3526,8 +3506,7 @@ Void_t* mALLOc(size_t bytes)
       set_foot(remainder, remainder_size);
       
       check_malloced_chunk(victim, nb);
-      rval =  chunk2mem(victim);
-      return(rval);
+      return chunk2mem(victim);
     }
     
     /* remove from unsorted list */
@@ -3539,8 +3518,7 @@ Void_t* mALLOc(size_t bytes)
     if (size == nb) {
       set_inuse_bit_at_offset(victim, size);
       check_malloced_chunk(victim, nb);
-      rval = chunk2mem(victim);
-      return(rval);
+	  return chunk2mem(victim);
     }
     
     /* place chunk in bin */
@@ -3603,8 +3581,7 @@ Void_t* mALLOc(size_t bytes)
         if (remainder_size < MINSIZE)  {
           set_inuse_bit_at_offset(victim, size);
           check_malloced_chunk(victim, nb);
-          rval = chunk2mem(victim); 
-          return(rval);
+		  return chunk2mem(victim);
         }
         /* Split */
         else {
@@ -3615,8 +3592,7 @@ Void_t* mALLOc(size_t bytes)
           set_head(remainder, remainder_size | PREV_INUSE);
           set_foot(remainder, remainder_size);
           check_malloced_chunk(victim, nb);
-          rval = chunk2mem(victim);
-          return(rval);
+		  return chunk2mem(victim);
         } 
       }
     }    
@@ -3684,8 +3660,7 @@ Void_t* mALLOc(size_t bytes)
       if (remainder_size < MINSIZE) {
         set_inuse_bit_at_offset(victim, size);
         check_malloced_chunk(victim, nb);
-        rval = chunk2mem(victim);
-        return(rval);
+		return chunk2mem(victim);
       }
       
       /* Split */
@@ -3702,8 +3677,7 @@ Void_t* mALLOc(size_t bytes)
         set_head(remainder, remainder_size | PREV_INUSE);
         set_foot(remainder, remainder_size);
         check_malloced_chunk(victim, nb);
-        rval = chunk2mem(victim);
-        return(rval);
+		return chunk2mem(victim);
       }
     }
   }
@@ -4995,7 +4969,7 @@ static int slwait (int *sl) {
 
 /* Release spin lock */
 static int slrelease (int *sl) {
-    InterlockedExchange ((LPLONG)sl, 0);
+    InterlockedExchange (sl, 0);
     return 0;
 }
 
