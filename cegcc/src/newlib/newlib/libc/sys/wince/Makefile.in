@@ -92,7 +92,7 @@ celib_SOURCES = cecopyfile.c cefileattr.c cefindfile.c cefixpath.c ceirda.c ceut
 
 mingw_SOURCES = _crt_mt.c mthr_thunk.c mthr_ptrs.c pseudo-reloc.c
 
-lib_a_SOURCES = __eh_continue.S abort.c alloc.c assert.c ceprocess.c cs.c dirent.c dllmain.c 				dllmaincrtstartup.c dllmaincrtstartup_t.c env.c error.c exitabort.c fifo.c findpath.c fixpath.c fnmatch.c 				getopt.c getopt1.c getreent.c glob.c group.c ipfcns.c io.c issetugid-stub.c llst.c malloc.c 				mqueue.c pathconf.c popen.c sclass.c shared.c sig.c sigimp.c spawn.c 				startup.c startup_thunk.c stat.c system.c termios.c timefcns.c trace.c tzset_hook_r.c 				uid.c unistd.c utime.c main.c 				$(net_SOURCES) 				$(unix_SOURCES) 				$(celib_SOURCES) 				$(mingw_SOURCES)
+lib_a_SOURCES = __eh_continue.S abort.c alloc.c assert.c ceprocess.c cs.c dirent.c dllmain.c 				dllmaincrtstartup.c dllmaincrtstartup_t.c env.c error.c fifo.c findpath.c fixpath.c fnmatch.c 				getopt.c getopt1.c getreent.c glob.c group.c ipfcns.c io.c issetugid-stub.c llst.c malloc.c 				mqueue.c pathconf.c popen.c sclass.c shared.c sig.c sigimp.c spawn.c 				startup.c startup_thunk.c stat.c system.c termios.c timefcns.c trace.c tzset_hook_r.c 				uid.c unistd.c utime.c main.c 				$(net_SOURCES) 				$(unix_SOURCES) 				$(celib_SOURCES) 				$(mingw_SOURCES)
 
 
 ACLOCAL_AMFLAGS = -I ../../..
@@ -109,14 +109,14 @@ LIBS = @LIBS@
 lib_a_LIBADD = 
 lib_a_OBJECTS =  __eh_continue.o abort.o alloc.o assert.o ceprocess.o \
 cs.o dirent.o dllmain.o dllmaincrtstartup.o dllmaincrtstartup_t.o env.o \
-error.o exitabort.o fifo.o findpath.o fixpath.o fnmatch.o getopt.o \
-getopt1.o getreent.o glob.o group.o ipfcns.o io.o issetugid-stub.o \
-llst.o malloc.o mqueue.o pathconf.o popen.o sclass.o shared.o sig.o \
-sigimp.o spawn.o startup.o startup_thunk.o stat.o system.o termios.o \
-timefcns.o trace.o tzset_hook_r.o uid.o unistd.o utime.o main.o \
-ascii2addr.o htons.o htonl.o inet_aton.o inet_lnaof.o inet_mkadr.o \
-inet_net.o inet_netof.o inet_ntoa.o msnet.o wsdb.o rexec.o wsstrerror.o \
-getcwd.o getlogin.o sleep.o usleep.o vfork.o cecopyfile.o cefileattr.o \
+error.o fifo.o findpath.o fixpath.o fnmatch.o getopt.o getopt1.o \
+getreent.o glob.o group.o ipfcns.o io.o issetugid-stub.o llst.o \
+malloc.o mqueue.o pathconf.o popen.o sclass.o shared.o sig.o sigimp.o \
+spawn.o startup.o startup_thunk.o stat.o system.o termios.o timefcns.o \
+trace.o tzset_hook_r.o uid.o unistd.o utime.o main.o ascii2addr.o \
+htons.o htonl.o inet_aton.o inet_lnaof.o inet_mkadr.o inet_net.o \
+inet_netof.o inet_ntoa.o msnet.o wsdb.o rexec.o wsstrerror.o getcwd.o \
+getlogin.o sleep.o usleep.o vfork.o cecopyfile.o cefileattr.o \
 cefindfile.o cefixpath.o ceirda.o ceutil.o cethread.o cemakeunixpath.o \
 cemovefile.o cecreatefile.o cecreatefilemap.o ceregistry.o \
 cecurrentdir.o ceprofile.o ceshared2.o ceremovedir.o cemisc.o _crt_mt.o \

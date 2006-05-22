@@ -16,7 +16,7 @@ celib_SOURCES = cecopyfile.c cefileattr.c cefindfile.c cefixpath.c ceirda.c ceut
 mingw_SOURCES = _crt_mt.c mthr_thunk.c mthr_ptrs.c pseudo-reloc.c
 
 lib_a_SOURCES = __eh_continue.S abort.c alloc.c assert.c ceprocess.c cs.c dirent.c dllmain.c \
-				dllmaincrtstartup.c dllmaincrtstartup_t.c env.c error.c exitabort.c fifo.c findpath.c fixpath.c fnmatch.c \
+				dllmaincrtstartup.c dllmaincrtstartup_t.c env.c error.c fifo.c findpath.c fixpath.c fnmatch.c \
 				getopt.c getopt1.c getreent.c glob.c group.c ipfcns.c io.c issetugid-stub.c llst.c malloc.c \
 				mqueue.c pathconf.c popen.c sclass.c shared.c sig.c sigimp.c spawn.c \
 				startup.c startup_thunk.c stat.c system.c termios.c timefcns.c trace.c tzset_hook_r.c \
