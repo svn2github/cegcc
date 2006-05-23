@@ -81,9 +81,7 @@ Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
 #ifndef __OBJC__
 #define __OBJC__
 #endif
-#ifndef UNDER_CE
 #include <windows.h>
-#endif
 /* Now undef the windows BOOL.  */
 #undef BOOL
 
@@ -531,9 +529,7 @@ __gthread_recursive_mutex_unlock (__gthread_recursive_mutex_t *mutex)
 
 #else /* ! __GTHREAD_HIDE_WIN32API */
 
-#ifndef UNDER_CE
 #include <windows.h>
-#endif
 #include <errno.h>
 
 static inline int
