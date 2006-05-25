@@ -460,6 +460,7 @@ case "${target}" in
     noconfigdirs="$noconfigdirs target-newlib"
     case "${host}" in
       *-*-cygwin*) ;; # keep gdb and readline
+      *-*-linux*) ;; # keep gdb and readline
       *) noconfigdirs="$noconfigdirs gdb readline"
 	 ;;
     esac
