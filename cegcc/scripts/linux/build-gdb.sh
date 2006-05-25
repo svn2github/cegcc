@@ -18,6 +18,8 @@ fi
 mkdir -p $BUILD_DIR/gdb
 cd $BUILD_DIR/gdb
 #
-$TOP_SRCDIR/src/gdb/configure --prefix=$PREFIX || exit 1
+$TOP_SRCDIR/src/gdb/configure \
+	--prefix=$PREFIX \
+	--target=$TARGET_ARCH || exit 1
 make || exit 1
 exit 0
