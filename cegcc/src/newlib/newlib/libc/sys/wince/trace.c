@@ -12,10 +12,9 @@
 
 #ifndef CE_NOTRACE
 
-
 static HANDLE __wcetracehnd = NULL;
-static int   __wcetrace = 0;
-static int   __wcetrace_debugger = -1;
+static int __wcetrace = 0;
+static int __wcetrace_debugger = WCE_ALL;
 
 void
 WCETRACESET(int trace)
@@ -41,46 +40,72 @@ WCETRACE_DEBUGGER_GET()
   return(__wcetrace_debugger);
 }
 
+typedef struct 
+{
+  const char* str;
+  int flag;
+} trace_entry;
+
+static const trace_entry trace_entries[] = 
+{
+  { "all", WCE_ALL }, 
+
+  { "io", WCE_IO }, 
+  { "network", WCE_NETWORK }, 
+  { "signals", WCE_SIGNALS }, 
+  { "fifos", WCE_FIFOS }, 
+  { "time", WCE_TIME }, 
+  { "synch", WCE_SYNCH }, 
+  { "malloc", WCE_MALLOC }, 
+  { "vm", WCE_VM }, 
+  { "app", WCE_APP }, 
+  
+  { NULL, 0 }
+};
+
 static void set_from_env(const char* env, int* what)
 {
-  const char *trace = getenv(env);
   char  buf[256];
-
+  const char *trace = getenv(env);
   if (!trace)
+  {
+    NKDbgPrintfW(L"%S not found in registry\n", env);
     return;
+  }
+  else
+  {
+    NKDbgPrintfW(L"parsing: %S:%S\n", env, trace);
+  }
 
   *what = 0;
   strcpy(buf, trace);
-  char* l;
-  for(l = buf; *l; l++)
-    *l = tolower(*l);
 
-  if (!strcmp(buf, "all")) {
-    *what = -1;
-    return;
-  }
+  const trace_entry* entry;
+  const char *p;
 
-  char *p;
   for (p = strtok(buf, ":"); p; p = strtok(NULL, ":")) {
-    if (!strcmp(p, "io"))
-      *what |= WCE_IO;
-    else if (!strcmp(p, "network"))
-      *what |= WCE_NETWORK;
-    else if (!strcmp(p, "signals"))
-      *what |= WCE_SIGNALS;
-    else if (!strcmp(p, "fifos"))
-      *what |= WCE_FIFOS;
-    else if (!strcmp(p, "time"))
-      *what |= WCE_TIME;
-    else if (!strcmp(p, "synch"))
-      *what |= WCE_SYNCH;
-    else if (!strcmp(p, "malloc"))
-      *what |= WCE_MALLOC;
-    else if (!strcmp(p, "vm"))
-      *what |= WCE_VM;
-    else if (!strcmp(p, "app"))
-      *what |= WCE_APP;
+    NKDbgPrintfW(L"option token %S\n", p);
+    int neg = 0;
+    if (p[0] == '-' && p[1] != '\0') {
+      NKDbgPrintfW(L"neg option\n");
+      p++;
+      neg = 1;
+    }
+
+    NKDbgPrintfW(L"check valid\n");
+
+    for (entry = trace_entries; entry->str; entry++) {
+      if (!strcmp(p, entry->str)) {
+        NKDbgPrintfW(L"valid option.\n");
+        if (neg)
+          *what &= ~entry->flag;
+        else
+          *what |= entry->flag;
+        break;
+      }
+    }
   }
+  NKDbgPrintfW(L"no more tokens\n");
 }
 
 void

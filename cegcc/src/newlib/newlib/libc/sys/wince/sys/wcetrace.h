@@ -3,8 +3,7 @@
 
 #include <sys/config.h>
 
-/* Comment the following line to disable function tracing */
-//#define CE_NOTRACE
+/* Define CE_NOTRACE to disable function tracing */
 
 #define WCE_IO        0x0008
 #define WCE_NETWORK   0x0010
@@ -15,8 +14,18 @@
 #define WCE_MALLOC    0x0200
 #define WCE_VM        0x0400
 
-/* for app to use, cegcc will never use it */
+/* user application reserved */
 #define WCE_APP       0x8000
+
+#define WCE_ALL \
+    (WCE_IO | \
+     WCE_NETWORK | \
+     WCE_SIGNALS | \
+     WCE_FIFOS | \
+     WCE_TIME | \
+     WCE_SYNCH | \
+     WCE_MALLOC | \
+     WCE_VM)
 
 #ifdef __cplusplus
 extern "C" {
