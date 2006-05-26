@@ -43,7 +43,7 @@ struct exception_map_t __exception_map[] =
 {
   { STATUS_ACCESS_VIOLATION,         SIGSEGV,  "Access Violation" },
   { STATUS_ILLEGAL_INSTRUCTION,      SIGILL, "Illegal Instruction"},
-  { STATUS_PRIVILEGED_INSTRUCTION,   SIGILL, "Priviledged Instruction" },
+  { STATUS_PRIVILEGED_INSTRUCTION,   SIGILL, "Privileged Instruction" },
   /*      { (unsigned long)STATUS_NONCONTINUABLE_EXCEPTION, NOSIG,   SIG_DIE }, */
   /*      { (unsigned long)STATUS_INVALID_DISPOSITION,      NOSIG,   SIG_DIE }, */
   { STATUS_INTEGER_DIVIDE_BY_ZERO,   SIGFPE, "Integer divide by zero" },
@@ -95,13 +95,13 @@ void call_raise_c(int sig)
 
 // called from startup-stub.c
 
-EXCEPTION_DISPOSITION __IMPORT
+EXCEPTION_DISPOSITION
 _eh_handler_(struct _EXCEPTION_RECORD *ExceptionRecord,
 	    void *EstablisherFrame, 
 	    struct _CONTEXT *ContextRecord,
 	    struct _DISPATCHER_CONTEXT *DispatcherContext)
 {
-  // ### What is this needed?
+  // ### What is this needed for?
   static int NestedException=0;
   if(NestedException)
   {
@@ -136,25 +136,25 @@ _eh_handler_(struct _EXCEPTION_RECORD *ExceptionRecord,
 
     Cmd=*(DWORD*)(ExceptionRecord->ExceptionAddress);  // this may cause other exception
 
-    if((Cmd&0xFFF00000)==0xe5900000)
+    if((Cmd&0xfff00000)==0xe5900000)
     {
       int Src, Dst, Off;
       DWORD *Regs=(DWORD*)&ContextRecord->R0;
-      Src=(Cmd>>16)&0xF;
-      Dst=(Cmd>>12)&0xF;
-      Off=Cmd&0xFFF;
+      Src=(Cmd>>16)&0xf;
+      Dst=(Cmd>>12)&0xf;
+      Off=Cmd&0xfff;
       DataAddr=Regs[Dst]+Off;
       fprintf(stderr, "Warning: Emulating unaligned LDR R%d,[R%d+%d] (DataAddr:%d) (Cmd:%x)\n",
                 Src, Dst, Off, DataAddr, Cmd);
       memcpy(Regs+Dst, (char*)DataAddr, 4);
     } 
-    else if((Cmd&0xFFF00000)==0xe5800000)
+    else if((Cmd&0xfff00000)==0xe5800000)
     {
       int Src, Dst, Off;
       DWORD *Regs=(DWORD*)&ContextRecord->R0;
-      Dst=(Cmd>>16)&0xF;
-      Src=(Cmd>>12)&0xF;
-      Off=Cmd&0xFFF;
+      Dst=(Cmd>>16)&0xf;
+      Src=(Cmd>>12)&0xf;
+      Off=Cmd&0xfff;
       DataAddr=Regs[Dst]+Off;
       fprintf(stderr, "Warning: Emulating unaligned STR R%d,[R%d+%d] (DataAddr:%d) (Cmd:%x)\n",
                 Src, Dst, Off, DataAddr, Cmd);
@@ -479,7 +479,7 @@ static void inherit_parent(void)
   tcsetattr(0, 0, &tbuf);
 }
 
-extern void __IMPORT __s_reinit(struct _reent *s);
+extern void __s_reinit(struct _reent *s);
 
 static jmp_buf exitjmp;
 static int exitcode;
@@ -509,9 +509,9 @@ _startup_(fnmain *_main)
   exitcode = 1;
   if(setjmp(exitjmp) == 0)
   {
-	WCETRACE(WCE_IO, "_startup_: calling _main");
-	exitcode=_main(__argc, __argv);
-	WCETRACE(WCE_IO, "_startup: calling registered atexit() functions");
+    WCETRACE(WCE_IO, "_startup_: calling _main");
+    exitcode=_main(__argc, __argv);
+    WCETRACE(WCE_IO, "_startup: calling registered atexit() functions");
     exit(exitcode); // call registered atexit() functions
   }
 
