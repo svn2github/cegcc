@@ -28,8 +28,8 @@ typedef struct
   }
 runtime_pseudo_reloc;
 
-#define DEBUG_PSEUDO_RELOC
-#define DEBUG_PSEUDO_RELOC_PRINTF
+//#define DEBUG_PSEUDO_RELOC
+//#define DEBUG_PSEUDO_RELOC_PRINTF
 
 #ifdef DEBUG_PSEUDO_RELOC
 
