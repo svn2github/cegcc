@@ -101,7 +101,10 @@ static int connection_initialized = 0;	/* True if we've initialized a
 					   RAPI session.  */
 
 /* The directory where the stub and executable files are uploaded.  */
-static char *remote_directory = "\\gdb";
+
+#define DEFAULT_UPLOAD_DIR "\\gdb"
+
+static const char *remote_directory = DEFAULT_UPLOAD_DIR;
 
 /* The types automatic upload available.  */
 static enum
@@ -119,19 +122,11 @@ static struct opts
     const char *name;
     int abbrev;
   }
-upload_options[3] =
+upload_options[] =
 {
-  {
-    "always", 1
-  }
-  ,
-  {
-    "newer", 3
-  }
-  ,
-  {
-    "never", 3
-  }
+  { "always", 1 },
+  { "newer", 3 },
+  { "never", 3 }
 };
 
 static char *remote_upload = NULL;	/* Set by set remoteupload.  */
@@ -571,9 +566,9 @@ getword (LPCSTR huh, gdb_wince_id what_this)
 }
 
 /* Handy defines for getting/putting various types of values.  */
-#define gethandle(huh, what) (HANDLE) getdword ((huh), (what))
-#define getpvoid(huh, what) (LPVOID) getdword ((huh), (what))
-#define getlen(huh, what) (gdb_wince_len) getword ((huh), (what))
+#define gethandle(huh, what) ((HANDLE) getdword ((huh), (what)))
+#define getpvoid(huh, what) ((LPVOID) getdword ((huh), (what)))
+#define getlen(huh, what) ((gdb_wince_len) getword ((huh), (what)))
 #define puthandle(huh, what, h) putdword ((huh), (what), (DWORD) (h))
 #define putpvoid(huh, what, p) putdword ((huh), (what), (DWORD) (p))
 
@@ -1057,7 +1052,7 @@ wince_software_single_step (enum target_signal ignore,
   unsigned long pc;
   /* Info on currently selected thread.  */
   thread_info *th = current_thread;
-  CORE_ADDR mips_next_pc (CORE_ADDR pc);
+  CORE_ADDR arm_get_next_pc (CORE_ADDR pc);
 
   if (!insert_breakpoints_p)
     {
@@ -1792,7 +1787,7 @@ char *
 upload_to_device (const char *to, const char *from)
 {
   HANDLE h;
-  const char *dir = remote_directory ?: "\\gdb";
+  const char *dir = remote_directory ?: DEFAULT_UPLOAD_DIR;
   int len;
   static char *remotefile = NULL;
   LPWSTR wstr;
@@ -2235,10 +2230,12 @@ init_child_ops (void)
 /* Handle 'set remoteupload' parameter.  */
 
 #define replace_upload(what) \
+  do { \
     upload_when = what; \
     remote_upload = xrealloc (remote_upload, \
 			      strlen (upload_options[upload_when].name) + 1); \
-    strcpy (remote_upload, upload_options[upload_when].name);
+    strcpy (remote_upload, upload_options[upload_when].name); \
+  } while (0)
 
 static void
 set_upload_type (char *ignore, int from_tty, struct cmd_list_element *c)
