@@ -831,10 +831,17 @@ typedef struct _WIN32_FIND_DATAW {
 	FILETIME ftLastWriteTime;
 	DWORD nFileSizeHigh;
 	DWORD nFileSizeLow;
+#ifndef	_WIN32_WCE
 	DWORD dwReserved0;
 	DWORD dwReserved1;
+#endif
 	WCHAR cFileName[MAX_PATH];
+#ifdef	_WIN32_WCE
+	DWORD	dwOID;
+#endif
+#ifndef	_WIN32_WCE
 	WCHAR cAlternateFileName[14];
+#endif
 } WIN32_FIND_DATAW,*PWIN32_FIND_DATAW,*LPWIN32_FIND_DATAW;
 typedef struct _WIN32_STREAM_ID {
 	DWORD dwStreamId;
