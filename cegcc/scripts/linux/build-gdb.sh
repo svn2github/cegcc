@@ -18,6 +18,9 @@ fi
 mkdir -p $BUILD_DIR/gdb
 cd $BUILD_DIR/gdb
 #
+CFLAGS="-I$TOP_SRCDIR/src/w32api/include -D__USE_W32_SOCKETS"
+export CFLAGS
+#
 $TOP_SRCDIR/src/gdb/configure \
 	--prefix=$PREFIX \
 	--target=$TARGET_ARCH || exit 1
