@@ -35,6 +35,8 @@ typedef unsigned int in_addr_t;
 #define REALLOC(s, n) (void *) LocalReAlloc ((HLOCAL)(s), (UINT)(n), LMEM_MOVEABLE)
 #define FREE(s) LocalFree ((HLOCAL)(s))
 
+wchar_t* wcschr (wchar_t *s, wchar_t c);
+
 static int skip_next_id = 0;	/* Don't read next API code from socket */
 
 /* v-style interface for handling varying argument list error messages.
@@ -380,16 +382,22 @@ wait_for_debug_event (int s)
 static void
 get_thread_context (int s)
 {
-  CONTEXT c;
+	CONTEXT c = {0};
   HANDLE h = gethandle (L"GetThreadContext handle", s, GDB_GETTHREADCONTEXT);
   gdb_wince_result res;
 
-  memset (&c, 0, sizeof (c));
   c.ContextFlags = getdword (L"GetThreadContext flags", s, GDB_GETTHREADCONTEXT);
 
   res = (gdb_wince_result) GetThreadContext (h, &c);
+
+  /* We only care for the context until the Psr register inclusive. 
+     The sdk defines a bigger context structure, bug w32api headers don't have
+     the rest of the context defined yet. Until we find documentation of the missing members,
+     we use only what we know. Without this, we were overwriting some memory in the host.
+  */
+  size_t size = offsetof (CONTEXT, Psr) + sizeof (c.Psr);
   putresult (L"GetThreadContext data", res, s, GDB_GETTHREADCONTEXT,
-	     &c, sizeof (c));
+	     &c, size);
 }
 
 /* Emulate GetThreadContext.  Returns success of SetThreadContext. */
@@ -401,6 +409,8 @@ set_thread_context (int s)
   LPCONTEXT pc = (LPCONTEXT) getmemory (L"SetThreadContext context", s,
 					GDB_SETTHREADCONTEXT, NULL);
 
+  /* The problem described in get_thread_context applies here, but in a different way.
+     The host is sending a smaller context that possibly the target is expecting. */
   res = SetThreadContext (h, pc);
   putresult (L"SetThreadContext result", res, s, GDB_SETTHREADCONTEXT,
 	     &res, sizeof (res));
