@@ -1181,7 +1181,7 @@ handle_output_debug_string (struct target_waitstatus *ourstatus)
 #define READ_BUFFER_LEN 1024
 
   char s[READ_BUFFER_LEN];
-  WCHAR buffer[READ_BUFFER_LEN];
+  WCHAR buffer[(READ_BUFFER_LEN+1)/2];
   void* buf;
 
   DWORD nbytes_read;
@@ -1191,19 +1191,11 @@ handle_output_debug_string (struct target_waitstatus *ourstatus)
     return gotasig;
 
 
-  if (current_event.u.DebugString.fUnicode)
-  {
-    if (nbytes > (READ_BUFFER_LEN*2))
-      nbytes = READ_BUFFER_LEN*2;
-    buf = buffer;
-  }
-  else
-  {
-    if (nbytes > READ_BUFFER_LEN)
-      nbytes = READ_BUFFER_LEN;
-    /* Read directly into final buffer */
-    buf = s;
-  }
+  /* go through temp buffer on unicode case only */
+  buf=(void*)(current_event.u.DebugString.fUnicode?buffer:s);
+
+  if (nbytes > READ_BUFFER_LEN)
+    nbytes = READ_BUFFER_LEN;
 #undef READ_BUFFER_LEN
 
   if (!DEBUG_ReadProcessMemory (current_process_handle,
@@ -1216,7 +1208,7 @@ handle_output_debug_string (struct target_waitstatus *ourstatus)
     WCHAR* c = buf;
     if (!*c)
       return gotasig;
-    /* nbytes_read should be even. Include terminator char in convertion. */
+    /* nbytes_read should be even. Include terminator char in conversion. */
     gdb_assert((nbytes_read % 2) == 0);
     WideCharToMultiByte (CP_ACP, 0, (LPCWSTR) buf, (int) (nbytes_read/sizeof (WCHAR)),
       s, sizeof (s), NULL, NULL);
@@ -1228,8 +1220,8 @@ handle_output_debug_string (struct target_waitstatus *ourstatus)
       return gotasig;
   }
 
-#if 1
-  /* TODO: ### Is this WinCE specific? Must check with NKDbgPrintfW sending two lines in one call
+#ifdef _WIN32_WCE
+  /* TODO: ### Is this WinCE specific? Must check with NKDbgPrintfW if sending two lines in one call
      generates two debug events */
   char* q = strchr (s, '\r');
   if (!q)
@@ -2702,8 +2694,6 @@ fetch_elf_core_registers (char *core_reg_sect,
 static void
 init_win32_ops (void)
 {
-  memset (&win32_ops, 0, sizeof (win32_ops));
-
   win32_ops.to_shortname = "child";
 #ifndef _WIN32_WCE
   win32_ops.to_longname = "Win32 child process";
@@ -2732,9 +2722,6 @@ init_win32_ops (void)
   win32_ops.to_terminal_save_ours = terminal_save_ours;
   win32_ops.to_terminal_info = child_terminal_info;
   win32_ops.to_kill = win32_kill_inferior;
-#ifdef _WIN32_WCE
-  win32_ops.to_load = win32_load;
-#endif
   win32_ops.to_create_inferior = win32_create_inferior;
   win32_ops.to_mourn_inferior = win32_mourn_inferior;
   win32_ops.to_can_run = win32_can_run;
