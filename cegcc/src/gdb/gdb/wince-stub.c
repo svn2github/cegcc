@@ -21,7 +21,9 @@
    Boston, MA 02111-1307, USA.
  */
 
-/* by Christopher Faylor (cgf@cygnus.com) */
+/* Christopher Faylor (cgf@cygnus.com)
+   Pedro Alves (pedro_alves@portugalmail.pt) 
+*/
 
 #include <winsock.h>
 #include <stdarg.h>
@@ -37,10 +39,16 @@ typedef unsigned int in_addr_t;
 #define FREE(s) LocalFree ((HLOCAL)(s))
 
 wchar_t* wcschr (wchar_t *s, wchar_t c);
-
 static int skip_next_id = 0;	/* Don't read next API code from socket */
 
+#define DEBUG_STUB
+
+#ifdef DEBUG_STUB
 FILE* debug_f;
+#define STUB_LOG(X) stub_log x
+#else
+#define STUB_LOG(X) do ; while (0)
+#endif
 
 /* v-style interface for handling varying argument list error messages.
    Displays the error message in a dialog box and exits when user clicks
@@ -82,7 +90,9 @@ vstub_log (LPCWSTR fmt, va_list args)
 }
 #endif
 
-/* v-style interface for handling varying argument list error messages.
+#ifdef DEBUG_STUB
+
+/* v-style interface for handling varying argument list warning messages.
 Displays the error message in a dialog box and exits when user clicks
 on OK. */
 static void
@@ -99,7 +109,7 @@ vstub_log (LPCWSTR fmt, va_list args)
 	fwrite (buf, 1, len, debug_f);
 }
 
-/* The standard way to display an error message and exit. */
+/* The standard way to display a warning message. */
 static void
 stub_log (LPWSTR fmt, ...)
 {
@@ -109,6 +119,7 @@ stub_log (LPWSTR fmt, ...)
 	va_end(args);
 }
 
+#endif
 
 
 /* Allocate a limited pool of memory, reallocating over unused
@@ -185,7 +196,7 @@ getdword (LPCWSTR huh, int s, gdb_wince_id what_this)
   if (sockread (huh, s, &n, sizeof (n)) != sizeof (n))
     stub_error (L"error getting %s from host.", huh);
 
-	stub_log(L"(%02d) GET: %s : 0x%08x\n", what, huh, n);
+	STUB_LOG((L"(%02d) GET: %s : 0x%08x\n", what, huh, n));
   return n;
 }
 
@@ -244,7 +255,7 @@ getmemory (LPCWSTR huh, int s, gdb_wince_id what, gdb_wince_len *inlen)
 static void
 putdword (LPCWSTR huh, int s, gdb_wince_id what, DWORD n)
 {
-	stub_log(L"(%02d) PUT: %s : 0x%08x\n", what, huh, n);
+	STUB_LOG((L"(%02d) PUT: %s : 0x%08x\n", what, huh, n));
 
   if (sockwrite (huh, s, &what, sizeof (what)) != sizeof (what))
     stub_error (L"error writing record id for %s to host.", huh);
@@ -313,21 +324,7 @@ create_process (int s)
 			NULL,
 			&pi);
 
-#if 0
-  WCHAR buf[512];
-  wsprintf(buf, L"res = %d", res);
-  MessageBoxW(0, buf, L"CreateProcessW", 0);
-#endif
   putresult (L"CreateProcess", res, s, GDB_CREATEPROCESS, &pi, sizeof (pi));
-
-#if 0
-  if (!res)
-  {
-	  wchar_t buf[100];
-	  wsprintf(buf, L"Error creating process. Error: %d", (int)GetLastError());
-	  MessageBoxW (NULL, buf, L"GDB", MB_ICONERROR);
-  }
-#endif
 
   if (curproc)
   {
@@ -422,12 +419,6 @@ wait_for_debug_event (int s)
   for (;;)
     {
       res = WaitForDebugEvent (&ev, ms);
-
-#if 0
-			putresult (L"WaitForDebugEvent event", res, s, GDB_WAITFORDEBUGEVENT,
-				&ev, sizeof (ev));
-			break;
-#endif
 
 	  if (ev.dwProcessId != (DWORD)curproc)
 		  goto ignore;
@@ -651,6 +642,8 @@ again:
 			for (i = 0; i < HANDLER_COUNT; i++) {
 				if (msg_handler_map[i].id == id) {
 					(*msg_handler_map[i].handler)(s);
+          if (id == GDB_STOPSTUB)
+            return;
 					goto again;
 				}
 			}
@@ -674,18 +667,21 @@ WinMain (HINSTANCE hi, HINSTANCE hp, LPWSTR cmd, int show)
   LPWSTR whost;
   char host[80];
 
+#ifdef DEBUG_STUB
 	debug_f = fopen ("stub-log.txt", "w");
 	if (!debug_f) {
 		MessageBoxW(0, L"error opening debug log file", L"gdb stub", 0);
 	}
 	else
 	{
+    /* Weird WinCE strikes again... setvbuf doesn't call fflush??? */ 
 		fflush(debug_f);
 		setvbuf(debug_f, 0, _IONBF, 0);
 		fflush(debug_f);
 	}
 
-	stub_log(L"stub loaded and running\n");
+	STUB_LOG((L"stub loaded and running\n"));
+#endif
 
   whost = wcschr (cmd, L' ');	/* Look for argument. */
 
@@ -746,25 +742,21 @@ WinMain (HINSTANCE hi, HINSTANCE hp, LPWSTR cmd, int show)
        MessageBoxW (NULL, buf, L"GDB", MB_ICONERROR);
   }
 #define DEFAULT_PORT 7000
-#define DEFAULT_DEBUG_PORT 7001
   sin.sin_port = htons (DEFAULT_PORT);	/* FIXME: This should be configurable */
 
-	stub_log(L"going to connect\n");
+	STUB_LOG((L"going to connect\n"));
 
   /* Connect to host */
   if (connect (s, (struct sockaddr *) &sin, sizeof (sin)) < 0)
     stub_error (L"Couldn't connect to host gdb.");
 
-#if 0
-	/* Connect to debug host */
-	if (connect (debug_s, (struct sockaddr *) &sin, sizeof (sin)) < 0)
-		stub_error (L"Couldn't connect to debug host.");
-#endif
-
-	stub_log(L"starting dispatch\n");
+	STUB_LOG((L"starting dispatch loop\n"));
 
   /* Read from socket until told to exit. */
   dispatch (s);
   WSACleanup ();
+
+  STUB_LOG((L"exiting cleanly\n"));
+
   return 0;
 }
