@@ -132,7 +132,7 @@ The search path for loading non-absolute shared library symbol files is %s.\n"),
    *   Look in inferior's $PATH.
    *   Look in inferior's $LD_LIBRARY_PATH.
    *   
-   * The last check avoids doing this search when targetting remote
+   * The last check avoids doing this search when targeting remote
    * machines since solib_absolute_prefix will almost always be set.
 
    RETURNS
@@ -145,7 +145,7 @@ solib_open (char *in_pathname, char **found_pathname)
   struct target_so_ops *ops = solib_ops (current_gdbarch);
   int found_file = -1;
   char *temp_pathname = NULL;
-  char *p = in_pathname;
+  const char *p = in_pathname;
 
   while (*p && !IS_DIR_SEPARATOR (*p))
     p++;
@@ -266,6 +266,9 @@ solib_map_sections (void *arg)
   struct cleanup *old_chain;
   bfd *abfd;
 
+  if (so->not_found)
+    return 1;
+
   filename = tilde_expand (so->so_name);
 
   old_chain = make_cleanup (xfree, filename);
@@ -273,6 +276,7 @@ solib_map_sections (void *arg)
 
   if (scratch_chan < 0)
     {
+      so->not_found = 1;
       perror_with_name (filename);
     }
 
@@ -413,23 +417,35 @@ symbol_add_stub (void *arg)
 int
 solib_read_symbols (struct so_list *so, int from_tty)
 {
+  char* found_pathname;
+  int fd;
   if (so->symbols_loaded)
     {
       if (from_tty)
 	printf_unfiltered (_("Symbols already loaded for %s\n"), so->so_name);
+      return 0;
     }
-  else
-    {
-      if (catch_errors (symbol_add_stub, so,
-			"Error while reading shared library symbols:\n",
-			RETURN_MASK_ALL))
+
+  fd = solib_open (so->so_name, &found_pathname);
+  if (fd < 0)
+  {
+    so->not_found = 1;
+    perror_with_name (so->so_name); /* NORETURN */
+    return 0;
+  }
+
+  xfree (found_pathname);
+  close (fd);
+
+  if (catch_errors (symbol_add_stub, so,
+    "Error while reading shared library symbols:\n",
+    RETURN_MASK_ALL))
 	{
 	  if (from_tty)
 	    printf_unfiltered (_("Loaded symbols for %s\n"), so->so_name);
 	  so->symbols_loaded = 1;
 	  return 1;
 	}
-    }
 
   return 0;
 }
@@ -627,12 +643,25 @@ update_solib_list (int from_tty, struct target_ops *target)
 
    FROM_TTY and TARGET are as described for update_solib_list, above.  */
 
+struct read_symbols_stub_arg
+{
+  struct so_list *so;
+  int from_tty;
+};
+
+static int
+read_symbols_stub (void* arg)
+{
+  struct read_symbols_stub_arg* a = (struct read_symbols_stub_arg*)arg;
+  return solib_read_symbols (a->so, a->from_tty);
+}
+
 void
 solib_add (char *pattern, int from_tty, struct target_ops *target, int readsyms)
 {
   struct so_list *gdb;
 
-  if (pattern)
+  if (pattern && pattern[0] != '\0')
     {
       char *re_err = re_comp (pattern);
 
@@ -650,11 +679,19 @@ solib_add (char *pattern, int from_tty, struct target_ops *target, int readsyms)
     int loaded_any_symbols = 0;
 
     for (gdb = so_list_head; gdb; gdb = gdb->next)
-      if (! pattern || re_exec (gdb->so_name))
+      if (! pattern || (pattern && pattern[0] == '\0') || re_exec (gdb->so_name))
 	{
 	  any_matches = 1;
-	  if (readsyms && solib_read_symbols (gdb, from_tty))
-	    loaded_any_symbols = 1;
+	  if (readsyms && (pattern || !gdb->not_found))
+    {
+      struct read_symbols_stub_arg stub_arg = 
+      { gdb, from_tty };
+
+      if (catch_errors (read_symbols_stub, &stub_arg,
+        "Error adding libraries.\n",
+        RETURN_MASK_ALL))
+  	    loaded_any_symbols = 1;
+    }
 	}
 
     if (from_tty && pattern && ! any_matches)
@@ -898,7 +935,7 @@ static void
 sharedlibrary_command (char *args, int from_tty)
 {
   dont_repeat ();
-  solib_add (args, from_tty, (struct target_ops *) 0, 1);
+  solib_add (args?:"", from_tty, (struct target_ops *) 0, 1);
 }
 
 /* LOCAL FUNCTION

@@ -60,6 +60,7 @@ struct so_list
        current_sos must initialize these fields to 0.  */
 
     bfd *abfd;
+    char not_found;	/* flag: cache: already tried open and it failed */
     char symbols_loaded;	/* flag: symbols read in yet? */
     char from_tty;		/* flag: print msgs? */
     struct objfile *objfile;	/* objfile for loaded lib */

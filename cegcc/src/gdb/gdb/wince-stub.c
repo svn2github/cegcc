@@ -1,6 +1,6 @@
 /* wince-stub.c -- debugging stub for a Windows CE device
 
-   Copyright 1999, 2000 Free Software Foundation, Inc.
+   Copyright 1999, 2000, 1006 Free Software Foundation, Inc.
    Contributed by Cygnus Solutions, A Red Hat Company.
 
    This file is part of GDB.
@@ -27,17 +27,20 @@
 #include <stdarg.h>
 #include <windows.h>
 
+wchar_t * wcschr(const wchar_t *, wchar_t);
+
 typedef unsigned int in_addr_t;
 
 #include "wince-stub.h"
 
 #define MALLOC(n) (void *) LocalAlloc (LMEM_MOVEABLE | LMEM_ZEROINIT, (UINT)(n))
-#define REALLOC(s, n) (void *) LocalReAlloc ((HLOCAL)(s), (UINT)(n), LMEM_MOVEABLE)
 #define FREE(s) LocalFree ((HLOCAL)(s))
 
 wchar_t* wcschr (wchar_t *s, wchar_t c);
 
 static int skip_next_id = 0;	/* Don't read next API code from socket */
+
+FILE* debug_f;
 
 /* v-style interface for handling varying argument list error messages.
    Displays the error message in a dialog box and exits when user clicks
@@ -60,7 +63,53 @@ stub_error (LPCWSTR fmt, ...)
   va_list args;
   va_start (args, fmt);
   vstub_error (fmt, args);
+	va_end(args);
 }
+
+#if 0
+/* v-style interface for handling varying argument list error messages.
+Displays the error message in a dialog box and exits when user clicks
+on OK. */
+static void
+vstub_log (LPCWSTR fmt, va_list args)
+{
+	WCHAR wbuf[4096];
+	char buf[4096];
+	wvsprintfW (wbuf, fmt, args);
+	int len = wcslen(buf);
+	wcstombs(buf, wbuf, len+1);
+  send (debug_s, buf, len, 0);
+}
+#endif
+
+/* v-style interface for handling varying argument list error messages.
+Displays the error message in a dialog box and exits when user clicks
+on OK. */
+static void
+vstub_log (LPCWSTR fmt, va_list args)
+{
+	if (!debug_f)
+		return;
+
+	WCHAR wbuf[4096];
+	char buf[4096];
+	wvsprintfW (wbuf, fmt, args);
+	int len = wcslen(wbuf);
+	wcstombs(buf, wbuf, len+1);
+	fwrite (buf, 1, len, debug_f);
+}
+
+/* The standard way to display an error message and exit. */
+static void
+stub_log (LPWSTR fmt, ...)
+{
+	va_list args;
+	va_start (args, fmt);
+	vstub_log (fmt, args);
+	va_end(args);
+}
+
+
 
 /* Allocate a limited pool of memory, reallocating over unused
    buffers.  This assumes that there will never be more than four
@@ -115,7 +164,7 @@ sockwrite (LPCWSTR huh, int s, const void *str, size_t n)
     }
 }
 
-/* Get a an ID (possibly) and a DWORD from the host gdb.
+/* Get an ID (possibly) and a DWORD from the host gdb.
    Don't bother with the id if the main loop has already
    read it. */
 static DWORD
@@ -126,15 +175,17 @@ getdword (LPCWSTR huh, int s, gdb_wince_id what_this)
 
   if (skip_next_id)
     skip_next_id = 0;
-  else
-    do
+  else {
+    do {
       if (sockread (huh, s, &what, sizeof (what)) != sizeof (what))
 	stub_error (L"error getting record type from host - %s.", huh);
-    while (what_this != what);
+    } while (what_this != what);
+  }
 
   if (sockread (huh, s, &n, sizeof (n)) != sizeof (n))
     stub_error (L"error getting %s from host.", huh);
 
+	stub_log(L"(%02d) GET: %s : 0x%08x\n", what, huh, n);
   return n;
 }
 
@@ -164,7 +215,7 @@ getword (LPCWSTR huh, int s, gdb_wince_id what_this)
 /* Handy defines for getting various types of values. */
 #define gethandle(huh, s, what) (HANDLE) getdword ((huh), (s), (what))
 #define getpvoid(huh, s, what) (LPVOID) getdword ((huh), (s), (what))
-#define getlen(huh, s, what) (gdb_wince_len) getword ((huh), (s), (what))
+#define puthandle(huh, s, what, h) putdword ((huh), (s), (what), (DWORD) (h))
 
 /* Get an arbitrary block of memory from the gdb host.  This comes in
    two chunks an id/dword representing the length and the stream of memory
@@ -188,10 +239,13 @@ getmemory (LPCWSTR huh, int s, gdb_wince_id what, gdb_wince_len *inlen)
   return p;
 }
 
+
 /* Output an id/dword to the host */
 static void
 putdword (LPCWSTR huh, int s, gdb_wince_id what, DWORD n)
 {
+	stub_log(L"(%02d) PUT: %s : 0x%08x\n", what, huh, n);
+
   if (sockwrite (huh, s, &what, sizeof (what)) != sizeof (what))
     stub_error (L"error writing record id for %s to host.", huh);
   if (sockwrite (huh, s, &n, sizeof (n)) != sizeof (n))
@@ -208,8 +262,6 @@ putword (LPCWSTR huh, int s, gdb_wince_id what, WORD n)
     stub_error (L"error writing %s to host.", huh);
 }
 
-/* Convenience define for outputting a "gdb_wince_len" type. */
-#define putlen(huh, s, what, n) putword ((huh), (s), (what), (gdb_wince_len) (n))
 
 /* Put an arbitrary block of memory to the gdb host.  This comes in
    two chunks an id/dword representing the length and the stream of memory
@@ -218,7 +270,7 @@ static void
 putmemory (LPCWSTR huh, int s, gdb_wince_id what, const void *mem, gdb_wince_len len)
 {
   putlen (huh, s, what, len);
-  if (((short) len > 0) && (gdb_wince_len) sockwrite (huh, s, mem, len) != len)
+  if (((long)len > 0) && (gdb_wince_len) sockwrite (huh, s, mem, len) != len)
     stub_error (L"error writing memory to host.");
 }
 
@@ -245,6 +297,11 @@ create_process (int s)
   PROCESS_INFORMATION pi;
   gdb_wince_result res;
 
+	if (!exec_file || exec_file[0] == '\0')
+	{
+		exec_file = args;
+	}
+
   res = CreateProcessW (exec_file,
 			args,	/* command line */
 			NULL,	/* Security */
@@ -255,6 +312,12 @@ create_process (int s)
 			NULL,	/* current directory */
 			NULL,
 			&pi);
+
+#if 0
+  WCHAR buf[512];
+  wsprintf(buf, L"res = %d", res);
+  MessageBoxW(0, buf, L"CreateProcessW", 0);
+#endif
   putresult (L"CreateProcess", res, s, GDB_CREATEPROCESS, &pi, sizeof (pi));
 
 #if 0
@@ -294,7 +357,17 @@ terminate_process (int s)
   ExitThread (1);
 }
 
+static void debug_active_process (int s)
+{
+  gdb_wince_result res;
+  DWORD pid = getdword (L"DebugActiveProcess pid", s, GDB_DEBUGACTIVEPROCESS);
+  res = DebugActiveProcess (pid);
+  putresult (L"SetThreadContext result", res, s, GDB_DEBUGACTIVEPROCESS,
+    &res, sizeof (res));
+}
+
 static int stepped = 0;
+
 /* Handle single step instruction.  FIXME: unneded? */
 static void
 flag_single_step (int s)
@@ -350,6 +423,12 @@ wait_for_debug_event (int s)
     {
       res = WaitForDebugEvent (&ev, ms);
 
+#if 0
+			putresult (L"WaitForDebugEvent event", res, s, GDB_WAITFORDEBUGEVENT,
+				&ev, sizeof (ev));
+			break;
+#endif
+
 	  if (ev.dwProcessId != (DWORD)curproc)
 		  goto ignore;
 
@@ -378,16 +457,27 @@ wait_for_debug_event (int s)
 
 }
 
+/* Emulate OpenProcess.  Returns CONTEXT structure on success. */
+static void
+open_process (int s)
+{
+	DWORD fdwAccess = getdword (L"OpenProcess access", s, GDB_OPENPROCESS);
+	BOOL fInherit = getdword (L"OpenProcess inherit", s, GDB_OPENPROCESS);
+	DWORD pid = getdword (L"OpenProcess pid", s, GDB_OPENPROCESS);
+
+	HANDLE h = OpenProcess(fdwAccess, fInherit, pid);
+
+	puthandle (L"OpenProcess result", s, GDB_OPENPROCESS, h);
+}
+
 /* Emulate GetThreadContext.  Returns CONTEXT structure on success. */
 static void
 get_thread_context (int s)
 {
-	CONTEXT c = {0};
-  HANDLE h = gethandle (L"GetThreadContext handle", s, GDB_GETTHREADCONTEXT);
+  CONTEXT c = {0};
   gdb_wince_result res;
-
+  HANDLE h = gethandle (L"GetThreadContext handle", s, GDB_GETTHREADCONTEXT);
   c.ContextFlags = getdword (L"GetThreadContext flags", s, GDB_GETTHREADCONTEXT);
-
   res = (gdb_wince_result) GetThreadContext (h, &c);
 
   /* We only care for the context until the Psr register inclusive. 
@@ -400,7 +490,7 @@ get_thread_context (int s)
 	     &c, size);
 }
 
-/* Emulate GetThreadContext.  Returns success of SetThreadContext. */
+/* Emulate SetThreadContext.  Returns success of SetThreadContext. */
 static void
 set_thread_context (int s)
 {
@@ -445,21 +535,30 @@ write_process_memory (int s)
   gdb_wince_result res;
 
   outlen = 0;
-  res = WriteProcessMemory (h, p, buf, (DWORD) len, &outlen);
+  res = WriteProcessMemory (h, p, buf, len, &outlen);
   putresult (L"WriteProcessMemory data", res, s, GDB_WRITEPROCESSMEMORY,
-	     (gdb_wince_len *) & outlen, sizeof (gdb_wince_len));
+	     & outlen, sizeof (gdb_wince_len));
 }
 
-/* Return non-zero to gdb host if given thread is alive. */
-static void
-thread_alive (int s)
+static void flush_instruction_cache ( int s )
 {
-  HANDLE h = gethandle (L"ThreadAlive handle", s, GDB_THREADALIVE);
-  gdb_wince_result res;
+  HANDLE h = gethandle (L"FlushInstructionCache handle", s, GDB_FLUSHINSTRUCTIONCACHE);
+  LPCVOID baseaddress = getpvoid (L"FlushInstructionCache base", s, GDB_FLUSHINSTRUCTIONCACHE);
+  DWORD size = getdword (L"FlushInstructionCache size", s, GDB_FLUSHINSTRUCTIONCACHE);
+  gdb_wince_result res = FlushInstructionCache(h, baseaddress, size);
+  putresult (L"FlushInstructionCache result", res, s, GDB_FLUSHINSTRUCTIONCACHE,
+    &res, sizeof (res));
+}
 
-  res = WaitForSingleObject (h, 0) == WAIT_OBJECT_0 ? 1 : 0;
-  putresult (L"WriteProcessMemory data", res, s, GDB_THREADALIVE,
-	     &res, sizeof (res));
+
+static void
+wait_for_single_object (int s)
+{
+  HANDLE h = gethandle (L"WaitForSingleObject handle", s, GDB_WAITFORSINGLEOBJECT);
+  DWORD millis = getdword (L"WaitForSingleObject handle", s, GDB_WAITFORSINGLEOBJECT);
+
+	DWORD res = WaitForSingleObject (h, millis);
+	putdword (L"WaitForSingleObject result", s, GDB_WAITFORSINGLEOBJECT, res);
 }
 
 /* Emulate SuspendThread.  Returns value returned from SuspendThread. */
@@ -504,69 +603,62 @@ close_handle (int s)
   putresult (L"CloseHandle result", res, s, GDB_CLOSEHANDLE, &res, sizeof (res));
 }
 
+typedef struct {
+  enum win_func id;
+  void (*handler)(int s);
+} msg_handler_map_t;
+
+static const msg_handler_map_t msg_handler_map[] = 
+{
+  { GDB_CLOSEHANDLE, close_handle },
+  { GDB_CONTINUEDEBUGEVENT, continue_debug_event },
+  { GDB_CREATEPROCESS, create_process },
+  { GDB_DEBUGACTIVEPROCESS, debug_active_process },
+  { GDB_FLUSHINSTRUCTIONCACHE, flush_instruction_cache },
+  { GDB_GETTHREADCONTEXT, get_thread_context },
+	{ GDB_OPENPROCESS, open_process },
+  { GDB_READPROCESSMEMORY, read_process_memory },
+  { GDB_RESUMETHREAD, resume_thread },
+  { GDB_SETTHREADCONTEXT, set_thread_context },
+  { GDB_SINGLESTEP, flag_single_step },
+  { GDB_STOPSTUB, terminate_process },
+  { GDB_SUSPENDTHREAD, suspend_thread },
+  { GDB_TERMINATEPROCESS, terminate_process },
+  { GDB_WAITFORDEBUGEVENT, wait_for_debug_event },
+  { GDB_WAITFORSINGLEOBJECT, wait_for_single_object },
+  { GDB_WRITEPROCESSMEMORY, write_process_memory },
+};
+
+#define HANDLER_COUNT (sizeof (msg_handler_map)/sizeof (msg_handler_map[0]))
+
+/* compile time asserts to make sure we are catching every possible msg, and only once each.*/
+static char error_there_are_handlers_missing[HANDLER_COUNT-(GDB_INVALID-GDB_FIRST)];
+static char error_there_are_too_many_handlers[(GDB_INVALID-GDB_FIRST)-HANDLER_COUNT];
+
 /* Main loop for reading requests from gdb host on the socket. */
 static void
 dispatch (int s)
 {
   gdb_wince_id id;
 
-  /* Continue reading from socket until receive a GDB_STOPSUB. */
+again:
+  /* Continue reading from socket until we receive a GDB_STOPSUB. */
   while (sockread (L"Dispatch", s, &id, sizeof (id)) > 0)
     {
       skip_next_id = 1;
-      switch (id)
-	{
-	case GDB_CREATEPROCESS:
-	  create_process (s);
-	  break;
-	case GDB_TERMINATEPROCESS:
-	  terminate_process (s);
-	  break;
-	case GDB_WAITFORDEBUGEVENT:
-	  wait_for_debug_event (s);
-	  break;
-	case GDB_GETTHREADCONTEXT:
-	  get_thread_context (s);
-	  break;
-	case GDB_SETTHREADCONTEXT:
-	  set_thread_context (s);
-	  break;
-	case GDB_READPROCESSMEMORY:
-	  read_process_memory (s);
-	  break;
-	case GDB_WRITEPROCESSMEMORY:
-	  write_process_memory (s);
-	  break;
-	case GDB_THREADALIVE:
-	  thread_alive (s);
-	  break;
-	case GDB_SUSPENDTHREAD:
-	  suspend_thread (s);
-	  break;
-	case GDB_RESUMETHREAD:
-	  resume_thread (s);
-	  break;
-	case GDB_CONTINUEDEBUGEVENT:
-	  continue_debug_event (s);
-	  break;
-	case GDB_CLOSEHANDLE:
-	  close_handle (s);
-	  break;
-	case GDB_STOPSTUB:
-	  terminate_process (s);
-	  return;
-	case GDB_SINGLESTEP:
-	  flag_single_step (s);
-	  break;
-	default:
-	  {
+			const msg_handler_map_t* handler = msg_handler_map;
+			int i;
+			for (i = 0; i < HANDLER_COUNT; i++) {
+				if (msg_handler_map[i].id == id) {
+					(*msg_handler_map[i].handler)(s);
+					goto again;
+				}
+			}
 	    WCHAR buf[80];
-	    wsprintfW (buf, L"Invalid command id received: %d", id);
-	    MessageBoxW (NULL, buf, L"GDB", MB_ICONERROR);
-	    skip_next_id = 0;
+      wsprintfW (buf, L"Invalid command id received: %d", id);
+      MessageBoxW (NULL, buf, L"GDB", MB_ICONERROR);
+      skip_next_id = 0;
 	  }
-	}
-    }
 }
 
 /* The Windows Main entry point */
@@ -581,6 +673,19 @@ WinMain (HINSTANCE hi, HINSTANCE hp, LPWSTR cmd, int show)
   int tmp;
   LPWSTR whost;
   char host[80];
+
+	debug_f = fopen ("stub-log.txt", "w");
+	if (!debug_f) {
+		MessageBoxW(0, L"error opening debug log file", L"gdb stub", 0);
+	}
+	else
+	{
+		fflush(debug_f);
+		setvbuf(debug_f, 0, _IONBF, 0);
+		fflush(debug_f);
+	}
+
+	stub_log(L"stub loaded and running\n");
 
   whost = wcschr (cmd, L' ');	/* Look for argument. */
 
@@ -641,11 +746,22 @@ WinMain (HINSTANCE hi, HINSTANCE hp, LPWSTR cmd, int show)
        MessageBoxW (NULL, buf, L"GDB", MB_ICONERROR);
   }
 #define DEFAULT_PORT 7000
+#define DEFAULT_DEBUG_PORT 7001
   sin.sin_port = htons (DEFAULT_PORT);	/* FIXME: This should be configurable */
+
+	stub_log(L"going to connect\n");
 
   /* Connect to host */
   if (connect (s, (struct sockaddr *) &sin, sizeof (sin)) < 0)
     stub_error (L"Couldn't connect to host gdb.");
+
+#if 0
+	/* Connect to debug host */
+	if (connect (debug_s, (struct sockaddr *) &sin, sizeof (sin)) < 0)
+		stub_error (L"Couldn't connect to debug host.");
+#endif
+
+	stub_log(L"starting dispatch\n");
 
   /* Read from socket until told to exit. */
   dispatch (s);

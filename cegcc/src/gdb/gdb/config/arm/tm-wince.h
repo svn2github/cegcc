@@ -31,4 +31,7 @@
 
 void wince_software_single_step (unsigned int, int);
 
+/* Pedro TODO: ### Is this needed in wince? */
+#define ATTACH_NO_WAIT
+
 #endif /* TM_WINCE_H */

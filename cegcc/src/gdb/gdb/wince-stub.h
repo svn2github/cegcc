@@ -25,24 +25,34 @@
 
 enum win_func
   {
-    GDB_CREATEPROCESS = 42,
+    GDB_FIRST = 42,
+
+    GDB_CLOSEHANDLE = GDB_FIRST,
+    GDB_CONTINUEDEBUGEVENT,
+    GDB_CREATEPROCESS,
+    GDB_DEBUGACTIVEPROCESS,
+    GDB_FLUSHINSTRUCTIONCACHE,
+    GDB_GETTHREADCONTEXT,
+		GDB_OPENPROCESS,
+    GDB_READPROCESSMEMORY,
+    GDB_RESUMETHREAD,
+    GDB_SETTHREADCONTEXT,
+    GDB_SINGLESTEP,
+    GDB_STOPSTUB,
+    GDB_SUSPENDTHREAD,
     GDB_TERMINATEPROCESS,
     GDB_WAITFORDEBUGEVENT,
-    GDB_GETTHREADCONTEXT,
-    GDB_SETTHREADCONTEXT,
-    GDB_READPROCESSMEMORY,
+    GDB_WAITFORSINGLEOBJECT,
     GDB_WRITEPROCESSMEMORY,
-    GDB_THREADALIVE,
-    GDB_SUSPENDTHREAD,
-    GDB_RESUMETHREAD,
-    GDB_CONTINUEDEBUGEVENT,
-    GDB_CLOSEHANDLE,
-    GDB_STOPSTUB,
-    GDB_SINGLESTEP,
-    GDB_SETBREAK,
+
     GDB_INVALID
   };
 
 typedef unsigned char gdb_wince_id;
-typedef unsigned short gdb_wince_len;
-typedef short gdb_wince_result;
+typedef unsigned long gdb_wince_len;
+typedef unsigned long gdb_wince_result;
+
+/* Convenience define for outputting a "gdb_wince_len" type. */
+
+#define putlen putdword
+#define getlen getdword
