@@ -21,12 +21,12 @@ DIRS=`find . -type d -name .svn -prune -print`
 echo "Include file directories : [$DIRS]"
 for d in $DIRS
 do
-	mkdir -p $PREFIX/$TARGET_ARCH/include/$d
+	mkdir -p $PREFIX/$TARGET_ARCH/include/w32api/$d
 done
 FILES=`find . -type f -print | grep -v /.svn/ `
 echo "Files : [" $FILES "]"
 for i in $FILES
 do
-	install -m 0644 $i $PREFIX/$TARGET_ARCH/include/$i
+	install -m 0644 $i $PREFIX/$TARGET_ARCH/include/w32api/$i
 done
 exit 0
