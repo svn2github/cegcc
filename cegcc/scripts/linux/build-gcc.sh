@@ -17,6 +17,24 @@ fi
 cd $BUILD_DIR
 mkdir gcc
 cd gcc
+$TOP_SRCDIR/src/gcc/configure \
+	--prefix=$PREFIX \
+	--enable-languages=c \
+	--disable-interwork \
+	--disable-nls \
+	--enable-checking \
+	--disable-multilib \
+	--without-headers \
+	--target=$TARGET_ARCH $MY_HOST_ARCH || exit 1
+# $TOP_SRCDIR/src/gcc/configure \
+# 	--prefix=$PREFIX \
+# 	--enable-languages=c,c++ \
+# 	--disable-interwork \
+# 	--disable-nls \
+# 	--enable-checking \
+# 	--disable-multilib \
+# 	--without-headers \
+# 	--target=$TARGET_ARCH $MY_HOST_ARCH || exit 1
 # $TOP_SRCDIR/src/gcc/configure \
 # 	--prefix=$PREFIX \
 # 	--enable-languages=c,c++ \
@@ -30,15 +48,6 @@ cd gcc
 # 	--with-gnu-as \
 # 	--target=$TARGET_ARCH $MY_HOST_ARCH
 #
-$TOP_SRCDIR/src/gcc/configure \
-	--prefix=$PREFIX \
-	--enable-languages=c,c++ \
-	--disable-interwork \
-	--disable-nls \
-	--enable-checking \
-	--disable-multilib \
-	--without-headers \
-	--target=$TARGET_ARCH $MY_HOST_ARCH || exit 1
 # $TOP_SRCDIR/src/gcc/configure \
 # 	--prefix=$PREFIX \
 # 	--enable-languages=$MY_LANGUAGES \
