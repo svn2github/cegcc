@@ -61,7 +61,14 @@
 
 #include "gdb_assert.h"
 
-void ShowError(const char* lpszFunction);
+size_t wcslen (const wchar_t *);
+
+static const char* werror (DWORD err);
+
+/* Should go to w32api. 
+   http://msdn.microsoft.com/library/default.asp?url=/library/en-us/apisp/html/sp_rapi_mdcy.asp
+*/
+STDAPI_(BOOL) CeSetFileTime (HANDLE, LPFILETIME, LPFILETIME, LPFILETIME); 
 
 static int connection_initialized = 0;	/* True if we've initialized a
 					   RAPI session.  */
@@ -98,8 +105,10 @@ upload_options[] =
 static char *remote_upload = NULL;	/* Set by 'set remoteupload'.  */
 static int remote_add_host = 0;
 static int debug_communication = 0;
+static int debug_wince = 0;
 
 #define DEBUG_COM(x)	do { if (debug_communication)	printf_unfiltered x; } while (0)
+#define DEBUG_WINCE(x)	do { if (debug_wince)	printf_unfiltered x; } while (0)
 
 
 /******************** Beginning of stub interface ********************/
@@ -271,12 +280,9 @@ getresult (LPCSTR huh, gdb_wince_id what, LPVOID buf,
 
   if ((long) *nbytes < 0)
     {
-      SetLastError (-(long) *nbytes);
-      if (debug_communication)
-      {
-			  printf_unfiltered("getresult: ");
-			  ShowError(huh);
-      }
+      DWORD err = -(long) *nbytes;
+      SetLastError (err);
+      DEBUG_COM (("getresult: %s failed with error %d: %s", huh, (int)err, werror (err))); 
       return 0;
     }
 
@@ -519,17 +525,17 @@ REMOTE_CloseHandle (HANDLE h)
 {
   gdb_wince_result res;
   if (s < 0)
-    return 1;
+    return 0;
 
   /* Short circuit */
   if (!h)
   {
     SetLastError(6);
-    return FALSE;
+    return 0;
   }
 
   puthandle ("CloseHandle handle", GDB_CLOSEHANDLE, h);
-  return (int) getresult ("CloseHandle result", 
+  return (BOOL) getresult ("CloseHandle result", 
 			  GDB_CLOSEHANDLE, &res, NULL);
 }
 
@@ -555,6 +561,23 @@ stop_stub (void)
   (void) putdword ("Stopping gdb stub", GDB_STOPSTUB, 0);
   s = -1;
 }
+
+/* This is not a standard Win32 interface.  This function tells the
+   stub to perform an 8bit checksum on a given file.
+*/
+static BOOL
+REMOTE_FileChecksum (LPCWSTR file, unsigned char* checksum)
+{
+  if (s < 0)
+    return 0;
+
+  int len = sizeof (WCHAR) * (wcslen(file)+ 1);
+  printf_unfiltered("filename len = %d\n", len);
+  putmemory ("FileChecksum filename", GDB_FILECHECKSUM, file, len);
+  return getresult ("FileChecksum result", 
+    GDB_FILECHECKSUM, checksum, NULL);
+}
+
 
 void _init_win32_wce_iface()
 {
@@ -772,24 +795,32 @@ wince_software_single_step (enum target_signal ignore,
   return;
 }
 
-#define FACTOR (0x19db1ded53ea710LL)
-#define NSPERSEC 10000000
+#define FACTOR (0x19db1ded53e8000LL)
+#define NSPERSEC 10000000LL
 
-/* Convert a Win32 time to "UNIX" format.  */
+void
+time_t_to_filetime (time_t time_in, FILETIME *out)
+{
+  long long x = time_in * NSPERSEC + FACTOR;
+  out->dwHighDateTime = x >> 32;
+  out->dwLowDateTime = x;
+}
+
 long
-to_time_t (FILETIME * ptr)
+to_time_t (FILETIME *ptr)
 {
   /* A file time is the number of 100ns since jan 1 1601
-     stuffed into two long words.
-     A time_t is the number of seconds since jan 1 1970.  */
+  stuffed into two long words.
+  A time_t is the number of seconds since jan 1 1970.  */
 
-  long rem;
-  long long x = ((long long) ptr->dwHighDateTime << 32) + ((unsigned) ptr->dwLowDateTime);
-  x -= FACTOR;			/* Number of 100ns between 1601 and 1970.  */
-  rem = x % ((long long) NSPERSEC);
-  rem += (NSPERSEC / 2);
-  x /= (long long) NSPERSEC;	/* Number of 100ns in a second.  */
-  x += (long long) (rem / NSPERSEC);
+  long long x = ((long long) ptr->dwHighDateTime << 32) + ((unsigned)ptr->dwLowDateTime);
+
+  /* pass "no time" as epoch */
+  if (x == 0)
+    return 0;
+
+  x -= FACTOR;			/* number of 100ns between 1601 and 1970 */
+  x /= (long long) NSPERSEC;		/* number of 100ns in a second */
   return x;
 }
 
@@ -807,7 +838,6 @@ upload_to_device (const char *to, const char *from)
   DWORD err;
   const char *in_to = to;
   FILETIME crtime, actime, wrtime;
-  time_t utime;
   struct stat st;
   int fd;
 
@@ -825,7 +855,10 @@ upload_to_device (const char *to, const char *from)
   strcat (remotefile, to);
 
   if (upload_when == UPLOAD_NEVER)
+  {
+    DEBUG_WINCE(("Ignoring upload of '%s' (upload_when == UPLOAD_NEVER)\n", remotefile));
     return remotefile;		/* Don't bother uploading.  */
+  }
 
   /* Open the source.  */
   if ((fd = openp (getenv ("PATH"), OPF_TRY_CWD_FIRST, (char *) from,
@@ -834,7 +867,7 @@ upload_to_device (const char *to, const char *from)
 
   /* Get the time for later comparison.  */
   if (fstat (fd, &st))
-    st.st_mtime = (time_t) - 1;
+    st.st_mtime = (time_t) -1;
 
   /* Always attempt to create the directory on the remote system.  */
   wstr = towide (dir, NULL);
@@ -842,46 +875,115 @@ upload_to_device (const char *to, const char *from)
 
   /* Attempt to open the remote file, creating it if it doesn't exist.  */
   wstr = towide (remotefile, NULL);
-  h = CeCreateFile (wstr, GENERIC_READ | GENERIC_WRITE, 0, NULL,
-		    OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
-  /* Some kind of problem?  */
-  err = CeGetLastError ();
-  if (h == NULL || h == INVALID_HANDLE_VALUE)
-    error (_("error opening file \"%s\".  Windows error %d."),
-	   remotefile, (int)err);
+  h = CeCreateFile(wstr, GENERIC_READ, FILE_SHARE_READ, NULL, 
+        OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
-  CeGetFileTime (h, &crtime, &actime, &wrtime);
-  utime = to_time_t (&wrtime);
-#if 0
-  if (utime < st.st_mtime)
-    {
-      char buf[80];
-      strcpy (buf, ctime(&utime));
-      printf ("%s < %s\n", buf, ctime(&st.st_mtime));
+  int got_time = 0;
+  if (h && h != INVALID_HANDLE_VALUE)
+  {
+    got_time = CeGetFileTime (h, &crtime, &actime, &wrtime);
+    if (!CeCloseHandle (h)) {
+      DWORD err = CeGetLastError ();
+      error (_("error closing remote file - %d. (%s)"), (int)err, werror (err));
     }
-#endif
+  }
+
   /* See if we need to upload the file.  */
-  if (upload_when == UPLOAD_ALWAYS ||
-      err != ERROR_ALREADY_EXISTS ||
-      !CeGetFileTime (h, &crtime, &actime, &wrtime) ||
-      to_time_t (&wrtime) < st.st_mtime)
+  int need_upload = h == NULL || 
+                    upload_when == UPLOAD_ALWAYS ||
+                    !got_time ||
+                    to_time_t (&wrtime) != st.st_mtime;
+
+  h = NULL;
+
+  printf_unfiltered("to_time_t : %ld - st_mtime : %ld\n", 
+                      to_time_t (&wrtime), (long)st.st_mtime);
+//  need_upload = 0;
+
+  if (!need_upload)
+  {
+    int n;
+    unsigned char buf[4096];
+    unsigned char chksum = 0;
+    unsigned char rem_checkum = 0;
+
+    /* checksum compare, to be really sure we don't need to upload */
+    lseek (fd, 0, SEEK_SET);
+
+    while ((n = read (fd, (char*)buf, sizeof (buf))) > 0)
+    {
+      int i = 0;
+      for (i = 0 ; i< n; i++)
+        chksum^=buf[i];
+    }
+
+    BOOL checksum_ok = REMOTE_FileChecksum (towide(remotefile, NULL), &rem_checkum);
+    if (!checksum_ok || rem_checkum != chksum)
+      need_upload = 1;
+
+    printf_unfiltered("checksum_ok = %d, checksum = %d, remote checksum = %d\n", checksum_ok, chksum, rem_checkum);
+  }
+
+  if (need_upload)
     {
       DWORD nbytes;
       char buf[4096];
       int n;
+      off_t size;
+      size_t r = 0;
+      int dots_written = 0;
+
+      h = CeCreateFile (wstr, GENERIC_READ | GENERIC_WRITE, 0, NULL,
+        OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+      /* Some kind of problem?  */
+      err = CeGetLastError ();
+      if (h == NULL || h == INVALID_HANDLE_VALUE)
+        error (_("error opening file\"%s\" for writing. Windows error %d. (%s)"),
+        remotefile, (int)err, werror (err));
 
       /* Upload the file.  */
-	  printf_unfiltered("Uploading to remote device: %s\n", remotefile);
+	  printf_unfiltered ("Uploading to remote device: %s\n", remotefile);
+
+      size = lseek (fd, 0, SEEK_END);
+      lseek (fd, 0, SEEK_SET);
+
       while ((n = read (fd, buf, sizeof (buf))) > 0)
-	if (!CeWriteFile (h, buf, (DWORD) n, &nbytes, NULL))
-	  error (_("error writing to remote device - %d."),
-		 (int)CeGetLastError ());
+      {
+        const int tot_dots = 20;
+        size_t dot;
+
+        if (!CeWriteFile (h, buf, (DWORD) n, &nbytes, NULL))
+        {
+          DWORD err = CeGetLastError ();
+          error (_("error writing to remote device - %d. (%s)"),
+          (int)err, werror (err));
+        }
+        r+=n;
+        dot = (size_t) ( ( (float)r / size ) * tot_dots);
+        for (; dots_written < dot; ++dots_written)
+        {
+          printf_unfiltered (".");
+          gdb_flush (gdb_stdout);
+        }
+      }
+      printf_unfiltered ("\n");
+
+      time_t_to_filetime(st.st_ctime, &crtime);
+      time_t_to_filetime(st.st_atime, &actime);
+      time_t_to_filetime(st.st_mtime, &wrtime);
+
+      CeSetFileTime(h, &crtime, &actime, &wrtime);
+
+      if (!CeCloseHandle (h)) {
+        DWORD err = CeGetLastError ();
+        error (_("error closing remote file - %d. (%s)"), (int)err, werror (err));
+      }
+
     }
 
   close (fd);
-  if (!CeCloseHandle (h))
-    error (_("error closing remote file - %d."), (int)CeGetLastError ());
 
   return remotefile;
 }
@@ -955,8 +1057,11 @@ printf_unfiltered("Starting on device: \"%s %s\"\n", stub_file_name, args);
 			towide (args, NULL),
 			NULL, NULL, 0, 0, 
 			NULL, NULL, NULL, &pi))
-    error (_("Unable to start remote stub '%s'.  Windows CE error %d."),
-	   stub_file_name, (int)CeGetLastError ());
+    {
+      DWORD err = CeGetLastError ();
+      error (_("Unable to start remote stub '%s'.  Windows CE error %d. (%s)"),
+	     stub_file_name, (int)err, werror (err));
+    }
   } else {
     printf_unfiltered("Please start stub with correct argument on the device\n");
   }
@@ -972,21 +1077,21 @@ printf_unfiltered("Waiting for connection...\n");
   close (s0);
 }
 
-void ShowError(const char* lpszFunction)
+static const char* werror (DWORD err)
 {
-	char* lpMsgBuf;
-	DWORD dw = GetLastError(); 
+  static char msgbuf[1024];
 
-	FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-		NULL,
-		dw,
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(char*) &lpMsgBuf,
-		0, NULL );
-
-	printf_unfiltered("%s failed with error %d: %s", lpszFunction, (int)dw, lpMsgBuf); 
-	LocalFree(lpMsgBuf);
+  FormatMessageA (FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+    NULL,
+    err,
+    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+    msgbuf,
+    sizeof (msgbuf), 
+    NULL);
+  return msgbuf;
 }
+
+
 
 void win32_stop_stub_comm()
 {
@@ -1105,13 +1210,11 @@ Show whether to display stub communication debugging."), NULL,
           NULL, /* FIXME: i18n: */
           &setlist, &showlist);
 
-#if 0
-  add_info
-    ("dll", info_dll_command, _("Status of loaded DLLs."));
-  add_info_alias ("sharedlibrary", "dll", 1);
-
-  c = add_com ("upload", class_files, dll_symbol_command,
-	  _("Upload file to device."));
-  set_cmd_completer (c, filename_completer);
-#endif
+  add_setshow_boolean_cmd ("debugwince", class_support,
+        &debug_wince, _("\
+Set whether to display Windows CE support specific debugging."), _("\
+Show whether to display Windows CE support specific debugging."), NULL,
+          NULL,
+          NULL, /* FIXME: i18n: */
+          &setlist, &showlist);
 }

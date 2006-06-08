@@ -38,14 +38,13 @@ typedef unsigned int in_addr_t;
 #define MALLOC(n) (void *) LocalAlloc (LMEM_MOVEABLE | LMEM_ZEROINIT, (UINT)(n))
 #define FREE(s) LocalFree ((HLOCAL)(s))
 
-wchar_t* wcschr (wchar_t *s, wchar_t c);
 static int skip_next_id = 0;	/* Don't read next API code from socket */
 
 #define DEBUG_STUB
 
 #ifdef DEBUG_STUB
 FILE* debug_f;
-#define STUB_LOG(X) stub_log x
+#define STUB_LOG(X) stub_log X
 #else
 #define STUB_LOG(X) do ; while (0)
 #endif
@@ -158,7 +157,7 @@ sockread (LPCWSTR huh, int s, void *str, size_t n)
   for (;;)
     {
       if (recv (s, str, n, 0) == (int) n)
-	return n;
+	return 1;
       attempt_resync (huh, s);
     }
 }
@@ -188,12 +187,12 @@ getdword (LPCWSTR huh, int s, gdb_wince_id what_this)
     skip_next_id = 0;
   else {
     do {
-      if (sockread (huh, s, &what, sizeof (what)) != sizeof (what))
+      if (!sockread (huh, s, &what, sizeof (what)))
 	stub_error (L"error getting record type from host - %s.", huh);
     } while (what_this != what);
   }
 
-  if (sockread (huh, s, &n, sizeof (n)) != sizeof (n))
+  if (!sockread (huh, s, &n, sizeof (n)))
     stub_error (L"error getting %s from host.", huh);
 
 	STUB_LOG((L"(%02d) GET: %s : 0x%08x\n", what, huh, n));
@@ -213,11 +212,11 @@ getword (LPCWSTR huh, int s, gdb_wince_id what_this)
     skip_next_id = 0;
   else
     do
-      if (sockread (huh, s, &what, sizeof (what)) != sizeof (what))
+      if (!sockread (huh, s, &what, sizeof (what)))
 	stub_error (L"error getting record type from host - %s.", huh);
     while (what_this != what);
 
-  if (sockread (huh, s, &n, sizeof (n)) != sizeof (n))
+  if (!sockread (huh, s, &n, sizeof (n)))
     stub_error (L"error getting %s from host.", huh);
 
   return n;
@@ -244,7 +243,7 @@ getmemory (LPCWSTR huh, int s, gdb_wince_id what, gdb_wince_len *inlen)
 
   p = mempool ((unsigned int) *inlen);	/* FIXME: check for error */
 
-  if ((gdb_wince_len) sockread (huh, s, p, *inlen) != *inlen)
+  if (!(gdb_wince_len) sockread (huh, s, p, *inlen))
     stub_error (L"error getting string from host.");
 
   return p;
@@ -594,6 +593,50 @@ close_handle (int s)
   putresult (L"CloseHandle result", res, s, GDB_CLOSEHANDLE, &res, sizeof (res));
 }
 
+static void
+file_checksum (int s)
+{
+  gdb_wince_result res = 0;
+  gdb_wince_len len;
+  unsigned char chksum = 0;
+
+  WCHAR* path = getmemory (L"FileChecksum filename", s, GDB_FILECHECKSUM, &len);
+  WCHAR buf[1024];
+//  wsprintfW(buf, L"%s : len = %d", path, len);
+  //MessageBoxW (NULL, buf, L"checksum", 0);
+
+  HANDLE h = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, 
+    OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+  if (h && h != INVALID_HANDLE_VALUE)
+  {
+//    MessageBoxW (NULL, L"file open", L"checksum", 0);
+    DWORD nBytesRead;
+    DWORD total = 0;
+    do {
+      unsigned char buffer[1024];
+      DWORD i;
+      nBytesRead = 0;
+      res = ReadFile (h, buffer, sizeof(buffer), &nBytesRead, NULL);
+      total += nBytesRead;
+      for (i = 0 ; i< nBytesRead; i++)
+        chksum ^= buffer[i];
+    } while (res && nBytesRead != 0);
+
+    wsprintfW(buf, L"total = %d", (int)total);
+    MessageBoxW (NULL, buf, L"checksum", 0);
+
+//    wsprintfW(buf, L"chksum = %d", (int)chksum);
+//    MessageBoxW (NULL, buf, L"checksum", 0);
+
+    CloseHandle (h);
+  }
+  if (!res && !GetLastError())
+    MessageBoxW (NULL, L"aha! protocol violation!", L"checksum", 0);
+  putresult (L"FileChecksum result", res, s, GDB_FILECHECKSUM, &chksum, sizeof (chksum));
+}
+
+
 typedef struct {
   enum win_func id;
   void (*handler)(int s);
@@ -605,6 +648,7 @@ static const msg_handler_map_t msg_handler_map[] =
   { GDB_CONTINUEDEBUGEVENT, continue_debug_event },
   { GDB_CREATEPROCESS, create_process },
   { GDB_DEBUGACTIVEPROCESS, debug_active_process },
+  { GDB_FILECHECKSUM, file_checksum },
   { GDB_FLUSHINSTRUCTIONCACHE, flush_instruction_cache },
   { GDB_GETTHREADCONTEXT, get_thread_context },
 	{ GDB_OPENPROCESS, open_process },
@@ -634,7 +678,7 @@ dispatch (int s)
 
 again:
   /* Continue reading from socket until we receive a GDB_STOPSUB. */
-  while (sockread (L"Dispatch", s, &id, sizeof (id)) > 0)
+  while (sockread (L"Dispatch", s, &id, sizeof (id)))
     {
       skip_next_id = 1;
 			const msg_handler_map_t* handler = msg_handler_map;
