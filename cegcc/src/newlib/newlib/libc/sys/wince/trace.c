@@ -172,7 +172,7 @@ WCETRACE(int level, const char *fmt, ...)
 
   if (__wcetrace_debugger & level)
   {
-    len = strlen(buf);
+    len = strlen(buf) + 1;
     wchar_t *wbuf = alloca(len * sizeof(wchar_t));
     MultiByteToWideChar(CP_ACP,0, buf, len, wbuf, len);
     OutputDebugStringW(wbuf);
