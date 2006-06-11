@@ -1,7 +1,5 @@
 /*
- * $Header: /cvsroot/wince-xcompile/wince-xcompile/include/aygshell.h,v 1.3 2006/01/12 22:32:20 dannybackx Exp $
- *
- * This file is part of the WinCE X-compiler project.
+ * This file is part of the CeGCC project.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
