@@ -220,6 +220,11 @@ solib_open (char *in_pathname, char **found_pathname)
 			OPF_TRY_CWD_FIRST, in_pathname, O_RDONLY, 0,
 			&temp_pathname);
 
+
+  /* Set errno here so the interface can show a formatted error
+     with perror_with_name.  */
+  errno = ENOENT;
+
   /* Done.  If not found, tough luck.  Return found_file and 
      (optionally) found_pathname.  */
   if (found_pathname != NULL && temp_pathname != NULL)
