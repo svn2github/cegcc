@@ -223,7 +223,8 @@ solib_open (char *in_pathname, char **found_pathname)
 
   /* Set errno here so the interface can show a formatted error
      with perror_with_name.  */
-  errno = ENOENT;
+  if (found_file < 0)
+    errno = ENOENT;
 
   /* Done.  If not found, tough luck.  Return found_file and 
      (optionally) found_pathname.  */
