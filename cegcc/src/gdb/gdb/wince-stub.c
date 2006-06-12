@@ -602,15 +602,12 @@ file_checksum (int s)
 
   WCHAR* path = getmemory (L"FileChecksum filename", s, GDB_FILECHECKSUM, &len);
   WCHAR buf[1024];
-//  wsprintfW(buf, L"%s : len = %d", path, len);
-  //MessageBoxW (NULL, buf, L"checksum", 0);
 
   HANDLE h = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, 
     OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
-  if (h && h != INVALID_HANDLE_VALUE)
+  if (h != INVALID_HANDLE_VALUE)
   {
-//    MessageBoxW (NULL, L"file open", L"checksum", 0);
     DWORD nBytesRead;
     DWORD total = 0;
     do {
@@ -623,16 +620,9 @@ file_checksum (int s)
         chksum ^= buffer[i];
     } while (res && nBytesRead != 0);
 
-    wsprintfW(buf, L"total = %d", (int)total);
-    MessageBoxW (NULL, buf, L"checksum", 0);
-
-//    wsprintfW(buf, L"chksum = %d", (int)chksum);
-//    MessageBoxW (NULL, buf, L"checksum", 0);
-
     CloseHandle (h);
   }
-  if (!res && !GetLastError())
-    MessageBoxW (NULL, L"aha! protocol violation!", L"checksum", 0);
+
   putresult (L"FileChecksum result", res, s, GDB_FILECHECKSUM, &chksum, sizeof (chksum));
 }
 

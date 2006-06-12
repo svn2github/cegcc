@@ -141,12 +141,12 @@ static int debug_wince = 0;
    Hopefully, the rest of the parameters are self-explanatory.
  */
 
-static int s;			/* communication socket */
+static int s = -1; /* communication socket */
 
 /* v-style interface for handling varying argument list error messages.
    Displays the error message in a dialog box and exits when user clicks
    on OK.  */
-static void
+static ATTR_NORETURN void
 vstub_error (LPCSTR fmt, va_list args)
 {
   char buf[4096];
@@ -156,7 +156,7 @@ vstub_error (LPCSTR fmt, va_list args)
 }
 
 /* The standard way to display an error message and exit.  */
-static void
+static ATTR_NORETURN void
 stub_error (LPCSTR fmt,...)
 {
   va_list args;
@@ -235,24 +235,6 @@ getdword (LPCSTR huh, gdb_wince_id what_this)
 
   return n;
 }
-
-#if 0
-static WORD
-getword (LPCSTR huh, gdb_wince_id what_this)
-{
-  WORD n;
-  gdb_wince_id what;
-  do
-    if (!sockread (huh, s, &what, sizeof (what)))
-      stub_error ("error getting record type from host - %s.", huh);
-  while (what_this != what);
-
-  if (!sockread (huh, s, &n, sizeof (n)))
-    stub_error ("error getting %s from host.", huh);
-
-  return n;
-}
-#endif
 
 /* Handy defines for getting/putting various types of values.  */
 #define gethandle(huh, what) ((HANDLE) getdword ((huh), (what)))
@@ -568,11 +550,12 @@ stop_stub (void)
 static BOOL
 REMOTE_FileChecksum (LPCWSTR file, unsigned char* checksum)
 {
+  int len;
+
   if (s < 0)
     return 0;
 
-  int len = sizeof (WCHAR) * (wcslen(file)+ 1);
-  printf_unfiltered("filename len = %d\n", len);
+  len = sizeof (WCHAR) * (wcslen(file)+ 1);
   putmemory ("FileChecksum filename", GDB_FILECHECKSUM, file, len);
   return getresult ("FileChecksum result", 
     GDB_FILECHECKSUM, checksum, NULL);
@@ -897,11 +880,12 @@ upload_to_device (const char *to, const char *from)
 
   h = NULL;
 
-  printf_unfiltered("to_time_t : %ld - st_mtime : %ld\n", 
-                      to_time_t (&wrtime), (long)st.st_mtime);
-//  need_upload = 0;
+  DEBUG_WINCE(("to_time_t : %ld - st_mtime : %ld\n", 
+                      to_time_t (&wrtime), (long)st.st_mtime));
 
-  if (!need_upload)
+  /* We won't have a socket when we are uploading the stub. 
+     In this case, rely only on the time stamps.  */
+  if (!need_upload && s != -1)
   {
     int n;
     unsigned char buf[4096];
@@ -922,7 +906,8 @@ upload_to_device (const char *to, const char *from)
     if (!checksum_ok || rem_checkum != chksum)
       need_upload = 1;
 
-    printf_unfiltered("checksum_ok = %d, checksum = %d, remote checksum = %d\n", checksum_ok, chksum, rem_checkum);
+    DEBUG_WINCE(("checksum_ok = %d, checksum = %d, remote checksum = %d\n", 
+      checksum_ok, chksum, rem_checkum));
   }
 
   if (need_upload)

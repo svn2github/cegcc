@@ -1192,7 +1192,9 @@ handle_output_debug_string (struct target_waitstatus *ourstatus)
 
 
   /* go through temp buffer on unicode case only */
-  buf=(void*)(current_event.u.DebugString.fUnicode?buffer:s);
+  buf=current_event.u.DebugString.fUnicode?
+        (void*)buffer:
+        (void*)s;
 
   if (nbytes > READ_BUFFER_LEN)
     nbytes = READ_BUFFER_LEN;
@@ -1221,13 +1223,14 @@ handle_output_debug_string (struct target_waitstatus *ourstatus)
   }
 
 #ifdef _WIN32_WCE
-  /* TODO: ### Is this WinCE specific? Must check with NKDbgPrintfW if sending two lines in one call
-     generates two debug events */
-  char* q = strchr (s, '\r');
-  if (!q)
-    q = strchr (s, '\n');
-  if (q)
-    *q = '\0';
+  int len = strlen (s);
+  if (len >= 1 && s[len-1] == '\n')
+  {
+    if (len >= 2 && s[len-2] == '\r')
+      s[len-2] = '\0';
+    else
+      s[len-1] = '\0';
+  }
 #endif
 
   if (strncmp (s, _CYGWIN_SIGNAL_STRING, sizeof (_CYGWIN_SIGNAL_STRING) - 1) != 0)
