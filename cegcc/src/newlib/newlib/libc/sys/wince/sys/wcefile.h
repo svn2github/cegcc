@@ -1,16 +1,6 @@
 #ifndef _WCEFILE_H_
 #define _WCEFILE_H_
 
-#undef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#undef WIN32_LEAN_AND_MEAN
-
-#define FILE_TYPE_UNKNOWN          1
-#define FILE_TYPE_DISK	           2
-#define FILE_TYPE_CHAR	           3
-#define FILE_TYPE_PIPE             4
-
 #ifdef __cplusplus
 extern "C" {
 #endif

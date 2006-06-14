@@ -2,7 +2,8 @@
 //
 // Time-stamp: <03/01/02 22:22:54 keuchel@netwave.de>
 
-#include <winsock2.h>
+#define	WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 #include <stdlib.h>
 #include <errno.h>

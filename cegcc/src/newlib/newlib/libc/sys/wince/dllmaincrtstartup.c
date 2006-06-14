@@ -1,3 +1,4 @@
+#define	WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 extern void __call_exitprocs(int code, void*);

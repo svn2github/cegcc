@@ -4,11 +4,11 @@
 #include <stdarg.h>
 #include <alloca.h>
 
-#include "sys/wcetrace.h"
-#include "sys/wcefile.h"
-
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+
+#include "sys/wcetrace.h"
+#include "sys/wcefile.h"
 
 #ifndef CE_NOTRACE
 

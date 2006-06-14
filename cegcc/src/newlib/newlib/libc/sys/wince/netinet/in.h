@@ -16,6 +16,8 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
+#ifndef	__USE_W32_SOCKETS
+
 #ifndef	_NETINET_IN_H
 #define	_NETINET_IN_H	1
 
@@ -367,3 +369,8 @@ struct in6_pktinfo
 __END_DECLS
 
 #endif	/* netinet/in.h */
+
+#else	/* __USE_W32_SOCKETS */
+
+typedef uint32_t in_addr_t;
+#endif	/* __USE_W32_SOCKETS */

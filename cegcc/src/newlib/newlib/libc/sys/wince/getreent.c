@@ -8,6 +8,7 @@
 #include "getreent.h"
 
 #include <reent.h>
+#define	WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #define TLS_OUT_OF_INDEXES ((DWORD)0xffffffff)

@@ -16,6 +16,8 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
+#ifndef	__USE_W32_SOCKETS
+
 #ifndef _NETDB_H
 # error "Never include <bits/netdb.h> directly; use <netdb.h> instead."
 #endif
@@ -31,3 +33,5 @@ struct netent
   int n_addrtype;		/* Net address type.  */
   uint32_t n_net;		/* Network number.  */
 };
+
+#endif	/* __USE_W32_SOCKETS */

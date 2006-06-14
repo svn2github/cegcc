@@ -2,6 +2,7 @@
 //
 // Time-stamp: <08/09/01 10:43:16 keuchel@netwave.de>
 
+#define	WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #include <sys/stat.h>

@@ -2,10 +2,14 @@
 //
 // Time-stamp: <03/01/02 22:34:54 keuchel@netwave.de>
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#include "sys/ceshared.h"
+#include "sys/wcefile.h"
+
 #include <errno.h>
 #include <wchar.h>
-
-#include "sys/wcefile.h"
 
 #define COUNTOF(X) (sizeof(X)/sizeof((X)[0]))
 
