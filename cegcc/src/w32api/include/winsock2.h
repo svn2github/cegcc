@@ -220,6 +220,9 @@ struct  protoent {
 #define IMPLINK_IP	155
 #define IMPLINK_LOWEXPER	156
 #define IMPLINK_HIGHEXPER       158
+
+typedef	unsigned long	in_addr_t;
+
 struct in_addr {
 	union {
 		struct { u_char s_b1,s_b2,s_b3,s_b4; } S_un_b;
