@@ -11,6 +11,29 @@
 
 #include <errno.h>
 
+#ifndef	PulseEvent
+/* Stolen from sys/oldsys/wcethread.h */
+#define EVENT_PULSE     1
+#define EVENT_RESET     2
+#define EVENT_SET       3
+#define PulseEvent(x) EventModify(x, EVENT_PULSE)
+#define ResetEvent(x) EventModify(x, EVENT_RESET)
+#define SetEvent(x) EventModify(x, EVENT_SET)
+#endif
+
+#ifndef	GetCurrentThread
+/* Stolen from sys/oldsys/wcebase.h */
+#define SYS_HANDLE_BASE	 64
+#define SH_WIN32                0
+#define SH_CURTHREAD            1
+#define SH_CURPROC              2
+/* Process/Thread ID Methods */
+#define GetCurrentThread() ((HANDLE)(SH_CURTHREAD+SYS_HANDLE_BASE))
+#define GetCurrentProcess() ((HANDLE)(SH_CURPROC+SYS_HANDLE_BASE))
+#define GetCurrentThreadId() ((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURTHREAD]))
+#define GetCurrentProcessId() ((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURPROC]))
+#endif
+
 /* Cache manipulation constants */
 #define CACHE_SYNC_DISCARD       1
 #define CACHE_SYNC_INSTRUCTIONS  2
