@@ -145,8 +145,16 @@ static int runtime_pseudo_relocs_created = 0;
 
 typedef struct
   {
+  char *name;
+  int len;
+}
+autofilter_entry_type;
+
+typedef struct
+  {
     char *target_name;
     char *object_target;
+    autofilter_entry_type* autofilter_symbollist;
     unsigned int imagebase_reloc;
     int pe_arch;
     int bfd_arch;
@@ -154,24 +162,21 @@ typedef struct
   }
 pe_details_type;
 
-typedef struct
-  {
-    char *name;
-    int len;
-  }
-autofilter_entry_type;
-
 #define PE_ARCH_i386	1
 #define PE_ARCH_sh	2
 #define PE_ARCH_mips	3
 #define PE_ARCH_arm	4
 #define PE_ARCH_arm_epoc 5
 
+static autofilter_entry_type autofilter_symbollist_generic[];
+static autofilter_entry_type autofilter_symbollist_i386[];
+
 static pe_details_type pe_detail_list[] =
 {
   {
     "pei-i386",
     "pe-i386",
+    autofilter_symbollist_i386,
     7 /* R_IMAGEBASE */,
     PE_ARCH_i386,
     bfd_arch_i386,
@@ -180,6 +185,7 @@ static pe_details_type pe_detail_list[] =
   {
     "pei-shl",
     "pe-shl",
+    autofilter_symbollist_generic,
     16 /* R_SH_IMAGEBASE */,
     PE_ARCH_sh,
     bfd_arch_sh,
@@ -188,6 +194,7 @@ static pe_details_type pe_detail_list[] =
   {
     "pei-mips",
     "pe-mips",
+    autofilter_symbollist_generic,
     34 /* MIPS_R_RVA */,
     PE_ARCH_mips,
     bfd_arch_mips,
@@ -196,6 +203,7 @@ static pe_details_type pe_detail_list[] =
   {
     "pei-arm-little",
     "pe-arm-little",
+    autofilter_symbollist_generic,
     11 /* ARM_RVA32 */,
     PE_ARCH_arm,
     bfd_arch_arm,
@@ -204,32 +212,54 @@ static pe_details_type pe_detail_list[] =
   {
     "epoc-pei-arm-little",
     "epoc-pe-arm-little",
+    autofilter_symbollist_generic,
     11 /* ARM_RVA32 */,
     PE_ARCH_arm_epoc,
     bfd_arch_arm,
     0
   },
-  { NULL, NULL, 0, 0, 0, 0 }
+  { NULL, NULL, NULL, 0, 0, 0, 0 }
 };
 
 static pe_details_type *pe_details;
 
-static autofilter_entry_type autofilter_symbollist[] =
+static autofilter_entry_type autofilter_symbollist_generic[] =
 {
+  { ".text", 5 },
+  /* entry point symbols */
   { "DllMain", 7 },
   { "DllMainCRTStartup", 17 },
   { "_DllMainCRTStartup", 18 },
+  /* runtime pseudo-reloc */
+  { "_pei386_runtime_relocator", 25 },
+  { "do_pseudo_reloc", 15 },
+  { NULL, 0 }
+};
+
+static autofilter_entry_type autofilter_symbollist_i386[] =
+{
+  { ".text", 5 },
+  /* entry point symbols, and entry hooks */
+  { "cygwin_crt0", 11 },
   { "DllMain@12", 10 },
   { "DllEntryPoint@0", 15 },
   { "DllMainCRTStartup@12", 20 },
   { "_cygwin_dll_entry@12", 20 },
   { "_cygwin_crt0_common@8", 21 },
   { "_cygwin_noncygwin_dll_entry@12", 30 },
-  { "impure_ptr", 10 },
+  { "cygwin_attach_dll", 17 },
+  { "cygwin_premain0", 15 },
+  { "cygwin_premain1", 15 },
+  { "cygwin_premain2", 15 },
+  { "cygwin_premain3", 15 },
+  /* runtime pseudo-reloc */
   { "_pei386_runtime_relocator", 25 },
   { "do_pseudo_reloc", 15 },
-  { "cygwin_crt0", 11 },
-  { ".text", 5 },
+  /* global vars that should not be exported */
+  { "impure_ptr", 10 },
+  { "_impure_ptr", 11 },
+  { "_fmode", 6 },
+  { "environ", 7 },
   { NULL, 0 }
 };
 
@@ -266,7 +296,7 @@ static autofilter_entry_type autofilter_objlist[] =
 
 static autofilter_entry_type autofilter_symbolprefixlist[] =
 {
-  { "__imp_", 6 },
+  { "__imp", 5 },
   /* Do __imp_ explicitly to save time.  */
   { "__rtti_", 7 },
   { ".idata$", 7 },
@@ -275,14 +305,6 @@ static autofilter_entry_type autofilter_symbolprefixlist[] =
   { "__builtin_", 10 },
   /* Don't export symbols specifying internal DLL layout.  */
   { "_head_", 6 },
-  { "_fmode", 6 },
-  { "_impure_ptr", 11 },
-  { "cygwin_attach_dll", 17 },
-  { "cygwin_premain0", 15 },
-  { "cygwin_premain1", 15 },
-  { "cygwin_premain2", 15 },
-  { "cygwin_premain3", 15 },
-  { "environ", 7 },
   { NULL, 0 }
 };
 
@@ -404,7 +426,8 @@ auto_export (bfd *abfd, def_file *d, const char *n)
     libname = lbasename (abfd->my_archive->filename);
 
   /* We should not re-export imported stuff.  */
-  if (strncmp (n, "_imp_", 5) == 0)
+/* pedro: if (strncmp (n, "_imp_", 5) == 0) */
+  if (strncmp (n, "__imp_", 6) == 0)
     return 0;
 
   for (i = 0; i < d->num_exports; i++)
@@ -452,7 +475,7 @@ auto_export (bfd *abfd, def_file *d, const char *n)
 	 it is too restrictive.  */
 
       /* Then, exclude specific symbols.  */
-      afptr = autofilter_symbollist;
+      afptr = pe_details->autofilter_symbollist;
       while (afptr->name)
 	{
 	  if (strcmp (n, afptr->name) == 0)
@@ -539,6 +562,9 @@ process_def_file (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
   /* Now, maybe export everything else the default way.  */
   if (pe_dll_export_everything || pe_def_file->num_exports == 0)
     {
+	  if (pe_dll_extra_pe_debug)
+		printf("pedro: exporting everything\n");
+
       for (b = info->input_bfds; b; b = b->link_next)
 	{
 	  asymbol **symbols;
@@ -548,8 +574,17 @@ process_def_file (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
 	  symbols = xmalloc (symsize);
 	  nsyms = bfd_canonicalize_symtab (b, symbols);
 
+	  if (pe_dll_extra_pe_debug)
+		printf("pedro: nsyms = %d\n", nsyms);
+
 	  for (j = 0; j < nsyms; j++)
 	    {
+		  if (pe_dll_extra_pe_debug)
+		  {
+			printf("pedro: symbols[%d], name(%s), section(%p), flags(0x%x)\n", 
+				j, symbols[j]->name, symbols[j]->section, symbols[j]->flags);
+		  }
+
 	      /* We should export symbols which are either global or not
 		 anything at all.  (.bss data is the latter)
 		 We should not export undefined symbols.  */
@@ -562,7 +597,8 @@ process_def_file (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
 		  /* We should not re-export imported stuff.  */
 		  {
 		    char *name = xmalloc (strlen (sn) + 2 + 6);
-		    sprintf (name, "%s%s", U("_imp_"), sn);
+/* pedro    sprintf (name, "%s%s", U("_imp_"), sn); */
+		    sprintf (name, "%s%s", "__imp_", sn);
 
 		    blhe = bfd_link_hash_lookup (info->hash, name,
 						 FALSE, FALSE, FALSE);
@@ -572,7 +608,10 @@ process_def_file (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
 		      continue;
 		  }
 
+/* pedro: this kills auto export 
 		  if (*sn == '_')
+*/
+		  if (pe_details->underscored && *sn == '_')
 		    sn++;
 
 		  if (auto_export (b, pe_def_file, sn))
@@ -687,6 +726,12 @@ process_def_file (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
     }
   pe_def_file->num_exports = j;	/* == NE */
 
+		   
+  if (pe_dll_extra_pe_debug)
+  {
+	printf("pedro: bfd_link_hash_defined(0x%x)\n", bfd_link_hash_defined);
+  }	  
+
   for (i = 0; i < NE; i++)
     {
       char *name;
@@ -725,6 +770,14 @@ process_def_file (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
       blhe = bfd_link_hash_lookup (info->hash,
 				   name,
 				   FALSE, FALSE, TRUE);
+
+      if (pe_dll_extra_pe_debug)
+	  {
+		  if (blhe)
+			printf("pedro: name(%s), blhe(%p), type(0x%x)\n", name, blhe, blhe->type);
+		  else
+			printf("pedro: name(%s), blhe(%p)\n", name, blhe);
+	  }
 
       if (blhe
 	  && (blhe->type == bfd_link_hash_defined
@@ -767,8 +820,8 @@ process_def_file (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
       else
 	{
 	  /* xgettext:c-format */
-	  einfo (_("%XCannot export %s: symbol not found\n"),
-		 pe_def_file->exports[i].internal_name);
+	  einfo (_("%XCannot export %s (%s): symbol not found\n"),
+		 pe_def_file->exports[i].internal_name,pe_def_file->exports[i].name);
 	}
       free (name);
     }
@@ -1186,6 +1239,8 @@ generate_reloc (bfd *abfd, struct bfd_link_info *info)
 			     + sym->section->output_offset
 			     + sym->section->output_section->vma);
 		  reloc_data[total_relocs].vma = sec_vma + relocs[i]->address;
+
+/*		  printf ("rel: %s, vma=%08X\n", sym->name,reloc_data[total_relocs].vma); */
 
 #define BITS_AND_SHIFT(bits, shift) (bits * 1000 | shift)
 
@@ -1857,7 +1912,8 @@ make_one (def_file_export *exp, bfd *parent)
 		    BSF_GLOBAL, 0);
       if (! exp->flag_data)
 	quick_symbol (abfd, "", exp->internal_name, "", tx, BSF_GLOBAL, 0);
-      quick_symbol (abfd, U ("_imp_"), exp->internal_name, "", id5,
+/* pedro: quick_symbol (abfd, U ("_imp_"), exp->internal_name, "", id5, */
+      quick_symbol (abfd, "__imp_", exp->internal_name, "", id5,
 		    BSF_GLOBAL, 0);
       /* Fastcall applies only to functions,
 	 so no need for auto-import symbol.  */
@@ -1869,16 +1925,19 @@ make_one (def_file_export *exp, bfd *parent)
       if (! exp->flag_data)
 	quick_symbol (abfd, U (""), exp->internal_name, "", tx,
 		      BSF_GLOBAL, 0);
-      quick_symbol (abfd, U ("_imp__"), exp->internal_name, "", id5,
+/* pedro: quick_symbol (abfd, U ("_imp__"), exp->internal_name, "", id5, */
+      quick_symbol (abfd, "__imp_", exp->internal_name, "", id5,
 		    BSF_GLOBAL, 0);
       /* Symbol to reference ord/name of imported
 	 data symbol, used to implement auto-import.  */
       if (exp->flag_data)
-	quick_symbol (abfd, U("_nm__"), exp->internal_name, "", id6,
+/* pedro: quick_symbol (abfd, U("_nm__"), exp->internal_name, "", id6, */
+	quick_symbol (abfd, U("_nm_"), exp->internal_name, "", id6,
 		      BSF_GLOBAL,0);
     }
   if (pe_dll_compat_implib)
-    quick_symbol (abfd, U ("__imp_"), exp->internal_name, "", id5,
+/* pedro:    quick_symbol (abfd, U ("__imp_"), exp->internal_name, "", id5, */
+	quick_symbol (abfd, "__imp_", exp->internal_name, "", id5,
 		  BSF_GLOBAL, 0);
 
   if (! exp->flag_data)
@@ -2205,7 +2264,7 @@ pe_create_runtime_relocator_reference (bfd *parent)
   symtab = xmalloc (2 * sizeof (asymbol *));
   extern_rt_rel = quick_section (abfd, ".rdata", SEC_HAS_CONTENTS, 2);
 
-  quick_symbol (abfd, "", "__pei386_runtime_relocator", "", UNDSEC,
+  quick_symbol (abfd, "", "_pei386_runtime_relocator", "", UNDSEC,
 		BSF_NO_FLAGS, 0);
 
   bfd_set_section_size (abfd, extern_rt_rel, 4);
@@ -2418,11 +2477,17 @@ pe_process_import_defs (bfd *output_bfd, struct bfd_link_info *link_info)
 	    if (!blhe || (blhe && blhe->type != bfd_link_hash_undefined))
 	      {
 		if (lead_at)
-		  sprintf (name, "%s%s", U ("_imp_"),
+		{
+/* pedro: sprintf (name, "%s%s", U ("_imp_"), */
+		  sprintf (name, "%s%s", "__imp_",
 			   pe_def_file->imports[i].internal_name);
+		}
 		else
-		  sprintf (name, "%s%s", U ("_imp__"),
+		{
+/* pedro: sprintf (name, "%s%s", U ("_imp__"), */
+		  sprintf (name, "%s%s", "__imp_",
 			   pe_def_file->imports[i].internal_name);
+		}
 
 		blhe = bfd_link_hash_lookup (link_info->hash, name,
 					     FALSE, FALSE, FALSE);

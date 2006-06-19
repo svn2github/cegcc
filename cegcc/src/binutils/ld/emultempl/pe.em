@@ -919,15 +919,24 @@ pe_find_data_imports (void)
 
 	      for (i = 0; i < nsyms; i++)
 		{
+#if 0		
 		  if (memcmp (symbols[i]->name, "__head_",
 			      sizeof ("__head_") - 1))
+#else
+		  if (memcmp (symbols[i]->name, "_head_",
+			      sizeof ("_head_") - 1))
+#endif
 		    continue;
 
 		  if (pe_dll_extra_pe_debug)
 		    printf ("->%s\n", symbols[i]->name);
 
 		  pe_data_import_dll = (char*) (symbols[i]->name +
+#if 0		
 						sizeof ("__head_") - 1);
+#else
+						sizeof ("_head_") - 1);
+#endif
 		  break;
 		}
 
