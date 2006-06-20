@@ -1550,7 +1550,7 @@ win32_continue (DWORD continue_status, int id)
 static DWORD
 fake_create_process (void)
 {
-  current_process_handle = OpenProcess (PROCESS_ALL_ACCESS, FALSE,
+  current_process_handle = DEBUG_OpenProcess (PROCESS_ALL_ACCESS, FALSE,
 					current_event.dwProcessId);
   main_thread_id = current_event.dwThreadId;
   current_thread = win32_add_thread (main_thread_id,
@@ -1975,7 +1975,7 @@ win32_attach (char *args, int from_tty)
       pid = cygwin_internal (CW_CYGWIN_PID_TO_WINPID, pid);
 
       if (pid > 0)
-	ok = DebugActiveProcess (pid);
+	ok = DEBUG_DebugActiveProcess (pid);
 
       if (!ok)
 	error (_("Can't attach to process."));
@@ -2318,13 +2318,17 @@ win32_mourn_inferior (void)
 
 /* Send a SIGINT to the process group.  This acts just like the user typed a
    ^C on the controlling terminal. */
-
 static void
 win32_stop (void)
 {
+#ifndef _WIN32_WCE
   DEBUG_EVENTS (("gdb: GenerateConsoleCtrlEvent (CTRLC_EVENT, 0)\n"));
   CHECK (GenerateConsoleCtrlEvent (CTRL_C_EVENT, current_event.dwProcessId));
   registers_changed ();		/* refresh register state */
+#else
+  printf_unfiltered("win32_stop\n");
+  gdb_flush (gdb_stdout);
+#endif
 }
 
 static int
@@ -2763,6 +2767,7 @@ set_win32_aliases (char *argv0)
   add_info_alias ("dll", "sharedlibrary", 1);
 }
 
+#ifndef _WIN32_WCE
 void _init_win32_nat_iface()
 {
 #define LOAD(FUNC) \
@@ -2786,6 +2791,7 @@ void _init_win32_nat_iface()
 
 #undef LOAD
 }
+#endif
 
 void
 _initialize_win32_nat (void)
