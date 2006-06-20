@@ -1,6 +1,3 @@
-#define	WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <wchar.h>
@@ -15,19 +12,6 @@
 #include "sys/shared.h"
 #include "sys/io.h"
 #include "sys/fixpath.h"
-
-#ifndef	GetCurrentThread
-/* Stolen from sys/oldsys/wcebase.h */
-#define SYS_HANDLE_BASE	 64
-#define SH_WIN32                0
-#define SH_CURTHREAD            1
-#define SH_CURPROC              2
-/* Process/Thread ID Methods */
-#define GetCurrentThread() ((HANDLE)(SH_CURTHREAD+SYS_HANDLE_BASE))
-#define GetCurrentProcess() ((HANDLE)(SH_CURPROC+SYS_HANDLE_BASE))
-#define GetCurrentThreadId() ((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURTHREAD]))
-#define GetCurrentProcessId() ((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURPROC]))
-#endif
 
 void
 _start_process(wchar_t *exe, wchar_t *cmd)

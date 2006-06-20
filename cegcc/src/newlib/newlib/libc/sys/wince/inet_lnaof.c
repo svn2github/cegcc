@@ -27,9 +27,6 @@
  * SUCH DAMAGE.
  */
 
-#define	WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

@@ -14,7 +14,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 */
 
-#define	WIN32_LEAN_AND_MEAN
+
 #include <windows.h>
 
 extern char __RUNTIME_PSEUDO_RELOC_LIST__;

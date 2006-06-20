@@ -16,8 +16,6 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
-#ifndef	__USE_W32_SOCKETS
-
 #ifndef	_NETINET_IN_H
 #define	_NETINET_IN_H	1
 
@@ -27,14 +25,6 @@
 
 
 __BEGIN_DECLS
-
-#ifndef	SOCKET_ERROR
-#define	SOCKET_ERROR	(-1)
-#endif
-
-#ifndef	INVALID_SOCKET
-#define	INVALID_SOCKET	(~0)
-#endif
 
 /* Standard well-defined IP protocols.  */
 enum
@@ -377,8 +367,3 @@ struct in6_pktinfo
 __END_DECLS
 
 #endif	/* netinet/in.h */
-
-#else	/* __USE_W32_SOCKETS */
-
-typedef uint32_t in_addr_t;
-#endif	/* __USE_W32_SOCKETS */

@@ -1,6 +1,3 @@
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
 #include "sys/wcetrace.h"
 #include "sys/ceshared.h"
 
@@ -12,6 +9,9 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <errno.h>
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 #define CHECKFD(afd) \
   if (afd < 0 || afd >= MAXFDS || _fdtab[afd].fd == -1) { \
@@ -26,7 +26,6 @@
 #define WSADESCRIPTION_LEN 256
 #define WSASYS_STATUS_LEN 128
 
-#ifndef __USE_W32_SOCKETS
 typedef struct WSAData {
   WORD                    wVersion;
   WORD                    wHighVersion;
@@ -38,7 +37,6 @@ typedef struct WSAData {
 } WSADATA, * LPWSADATA;
 
 int WSAStartup(WORD version, WSADATA *wsadata);
-#endif
 
 #define INVALID_SOCKET (SOCKET)(~0)
 #define SOCKET_ERROR (-1)

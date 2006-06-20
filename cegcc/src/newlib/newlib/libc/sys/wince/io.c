@@ -825,20 +825,6 @@ ioctl(int fd, unsigned int request, void *arg)
   return(0);
 }
 
-#ifndef	GetCurrentProcessId
-#define PUserKData ((LPBYTE)0xFFFFC800)
-#define SYSHANDLE_OFFSET 0x004
-#define SYS_HANDLE_BASE	 64
-#define SH_WIN32                0
-#define SH_CURTHREAD            1
-#define SH_CURPROC              2
-/* Process/Thread ID Methods */
-#define GetCurrentThread() ((HANDLE)(SH_CURTHREAD+SYS_HANDLE_BASE))
-#define GetCurrentProcess() ((HANDLE)(SH_CURPROC+SYS_HANDLE_BASE))
-#define GetCurrentThreadId() ((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURTHREAD]))
-#define GetCurrentProcessId() ((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURPROC]))
-#endif
-
 int
 _getpid_r(struct _reent *reent)
 {

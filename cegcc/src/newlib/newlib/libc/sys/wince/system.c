@@ -53,9 +53,6 @@ Supporting OS subroutines required: <<_exit>>, <<_execve>>, <<_fork_r>>,
 <<_wait_r>>.
 */
 
-#define	WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
 #include <errno.h>
 #include <stddef.h>
 #include <stdlib.h>

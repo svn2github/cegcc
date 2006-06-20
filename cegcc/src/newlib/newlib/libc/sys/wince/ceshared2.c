@@ -2,42 +2,23 @@
 //
 // Time-stamp: <23/02/02 11:36:31 keuchel@netwave.de>
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
 #include "sys/ceshared.h"
 #include "sys/wcetrace.h"
 #include "sys/wcefile.h"
 
 #include <errno.h>
 
-#ifndef	PulseEvent
-/* Stolen from sys/oldsys/wcethread.h */
-#define EVENT_PULSE     1
-#define EVENT_RESET     2
-#define EVENT_SET       3
-#define PulseEvent(x) EventModify(x, EVENT_PULSE)
-#define ResetEvent(x) EventModify(x, EVENT_RESET)
-#define SetEvent(x) EventModify(x, EVENT_SET)
-#endif
-
-#ifndef	GetCurrentThread
-/* Stolen from sys/oldsys/wcebase.h */
-#define SYS_HANDLE_BASE	 64
-#define SH_WIN32                0
-#define SH_CURTHREAD            1
-#define SH_CURPROC              2
-/* Process/Thread ID Methods */
-#define GetCurrentThread() ((HANDLE)(SH_CURTHREAD+SYS_HANDLE_BASE))
-#define GetCurrentProcess() ((HANDLE)(SH_CURPROC+SYS_HANDLE_BASE))
-#define GetCurrentThreadId() ((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURTHREAD]))
-#define GetCurrentProcessId() ((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURPROC]))
-#endif
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 /* Cache manipulation constants */
 #define CACHE_SYNC_DISCARD       1
 #define CACHE_SYNC_INSTRUCTIONS  2
 #define CACHE_SYNC_WRITEBACK	   4
+
+#define STD_INPUT_HANDLE  0
+#define STD_OUTPUT_HANDLE 1
+#define STD_ERROR_HANDLE  2
 
 HANDLE XCECreateEventA(LPSECURITY_ATTRIBUTES lpEventAttributes, BOOL bManualReset, BOOL bInitialState, const char *lpName);
 

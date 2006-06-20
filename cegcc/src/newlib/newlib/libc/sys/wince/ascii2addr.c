@@ -1,11 +1,8 @@
 // ascii2addr.c
 //
 // Time-stamp: <12/02/01 16:56:51 keuchel@keuchelnt>
+#include <winsock2.h>
 
-#define	WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
-#include <netinet/in.h>
 #include <errno.h>
 
 #define WSAGetLastError() GetLastError()

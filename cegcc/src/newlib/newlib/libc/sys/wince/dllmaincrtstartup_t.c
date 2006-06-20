@@ -1,4 +1,3 @@
-#define	WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 int __DllMainCRTStartup(HANDLE hinstDLL, DWORD dwReason, LPVOID lpvReserved);

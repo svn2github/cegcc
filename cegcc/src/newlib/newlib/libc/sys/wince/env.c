@@ -3,7 +3,6 @@
 
 #include "sys/shared.h"
 
-#define	WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #define ERROR_NO_MORE_ITEMS              259L

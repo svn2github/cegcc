@@ -1,8 +1,4 @@
-#define	WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <netdb.h>
+#include <winsock2.h>
 
 
 /* rexec.c --- rexec for winsock
@@ -31,10 +27,10 @@
 #define WSAGetLastError() GetLastError()
 
 int rexec (char **__restrict ahost, int rport,
-	   __const char *__restrict user,
-	   __const char *__restrict pass,
-	   __const char *__restrict cmd, int *__restrict fd2p)
-	   __THROW
+						   __const char *__restrict user,
+						   __const char *__restrict pass,
+						   __const char *__restrict cmd, int *__restrict fd2p)
+						   __THROW
 {
   int s, timo = 1;
   struct sockaddr_in sin, from;

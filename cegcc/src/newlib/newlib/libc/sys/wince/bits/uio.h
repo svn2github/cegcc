@@ -16,9 +16,6 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
-#ifndef	_BITS_UIO_H
-#define	_BITS_UIO_H
-
 #ifndef _SYS_UIO_H
 # error "Never include <bits/uio.h> directly; use <sys/uio.h> instead."
 #endif
@@ -47,4 +44,3 @@ struct iovec
     void *iov_base;	/* Pointer to data.  */
     size_t iov_len;	/* Length of data.  */
   };
-#endif

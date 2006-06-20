@@ -4,31 +4,11 @@
 #include <stdarg.h>
 #include <alloca.h>
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
 #include "sys/wcetrace.h"
 #include "sys/wcefile.h"
 
-#ifndef	GetCurrentThread
-/* Stolen from sys/oldsys/wcebase.h */
-#define SYS_HANDLE_BASE	 64
-#define SH_WIN32                0
-#define SH_CURTHREAD            1
-#define SH_CURPROC              2
-/* Kernel Constants from M$ kfuncs.h */
-#if defined(SARM) || defined(__arm__)
-#define PUserKData ((LPBYTE)0xFFFFC800)
-#else
-#define PUserKData ((LPBYTE)0x00005800)
-#endif
-#define SYSHANDLE_OFFSET 0x004
-/* Process/Thread ID Methods */
-#define GetCurrentThread() ((HANDLE)(SH_CURTHREAD+SYS_HANDLE_BASE))
-#define GetCurrentProcess() ((HANDLE)(SH_CURPROC+SYS_HANDLE_BASE))
-#define GetCurrentThreadId() ((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURTHREAD]))
-#define GetCurrentProcessId() ((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURPROC]))
-#endif
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 #ifndef CE_NOTRACE
 

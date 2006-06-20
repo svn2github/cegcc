@@ -20,7 +20,6 @@
    host order and returned in network order (suitable for use in
    system calls).  */
 
-#ifndef	__USE_W32_SOCKETS
 #ifndef	_NETDB_H
 #define	_NETDB_H	1
 
@@ -492,4 +491,3 @@ extern int gai_cancel (struct gaicb *__gaicbp) __THROW;
 __END_DECLS
 
 #endif	/* netdb.h */
-#endif	/* __USE_W32_SOCKETS */

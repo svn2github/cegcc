@@ -2,10 +2,6 @@
 //
 // Time-stamp: <12/02/01 14:43:41 keuchel@keuchelnt>
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
-#include "sys/ceshared.h"
 #include "sys/wcefile.h"
 #include <wchar.h>
 #include <alloca.h>
