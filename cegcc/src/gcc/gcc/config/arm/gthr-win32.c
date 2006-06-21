@@ -33,9 +33,6 @@ Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
    This exception does not however invalidate any other reasons why
    the executable file might be covered by the GNU General Public License.  */
 
-/* Don't need this file at all on unix */
-#ifndef	unix
-
 #if defined __MINGW32__ && !defined UNDER_CE
 #include <_mingw.h>
 #endif
@@ -264,4 +261,3 @@ __gthr_win32_recursive_mutex_unlock (__gthread_recursive_mutex_t *mutex)
 
   return 0;
 }
-#endif	/* unix */
