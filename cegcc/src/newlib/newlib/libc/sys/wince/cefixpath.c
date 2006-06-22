@@ -65,10 +65,10 @@ XCEFixPathW(const wchar_t *wpathin, wchar_t *wpathout)
   wcscat(wpathout, wpathin);
 
   for(p = wpathout; *p; p++)
-    {
-      if(*p == '/')
-	*p = '\\';
-    }
+  {
+    if(*p == '/')
+      *p = '\\';
+  }
 
   // don't allow slash at end of directory name...
   if(p[-1] == '\\' && p != wpathout + 1)
