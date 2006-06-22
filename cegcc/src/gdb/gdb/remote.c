@@ -2623,7 +2623,7 @@ remote_async_resume (ptid_t ptid, int step, enum target_signal siggnal)
 
 /* Set up the signal handler for SIGINT, while the target is
    executing, ovewriting the 'regular' SIGINT signal handler.  */
-static void
+void
 initialize_sigint_signal_handler (void)
 {
   sigint_remote_token =

@@ -1039,7 +1039,7 @@ printf_unfiltered("Starting on device: \"%s %s\"\n", stub_file_name, args);
   if (upload_when != UPLOAD_NEVER) {
     /* If we don't upload, don't bother to start via RAPI either */
   if (!CeCreateProcess (towide (stub_file_name, NULL), 
-			towide (args, NULL),
+			NULL,
 			NULL, NULL, 0, 0, 
 			NULL, NULL, NULL, &pi))
     {

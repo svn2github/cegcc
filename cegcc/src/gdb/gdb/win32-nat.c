@@ -2104,6 +2104,7 @@ win32_create_inferior (char *exec_file, char *allargs, char **env,
   char *args;
   char real_path[MAXPATHLEN];
   char *toexec;
+  char *app_name = NULL;
   char shell[MAX_PATH + 1]; /* Path to shell */
   const char *sh;
   int tty;
@@ -2156,10 +2157,17 @@ win32_create_inferior (char *exec_file, char *allargs, char **env,
 
   attach_flag = 0;
 
+#ifndef _WIN32_WCE
   args = alloca (strlen (toexec) + strlen (allargs) + 2);
   strcpy (args, toexec);
   strcat (args, " ");
   strcat (args, allargs);
+#else
+  app_name = toexec;
+  /* Don't copy toexec to command line.  */
+  args = alloca (strlen (allargs) + 1);
+  strcpy (args, allargs);
+#endif
 
   /* Prepare the environment vars for CreateProcess.  */
   {
@@ -2257,7 +2265,7 @@ win32_create_inferior (char *exec_file, char *allargs, char **env,
     }
 
   win32_init_thread_list ();
-  ret = DEBUG_CreateProcessA (toexec,
+  ret = DEBUG_CreateProcessA (app_name,
 		       args,	/* command line */
 		       NULL,	/* Security */
 		       NULL,	/* thread */
