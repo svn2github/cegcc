@@ -11,7 +11,6 @@
 	.globl __EH_CODE_START__
 		
 	.extern _startup
-	.extern WinMain
 	.extern main
 	.extern _eh_handler
 	.extern __set_runtime_thread_mode
