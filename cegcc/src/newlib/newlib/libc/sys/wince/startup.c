@@ -259,6 +259,72 @@ typedef int fnmain(int argc, char** argv);
 typedef void fngccmain(void); 
 
 static _SHMBLK  shmblk = NULL;
+extern void _initenv(_SHMBLK shmblk);
+
+static void process_args(void)
+{
+  wchar_t  cmdnameBufW[NAME_LEN];
+  char     buf[MAX_PATH];
+  int      cmdlineLen = 0;
+  wchar_t* cmdlinePtrW;
+  int pgid = 0;
+  int i;
+  int len;
+  int cmdlen = 0;
+
+  /* argv[0] is the path of invoked program - get this from CE */
+  len = GetModuleFileNameW(NULL, cmdnameBufW, NAME_LEN);
+  wcstombs(buf, cmdnameBufW, wcslen(cmdnameBufW) + 1);
+
+  /* fixpath replaces backslashes with slashes */
+  fixpath(buf, __cmdlinebuf);
+
+  char* p = __cmdlinebuf;
+  while (*p)
+  {
+    if(*p == '\\')
+      *p = '/';
+    p++;
+  }
+
+  __argv[0] = __cmdlinebuf;
+  cmdlen = strlen(__cmdlinebuf);
+
+  cmdlinePtrW = GetCommandLineW();
+  if (!cmdlinePtrW)
+    return;
+  cmdlineLen = wcslen(cmdlinePtrW);
+  if (cmdlineLen > 0) {
+    char* argv1 = __cmdlinebuf + cmdlen + 1;
+    wcstombs(argv1, cmdlinePtrW, cmdlineLen + 1);
+    WCETRACE(WCE_IO, "command line: \"%s\"", argv1);
+    __argc = ARGV_LEN - 1;
+    _parse_tokens(argv1, &__argv[1]);
+  }
+
+  /* Add one to account for argv[0] */
+  __argc++;
+
+  if (__argc <= 1)
+    return;
+
+  for (i = 1; i < __argc; i++) {
+    if (strncmp(__argv[i], "-pgid", 5) == 0) {
+      pgid = atoi(__argv[__argc-1]);
+      WCETRACE(WCE_IO, "attaching to pgid %d", pgid);
+      shmblk = _shared_init(pgid);
+      __pgid = pgid;
+      WCETRACE(WCE_IO, "shmblk @%x", shmblk);
+      if (i < __argc - 2) {
+        memmove(&__argv[i], &__argv[i+2], (__argc-i-2) * sizeof(char *));
+      }
+      __argv[__argc-2] = NULL;
+      __argv[__argc-1] = NULL;
+      __argc -= 2;
+      break;
+    }
+  }
+}
 
 int __init_c__()
 {
@@ -271,12 +337,8 @@ int __init_c__()
 
   __init_ce_reent();
 
-  wchar_t  cmdnameBufW[NAME_LEN];
-  char     buf[MAX_PATH];
   char    *ptr;
-  int      cmdlineLen;
   int      len = 0;
-  int      pgid = 0;
 
   _initfds();
 
@@ -301,69 +363,15 @@ int __init_c__()
 
   WCETRACE(WCE_IO, "in __init_c__()");
 
-  /* Command line args processing */
-//  memset(__cmdlinebuf, 0, CMDLINE_LEN);
-  
-  /* argv[0] is the path of invoked program - get this from CE */
-  len = GetModuleFileNameW(NULL, cmdnameBufW, NAME_LEN);
-  wcstombs(buf, cmdnameBufW, wcslen(cmdnameBufW) + 1);
-
-  /* fixpath replaces backslashes with slashes */
-  fixpath(buf, __cmdlinebuf);
-//  WCETRACE(WCE_IO, "_startup: child \"%s\"", __cmdlinebuf);
-
-  /* Munge argv[0] to exclude path information */
-  if ((ptr = strrchr(__cmdlinebuf, '\\')) != NULL) {
-    strcpy(buf, ++ptr);
-    strcpy(__cmdlinebuf, buf);
-  }
-
-  __argv[0] = __cmdlinebuf;
-  int cmdlen = strlen(__cmdlinebuf);
-
-  wchar_t* cmdlinePtrW = GetCommandLineW();
-  if (cmdlinePtrW != NULL && (cmdlineLen = wcslen(cmdlinePtrW)) > 0) {
-	char* argv1 = __cmdlinebuf + cmdlen + 1;
-    wcstombs(argv1, cmdlinePtrW, wcslen(cmdlinePtrW) + 1);
-    WCETRACE(WCE_IO, "command line: \"%s\"", argv1);
-    __argc = ARGV_LEN - 1;
-    _parse_tokens(argv1, &__argv[1]);
-  }
-
-  /* Add one to account for argv[0] */
-  __argc++;
-
-  if (__argc > 1) {
-    int i;
-
-    for (i = 1; i < __argc; i++) {
-      if (strncmp(__argv[i], "-pgid", 5) == 0) {
-        pgid = atoi(__argv[__argc-1]);
-        WCETRACE(WCE_IO, "attaching to pgid %d", pgid);
-        shmblk = _shared_init(pgid);
-		__pgid = pgid;
-        WCETRACE(WCE_IO, "shmblk @%x", shmblk);
-        if (i < __argc - 2) {
-          memmove(&__argv[i], &__argv[i+2], (__argc-i-2) * sizeof(char *));
-        }
-        __argv[__argc-2] = NULL;
-        __argv[__argc-1] = NULL;
-        __argc -= 2;
-        break;
-      }
-    }
-  }
+  process_args();
 
   WCETRACE(WCE_IO, "__argc = %d", __argc);
   int i;
   for (i = 0 ; i < __argc ;i++)
-	  WCETRACE(WCE_IO, "__argv[%d] = %s", i, __argv[i]);
+    WCETRACE(WCE_IO, "__argv[%d] = %s", i, __argv[i]);
 
-  void _initenv(_SHMBLK shmblk);
   _initenv(shmblk);
-
   _shared_attach();
-
   return initted;
 }
 
@@ -533,7 +541,7 @@ _parse_tokens(char * string, char * tokens[])
  * THIS METHOD MODIFIES string.
  *-------------------------------------------------------------------------*/
 {
-  char *  whitespace = " \t\n";
+  char *  whitespace = " \t\r\n";
   char *  tokenEnd;
   char *  quoteCharacters = "\"\'";
   int     numQuotes = strlen(quoteCharacters);
