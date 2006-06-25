@@ -207,7 +207,7 @@ static pe_details_type pe_detail_list[] =
     11 /* ARM_RVA32 */,
     PE_ARCH_arm,
     bfd_arch_arm,
-    1
+    0
   },
   {
     "epoc-pei-arm-little",
