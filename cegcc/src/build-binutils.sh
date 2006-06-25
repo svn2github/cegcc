@@ -1,7 +1,7 @@
 #!/bin/sh
 
-BUILD_DIR="build-binutils-cvs20050202"
-BIN_VERSION=cvs20050202
+BUILD_DIR="build-binutils"
+BIN_VERSION=
 BASE_DIRECTORY=${PWD}
 
 mkdir -p ${BUILD_DIR} || exit
@@ -13,7 +13,7 @@ echo ""
 echo "BUILDING BINUTILS --------------------------"
 echo ""
 cd ${BUILD_DIR} || exit
-${BASE_DIRECTORY}/binutils-${BIN_VERSION}/configure \
+${BASE_DIRECTORY}/binutils${BIN_VERSION}/configure \
   --prefix=${PREFIX}      \
   --exec-prefix=${PREFIX} \
   --bindir=${PREFIX}/bin  \
