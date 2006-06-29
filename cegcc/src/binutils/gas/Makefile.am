@@ -381,6 +381,7 @@ TARG_ENV_HFILES = \
 	config/te-netware.h \
 	config/te-pc532mach.h \
 	config/te-pe.h \
+	config/te-wince-pe.h \
 	config/te-psos.h \
 	config/te-riscix.h \
 	config/te-sparcaout.h \
