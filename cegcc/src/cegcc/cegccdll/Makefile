@@ -58,7 +58,7 @@ delfiles:
 # functions called from crt0
 	mv _tmp/startup_thunk.o	_tmp_static
 # --enable-runtime-pseudo-reloc support
-	mv _tmp/pseudo-reloc.o _tmp_static
+	mv _tmp/pseudo-reloc_t.o _tmp_static
 
 extract:
 	@echo "extracting files for gcc $(GCCVERSION)"
@@ -91,6 +91,8 @@ $(DLLNAME):
 	mv -f libcegcc.dll.a.tmp libcegcc.dll.a
 	arm-wince-pe-ar q $(IMPLIB) _tmp_static/*.o
 
+#	-Wl,--verbose \
+#	-Wl,--enable-extra-pe-debug \
 #	-Wl,--enable-auto-import \
 #	-Wl,--enable-runtime-pseudo-reloc \
 
