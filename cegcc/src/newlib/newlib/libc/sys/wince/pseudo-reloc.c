@@ -17,10 +17,6 @@
 
 #include <windows.h>
 
-extern char __RUNTIME_PSEUDO_RELOC_LIST__;
-extern char __RUNTIME_PSEUDO_RELOC_LIST_END__;
-extern char __image_base__;
-
 typedef struct
   {
     DWORD addend;
@@ -29,58 +25,61 @@ typedef struct
 runtime_pseudo_reloc;
 
 //#define DEBUG_PSEUDO_RELOC
-//#define DEBUG_PSEUDO_RELOC_PRINTF
 
-#ifdef DEBUG_PSEUDO_RELOC
+//#define DEBUG_PRINTF
+//#define DEBUG_OUTPUTDEBUGSTRING
+#define DEBUG_MESSAGEBOX
 
-#ifdef DEBUG_PSEUDO_RELOC_PRINTF
-#define DGB_PRINT(FMT, ...) \
-  do { \
-  printf(FMT, __VA_ARGS__); \
-  printf("\n"); \
-  } while(0);
-#else
-#define DGB_PRINT(FMT, ...) \
-  do { \
-  WCHAR buf[512]; \
-  wsprintfW(buf, L ## FMT, __VA_ARGS__); \
-  MessageBoxW(0, buf, L"do_pseudo_reloc", 0); \
-  } while(0);
-#endif
-
-#else
+#ifndef DEBUG_PSEUDO_RELOC
 # define DGB_PRINT(FMT, ...) do ; while (0)
+#else
+
+#ifdef DEBUG_PRINTF
+#define DGB_PRINT(FMT, ...) \
+  do { \
+    printf (FMT, ##__VA_ARGS__); \
+    printf ("\n"); \
+  } while(0);
 #endif
 
-static void
-do_pseudo_reloc (void* start, void* end, void* base)
-{
-  if (start != end)
-    DGB_PRINT("s: %p, e: %p, b: %p", start, end, base);
+#ifdef DEBUG_MESSAGEBOX
+#define DGB_PRINT(FMT, ...) \
+  do { \
+    WCHAR buf[512]; \
+    wsprintfW (buf, L ## FMT, ##__VA_ARGS__); \
+    MessageBoxW (0, buf, L"do_pseudo_reloc", 0); \
+  } while(0);
+#endif
 
-  DWORD reloc_target;
+#ifdef DEBUG_OUTPUTDEBUGSTRING
+#define DGB_PRINT(FMT, ...) \
+  do { \
+    WCHAR buf[512]; \
+    wsprintfW (buf, L ## FMT, ##__VA_ARGS__); \
+    OutputDebugStringW (buf); \
+  } while(0);
+#endif
+
+#endif
+
+void
+__do_pseudo_reloc (void* start, void* end, void* base)
+{
   runtime_pseudo_reloc* r;
+  DWORD reloc_target;
+
+  if (start == end) 
+    return; /* Nothing to do.  */
+
+  DGB_PRINT("s: %p, e: %p, b: %p", start, end, base);
+
   for (r = (runtime_pseudo_reloc*) start; r < (runtime_pseudo_reloc*) end; r++)
     {
-      /*
-       * why is it that target comes "|= 0xf0000000"?
-       * I don't know if this is a bug or a feature, 
-       * probably something to do with 24-bit relocs.
-       * for now, I just remove those four bits.
-      */
-      reloc_target = r->target & 0x0fffffff;
-      DGB_PRINT("base: %p, r->target: 0x%x, r->addend: 0x%x", base, reloc_target, r->addend);
-      DGB_PRINT("reloc_target: %p", (void*)reloc_target);
+      reloc_target = (DWORD) base + r->target;
+      DGB_PRINT("base: %p, r->target: 0x%x, r->addend: 0x%x, reloc_target: 0x%x", 
+        base, r->target, r->addend, reloc_target);
       DGB_PRINT("bef: *reloc_target: 0x%x", *(DWORD*)reloc_target);
       *((DWORD*) reloc_target) += r->addend;
       DGB_PRINT("aft: *reloc_target: 0x%x", *(DWORD*)reloc_target);
     }
-}
-
-void
-_pei386_runtime_relocator ()
-{
-  do_pseudo_reloc (&__RUNTIME_PSEUDO_RELOC_LIST__,
-		   &__RUNTIME_PSEUDO_RELOC_LIST_END__,
-		   &__image_base__);
 }

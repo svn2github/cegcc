@@ -90,7 +90,7 @@ unix_SOURCES = getcwd.c getlogin.c sleep.c usleep.c vfork.c
 celib_SOURCES = cecopyfile.c cefileattr.c cefindfile.c cefixpath.c ceirda.c ceutil.c cethread.c cemakeunixpath.c 				cemovefile.c cecreatefile.c cecreatefilemap.c ceregistry.c cecurrentdir.c ceprofile.c 				ceshared2.c ceremovedir.c cemisc.c
 
 
-mingw_SOURCES = _crt_mt.c mthr_thunk.c mthr_ptrs.c pseudo-reloc.c
+mingw_SOURCES = _crt_mt.c mthr_thunk.c mthr_ptrs.c pseudo-reloc.c pseudo-reloc_t.c
 
 lib_a_SOURCES = __eh_continue.S abort.c alloc.c assert.c ceprocess.c cs.c dirent.c dllmain.c 				dllmaincrtstartup.c dllmaincrtstartup_t.c env.c error.c fifo.c findpath.c fixpath.c fnmatch.c 				getopt.c getopt1.c getreent.c glob.c group.c ipfcns.c io.c issetugid-stub.c llst.c malloc.c 				mqueue.c pathconf.c popen.c sclass.c shared.c sig.c sigimp.c spawn.c 				startup.c startup_thunk.c stat.c system.c termios.c timefcns.c trace.c tzset_hook_r.c 				uid.c unistd.c utime.c main.c 				$(net_SOURCES) 				$(unix_SOURCES) 				$(celib_SOURCES) 				$(mingw_SOURCES)
 
@@ -120,7 +120,7 @@ getlogin.o sleep.o usleep.o vfork.o cecopyfile.o cefileattr.o \
 cefindfile.o cefixpath.o ceirda.o ceutil.o cethread.o cemakeunixpath.o \
 cemovefile.o cecreatefile.o cecreatefilemap.o ceregistry.o \
 cecurrentdir.o ceprofile.o ceshared2.o ceremovedir.o cemisc.o _crt_mt.o \
-mthr_thunk.o mthr_ptrs.o pseudo-reloc.o
+mthr_thunk.o mthr_ptrs.o pseudo-reloc.o pseudo-reloc_t.o
 CFLAGS = @CFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)

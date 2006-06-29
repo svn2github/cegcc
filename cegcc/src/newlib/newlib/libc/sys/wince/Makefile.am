@@ -13,7 +13,7 @@ celib_SOURCES = cecopyfile.c cefileattr.c cefindfile.c cefixpath.c ceirda.c ceut
 				cemovefile.c cecreatefile.c cecreatefilemap.c ceregistry.c cecurrentdir.c ceprofile.c \
 				ceshared2.c ceremovedir.c cemisc.c
 				
-mingw_SOURCES = _crt_mt.c mthr_thunk.c mthr_ptrs.c pseudo-reloc.c
+mingw_SOURCES = _crt_mt.c mthr_thunk.c mthr_ptrs.c pseudo-reloc.c pseudo-reloc_t.c
 
 lib_a_SOURCES = __eh_continue.S abort.c alloc.c assert.c ceprocess.c cs.c dirent.c dllmain.c \
 				dllmaincrtstartup.c dllmaincrtstartup_t.c env.c error.c fifo.c findpath.c fixpath.c fnmatch.c \
