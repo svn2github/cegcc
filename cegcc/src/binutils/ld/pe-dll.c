@@ -204,7 +204,8 @@ static pe_details_type pe_detail_list[] =
     "pei-arm-little",
     "pe-arm-little",
     autofilter_symbollist_generic,
-    11 /* ARM_RVA32 */,
+    2  /* ARM_RVA32 On Windows CE, see coff-arm.c  */ 
+    /* 11  ARM_RVA32 */,
     PE_ARCH_arm,
     bfd_arch_arm,
     0
