@@ -11,7 +11,7 @@ int __DllMainCRTStartup(HANDLE hinstDLL, DWORD dwReason, LPVOID lpvReserved);
  */
 int _DllMainCRTStartup(HANDLE hinstDLL, DWORD dwReason, LPVOID lpvReserved)
 {
-  NKDbgPrintfW("%S: reason %d\n", __FUNCTION__, dwReason);
+  NKDbgPrintfW(L"%S: reason %d\n", __FUNCTION__, dwReason);
 
   if (dwReason==DLL_PROCESS_ATTACH)
   {
@@ -29,13 +29,13 @@ int _DllMainCRTStartup(HANDLE hinstDLL, DWORD dwReason, LPVOID lpvReserved)
 
   if (FALSE == __DllMainCRTStartup(hinstDLL, dwReason, lpvReserved))
   {
-    NKDbgPrintfW("%S: ____DllMainCRTStartup failed\n", __FUNCTION__);
+    NKDbgPrintfW(L"%S: ____DllMainCRTStartup failed\n", __FUNCTION__);
     return FALSE;
   }
   if (dwReason == DLL_PROCESS_ATTACH) {
-      NKDbgPrintfW("%S: calling __gccmain\n", __FUNCTION__);
+      NKDbgPrintfW(L"%S: calling __gccmain\n", __FUNCTION__);
     __gccmain();
   }
-  NKDbgPrintfW("%S: calling DllMain\n", __FUNCTION__);
+  NKDbgPrintfW(L"%S: calling DllMain\n", __FUNCTION__);
   return DllMain(hinstDLL, dwReason, lpvReserved);
 }
