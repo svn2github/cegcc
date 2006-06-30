@@ -232,3 +232,19 @@ XCESetRegStringA(HKEY hKey, const char *keyname, const char *valname,
 
 	return res == 0;
 }
+
+void NKDbgPrintfA(const char *fmt, ...)
+{
+  va_list ap;
+  char buf[512];
+  wchar_t wbuf[512];
+  int len = COUNTOF(buf);
+
+  va_start(ap, fmt);
+  len = vsnprintf(buf, len+1, fmt, ap);
+  buf[len] = 0;
+  va_end(ap);
+
+  MultiByteToWideChar(CP_ACP, 0, buf, -1, wbuf, len+1);
+  OutputDebugStringW(wbuf);
+}
