@@ -63,18 +63,20 @@ static const trace_entry trace_entries[] =
   { NULL, 0 }
 };
 
+void NKDbgPrintfA(const char *fmt, ...);
+
 static void set_from_env(const char* env, int* what)
 {
-  char  buf[256];
+  char buf[512];
   const char *trace = getenv(env);
   if (!trace)
   {
-    NKDbgPrintfW(L"%S not found in registry\n", env);
+    NKDbgPrintfA("\"%s\" not found in registry\n", env);
     return;
   }
   else
   {
-    NKDbgPrintfW(L"parsing: %S:%S\n", env, trace);
+    NKDbgPrintfA("parsing: \"%s\":\"%s\"\n", env, trace);
   }
 
   *what = 0;
@@ -84,7 +86,7 @@ static void set_from_env(const char* env, int* what)
   const char *p;
 
   for (p = strtok(buf, ":"); p; p = strtok(NULL, ":")) {
-    NKDbgPrintfW(L"option token %S\n", p);
+    NKDbgPrintfA("option token \"%s\"\n", p);
     int neg = 0;
     if (p[0] == '-' && p[1] != '\0') {
       NKDbgPrintfW(L"neg option\n");
@@ -92,11 +94,11 @@ static void set_from_env(const char* env, int* what)
       neg = 1;
     }
 
-    NKDbgPrintfW(L"check valid\n");
+    NKDbgPrintfW(L"checking option\n");
 
     for (entry = trace_entries; entry->str; entry++) {
       if (!strcmp(p, entry->str)) {
-        NKDbgPrintfW(L"valid option.\n");
+        NKDbgPrintfW(L"valid option found.\n");
         if (neg)
           *what &= ~entry->flag;
         else
