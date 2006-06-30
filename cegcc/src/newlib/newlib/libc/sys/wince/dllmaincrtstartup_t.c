@@ -1,5 +1,8 @@
 #include <windows.h>
 
+#include <malloc.h>
+#include <stdlib.h>
+
 int __DllMainCRTStartup(HANDLE hinstDLL, DWORD dwReason, LPVOID lpvReserved);
 
 //#define DEBUG_DLL_LOAGING
@@ -11,7 +14,7 @@ int __DllMainCRTStartup(HANDLE hinstDLL, DWORD dwReason, LPVOID lpvReserved);
  */
 int _DllMainCRTStartup(HANDLE hinstDLL, DWORD dwReason, LPVOID lpvReserved)
 {
-  NKDbgPrintfW(L"%S: reason %d\n", __FUNCTION__, dwReason);
+  NKDbgPrintfW(L"_DllMainCRTStartup: reason %d\n", dwReason);
 
   if (dwReason==DLL_PROCESS_ATTACH)
   {
@@ -29,13 +32,13 @@ int _DllMainCRTStartup(HANDLE hinstDLL, DWORD dwReason, LPVOID lpvReserved)
 
   if (FALSE == __DllMainCRTStartup(hinstDLL, dwReason, lpvReserved))
   {
-    NKDbgPrintfW(L"%S: ____DllMainCRTStartup failed\n", __FUNCTION__);
+    NKDbgPrintfW(L"_DllMainCRTStartup: __DllMainCRTStartup failed\n");
     return FALSE;
   }
   if (dwReason == DLL_PROCESS_ATTACH) {
-      NKDbgPrintfW(L"%S: calling __gccmain\n", __FUNCTION__);
+      NKDbgPrintfW(L"_DllMainCRTStartup: calling __gccmain\n");
     __gccmain();
   }
-  NKDbgPrintfW(L"%S: calling DllMain\n", __FUNCTION__);
+  NKDbgPrintfW(L"_DllMainCRTStartup: calling DllMain\n");
   return DllMain(hinstDLL, dwReason, lpvReserved);
 }
