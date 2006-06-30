@@ -5323,8 +5323,16 @@ static void *mmap (void *ptr, long size, long prot, long type, long handle, long
     assert ((unsigned) ptr % g_regionsize == 0);
     assert (size % g_pagesize == 0);
     /* Allocate this */
-    ptr = VirtualAlloc (ptr, size,
-					    MEM_RESERVE | MEM_COMMIT | MEM_TOP_DOWN, PAGE_READWRITE);
+#ifdef UNDER_CE
+    /* MEM_TOP_DOWN shouldn't be used on Windows CE, since that may break dll loading.
+       See here: http://support.microsoft.com/default.aspx?scid=kb;en-us;326163
+       And here: http://support.microsoft.com/default.aspx?scid=kb;EN-US;303444
+    */
+    ptr = VirtualAlloc (ptr, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+#else
+    ptr = VirtualAlloc (ptr, size, MEM_RESERVE | MEM_COMMIT | MEM_TOP_DOWN, PAGE_READWRITE);
+#endif
+      
     if (! ptr) {
         ptr = (void *) MORECORE_FAILURE;
         goto mmap_exit;
