@@ -278,6 +278,13 @@ inet_ntoa(struct in_addr in)
   return __MS_inet_ntoa(in);
 }
 
+in_addr_t
+inet_addr(const char *cp)
+{
+  ENSURE_MSNET_INITTED();
+  return __MS_inet_addr(cp);
+}
+
 int 
 WSAStartup(WORD version, WSADATA *wsadata) 
 {
