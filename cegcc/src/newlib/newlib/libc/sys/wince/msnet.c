@@ -365,11 +365,10 @@ connect(int afd, const struct sockaddr *addr, socklen_t addrlen)
   WCETRACE(WCE_IO, "connect CALLED @ t=%d seconds", t);
   if (__MS_connect(s, addr, addrlen) == SOCKET_ERROR) {
     werr = XCEWSAGetLastError();
- if (werr == WSAEWOULDBLOCK) {
+    if (werr == WSAEWOULDBLOCK)
       errno = EINPROGRESS;
-    } else {
-    errno =  _winerr2errno(werr);
-	}
+    else
+      errno = _winerr2errno(werr);
     t = time(NULL);
     WCETRACE(WCE_IO, "connect ERROR RETURN @ t=%d seconds errno %d werr %d", t, errno, werr);
     return(-1);
@@ -829,8 +828,10 @@ select(int nfds, fd_set *rdfds, fd_set *wrfds, fd_set *exfds,
 	struct timeval t2;
 	int terminal_ready = 0;
 	int terminal_write = 0;
-	int pipe_readable;
-	int pipe_writeable;
+  int terminal_error = 0;
+	int pipe_readable = 0;
+	int pipe_writeable = 0;
+  int pipe_error = 0;
 	int cnt;
 	MSG msg;
 	int non_sockets_ready;
@@ -936,8 +937,9 @@ again:
 			}
 			else if(ftype == IO_FILE_TYPE_SOCKET)
 			{
-				//WCETRACE(WCE_NETWORK, "adding sock %d to write set", get_osfhandle(s));
+				WCETRACE(WCE_NETWORK, "adding sock %d to write set", get_osfhandle(s));
 				FD_SET((SOCKET) get_osfhandle(s), pw2);
+        WCETRACE(WCE_NETWORK, "pw2->fd_count == %d", pw2->fd_count);
 			}
 			else if(ftype == IO_FILE_TYPE_CONSOLE)
 			{
@@ -948,18 +950,50 @@ again:
 			else
 			{
 				XCEShowMessageA("Bad fd in xceselect");
-				abort();
-
+//				abort();
 				errno = EBADF;
 				return -1;
 			}
 		}
 	}
 
-	if(exfds)
-	{
-		FD_ZERO(exfds);
-	}
+  if(exfds)
+  {
+    px2 = &x2;
+
+    FD_ZERO(px2);
+
+    for(i = 0; i < exfds->fd_count; i++)
+    {
+      int s = exfds->fd_array[i];
+
+      ftype = getfiletype(s);
+
+      if(ISPIPEHANDLE(get_osfhandle(s)))
+      {
+        pipe_error = 1;
+        non_sockets_ready++;
+      }
+      else if(ftype == IO_FILE_TYPE_SOCKET)
+      {
+        WCETRACE(WCE_NETWORK, "adding sock %d to error set", get_osfhandle(s));
+        FD_SET((SOCKET) get_osfhandle(s), px2);
+        WCETRACE(WCE_NETWORK, "px2->fd_count == %d", px2->fd_count);
+      }
+      else if(ftype == IO_FILE_TYPE_CONSOLE)
+      {
+        //WCETRACE(WCE_NETWORK, "adding console %d to error set", s);
+        terminal_error = 1;
+        non_sockets_ready++;
+      }
+      else
+      {
+        XCEShowMessageA("Bad fd in xceselect");
+        errno = EBADF;
+        return -1;
+      }
+    }
+  }
 
 	if(timeout == NULL)
 	{
@@ -1024,9 +1058,9 @@ again:
 				if(XCEPeekNamedPipe(get_osfhandle(s), &c, 1, 
 					&dwRead, &dwAvail, &dwMsg) == FALSE)
 				{
-					// reader needs no get aware of this...
-					if(GetLastError() == ERROR_BROKEN_PIPE)
-						FD_SET(s, &rout);
+					// reader needs not get aware of this...
+//					if(GetLastError() == ERROR_BROKEN_PIPE)
+	//					FD_SET(s, &rout);
 				}
 				else if(dwAvail == 0)
 				{
@@ -1061,11 +1095,6 @@ again:
 				{
 					WCETRACE(WCE_NETWORK, "console %d not readable", s);
 				}
-			}
-			else
-			{
-				XCEShowMessageA("Illegal fd in select");
-				DebugBreak();
 			}
 		}
 
@@ -1123,8 +1152,59 @@ again:
 		memcpy(wrfds, &wout, sizeof(fd_set));
 	}
 
-	WCETRACE(WCE_NETWORK, "select finally returns %d", res);
+  if(px2)
+  {
+    cnt = exfds->fd_count;
 
+    FD_ZERO(&xout);
+
+    WCETRACE(WCE_NETWORK, "Checking %d original fds for errors", cnt);
+
+    for(i = 0; i < cnt; i++)
+    {
+      int s = exfds->fd_array[i];
+
+      ftype = getfiletype(s);
+
+      WCETRACE(WCE_NETWORK, "Checking error fd %d, os handle %x",
+        s, get_osfhandle(s));
+
+      if(ISPIPEHANDLE(get_osfhandle(s)))
+      {
+        char c;
+        DWORD dwRead, dwAvail, dwMsg;
+
+        if(XCEPeekNamedPipe(get_osfhandle(s), &c, 1, 
+          &dwRead, &dwAvail, &dwMsg) == FALSE)
+        {
+          // reader needs not get aware of this...
+          if(GetLastError() == ERROR_BROKEN_PIPE)
+            FD_SET(s, &xout);
+        }
+      }
+      else if(ftype == IO_FILE_TYPE_SOCKET)
+      {
+        if(!FD_ISSET(get_osfhandle(s), px2))
+        {
+          WCETRACE(WCE_NETWORK, "socket %d has no errors", s);
+        }
+        else
+        {
+          WCETRACE(WCE_NETWORK, "socket %d has errors", s);
+          FD_SET(s, &xout);
+        }
+      }
+      else if(ftype == IO_FILE_TYPE_CONSOLE)
+      {
+      }
+    }
+
+    res += xout.fd_count;
+    memcpy(exfds, &xout, sizeof(fd_set));
+  }
+
+
+	WCETRACE(WCE_NETWORK, "select finally returns %d", res);
 	return res;
 }
 
