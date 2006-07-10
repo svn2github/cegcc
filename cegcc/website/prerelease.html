@@ -1,0 +1,130 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Binary pre-release of CeGCC for Linux</title>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+</head>
+<body>
+<img src="images/banner1.png" alt="CeGCC cross compiler for PocketPC">
+<p>
+<font size="+1">
+The binary pre-release for Linux is available for download at
+<a href="ftp://ftp.berlios.de/pub/cegcc/cegcc-linux-0.01.tar.gz">
+	ftp://ftp.berlios.de/pub/cegcc/cegcc-linux-0.01.tar.gz
+</a>.
+<p>
+The goal of this pre-release is timely distribution of the latest goodies,
+knowing full well that there are problems.
+Several testers have reported issues in building this release from the source
+(which is freely available in the 
+<a href="http://developer.berlios.de/svn/?group_id=5728"> project's SVN Repository </a>).
+The binary distribution is a way to get past those issues for now.
+<p>
+<b>How do you use the binary pre-release ?</b>
+<br>
+The pre-release is the result of building the linux version of cegcc,
+using the scripts/linux/build.sh script as it is in the SVN.
+This means that the end result of the build should be in <i>/usr/ppc</i>.
+To use this software,
+become root (or another user which has write access to /usr on your system),
+and unpack the distribution, as indicated below :
+<pre>
+% su
+<b>Password: </b> <i>enter the root password</i>
+# cd /usr
+# tar xfz /tmp/cegcc-linux-0.01.tar.gz
+# exit
+%
+</pre>
+<p>
+Then make sure that the directory <i>/usr/ppc/bin</i> is part of your path.
+<p>
+You can test the compiler by trying to compile
+<a href="ftp://ftp.berlios.de/pub/cegcc/fibo.c">fibo.c</a> :
+<pre>
+	#define	_WINSOCKAPI_
+	#include &lt;windows.h&gt;
+	#include &lt;stdio.h&gt;
+	#include &lt;stdlib.h&gt;
+
+	#define	FN	"/storage card/devel/fibo.txt"
+
+	int fibo(int n)
+	{
+		if (n &lt; 3)
+			return 1;
+		return fibo(n-1) + fibo(n-2);
+	}
+
+	int APIENTRY WinMain(HINSTANCE a,HINSTANCE b,LPWSTR c,int d)
+	{
+		FILE	*f;
+		int	i, r;
+
+		f = fopen(FN, "w");
+
+		for (i=1; i&lt;20; i++) {
+			r = fibo(i);
+			fprintf(f, "fibo(%d) = %d\r\n", i, r);
+		}
+		fclose(f);
+	}
+</pre>
+<p>
+You may want to change the path where the program writes its output file
+in case you don't have that directory structure on your PDA.
+<p>
+Compile the source by using this command :
+<pre><i>
+	arm-wince-pe-gcc -o f.exe fibo.c
+</i></pre>
+On my system, this produces this warning message :
+<pre><i>
+	fibo.c:16: warning: '__stdcall__' attribute directive ignored
+</i></pre>
+<p>
+but the command successfully creates an executable file f.exe which can be transferred
+and run on a Windows CE system.
+</font>
+<p>
+<!--
+  
+     Button row at the top of the page.
+  
+  -->
+  <table bgcolor="blue" border="6"> <tr>
+	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
+		<a href="http://cegcc.berlios.de/docs/index.html">
+			Documentation
+		</a>
+	</font> </td>
+	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
+		<a href="http://developer.berlios.de/svn/?group_id=5728">
+			SVN Repository
+		</a>
+	</font> </td>
+	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
+		<a href="http://developer.berlios.de/projects/cegcc">
+			Project page on BerliOS
+		</a>
+	</font> </td>
+	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
+		<a href="http://developer.berlios.de/project/filelist.php?group_id=5728">
+			Download
+		</a>
+	</font> </td>
+	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
+		<a href="ftp://ftp.berlios.de/pub/cegcc/cegcc-linux-0.01.tar.gz">
+			Binary pre-release for Linux
+		</a>
+	</font> </td>
+</tr></table>
+<!--
+
+     End of the button row
+
+  -->
+</p>
+</body>
+</html>
