@@ -13,6 +13,13 @@ The binary pre-release for Linux is available for download at
 <a href="ftp://ftp.berlios.de/pub/cegcc/cegcc-linux-0.01.tar.gz">
 	ftp://ftp.berlios.de/pub/cegcc/cegcc-linux-0.01.tar.gz
 </a>.
+It contains a set of executables, include files, and libraries that can be
+used on a Linux PC (Intel architecture) to build applications that'll run
+on a Windows CE platform with an ARM (aka Intel Xscale) processor.
+In my case, the Linux platform is Mandriva 2006.0,
+the PC is a no brand Pentium IV (assembled it myself),
+and the PDA is a Mio 168 running Windows CE 4.20.0.
+The Mio's processor is an Intel PXA 255.
 <p>
 The goal of this pre-release is timely distribution of the latest goodies,
 knowing full well that there are problems.
@@ -20,6 +27,10 @@ Several testers have reported issues in building this release from the source
 (which is freely available in the 
 <a href="http://developer.berlios.de/svn/?group_id=5728"> project's SVN Repository </a>).
 The binary distribution is a way to get past those issues for now.
+<p>
+Feedback about this software should be sent to the CeGCC mailing list at
+<a href="mailto:cegcc-devel@lists.berlios.de">cegcc-devel@lists.berlios.de</a>.
+Questions, bug reports, .. should be addressed to that same address.
 <p>
 <b>How do you use the binary pre-release ?</b>
 <br>
@@ -84,8 +95,11 @@ On my system, this produces this warning message :
 	fibo.c:16: warning: '__stdcall__' attribute directive ignored
 </i></pre>
 <p>
-but the command successfully creates an executable file f.exe which can be transferred
-and run on a Windows CE system.
+but the command successfully creates an executable file
+<i>f.exe</i> which can be transferred and run on a Windows CE system.
+You can download my version of
+<a href="ftp://ftp.berlios.de/pub/cegcc/f.exe">f.exe</a>
+for comparison.
 </font>
 <p>
 <!--
