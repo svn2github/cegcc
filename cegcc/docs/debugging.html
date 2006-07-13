@@ -1,0 +1,196 @@
+<html>
+<title>A cross-debugging session</title>
+<body>
+<p>
+I didn't know what to expect from a cross-debugging session so I figure there
+must be others like me.
+Here's a transcript of just about the first debugging session I
+did with the cross-debugger that's part of the binary pre-release of cegcc.
+<p>
+I've annotated it slightly.
+My input is in green italic, my notes are in red bold,
+all the rest is output.
+<pre>
+dannypc: {26} <font color="green"><i>arm-wince-pe-gcc -g -o fg.exe fibo.c</i></font><font color="red">Compile it</font>
+fibo.c:16: warning: '__stdcall__' attribute directive ignored
+dannypc: {27} <font color="green"><i>arm-wince-pe-gdb fg.exe</i></font>
+GNU gdb 6.4
+Copyright 2005 Free Software Foundation, Inc.
+GDB is free software, covered by the GNU General Public License, and you are
+welcome to change it and/or distribute copies of it under certain conditions.
+Type "show copying" to see the conditions.
+There is absolutely no warranty for GDB.  Type "show warranty" for details.
+This GDB was configured as "--host=i686-pc-linux-gnu --target=arm-wince-pe".
+(gdb) <font color="green"><i>l</i></font>
+1       #define _WINSOCKAPI_
+2       #include &lt;windows.h&gt;
+3       #include &lt;stdio.h&gt;
+4       #include &lt;stdlib.h&gt;
+5       
+6       #define FN      "/storage card/devel/fibo.txt"
+7       
+8       int fibo(int n)
+9       {
+10              if (n &lt; 3)
+(gdb) 
+11                      return 1;
+12              return fibo(n-1) + fibo(n-2);
+13      }
+14      
+15      int APIENTRY WinMain(HINSTANCE a,HINSTANCE b,LPWSTR c,int d)
+16      {
+17              FILE    *f;
+18              int     i, r;
+19      
+20              f = fopen(FN, "w");
+(gdb) <font color="green"><i>break WinMain</i></font>
+Breakpoint 1 at 0x110dc: file fibo.c, line 20.
+(gdb) <font color="green"><i>r</i></font>
+Starting program: /home/danny/tmp/arm/test/fg.exe 
+win32_create_inferior(/home/danny/tmp/arm/test/fg.exe)
+Waiting for connection...<font color="red">In this version, there's no RAPI so the developer has to start the stub manually on the PDA.</font>
+Connected
+Error creating process \Application Data\gdb\fg.exe, (error 2).<font color="red">Oops, forgot to download fg.exe</font>
+(gdb) <font color="green"><i>q</i></font>
+dannypc: {28} <font color="green"><i>pcp fg.exe ":/application data/gdb/fg.exe"</i></font>
+File copy of 686455 bytes took 0 minutes and 6 seconds, that's 114409 bytes/s.
+dannypc: {29} <font color="green"><i>arm-wince-pe-gdb fg.exe</i></font>
+GNU gdb 6.4
+Copyright 2005 Free Software Foundation, Inc.
+GDB is free software, covered by the GNU General Public License, and you are
+welcome to change it and/or distribute copies of it under certain conditions.
+Type "show copying" to see the conditions.
+There is absolutely no warranty for GDB.  Type "show warranty" for details.
+This GDB was configured as "--host=i686-pc-linux-gnu --target=arm-wince-pe".
+(gdb) <font color="green"><i>break WinMain</i></font>
+Breakpoint 1 at 0x110dc: file fibo.c, line 20.
+(gdb) <font color="green"><i>r</i></font>
+Starting program: /home/danny/tmp/arm/test/fg.exe 
+win32_create_inferior(/home/danny/tmp/arm/test/fg.exe)
+Waiting for connection...
+Connected
+[tcsetpgrp failed in terminal_inferior: Operation not permitted]<font color="red">Don't know what this means or whether it's important.</font>
+Process Created
+Error while mapping shared library sections:<font color="red">Don't know what this means or whether it's important.</font>
+winsock.dll: No such file or directory.
+Error while mapping shared library sections:
+ws2.dll: No such file or directory.
+Error while mapping shared library sections:
+coredll.dll: No such file or directory.
+warning: __init_c__: initted = 0
+warning: __init_c__: calling __init_ce_reent
+warning: 091C5D8F:E3D13566: in __init_c__()
+warning: 091C5FEC:E3D13566: command line: "\Application Data\gdb\fg.exe "
+warning: 091C6244:E3D13566: __argc = 3
+warning: 091C64A3:E3D13566: __argv[0] = fg.exe
+warning: 091C6703:E3D13566: __argv[1] = \Application
+warning: 091C6960:E3D13566: __argv[2] = Data\gdb\fg.exe
+warning: 091C6BC7:E3D13566: m: 14 0x1e0410<font color="red">Don't know what this means.</font>
+warning: 091C6E1D:E3D13566: m: 8 0x1e0428
+warning: 091C7077:E3D13566: m: 14 0x1e0438
+warning: 091C72D5:E3D13566: f: 0x1e0410<font color="red">Don't know what this means.</font>
+warning: 091C7535:E3D13566: m: 18 0x1e0410
+warning: 091C7791:E3D13566: r: 12 0x1e0428<font color="red">Don't know what this means.</font>
+warning: 091C79F1:E3D13566: m: 18 0x1e0450
+warning: 091C7C4D:E3D13566: f: 0x1e0410
+warning: 091C7EAE:E3D13566: m: 19 0x1e0410
+warning: 091C810B:E3D13566: r: 16 0x1e0468
+warning: 091C8369:E3D13566: m: 19 0x1e0480
+warning: 091C85C7:E3D13566: f: 0x1e0410
+warning: 091C8827:E3D13566: m: 10 0x1e0428
+warning: 091C8A84:E3D13566: r: 20 0x1e0468
+warning: 091C8CE2:E3D13566: m: 10 0x1e0498
+warning: 091C8F41:E3D13566: f: 0x1e0428
+warning: 091C919F:E3D13566: initres = 1<font color="red">Don't know what this means.</font>
+warning: S not found in registry<font color="red">Don't know what this means.</font>
+warning: S not found in registry
+warning: 091C98B7:E3D13566: inherit_parent: unattached
+warning: 091C9B15:E3D13566: chdir: path "\Application Data\gdb"
+warning: 091C9D73:E3D13566: chdir: success, cwd is "/Application Data/gdb"
+warning: 091C9FD0:E3D13566: m: 26 0x1e04a8
+warning: 091CA22D:E3D13566: r: 24 0x1e04c8
+warning: 091CA48D:E3D13566: m: 26 0x1e04e8
+warning: 091CA6EA:E3D13566: f: 0x1e04a8
+warning: 091CA947:E3D13566: m: 18 0x1e0468
+warning: 091CABA5:E3D13566: f: 0x1e0468
+warning: 091CAE03:E3D13566: ioctl(0, 0x5406 0x201afe48)
+warning: 091CB065:E3D13566: Invalid file handle: 0
+warning: 091CB301:E3D13566: _initstdfd: fd 0 hnd ffffffff
+warning: 091CB55F:E3D13566: _initstdfd: fd 1 hnd ffffffff
+warning: 091CB7BF:E3D13566: _initstdfd: fd 2 hnd ffffffff
+warning: 091CB9DC:E3D13566: _startup_: calling main
+warning: 091CBC3A:E3D13566: _startup_: calling _main
+
+Breakpoint 1, WinMain (a=0xe5130bfa, b=0x0, c=0x201afea0, d=5) at fibo.c:20
+20              f = fopen(FN, "w");
+(gdb) <font color="green"><i>n</i></font>
+warning: 091CFE1E:E3D13566: m: 380 0x1e0508
+warning: 091D007C:E3D13566: open(/storage card/devel/fibo.txt, 20601, 666)
+warning: 091D0326:E3D13566: _assignfd(43678aca)
+warning: 091D0538:E3D13566: _assignfd returns 3
+warning: 091D0796:E3D13566: open returns 3 fd 3 cxt 0x34 (hnd 43678aca)
+22              for (i=1; i&lt;20; i++) {
+(gdb) <font color="green"><i>p f</i></font>
+$1 = (FILE *) 0x1e0514
+(gdb) <font color="green"><i>p *f</i></font>
+$2 = {_p = 0x0, _r = 0, _w = 0, _flags = 8, _file = 3, _bf = {_base = 0x0, _size = 0}, 
+_lbfsize = 0, _cookie = 0x1e0514, _read = 0x13f38 &lt;_sread&gt;, _write = 0x13ee4 &lt;_swrite&gt;, 
+_seek = 0x13e9c &lt;_sseek&gt;, _close = 0x13e84 &lt;_sclose&gt;, _ub = {_base = 0x0, _size = 0}, _up = 0x0, 
+_ur = 0, _ubuf = "\000\000", _nbuf = "", _lb = {_base = 0x0, _size = 0}, _blksize = 0, 
+_offset = 0, _data = 0x0, _lock = 0}
+(gdb) <font color="green"><i>l</i></font>
+17              FILE    *f;
+18              int     i, r;
+19      
+20              f = fopen(FN, "w");
+21      
+22              for (i=1; i&lt;20; i++) {
+23                      r = fibo(i);
+24                      fprintf(f, "fibo(%d) = %d\r\n", i, r);
+25              }
+26              fclose(f);
+(gdb) <font color="green"><i>break 25</i></font>
+Breakpoint 2 at 0x11138: file fibo.c, line 25.
+(gdb) <font color="green"><i>c</i></font>
+Continuing.
+warning: 091D98C4:E3D13566: fstat(3)
+warning: 091D9B2B:E3D13566: m: 1024 0x1e0688
+
+Breakpoint 2, WinMain (a=0xe5130bfa, b=0x0, c=0x201afea0, d=5) at fibo.c:26
+26              fclose(f);
+(gdb) <font color="green"><i>p i</i></font>
+$3 = 20
+(gdb) <font color="green"><i>p f</i></font>
+$4 = (FILE *) 0x1e0514
+(gdb) <font color="green"><i>p *f</i></font>
+$5 = {_p = 0x1e07a1 "", _r = 0, _w = 743, _flags = 1160, _file = 3, _bf = {
+    _base = 0x1e0688 "fibo(1) = 1\r\nfibo(2) = 1\r\nfibo(3) = 2\r\nfibo(4) = 3\r\nfibo(5) = 5\r\nfibo(6) = 8\r\nfibo(7) = 13\r\nfibo(8) = 21\r\nfibo(9) = 34\r\nfibo(10) = 55\r\nfibo(11) = 89\r\nfibo(12) = 144\r\nfibo(13) = 233\r\nfibo(14) = 377\r\nfi"..., _size = 1024}, _lbfsize = 0, 
+  _cookie = 0x1e0514, _read = 0x13f38 &lt;_sread&gt;, _write = 0x13ee4 &lt;_swrite&gt;, 
+  _seek = 0x13e9c &lt;_sseek&gt;, _close = 0x13e84 &lt;_sclose&gt;, _ub = {_base = 0x0, _size = 0}, _up = 0x0, 
+  _ur = 0, _ubuf = "\000\000", _nbuf = "", _lb = {_base = 0x0, _size = 0}, _blksize = 1024, 
+  _offset = 0, _data = 0x0, _lock = 0}
+(gdb) <font color="green"><i>c</i></font>
+Continuing.
+warning: 091E233D:E3D13566: write(3, 281, 43678aca)
+warning: 091E25C2:E3D13566: close(3)
+warning: 091E27F6:E3D13566: close: fd 3 type 1 flags 0 hnd 0x43678aca cxt 0x0
+warning: 091E2A7B:E3D13566: ch: 0x43678aca 1
+warning: 091E2CB4:E3D13566: f: 0x1e0688
+warning: 091E2F12:E3D13566: _startup: calling registered atexit() functions
+warning: 091E310A:E3D13566: close(0)
+warning: 091E336A:E3D13566: close: fd 0 type 3 flags 0 hnd 0xffffffff cxt 0x0
+warning: 091E35C8:E3D13566: close(1)
+warning: 091E3828:E3D13566: close: fd 1 type 3 flags 0 hnd 0xffffffff cxt 0x0
+warning: 091E3A87:E3D13566: close(2)
+warning: 091E3CE5:E3D13566: close: fd 2 type 3 flags 0 hnd 0xffffffff cxt 0x0
+warning: 091E3F43:E3D13566: _exit: 0
+warning: 091E41A1:E3D13566: _startup: going to terminate with exitcode: 0
+Process Exited
+
+Program exited normally.
+(gdb) <font color="green"><i>q</i></font>
+dannypc: {30} 
+</pre>
+</p>
+</body>
+</html>
