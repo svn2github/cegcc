@@ -27,7 +27,7 @@ _DEFUN (__assert, (file, line, failedexpr),
 
   MultiByteToWideChar(CP_ACP, 0, buf, -1, wbuf, COUNTOF(wbuf));
 
-  MessageBoxW(NULL, wbuf, _T("Assert"), MB_OK);
+  MessageBoxW(NULL, wbuf, L"Assert", MB_OK);
   DebugBreak();
   abort();
   /* NOTREACHED */
