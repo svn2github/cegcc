@@ -77,6 +77,5 @@ MULTILIB_OPTIONS = mfpu=vfp
 LIBGCC = stmp-multilib
 INSTALL_LIBGCC = install-multilib
 
-#TARGET_LIBGCC2_CFLAGS = -Dinhibit_libc 
-#pedro:
-TARGET_LIBGCC2_CFLAGS = -Dinhibit_libc -fno-leading-underscore -fms-extensions -fdollars-in-identifiers
+TARGET_LIBGCC2_CFLAGS = -Dinhibit_libc -mwin32 -fno-leading-underscore \
+                        -fms-extensions -fdollars-in-identifiers
