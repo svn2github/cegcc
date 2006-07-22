@@ -73,29 +73,31 @@ cesetup
 
 <P>
 <PRE>
-dannypc: {288} arm-wince-pe-gcc -o f.exe fibo.c -L. -I/usr/ppc/arm-wince-pe/include/windows -v -D_WINSOCKAPI_
+dannypc: {28} arm-wince-pe-gcc -o fibo.exe fibo.c -v -D_WINSOCKAPI_
 Using built-in specs.
 Target: arm-wince-pe
-Configured with: /home/danny/src/cegcc/svn.berlios.de/cegcc/branches/linux-build/cegcc/src/gcc/configure --prefix=/usr/ppc --enable-languages=c,c++ --disable-multilib --without-headers --disable-interwork --with-newlib --enable-checking --target=arm-wince-pe i686-pc-linux-gnu
+Configured with: /home/danny/src/cegcc/svn.berlios.de/cegcc/branches/linux-build/src/gcc/configure --prefix=/usr/ppc --enable-languages=c --disable-interwork --disable-nls --enable-checking --disable-multilib --without-headers --target=arm-wince-pe i686-pc-linux-gnu
 Thread model: single
 gcc version 4.1.0
- /usr/ppc/libexec/gcc/arm-wince-pe/4.1.0/cc1 -quiet -v -I/usr/ppc/arm-wince-pe/include/windows -D__CEGCC32__ -D__CEGCC__ -Dunix -D__unix__ -D__unix -idirafter ../include/w32api -idirafter ../../include/w32api -D_WINSOCKAPI_ fibo.c -quiet -dumpbase fibo.c -auxbase fibo -version -o /home/danny/tmp/ccAQqX2l.s
- ignoring nonexistent directory "/usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/sys-include"
- ignoring nonexistent directory "../include/w32api"
- ignoring nonexistent directory "../../include/w32api"
- #include "..." search starts here:
- #include <...> search starts here:
-  /usr/ppc/arm-wince-pe/include/windows
-   /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/include
-    /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/include
-    End of search list.
-    GNU C version 4.1.0 (arm-wince-pe)
-            compiled by GNU C version 4.0.1 (4.0.1-5mdk for Mandriva Linux release 2006.0).
-	    GGC heuristics: --param ggc-min-expand=30 --param ggc-min-heapsize=4096
-	    Compiler executable checksum: 300a6f7b3412a31b87ad0dc68a6245cd
-	    fibo.c:15: warning: '__stdcall__' attribute directive ignored
-	     /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/bin/as -mfpu=vfp -o /home/danny/tmp/ccOO3zRh.o /home/danny/tmp/ccAQqX2l.s
-	      /usr/ppc/libexec/gcc/arm-wince-pe/4.1.0/collect2 -Bdynamic -o f.exe /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/crt0.o /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/crtst.o -L. -L/usr/ppc/lib/gcc/arm-wince-pe/4.1.0 -L/usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib /home/danny/tmp/ccOO3zRh.o -lcegcc -lgcc -lm -lc -lcoredll -lcegcc -lgcc
+ /usr/ppc/libexec/gcc/arm-wince-pe/4.1.0/cc1 -quiet -v -D__CEGCC32__ -D__CEGCC__ -Dunix -D__unix__ -D__unix -idirafter /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/../include/w32api -idirafter ../../include/w32api -D_WINSOCKAPI_ fibo.c -quiet -dumpbase fibo.c -auxbase fibo -version -o /home/danny/tmp/cc1iMWw9.s
+ignoring nonexistent directory "/usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/sys-include"
+ignoring nonexistent directory "../../include/w32api"
+#include "..." search starts here:
+#include <...> search starts here:
+ /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/include
+ /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/include
+ /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/../include/w32api
+End of search list.
+GNU C version 4.1.0 (arm-wince-pe)
+        compiled by GNU C version 4.0.1 (4.0.1-5mdk for Mandriva Linux release 2006.0).
+GGC heuristics: --param ggc-min-expand=30 --param ggc-min-heapsize=4096
+Compiler executable checksum: 641e3d022d9509419c161968d7abeb9c
+fibo.c:1:1: warning: "_WINSOCKAPI_" redefined
+<command line>:1:1: warning: this is the location of the previous definition
+fibo.c:16: warning: '__stdcall__' attribute directive ignored
+ /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/bin/as -mfpu=vfp -o /home/danny/tmp/ccPp2BTF.o /home/danny/tmp/cc1iMWw9.s
+ /usr/ppc/libexec/gcc/arm-wince-pe/4.1.0/collect2 -Bdynamic -o fibo.exe /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/crt0.o /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/crtst.o -L/usr/ppc/lib/gcc/arm-wince-pe/4.1.0 -L/usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib /home/danny/tmp/ccPp2BTF.o -lcegcc -lgcc -lcoredll -lcegcc -lgcc
+dannypc: {29} 
 </PRE>
 </BODY>
 </HTML>
