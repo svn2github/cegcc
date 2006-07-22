@@ -4,16 +4,19 @@
 <p>
 I didn't know what to expect from a cross-debugging session so I figure there
 must be others like me.
-Here's a transcript of just about the first debugging session I
-did with the cross-debugger that's part of the binary pre-release of cegcc.
+Here's a transcript of a debugging session I
+did with the cross-debugger that's part of the
+<font color="red"><b>0.02</b></font>
+binary pre-release of cegcc.
 <p>
 I've annotated it slightly.
-My input is in green italic, my notes are in red bold,
+My input is in <font color="green"><i>green italic</i></font>,
+my notes are in <font color="red"><b>red bold</b></font>,
 all the rest is output.
 <h1>A debugging session with 0.02 using RAPI</h1>
-<p><bold><font color="red">Todo: annotate this !</font></bold>
+<p>
 <pre>
-dannypc: {47} arm-wince-pe-gdb fibo.exe
+dannypc: {47} <font color="green"><i>arm-wince-pe-gdb fibo.exe</i></font> <font color="red"><b>Start the debugging session</b></font>
 GNU gdb 6.4
 Copyright 2005 Free Software Foundation, Inc.
 GDB is free software, covered by the GNU General Public License, and you are
@@ -21,7 +24,7 @@ welcome to change it and/or distribute copies of it under certain conditions.
 Type "show copying" to see the conditions.
 There is absolutely no warranty for GDB.  Type "show warranty" for details.
 This GDB was configured as "--host=i686-pc-linux-gnu --target=arm-wince-pe"...
-(gdb) l 35
+(gdb) <font color="green"><i>l 35</i></font>
 30              wcstombs(s, ws, len+1);
 31              fprintf(f, "param [%s]\r\n", s);
 32      
@@ -32,89 +35,84 @@ This GDB was configured as "--host=i686-pc-linux-gnu --target=arm-wince-pe"...
 37              fclose(f);
 38      //      exit(0);
 39      }
-(gdb) break 35
+(gdb) <font color="green"><i>break 35</i></font> <font color="red"><b>Add a breakpoint right before the fprintf statement</b></font>
 Breakpoint 1 at 0x111dc: file fibo.c, line 35.
-(gdb) condition 1 (i == 15)
-(gdb) r
+(gdb) <font color="green"><i>condition 1 (i == 15)</i></font> <font color="red"><b>Set it to trigger only when we've done some iteration</b></font>
+(gdb) <font color="green"><i>r</i></font> <font color="red"><b>Run the program</b></font>
 Starting program: /home/danny/tmp/arm/test/fibo.exe 
 [CeCreateFile:40] begin
 [CeCreateFile:40] begin
-Uploading to remote device: \gdb\wince-stub.exe
+Uploading to remote device: \gdb\wince-stub.exe <font color="red"><b>We're using RAPI to download the debugging stub to the PDA. This currently happens every time, for that to change we need a RAPI call that the SynCE project doesn't support yet.</b></font>
 [CeWriteFile:115] begin
-[CeWriteFile:115] begin
-.[CeWriteFile:115] begin
-[CeWriteFile:115] begin
-.[CeWriteFile:115] begin
-[CeWriteFile:115] begin
+[CeWriteFile:115] begin <font color="red"><b>A lot of these lines show up, they're debugging output of the SynCE RAPI library.</b></font>
 .[CeWriteFile:115] begin
 [CeWriteFile:115] begin
 .[CeWriteFile:115] begin
 [CeWriteFile:115] begin
 .
-Starting on device: "\gdb\wince-stub.exe \gdb\wince-stub.exe"
-[CeCreateProcess:39] last_error = 183
-[CeCreateProcess:41] result = 1
-Waiting for connection...
-Connected
+Starting on device: "\gdb\wince-stub.exe \gdb\wince-stub.exe" <font color="red"><b>This appears wrong but trust me ...</b></font>
+[CeCreateProcess:39] last_error = 183 <font color="red"><b>Don't know what this means, might be from a previous session</b></font>
+[CeCreateProcess:41] result = 1 <font color="red"><b>Looks like this went well.</b></font>
+Waiting for connection... <font color="red"><b>The stub is trying to connect to arm-wince-pe-gdb on the linux system over a TCP/IP connection.</b></font>
+Connected <font color="red"><b>Ok, the connection was created.</b></font>
 [CeCreateFile:40] begin
 [CeCreateFile:40] begin
-Uploading to remote device: \gdb\fibo.exe
+Uploading to remote device: \gdb\fibo.exe <font color="red"><b>Once more, we're using RAPI to load the program to test onto the PDA.</b></font>
 [CeWriteFile:115] begin
-[CeWriteFile:115] begin
+[CeWriteFile:115] begin <font color="red"><b>And these show up in this case as well, sigh.</b></font>
 [CeWriteFile:115] begin
 [CeWriteFile:115] begin
 .
-[tcsetpgrp failed in terminal_inferior: Operation not permitted]
-Process Created
+[tcsetpgrp failed in terminal_inferior: Operation not permitted] <font color="red"><b>I don't know what this means.</b></font>
+Process Created <font color="red"><b>The program to debug is getting started.</b></font>
 Error while mapping shared library sections:
-winsock.dll: No such file or directory.
+winsock.dll: No such file or directory. <font color="red"><b>Don't know what this means</b></font>
 Error while mapping shared library sections:
-ws2.dll: No such file or directory.
+ws2.dll: No such file or directory. <font color="red"><b>Don't know what this means</b></font>
 Error while mapping shared library sections:
-coredll.dll: No such file or directory.
+coredll.dll: No such file or directory. <font color="red"><b>Don't know what this means</b></font>
 warning: __init_c__: initted = 0
-warning: __init_c__: calling __init_ce_reent
-warning: 00013A26:C5F7F486: in __init_c__()
+warning: __init_c__: calling __init_ce_reent <font color="red"><b>Some of the messages here are from debugging code in newlib</b></font>
+warning: 00013A26:C5F7F486: in __init_c__() <font color="red"><b>Ditto</b></font>
 warning: 00013C88:C5F7F486: __argc = 1
-warning: 00013EE1:C5F7F486: __argv[0] = fibo.exe
+warning: 00013EE1:C5F7F486: __argv[0] = fibo.exe <font color="red"><b>Ditto, this is our program's command line.</b></font>
 warning: 00014146:C5F7F486: initres = 1
 warning: S not found in registry
-warning: S not found in registry
+warning: S not found in registry <font color="red"><b>Don't know what this means.</b></font>
 warning: 00014859:C5F7F486: inherit_parent: unattached
 warning: 00014AB7:C5F7F486: chdir: path "\gdb"
-warning: 00014D13:C5F7F486: chdir: success, cwd is "/gdb"
+warning: 00014D13:C5F7F486: chdir: success, cwd is "/gdb" <font color="red"><b>Fake notion of current directory. This directory is used between the arm-wince-pe-gdb and the debugging stub, its purpose is to store the stub and the program to debug.</b></font>
 warning: 00014F71:C5F7F486: ioctl(0, 0x5406 0x1e1afe78)
 warning: 000151CE:C5F7F486: Invalid file handle: 0
 warning: 0001546E:C5F7F486: _initstdfd: fd 0 hnd ffffffff
-warning: 000156CA:C5F7F486: _initstdfd: fd 1 hnd ffffffff
+warning: 000156CA:C5F7F486: _initstdfd: fd 1 hnd ffffffff <font color="red"><b>Messages from newlib</b></font>
 warning: 00015929:C5F7F486: _initstdfd: fd 2 hnd ffffffff
-warning: 00015B47:C5F7F486: _startup_: calling main
+warning: 00015B47:C5F7F486: _startup_: calling main <font color="red"><b>Messages from newlib</b></font>
 warning: 00015DA5:C5F7F486: _startup_: calling _main
-warning: 0001600A:C5F7F486: open(/storage card/devel/fibo.txt, 20601, 666)
+warning: 0001600A:C5F7F486: open(/storage card/devel/fibo.txt, 20601, 666) <font color="red"><b>Messages from newlib, this one shows that our application is opening a file.</b></font>
 warning: 00016284:C5F7F486: _assignfd(459d47ae)
 warning: 000164C1:C5F7F486: _assignfd returns 3
 warning: 0001671F:C5F7F486: open returns 3 fd 3 cxt 0x1e1ae6be (hnd 459d47ae)
-warning: 0001697D:C5F7F486: fstat(3)
-
-Breakpoint 1, WinMain (a=0xc59751ba, b=0x0, c=0x1e1afed8, d=5) at fibo.c:35
+warning: 0001697D:C5F7F486: fstat(3) <font color="red"><b>The file is open, we've got a file descriptor.</b></font>
+Breakpoint 1, WinMain (a=0xc59751ba, b=0x0, c=0x1e1afed8, d=5) at fibo.c:35 <font color="red"><b>After a looong time, we're hitting the breakpoint</b></font>
 35                      fprintf(f, "fibo(%d) = %d\r\n", i, r);
-(gdb) n
+(gdb) <font color="green"><i>n</i></font> <font color="red"><b>Let it process this fprintf statement too.</b></font>
 33              for (i=1; i<20; i++) {
-(gdb) p f
+(gdb) <font color="green"><i>p f</i></font>
 $1 = (FILE *) 0x1e04e4
-(gdb) p *f
+(gdb) <font color="green"><i>p *f</i></font> <font color="red"><b>We can look in the newlib stdio structure</b></font>
 $2 = {_p = 0x1e0750 "", _r = 0, _w = 776, _flags = 1160, _file = 3, _bf = {
-    _base = 0x1e0658 "Command [\\gdb\\fibo.exe] param []\r\nfibo(1) = 1\r\nfibo(2) = 1\r\nfibo(3) = 2\r\nfibo(4) = 3\r\nfibo(5) = 5\r\nfibo(6) = 8\r\nfibo(7) = 13\r\nfibo(8) = 21\r\nfibo(9) = 34\r\nfibo(10) = 55\r\nfibo(11) = 89\r\nfibo(12) = 144\r\n"..., _size = 1024}, _lbfsize = 0, 
+    _base = 0x1e0658 "Command [\\gdb\\fibo.exe] param []\r\nfibo(1) = 1\r\nfibo(2) = 1\r\nfibo(3) = 2\r\nfibo(4) = 3\r\nfibo(5) = 5\r\nfibo(6) = 8\r\nfibo(7) = 13\r\nfibo(8) = 21\r\nfibo(9) = 34\r\nfibo(10) = 55\r\nfibo(11) = 89\r\nfibo(12) = 144\r\n"..., _size = 1024}, _lbfsize = 0, <font color="red"><b>The _base field shows part of the text we've already printed.</b></font>
   _cookie = 0x1e04e4, _read = 0x16190 <_sread>, _write = 0x1613c <_swrite>, 
   _seek = 0x160f4 <_sseek>, _close = 0x160dc <_sclose>, _ub = {_base = 0x0, _size = 0}, _up = 0x0, 
   _ur = 0, _ubuf = "\000\000", _nbuf = "", _lb = {_base = 0x0, _size = 0}, _blksize = 1024, 
   _offset = 0, _data = 0x0, _lock = 0}
-(gdb) c
+(gdb) <font color="green"><i>c</i></font> <font color="red"><b>Continue debugging</b></font>
 Continuing.
 warning: 00045DCA:C5F7F486: write(3, 315, 459d47ae)
 warning: 00046160:C5F7F486: close(3)
 warning: 000462F0:C5F7F486: close: fd 3 type 1 flags 0 hnd 0x459d47ae cxt 0x0
-warning: 00046581:C5F7F486: _startup: calling registered atexit() functions
+warning: 00046581:C5F7F486: _startup: calling registered atexit() functions <font color="red"><b>The application is terminating</b></font>
 warning: 000467AA:C5F7F486: close(0)
 warning: 00046A07:C5F7F486: close: fd 0 type 3 flags 0 hnd 0xffffffff cxt 0x0
 warning: 00046C66:C5F7F486: close(1)
@@ -126,12 +124,16 @@ warning: 0004783B:C5F7F486: _startup: going to terminate with exitcode: 0
 Process Exited
 
 Program exited normally.
-(gdb) q
+(gdb) <font color="green"><i>q</i></font> <font color="red"><b>Stop the debugging session, we're done.</b></font>
 dannypc: {48} 
 </pre>
 <h1>A debugging session with 0.01, no RAPI</h1>
+<p>
+Here's a transcript of just about the first debugging session I
+did with the cross-debugger that's part of the binary pre-release 0.01 of cegcc.
+</p>
 <pre>
-dannypc: {26} <font color="green"><i>arm-wince-pe-gcc -g -o fg.exe fibo.c</i></font><font color="red">Compile it</font>
+dannypc: {26} <font color="green"><i>arm-wince-pe-gcc -g -o fg.exe fibo.c</i></font> <font color="red">Compile it</font>
 fibo.c:16: warning: '__stdcall__' attribute directive ignored
 dannypc: {27} <font color="green"><i>arm-wince-pe-gdb fg.exe</i></font>
 GNU gdb 6.4
