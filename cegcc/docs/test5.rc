@@ -1,0 +1,17 @@
+//
+// Include
+//
+#include "test5.h"
+//
+// Menu
+//
+IDR_MAINMENU MENU DISCARDABLE
+BEGIN
+	POPUP "&Menu"
+	BEGIN
+		MENUITEM	"&Line",	ID_MENU_LINE
+//		MENUITEM	"&Text",	ID_MENU_TEXT
+		MENUITEM	SEPARATOR
+		MENUITEM	"E&xit",	IDM_MENU_EXIT
+	END
+END

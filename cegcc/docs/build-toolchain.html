@@ -23,33 +23,34 @@ another focuses on <A HREF="http://cygwin.com">Cygwin</A> (Windows + the Cygnus 
 <P>
 how to download
 <P>
-website/images
-website
+<pre>
+scripts
+scripts/linux <font color=red>The directory containing the linux build scripts</font>
+src <font color=red>The master source directory</font>
+src/newlib
+src/cegcc/cegccdll
+src/cegcc/importlibs/defs <font color=red>Definition files to create libraries to match WinCE DLL's</font>
+src/cegcc/importlibs
+src/cegcc/cegccthrd
+src/cegcc/libstdc++
+src/cegcc/fixincludes
+src/cegcc
+src/gcc <font color=red>The gcc sources</font>
+src/gdb <font color=red>The gdb sources</font>
+src/binutils <font color=red>The binutils sources (gas, ld, ..) </font>
+src/w32api/include <font color=red>The target system include files</font>
+src/w32api/lib <font color=red>an unused part of w32api</font>
+src/w32api
+build <font color=red>This directory is created from the source tree</font>
 build/i686-pc-linux-gnu/arm-wince-pe/gdb/gdb/testsuite/gdb.trace
 build/i686-pc-linux-gnu/arm-wince-pe/gdb/gdb/testsuite
 build/i686-pc-linux-gnu/arm-wince-pe/gdb/gdb
 build/i686-pc-linux-gnu/arm-wince-pe/gdb
 build/i686-pc-linux-gnu/arm-wince-pe
 build/i686-pc-linux-gnu
-build
-src/newlib
-src/cegcc/cegccdll
-src/cegcc/importlibs/defs
-src/cegcc/importlibs/lib
-src/cegcc/importlibs
-src/cegcc/cegccthrd
-src/cegcc/libstdc++
-src/cegcc/fixincludes
-src/cegcc
-src/gcc
-src/gdb
-src/binutils
-src/w32api/include
-src/w32api/lib
-src/w32api
-src
-docs
-scripts/linux
-scripts
+website <font color=red>Our website contents are also managed via the source repository</font>
+website/images
+docs <font color=red>The CeGCC project's documentation</font>
+</pre>
 </BODY>
 </HTML>

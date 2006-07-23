@@ -3,10 +3,51 @@
 <title>What is CeGCC ?</title>
 </head>
 <body>
-	<h1>The common parts</h1>
-	<p>
-	<h1>The Linux based distribution</h1>
-	<p>
-	<h1>The Cygwin based distribution</h1>
+<p>
+CeGCC is a cross-development environment for ARM-based systems (PDA's) running Windows CE.
+This means you can create PocketPC applications
+for handhelds that run Windows CE on an ARM processor.
+We provide a cross-compiler, but also a cross-debugger.
+<p>
+This project is <a href="http://www.gnu.org/philosophy/free-sw.html">free software</a>.
+It bundles a number of other free software projects
+into a consistent and working set of development tools.
+The patches we need to apply to those other softwares are fed back to those projects
+for inclusion in their sources.
+<p>
+Our target platforms are the <a href="http://www.cygwin.com/">cygwin</a> environment
+and <a href="http://www.linux.org">GNU/Linux</a> systems.
+<h1>The common parts</h1>
+<p>
+<table border=1>
+	<tr>
+		<td><a href="http://www.gnu.org/software/gcc">GCC</a> - the GNU compiler for C, C++, ..</td>
+		<td>4.1.0</td>
+	</tr>
+	<tr>
+		<td><a href="http://www.gnu.org/software/binutils/">binutils</a> -
+			the GNU binary utilities (gas, gld, ..)</td>
+		<td>from cvs, 16 May 2006 (close to 2.17)</td>
+	</tr>
+	<tr>
+		<td><a href="http://sources.redhat.com/newlib/">newlib</a> -
+			a C library intended for use on embedded systems</td>
+		<td>1.14.0</td>
+	</tr>
+	<tr>
+		<td><a href="http://www.gnu.org/software/gcc">GDB</a> - the GNU debugger</td>
+		<td>6.4</td>
+	</tr>
+	<tr>
+		<td><a href="http://prdownloads.sourceforge.net/mingw/w32api-3.7-src.tar.gz?download">
+			w32api</a> - include files from
+			<a href="http://www.mingw.org">the MinGW project</a>
+		</td>
+		<td>3.7</td>
+	</tr>
+</table>
+<h1>The Linux based distribution</h1>
+<p>
+<h1>The Cygwin based distribution</h1>
 </body>
 </html>

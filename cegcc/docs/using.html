@@ -26,7 +26,7 @@ In this chapter, we'll show how to compile a very simple source.
 You can type or copy-and-paste this source :
 <P>
 <PRE>
-#include <windows.h>
+#include &lt;windows.h&gt;
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
@@ -38,32 +38,68 @@ We've created a file named <B>dialog.c</B> that contains this code.
 To compile it, run this command :
 <P>
 <PRE>
-arm-wince-pe-gcc -o dialog.exe dialog.c -D_WINSOCKAPI_
+arm-wince-pe-gcc -o dialog.exe dialog.c
 </PRE>
 <P>
 <H2>Commands provided</H2>
-arm-wince-pe-addr2line
-arm-wince-pe-ar
-arm-wince-pe-as
-arm-wince-pe-c++filt
-arm-wince-pe-cpp
-arm-wince-pe-dlltool
-arm-wince-pe-gcc
-arm-wince-pe-gcc-4.1.0
-arm-wince-pe-gccbug
-arm-wince-pe-gcov
-arm-wince-pe-ld
-arm-wince-pe-nm
-arm-wince-pe-objcopy
-arm-wince-pe-objdump
-arm-wince-pe-ranlib
-arm-wince-pe-readelf
-arm-wince-pe-size
-arm-wince-pe-strings
-arm-wince-pe-strip
-arm-wince-pe-windres
-cesetup
+<p>
+All the cross-commands have the names that are formed by using their target platform
+as a prefix, and the tool name as a suffix.
+For our case, the target platform is called <b>arm-wince-pe</b>
+which means we're building for an <b>ARM</b> processor,
+running the <b>wince</b> operating system,
+and producing <b>pe</b> executable files.
+An example : the C compiler is called arm-wince-pe-gcc .
+<p>
+<table border=1>
+	<tr><td>arm-wince-pe-addr2line</td><td></td></tr>
+	<tr><td>arm-wince-pe-ar</td><td>archive library management tool</td></tr>
+	<tr><td>arm-wince-pe-as</td><td>the GNU assembler</td></tr>
+	<tr><td>arm-wince-pe-c++filt</td><td></td></tr>
+	<tr><td>arm-wince-pe-cpp</td><td>the C preprocessor</td></tr>
+	<tr><td>arm-wince-pe-dlltool</td><td>a tool to create DLLs</td></tr>
+	<tr><td>arm-wince-pe-gcc</td><td>the C compiler</td></tr>
+	<tr><td>arm-wince-pe-gcc-4.1.0</td><td></td></tr>
+	<tr><td>arm-wince-pe-gccbug</td><td></td></tr>
+	<tr><td>arm-wince-pe-gcov</td><td></td></tr>
+	<tr><td>arm-wince-pe-ld</td><td>the GNU linker</td></tr>
+	<tr><td>arm-wince-pe-nm</td><td>the tool to inspect symbols in load modules</td></tr>
+	<tr><td>arm-wince-pe-objcopy</td><td></td></tr>
+	<tr><td>arm-wince-pe-objdump</td><td>a tool to print data about object files</td></tr>
+	<tr><td>arm-wince-pe-ranlib</td><td>tool to add or refresh the library directory</td></tr>
+	<tr><td>arm-wince-pe-readelf</td><td></td></tr>
+	<tr><td>arm-wince-pe-size</td><td></td></tr>
+	<tr><td>arm-wince-pe-strings</td><td></td></tr>
+	<tr><td>arm-wince-pe-strip</td><td></td></tr>
+	<tr><td>arm-wince-pe-windres</td><td></td></tr>
+	<tr><td>cesetup</td><td></td></tr>
+</table>
 <H1>How to build a Makefile that works</H1>
+<p>
+A Makefile is a description of how to build something that depends on other sources.
+We're using it for building executables from program sources, which is its most common use.
+<p>
+<H2>A sample Makefile</H2>
+<PRE>
+ARCH=		arm-wince-pe
+CC=		${ARCH}-gcc ${CFLAGS}
+WINDRES=	${ARCH}-windres
+
+CFLAGS=		-g -D_WIN32_IE=0x0400
+
+test5.exe:	test5.o test5.rsc
+	${CC} -o $@ test5.o test5.rsc -lcommctrl
+
+test5.o:	test5.c
+	${CC} -c $?
+
+test5.rsc:	test5.rc test5.h
+	${WINDRES} $? $@
+
+clean:
+	-rm -f *.o *.exe *.rsc
+</PRE>
+<h2>How does it work</h2>
 <H1>CeGCC specifics</H1>
 <H2>Predefined macros</H2>
 <H2>Libraries</H2>
@@ -73,13 +109,13 @@ cesetup
 
 <P>
 <PRE>
-dannypc: {28} arm-wince-pe-gcc -o fibo.exe fibo.c -v -D_WINSOCKAPI_
+% arm-wince-pe-gcc -g -o fibo.exe fibo.c -v
 Using built-in specs.
 Target: arm-wince-pe
 Configured with: /home/danny/src/cegcc/svn.berlios.de/cegcc/branches/linux-build/src/gcc/configure --prefix=/usr/ppc --enable-languages=c --disable-interwork --disable-nls --enable-checking --disable-multilib --without-headers --target=arm-wince-pe i686-pc-linux-gnu
 Thread model: single
 gcc version 4.1.0
- /usr/ppc/libexec/gcc/arm-wince-pe/4.1.0/cc1 -quiet -v -D__CEGCC32__ -D__CEGCC__ -Dunix -D__unix__ -D__unix -idirafter /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/../include/w32api -idirafter ../../include/w32api -D_WINSOCKAPI_ fibo.c -quiet -dumpbase fibo.c -auxbase fibo -version -o /home/danny/tmp/cc1iMWw9.s
+ /usr/ppc/libexec/gcc/arm-wince-pe/4.1.0/cc1 -quiet -v -D__CEGCC32__ -D__CEGCC__ -Dunix -D__unix__ -D__unix -idirafter /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/../include/w32api -idirafter ../../include/w32api fibo.c -quiet -dumpbase fibo.c -auxbase fibo -g -version -o /home/danny/tmp/ccJiorQQ.s
 ignoring nonexistent directory "/usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/sys-include"
 ignoring nonexistent directory "../../include/w32api"
 #include "..." search starts here:
@@ -91,13 +127,11 @@ End of search list.
 GNU C version 4.1.0 (arm-wince-pe)
         compiled by GNU C version 4.0.1 (4.0.1-5mdk for Mandriva Linux release 2006.0).
 GGC heuristics: --param ggc-min-expand=30 --param ggc-min-heapsize=4096
-Compiler executable checksum: 641e3d022d9509419c161968d7abeb9c
-fibo.c:1:1: warning: "_WINSOCKAPI_" redefined
-<command line>:1:1: warning: this is the location of the previous definition
+Compiler executable checksum: c79cd29fe777b4560060b27dfea36e84
 fibo.c:16: warning: '__stdcall__' attribute directive ignored
- /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/bin/as -mfpu=vfp -o /home/danny/tmp/ccPp2BTF.o /home/danny/tmp/cc1iMWw9.s
- /usr/ppc/libexec/gcc/arm-wince-pe/4.1.0/collect2 -Bdynamic -o fibo.exe /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/crt0.o /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/crtst.o -L/usr/ppc/lib/gcc/arm-wince-pe/4.1.0 -L/usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib /home/danny/tmp/ccPp2BTF.o -lcegcc -lgcc -lcoredll -lcegcc -lgcc
-dannypc: {29} 
+ /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/bin/as -mfpu=vfp -o /home/danny/tmp/ccv2vDh2.o /home/danny/tmp/ccJiorQQ.s
+ /usr/ppc/libexec/gcc/arm-wince-pe/4.1.0/collect2 -Bdynamic -o fibo.exe /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/crt0.o /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/crtst.o -L/usr/ppc/lib/gcc/arm-wince-pe/4.1.0 -L/usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib /home/danny/tmp/ccv2vDh2.o -lcegcc -lgcc -lcoredll -lcegcc -lgcc
+% 
 </PRE>
 </BODY>
 </HTML>
