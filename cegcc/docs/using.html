@@ -51,6 +51,18 @@ running the <b>wince</b> operating system,
 and producing <b>pe</b> executable files.
 An example : the C compiler is called arm-wince-pe-gcc .
 <p>
+PE stands for Portable Executable file format,
+and it's 
+<a href="http://www.microsoft.com/whdc/system/platform/firmware/PECOFF.mspx">Microsoft's implementation of COFF</a>
+(the Common Object File Format).
+<a href="http://www.arm.com">ARM</a> is a RISC processor family
+which is found in many embedded systems,
+also implemented by Intel as their
+<a href="http://www.intel.com/design/intelxscale">Xscale</a>
+processor line.
+Wince is shorthand for the 
+<a href="http://www.microsoft.com/windowsce">Windows CE</a> operating system.
+<p>
 <table border=1>
 	<tr><td>arm-wince-pe-addr2line</td><td></td></tr>
 	<tr><td>arm-wince-pe-ar</td><td>archive library management tool</td></tr>
@@ -113,12 +125,151 @@ online :
 The executable should work on any suitable PDA.
 With the menu, you should be able to create a simple line drawing and quit the application.
 <h2>How does it work</h2>
+<p>
+Well, we're not going to explain how <i>Make</i> works,
+you can read stuff like
+<a href="http://www.eng.hawaii.edu/Tutor/Make/">this make tutorial</a>
+for that.
+In your Makefile, you'll have to specify that the <i>arm-wince-pe</i> tools need to be used.
+Obviously, mixing your host platform's tools with these ones will have surprising results,
+you'll need to make sure that you cover all the tools required.
+For instance, that's the reason why I've overriden the CC variable:
+all calls to the C compiler will be dealt with in this way.
+An obvious hole is that any C++ source would trigger the C++ compiler,
+which is probably still g++, not arm-wince-pe-g++, because we've not specified
+<pre>
+CXX=	${ARCH}-g++
+</pre>
+<p>
+Failure to do so could produce this :
+<pre><font color=green>
+dannypc: {136} make t.exe
+g++ -O   -c -o t.o t.C
+arm-wince-pe-gcc -g -D_WIN32_IE=0x0400 -o t.exe t.o
+t.o: file not recognized: File format not recognized
+collect2: ld returned 1 exit status
+gmake: *** [t.exe] Error 1
+rm t.o
+</font></pre>
+<p>
+An important thing to know about Windows is that applications consist of program sources
+(in languages such as C or C++),
+but also of resource files.
+The traditional linker command line for UNIX and its lookalikes would only gather
+a bunch of .o files and libraries
+to combine them into an executable file.
+On Windows, there's a binary form of resource files that needs to be put in the exe files
+in the same way as the .o files.
+As you can see in the sample Makefile,
+<ul>
+	<li>the resource sources are in a .rc file
+	<li>the tool to compile them is called windres
+	<li>the binary/compiled form is a .rsc file
+	<li>the linker will accept .rsc files and .o files
+</ul>
+<p>
+The actual run of a make command might look like this :
+<pre>
+% make test5.exe
+arm-wince-pe-gcc -D_WIN32_IE=0x0400   -c test5.c
+arm-wince-pe-windres test5.rc test5.rsc
+arm-wince-pe-gcc -D_WIN32_IE=0x0400   -o test5.exe test5.o test5.rsc -lcommctrl
+% 
+</pre>
+<H1>Recommended way to port sources</H1>
+<p>
+We don't have enough experience to provide much advice here.
+<p>
+<h2>Use of Unicode</h2>
+Many applications are currently still coded to cope with one-byte characters.
+Several operating systems have been providing support for both that traditional way of working,
+and a more general approach.
+Windows CE is special in that it only supports Unicode in many of its API's.
+This means that an application that wants to create a file must pass the file name as
+a Unicode string.
+Obviously this means that either the application must be converted to use Unicode
+throughout, or to convert strings to and from Unicode when necessary.
+In the latter case, standard APIs such as
+<a href="http://www.opengroup.org/onlinepubs/009604499/functions/mbstowcs.html">mbstowcs</a>
+and
+<a href="http://www.opengroup.org/onlinepubs/009604499/functions/wcstombs.html">wcstombs</a>
+can be used.
+<p>
+An important warning : the locale definition is not the same on all systems.
+If you write applications that cooperate with each other across system boundaries, 
+be sure to exchange data only in formats that are truly portable.
+An example : the wide character encoding on my PDA has two bytes per character,
+on my Linux system it has four.
+GDB (actually the arm-wince-pe-gdb cross-debugger) and its stub are each working on
+one of those systems,
+and they're exchanging data as wide characters. 
+That's rather silly off course, the multibyte encoding is better at exchanging data.
+For the tools to work together,
+it was necessary to create special functions that convert strings to and from the PDA format.
+This was not necessary for the same to work between the PDA and Cygwin
+(I'm guessing that desktop Windows uses the same format as Windows CE).
+<h2>Notion of current directory</h2>
+According to the
+<a href="http://msdn2.microsoft.com/en-us/library/system.io.directory.getcurrentdirectory.aspx">
+Microsoft website</a>,
+Windows CE doesn't support the current directory functionality.
+<p>
+<h2>Standard C functions that aren't supported</h2>
+The functions supporting the <i>long double</i> type aren't supported by Windows.
+strtold is an example of that, replace it by strtod if you can.
+<a href="http://msdn2.microsoft.com/en-us/library/9cx8xs15.aspx">more info ..</a>
+
 <H1>CeGCC specifics</H1>
 <H2>Predefined macros</H2>
+<p>
+The arm-wince-pe-gcc C compiler is defining these macros :
+<table border=1>
+	<tr><td>__CEGCC__</td><td>Use this to identify our environment</td></tr>
+	<tr><td>__CEGCC32__</td><td>Not sure why you'd use this, currently not recommended</td></tr>
+	<tr><td>unix</td><td>See below</td></tr>
+	<tr><td>__unix__</td><td>See below</tr>
+	<tr><td>__unix</td><td>See below</tr>
+</table>
+<p>
+The <i>unix</i> macros defined by the compiler are actually pretty strange.
+We're defining them in the same way as the Cygwin's C compiler does.
+The argument seems to be that we're providing a unix-like layer on top of Windows,
+and that therefore all applications that run against a UNIX API must be able to compile
+without change.
+<b><font color=red>I strongly disagree with that</font></b>
+but if this is the way that other projects are doing it,
+then we might as well be consistent in being wrong.
+<H2>Macros that you may need to predefine</H2>
+<p>
+You may need to define these macros :
+<table border=1>
+	<tr><td>_WIN32_IE=0x0400</td><td>required for CE version dependencies in the target include files </td></tr>
+	<tr><td>_WINSOCKAPI_</td><td>We needed this in earlier distributions, this is probably no longer true.</td></tr>
+</table>
+<p>
+A target include file is an include file,
+in our case borrowed from the MinGW project's w32api module,
+which our compiler uses to know things about the target environment.
+<p>
+The <i>_WIN32_IE</i> macro is used in several of the target include files
+to selectively enable some definitions based on the version of Windows CE
+that we're building for.
+My own device runs a version of CE that identifies itself as <i>4.20.0</i>
+so I'm guessing this matches with a value of 0x0400.
+Here's an example of how the w32api include files require this symbol to be correctly set
+for some macros to be defined :
+<pre>
+#if (_WIN32_IE >= 0x0400)
+#define TB_ISBUTTONHIGHLIGHTED  (WM_USER+14)
+#endif
+</pre>
+<p>
+The _WINSOCKAPI_ symbol was required in early distributions of CeGCC.
+It deals with making a choice between two sets of include files,
+both of which define some socket API symbols.
 <H2>Libraries</H2>
 <H2>Linux specific</H2>
 <H2>Cygwin specific<H2>
-<H1>Recommended way to port sources</H1>
 <H1>For the detail-hungry : what does it do and define</H1>
 This output of a compiler run with the "-v" option shows exactly what it does, and which preprocessor symbols get defined.
 <P>
