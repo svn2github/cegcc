@@ -9,9 +9,9 @@
 <img src="images/banner1.png" alt="CeGCC cross compiler for PocketPC">
 <p>
 <font size="+1">
-A second binary pre-release for Linux is available for download at
-<a href="ftp://ftp.berlios.de/pub/cegcc/cegcc-linux-0.02.tar.gz">
-	ftp://ftp.berlios.de/pub/cegcc/cegcc-linux-0.02.tar.gz
+A third binary pre-release for Linux is available for download at
+<a href="ftp://ftp.berlios.de/pub/cegcc/cegcc-linux-0.03.tar.gz">
+	ftp://ftp.berlios.de/pub/cegcc/cegcc-linux-0.03.tar.gz
 </a>.
 It contains a set of executables, include files, and libraries that can be
 used on a Linux PC (Intel architecture) to build applications that'll run
@@ -43,18 +43,18 @@ and unpack the distribution, as indicated below :
 <pre>
 % su
 <b>Password: </b> <i>enter the root password</i>
-# cd /
-# tar xfz /tmp/cegcc-linux-0.02.tar.gz
+# cd /usr
+# tar xfz /tmp/cegcc-linux-0.03.tar.gz
 # exit
 %
 </pre>
 <p>
 Then make sure that the directory <i>/usr/ppc/bin</i> is part of your path.
+(<i>Note that 0.02 was different in that it required you to unpack from / not /usr.</i>)
 <p>
 You can test the compiler by trying to compile
 <a href="ftp://ftp.berlios.de/pub/cegcc/fibo.c">fibo.c</a> :
 <pre>
-	#define	_WINSOCKAPI_
 	#include &lt;windows.h&gt;
 	#include &lt;stdio.h&gt;
 	#include &lt;stdlib.h&gt;
@@ -129,7 +129,7 @@ for comparison.
 		</a>
 	</font> </td>
 	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
-		<a href="ftp://ftp.berlios.de/pub/cegcc/cegcc-linux-0.02.tar.gz">
+		<a href="ftp://ftp.berlios.de/pub/cegcc/cegcc-linux-0.03.tar.gz">
 			Binary pre-release for Linux
 		</a>
 	</font> </td>
