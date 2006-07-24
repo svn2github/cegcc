@@ -45,6 +45,7 @@
      End of the button row
 
   -->
+<p>
 <table border="3">
 <tr><td width="66%">
 <p>
@@ -75,15 +76,34 @@ Our project is based on a collection of (mostly GNU) software :
 <li><a href="http://www.gnu.org/software/gcc">GDB</a> - the GNU debugger
 </ul>
 <p>
+We're implementing all these tools for the <b>arm-wince-pe</b> target platform,
+which means we're building for an <b>ARM</b> processor,
+running the <b>wince</b> operating system,
+and producing <b>pe</b> executable files.
+<p>
+PE stands for Portable Executable file format,
+and it's 
+<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnce30/html/tchce30TechArt.asp">Microsoft's implementation of COFF</a>
+(the Common Object File Format).
+<a href="http://www.arm.com">ARM</a> is a RISC processor family
+which is found in many embedded systems,
+also implemented by Intel as their
+<a href="http://www.intel.com/design/intelxscale">Xscale</a>
+processor line.
+Wince is shorthand for the 
+<a href="http://www.microsoft.com/windowsce">Windows CE</a> operating system.
+<p>
 Our project is hosted by
 <a href="http://www.berlios.de">BerliOS</a>,
 here is a link to our
 <a href="http://developer.berlios.de/projects/cegcc">project page</a>.
+<!-- disable, the BerliOS people killed one of their tools and they don't seem keen on restoring it, and they don't appear to even want to talk about it
 Our <a href="wiki">wiki</a> was initially used as a blog,
 this has switched the blog that is hooked to the right hand
 part of this table.
 You're welcome to use the
 <a href="wiki">wiki</a> to share your experience with CeGCC.
+-->
 <p>
 Bugfixes, improvements to these core products are actively sent back to the
 projects so everyone will benefit.
@@ -96,11 +116,13 @@ in the mailing list archives.
 The idea is to put the documentation <a href="http://cegcc.berlios.de/docs/index.html">here</a>.
 <p>
 </td>
+<!-- disable
 <td width="33%" bgcolor="#00C000">
 <!-- CUT HERE script will insert news here -->
 <font color="yellow"><b>The latest news can be found on the blog at
 <a href="http://cegcc.blogspot.com/">http://cegcc.blogspot.com/</a>.</b></font>
 </td>
+-->
 </tr>
 </table>
 <p>
