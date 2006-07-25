@@ -18,6 +18,7 @@ export NIGHTLY_DIR WEB_DIR HOME_DIR
 cp $NIGHTLY_DIR/website/* $WEB_DIR
 cp $NIGHTLY_DIR/website/images/* $WEB_DIR/images
 cp $NIGHTLY_DIR/docs/* $WEB_DIR/docs
+cp $NIGHTLY_DIR/docs/examples/* $WEB_DIR/docs/examples
 #
 # This must happen last as it manipulates the index.html file.
 # It relies on a fresh copy of index.html from svn to work !
