@@ -3,7 +3,7 @@
 ARCH=		arm-wince-pe
 CC=		${ARCH}-gcc ${CFLAGS}
 WINDRES=	${ARCH}-windres
-CFLAGS=		-g -D_WIN32_IE=0x0400
+CFLAGS=		-g
 
 .rc.rsc:
 		${ARCH}-windres $? $@
