@@ -13,8 +13,70 @@ another focuses on <A HREF="http://cygwin.com">Cygwin</A> (Windows + the Cygnus 
 <P>
 <H2>Things to modify</H2>
 <P>
+Theoretically you should be able to use the scripts
+and have to modify only the <i>settings.sh</i> script.
+That script contains exported shell variables for
+<table>
+<tr><td>SCRIPTDIR</td><td>should automatically point to the scripts/linux directory</td></tr>
+<tr><td>TOP_SRCDIR</td><td>should automatically point to the top directory containing CeGCC</td></tr>
+<tr><td>BUILD_DIR</td><td>this points to a temporary directory in which all of the build happens</td></tr>
+<tr><td>PREFIX</td><td>By default, this is <i>/usr/ppc</i>. You should set it to suit your needs, this is where the tools get installed. (<i>GNU default would be /usr/local</i>).</td></tr>
+<tr><td>MY_HOST_ARCH</td><td>This is the architecture on which we're building</td></tr>
+<tr><td>TARGET_ARCH</td><td>This is the target architecture, for our project that's <i>arm-wince-pe</i>.</td></tr>
+<tr><td></td><td></td></tr>
+</table>
+<p>
+The scripts also includes $PREFIX/bin in the path
+to make sure that the newly built executables can be used
+by the other scripts in the build process.
 <H2>Script concepts</H2>
 <P>
+All scripts reside in $SCRIPTDIR, that's scripts/linux in your distribution.
+The build.sh script is the master build script.
+<P>
+<font color=red>Beware: build.sh will initially clean up</font>
+the complete $BUILD_DIR
+but also the contents of most of the $PREFIX.
+There's a small protection : it'll only clean up in $PREFIX if that's equal to /usr/ppc .
+<P>
+The tools need to be built in a sequence because they rely on each other.
+One of the sequences that works (the one we use) is :
+<ul>
+	<li>binutils
+	<li>includes
+	<li>gcc
+	<li>newlib
+	<li>libraries
+	<li>gdb
+	<li>the debugging stub
+	<li>g++
+</ul>
+<P>
+In this sequence, we always (configure and) build the tools,
+then immediately install them in $PREFIX.
+This is uncommon, but is the easiest way for us to deal with this sequence.
+Sadly, this conflicts with the concept of e.g.
+<A HREF="http://www.rpm.org">rpm</A>
+so it is not possible to create a source RPM for this project in a simple way.
+<H2>Hacks to work around problems</H2>
+<H3>Not enough ranlib-bing</H3>
+<P>
+<H3>C++ compiler won't build</H3>
+<P>
+For some reason, the build process for the C++ compiler chokes.
+The only explanation - and workaround - that we know of is the one found in
+<A HREF="http://www.cygwin.com/ml/cygwin/1997-06/msg00457.html">this old message</A>
+saying
+<font color=blue><pre>
+Configure creates a softlink in gcc object directory to the new
+version of the cross assembler. Problem is that the native compiler
+get confused and use the cross assembler instead of the native one.
+</pre></font>
+<P>
+We adapted the build-gpp.sh script for this : it'll configure, and then build everything.
+But the build is expected to fail (so the script won't terminate on this occasion),
+then $BUILD_DIR/gpp/gcc/as is removed (that's the file bothering us),
+then the build is restarted.
 <H1>Building on Cygwin</H1>
 <P>
 <H1>Requirements</H1>
