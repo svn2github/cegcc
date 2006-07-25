@@ -299,16 +299,12 @@ for some macros to be defined :
 #endif
 </pre>
 <p>
-Note that this actually looks like a bug in the w32api include files,
-the symbols probably need to be _WIN32_WCE instead of _WIN32_IE .
-<p>
 The _WINSOCKAPI_ symbol was required in early distributions of CeGCC.
 It deals with making a choice between two sets of include files,
 both of which define some socket API symbols.
 <H2>Libraries</H2>
 <p>
-The CeGCC compilers automatically link in a library called <i>cegcc</i>
-(libcegcc.a or cegcc.lib, depending on the platform)
+The CeGCC compilers automatically link in a library called <i>libcegcc.a</i>
 which contains the merged versions of some of the other libraries.
 This is the default behaviour.
 <p>
