@@ -1,0 +1,98 @@
+diff -Nur /cygdrive/d/wce420/Include/Armv4/memory.h ./memory.h
+--- /cygdrive/d/wce420/Include/Armv4/memory.h	2003-04-06 11:53:36.000000000 +0100
++++ ./memory.h	2006-05-15 01:01:16.000000000 +0100
+@@ -8,5 +8,10 @@
+ // this source code. For a copy of the EULA, please see the LICENSE.RTF on your
+ // install media.
+ //
+-#include "stdlib.h"
++
++/*
++  Use the one from newlib instead
++  #include "stdlib.h"
++*/
++#include <stdlib.h>
+ 
+diff -Nur /cygdrive/d/wce420/Include/Armv4/oaidl.h ./oaidl.h
+--- /cygdrive/d/wce420/Include/Armv4/oaidl.h	2003-04-06 11:53:38.000000000 +0100
++++ ./oaidl.h	2006-03-09 21:54:24.000000000 +0000
+@@ -413,7 +413,9 @@
+                 FLOAT fltVal;
+                 DOUBLE dblVal;
+                 VARIANT_BOOL boolVal;
++#ifndef __cplusplus
+                 _VARIANT_BOOL bool;
++#endif
+                 SCODE scode;
+                 CY cyVal;
+                 DATE date;
+diff -Nur /cygdrive/d/wce420/Include/Armv4/objidl.h ./objidl.h
+--- /cygdrive/d/wce420/Include/Armv4/objidl.h	2003-04-06 11:53:38.000000000 +0100
++++ ./objidl.h	2006-03-09 21:58:18.000000000 +0000
+@@ -8439,7 +8439,9 @@
+         /* [case()] */ short iVal;
+         /* [case()] */ USHORT uiVal;
+         /* [case()] */ VARIANT_BOOL boolVal;
++#ifndef __cplusplus
+         /* [case()] */ _VARIANT_BOOL bool;
++#endif
+         /* [case()] */ long lVal;
+         /* [case()] */ ULONG ulVal;
+         /* [case()] */ float fltVal;
+diff -Nur /cygdrive/d/wce420/Include/Armv4/propidl.h ./propidl.h
+--- /cygdrive/d/wce420/Include/Armv4/propidl.h	2003-04-06 11:54:56.000000000 +0100
++++ ./propidl.h	2006-03-09 21:55:18.000000000 +0000
+@@ -148,7 +148,9 @@
+         /* [case()] */ FLOAT fltVal;
+         /* [case()] */ DOUBLE dblVal;
+         /* [case()] */ VARIANT_BOOL boolVal;
++#ifndef __cplusplus
+         /* [case()] */ _VARIANT_BOOL bool;
++#endif
+         /* [case()] */ SCODE scode;
+         /* [case()] */ CY cyVal;
+         /* [case()] */ DATE date;
+diff -Nur /cygdrive/d/wce420/Include/Armv4/winbase.h ./winbase.h
+--- /cygdrive/d/wce420/Include/Armv4/winbase.h	2003-04-06 11:53:40.000000000 +0100
++++ ./winbase.h	2006-03-20 19:00:36.000000000 +0000
+@@ -2970,13 +2970,13 @@
+ GetCurrentProcessId(
+     VOID
+     );
+-#endif
+ 
+ DWORD
+ WINAPI
+ TlsAlloc(
+     VOID
+     );
++#endif
+ 
+ WINBASEAPI
+ BOOL
+@@ -2993,11 +2993,13 @@
+     UINT ucb
+     );
+ 
++#ifndef UNDER_CE
+ BOOL
+ WINAPI
+ TlsFree(
+     DWORD dwTlsIndex
+     );
++#endif
+ 
+ WINBASEAPI
+ BOOL
+diff -Nur /cygdrive/d/wce420/Include/Armv4/wtypes.h ./wtypes.h
+--- /cygdrive/d/wce420/Include/Armv4/wtypes.h	2003-04-06 11:54:58.000000000 +0100
++++ ./wtypes.h	2006-05-18 22:53:50.000000000 +0100
+@@ -1115,7 +1115,7 @@
+ /* 0 == FALSE, -1 == TRUE */
+ typedef short VARIANT_BOOL;
+ 
+-#if !__STDC__ && (_MSC_VER <= 1000)
++#if (!__STDC__ && (_MSC_VER <= 1000)) || defined(__GNUC__)
+ /* For backward compatibility */
+ typedef VARIANT_BOOL _VARIANT_BOOL;
+ 
