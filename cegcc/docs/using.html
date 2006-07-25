@@ -3,6 +3,7 @@
 <TITLE>Using CeGCC to compile your Windows CE application</TITLE>
 </HEAD>
 <BODY>
+<img src="../images/banner1.png" alt="CeGCC cross compiler for PocketPC">
 <P>
 This document describes how to cross-compile Windows CE applications
 using the tools provided by <A HREF="http://cegcc.berlios.de">the CeGCC project</A>.
@@ -179,9 +180,11 @@ arm-wince-pe-windres menu-resource.rc menu-resource.rsc
 arm-wince-pe-gcc -D_WIN32_IE=0x0400   -o menu-resource.exe menu-resource.o menu-resource.rsc -lcommctrl
 % 
 </pre>
-<H1>Recommended way to port sources</H1>
+<H1>Things you want to know when porting sources</H1>
 <p>
-We don't have enough experience to provide much advice here.
+This needs to be expanded, please provide feedback with your experience so this chapter grows.
+The address for feedback is our mailing list :
+<a href="mailto:cegcc-devel@lists.berlios.de">cegcc-devel@lists.berlios.de</a> .
 <p>
 <h2>Use of Unicode</h2>
 Many applications are currently still coded to cope with one-byte characters.
@@ -216,19 +219,38 @@ According to the
 <a href="http://msdn2.microsoft.com/en-us/library/system.io.directory.getcurrentdirectory.aspx">
 Microsoft website</a>,
 Windows CE doesn't support the current directory functionality.
+However, some of the XCE functions in the newlib library that we provide
+do support such functionality.
 <p>
 <h2>Standard C functions that aren't supported</h2>
 The functions supporting the <i>long double</i> type aren't supported by Windows.
 strtold is an example of that, replace it by strtod if you can.
 <a href="http://msdn2.microsoft.com/en-us/library/9cx8xs15.aspx">more info ..</a>
-
+<h2>Linker arguments to define</h2>
+<p>
+The linker allows for a number of parameters that influence the behaviour of
+Windows CE when the application runs,
+it looks like they describe versions of CE :
+<ul>
+	<li> -Wl,--major-subsystem-version,4
+	<li> -Wl,--minor-subsystem-version,20
+</ul>
+<p>
+The numbers above are just examples.
+<font color=red>we should have a table describing the meaning of these</font>
+<p>
+<table border=1>
+	<tr><td>Major</td><td>Minor</td><td width=500>Meaning</td></tr>
+	<tr><td>4</td><td>20</td><td>?</td></tr>
+	<tr><td>2</td><td>0</td><td>?</td></tr>
+</table>
 <H1>CeGCC specifics</H1>
 <H2>Predefined macros</H2>
 <p>
 The arm-wince-pe-gcc C compiler is defining these macros :
 <table border=1>
 	<tr><td>__CEGCC__</td><td>Use this to identify our environment</td></tr>
-	<tr><td>__CEGCC32__</td><td>Not sure why you'd use this, currently not recommended</td></tr>
+	<tr><td>__CEGCC32__</td><td>Identify our environment even more, we may have a 64-bit environment in the future.</td></tr>
 	<tr><td>unix</td><td>See below</td></tr>
 	<tr><td>__unix__</td><td>See below</tr>
 	<tr><td>__unix</td><td>See below</tr>
@@ -239,7 +261,7 @@ We're defining them in the same way as the Cygwin's C compiler does.
 The argument seems to be that we're providing a unix-like layer on top of Windows,
 and that therefore all applications that run against a UNIX API must be able to compile
 without change.
-<b><font color=red>I strongly disagree with that</font></b>
+To some of us, this seems wrong,
 but if this is the way that other projects are doing it,
 then we might as well be consistent in being wrong.
 <H2>Macros that you may need to predefine</H2>
@@ -267,12 +289,45 @@ for some macros to be defined :
 #endif
 </pre>
 <p>
+Note that this actually looks like a bug in the w32api include files,
+the symbols probably need to be _WIN32_WCE instead of _WIN32_IE .
+<p>
 The _WINSOCKAPI_ symbol was required in early distributions of CeGCC.
 It deals with making a choice between two sets of include files,
 both of which define some socket API symbols.
 <H2>Libraries</H2>
+<p>
+The CeGCC compilers automatically link in a library called <i>cegcc</i>
+(libcegcc.a or cegcc.lib, depending on the platform)
+which contains the merged versions of some of the other libraries.
+This is the default behaviour.
+<p>
+<font color=red>The text below is work in progress</font>
+There's a C compiler option called <i>-no-cegcc</i> which
+<ul>
+	<li>disables linking the standard set of libraries.
+	<li>disables defining the macros <i>unix</i>, <i>__unix__</i>, <i>__unix</i>.
+	<li>defines the macros <i>WIN32</i>, <i>__WIN32__</i>, <i>_WIN32</i>.
+</ul>
+<p>
+The C compiler option <i>-mwin32</i>
+<ul>
+	<li>defines the macros <i>WIN32</i>, <i>__WIN32__</i>, <i>_WIN32</i>.
+	<li>disables defining the macros <i>unix</i>, <i>__unix__</i>, <i>__unix</i>.
+</ul>
+<p>
+We probably should define some more by default (to be discussed) :
+<ul>
+	<li>UNDER_CE=420</li>
+	<li>__CE_VERSION__=420</li>
+	<li>_WIN32_WCE=420</li>
+	<li>_WIN32_IE=420</li>
+</ul>
+<font color=red>End work in progress</font>
 <H2>Linux specific</H2>
+<p>
 <H2>Cygwin specific<H2>
+<p>
 <H1>For the detail-hungry : what does it do and define</H1>
 This output of a compiler run with the "-v" option shows exactly what it does, and which preprocessor symbols get defined.
 <P>
