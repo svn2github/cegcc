@@ -1,25 +1,13 @@
 /*
- * $Header: /cvsroot/wince-xcompile/wince-xcompile/examples/simplistic/test5.c,v 1.1 2005/12/19 20:02:22 dannybackx Exp $
- *
  * A simple application using Windows Resources.
- *
- * Calling convention of WinMain is still experimental - need to tweak the compiler
- * for this to be more clean.
  */
-
-#undef	DO_LOGGING
 
 #include <stdio.h>
 #include <windows.h>
 #include <commctrl.h>
 
-#include "test5.h"
+#include "menu-resource.h"
 
-char	*fn = "/storage card/devel/log.txt";
-
-static void InitLog(char *pattern, ...);
-static void Log(char *pattern, ...);
-static void LogError(DWORD e, char *pattern, ...);
 LRESULT CALLBACK WndProcedure(HWND, UINT, WPARAM, LPARAM);
 void DoMenuActions(HWND w, INT id);
 
@@ -37,8 +25,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int 
 
 	hi = hInstance;
 
-	InitLog("Initialised, hInstance %p, CmdLine[%s], n %d\r\n", hInstance, lpCmdLine, nCmdShow);
-
 	WndCls.style		= CS_HREDRAW | CS_VREDRAW;
 	WndCls.lpfnWndProc	= WndProcedure;
 	WndCls.cbClsExtra	= 0;
@@ -50,9 +36,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int 
 	WndCls.lpszClassName	= ClsName;
 	WndCls.hInstance	= hInstance;
 
-	Log("Before RegisterClass\r\n");
 	RegisterClass(&WndCls);
-	LogError(GetLastError(), "After RegisterClass\r\n");
 
 	hWnd = CreateWindow(ClsName, WndName, WS_OVERLAPPEDWINDOW,
 			0, 0,
@@ -60,8 +44,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int 
 			NULL, NULL,
 			hInstance,
 			NULL);
-
-	LogError(GetLastError(), "After CreateWindow\r\n");
 
 	if (! hWnd)
 		return FALSE;
@@ -139,66 +121,4 @@ void DoMenuActions(HWND w, INT id)
 			ReleaseDC(w, hdc);
 			break;
 	}
-}
-
-static void InitLog(char *pattern, ...)
-{
-#ifdef	DO_LOGGING
-	FILE	*f;
-	va_list	ap;
-	DWORD	len, written;
-
-	f = fopen(fn, "w");
-	va_start(ap, pattern);
-	vfprintf(f, pattern, ap);
-	va_end(ap);
-	fclose(f);
-#endif
-}
-
-static void Log(char *pattern, ...)
-{
-#ifdef	DO_LOGGING
-	FILE	*f;
-	va_list	ap;
-	DWORD	len, written;
-
-	f = fopen(fn, "a+");
-	va_start(ap, pattern);
-	vfprintf(f, pattern, ap);
-	va_end(ap);
-	fclose(f);
-#endif
-}
-
-static void LogError(DWORD e, char *pattern, ...)
-{
-#ifdef	DO_LOGGING
-	FILE	*f;
-	va_list	ap;
-	DWORD	len, written;
-
-	char	s[128];
-	LPVOID	buf;
-
-	FormatMessageW(
-		FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER
-		| FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL,
-		e,
-		0,
-		(LPTSTR)&buf,
-		0,
-		NULL);
-
-	f = fopen(fn, "a+");
-	va_start(ap, pattern);
-	vfprintf(f, pattern, ap);
-	(void)wcstombs(s, buf, 128);
-	fprintf(f, "Error [%s]\r\n", s);
-	va_end(ap);
-	fclose(f);
-
-	LocalFree(buf);
-#endif
 }

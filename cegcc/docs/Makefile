@@ -1,19 +1,19 @@
 ARCH=		arm-wince-pe
-CC=		${ARCH}-gcc ${CFLAGS} -e_WinMain
+CC=		${ARCH}-gcc ${CFLAGS}
 WINDRES=	${ARCH}-windres
 
 CFLAGS=		-D_WIN32_IE=0x0400 ${VERBOSE} ${INCLUDE}
 LDFLAGS=	-Wl,--major-subsystem-version,4,--minor-subsystem-version,20
 PDADIR=		":/storage card/devel"
 
-test5.exe:	test5.o test5.rsc
-	${PCC} -o $@ test5.o test5.rsc -lcommctrl ${LDFLAGS}
+menu-resource.exe:	menu-resource.o menu-resource.rsc
+	${CC} -o $@ menu-resource.o menu-resource.rsc -lcommctrl ${LDFLAGS}
 
-test5.o:	test5.c
-	${PCC} -c $?
+menu-resource.o:	menu-resource.c
+	${CC} -c $?
 
-test5.rsc:	test5.rc test5.h
-	${WINDRES} test5.rc test5.rsc
+menu-resource.rsc:	menu-resource.rc menu-resource.h
+	${WINDRES} menu-resource.rc menu-resource.rsc
 
 clean:
 	-rm -f *.o *.exe *.rsc
