@@ -3,14 +3,32 @@
 <TITLE>CeGCC Documentation Directory</TITLE>
 </HEAD>
 <BODY>
-To be completed.
+<img src="images/banner1.png" alt="CeGCC cross compiler for PocketPC">
+<H1>CeGCC Documentation</H1>
+<p>
+This is work in progress, but there's already a lot of stuff below...
 <P>
-Documents :
 <UL>
 <LI><A HREF="what.html">What is CeGCC ?</A>
 <LI><A HREF="using.html">Using CeGCC to compile your Windows CE application</A>
+<ul>
+	<li>Getting started</li>
+	<li>How to build a Makefile that works</li>
+	<li>Recommended way to port sources (Unicode, current directory, unsupported functions)</li>
+	<li>CeGCC specifics (predefined macros, libraries)</li>
+	<li>For the detail-hungry ..</li>
+</ul>
 <LI><A HREF="build-toolchain.html">How to build the toolchain</A>
 <LI><A HREF="debugging.html">Demo of a cross-debugging session</A>
 </UL>
+<P>
+<h2>Required software</h2>
+<p>
+Use of the cross-debugger between a CE system and a Linux host PC requires a
+working installation of
+<a href="http://synce.sourceforge.net">SynCE</a>.
+SynCE takes care of hooking up the PDA via TCP/IP,
+implements the RAPI library, etc.
+On Windows, this functionality is part of ActiveSync which usually ships with your PDA.
 </BODY>
 </HTML>
