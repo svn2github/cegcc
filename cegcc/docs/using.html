@@ -252,9 +252,19 @@ The arm-wince-pe-gcc C compiler is defining these macros :
 	<tr><td>__CEGCC__</td><td>Use this to identify our environment</td></tr>
 	<tr><td>__CEGCC32__</td><td>Identify our environment even more, we may have a 64-bit environment in the future.</td></tr>
 	<tr><td>unix</td><td>See below</td></tr>
-	<tr><td>__unix__</td><td>See below</tr>
-	<tr><td>__unix</td><td>See below</tr>
+	<tr><td>__unix__</td><td>See below</td></tr>
+	<tr><td>__unix</td><td>See below</td></tr>
+
+	<tr><td>UNICODE</td><td></td></tr>
+	<tr><td>_UNICODE</td><td></td></tr>
+	<tr><td>_M_ARM=1</td><td></td></tr>
+	<tr><td>ARM=1</td><td></td></tr>
+	<tr><td>__MINGWCE__</td><td></td></tr>
+	<tr><td>__MINGW32__</td><td></td></tr>
+	<tr><td>UNDER_CE</td><td></td></tr>
 </table>
+<p>
+Many of those are defined in <i>src/gcc/gcc/config/arm/wince-pe.h</i> .
 <p>
 The <i>unix</i> macros defined by the compiler are actually pretty strange.
 We're defining them in the same way as the Cygwin's C compiler does.
