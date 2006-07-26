@@ -1,0 +1,45 @@
+<HTML>
+<HEAD>
+<TITLE>The unix-like layer provided by CeGCC</TITLE>
+<img src="../images/banner1.png" alt="CeGCC cross compiler for PocketPC">
+</HEAD>
+<BODY>
+<H1>The unix-like layer provided by CeGCC</H1>
+<P>
+Apart from the well known tools (binutils, gcc, newlib, ..)
+that we publish as being the important parts of the CeGCC project,
+there is also quite an important piece of
+WinCE specific
+code.
+Most of that is in the directory <i>src/newlib/newlib/libc/sys/wince</i>
+even though it is not a part of the standard newlib distributions.
+<P>
+Part of this code is required to be able to create executables that start
+a program in a consistent way (e.g. crt0.o, the startup code in an executable),
+but another part of this code provides a unix like layer
+with functionalities absent in Windows CE.
+<P>
+The purpose of this document is to describe all that,
+it is based on the only other documentation we could find :
+<i>the source</i>.
+<h2>Introduction</h2>
+<h2>Environment</h2>
+<h2>File descriptors</h2>
+<h2>Current directory</h2>
+According to the
+<a href="http://msdn2.microsoft.com/en-us/library/system.io.directory.getcurrentdirectory.aspx">
+Microsoft website</a>,
+Windows CE doesn't support the current directory functionality.
+<p>
+However, some of the XCE functions in the newlib library that we provide
+do support such functionality.
+The startup code (see <i>src/newlib/newlib/libc/sys/wince/startup.c</i>)
+sets up an environment variable PWD which it presets
+to either the current directory from the parent process,
+or the path extracted from the executable file we're running.
+Similarly a PATH variable is also put in the environment.
+<p>
+More information about this is in
+<a href="layer.html">The unix-like layer provided by CeGCC</a>.
+</BODY>
+</HTML>

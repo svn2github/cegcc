@@ -1,9 +1,9 @@
 <HTML>
 <HEAD>
 <TITLE>Using CeGCC to compile your Windows CE application</TITLE>
+<img src="../images/banner1.png" alt="CeGCC cross compiler for PocketPC">
 </HEAD>
 <BODY>
-<img src="../images/banner1.png" alt="CeGCC cross compiler for PocketPC">
 <P>
 This document describes how to cross-compile Windows CE applications
 using the tools provided by <A HREF="http://cegcc.berlios.de">the CeGCC project</A>.
@@ -68,6 +68,7 @@ Wince is shorthand for the
 	<tr><td>arm-wince-pe-addr2line</td><td></td></tr>
 	<tr><td>arm-wince-pe-ar</td><td>archive library management tool</td></tr>
 	<tr><td>arm-wince-pe-as</td><td>the GNU assembler</td></tr>
+	<tr><td>arm-wince-pe-c++</td><td>the C++ compiler</td></tr>
 	<tr><td>arm-wince-pe-c++filt</td><td></td></tr>
 	<tr><td>arm-wince-pe-cpp</td><td>the C preprocessor</td></tr>
 	<tr><td>arm-wince-pe-dlltool</td><td>a tool to create DLLs</td></tr>
@@ -75,6 +76,7 @@ Wince is shorthand for the
 	<tr><td>arm-wince-pe-gcc-4.1.0</td><td></td></tr>
 	<tr><td>arm-wince-pe-gccbug</td><td></td></tr>
 	<tr><td>arm-wince-pe-gcov</td><td></td></tr>
+	<tr><td>arm-wince-pe-g++</td><td>the C++ compiler</td></tr>
 	<tr><td>arm-wince-pe-ld</td><td>the GNU linker</td></tr>
 	<tr><td>arm-wince-pe-nm</td><td>the tool to inspect symbols in load modules</td></tr>
 	<tr><td>arm-wince-pe-objcopy</td><td></td></tr>
@@ -220,9 +222,17 @@ According to the
 <a href="http://msdn2.microsoft.com/en-us/library/system.io.directory.getcurrentdirectory.aspx">
 Microsoft website</a>,
 Windows CE doesn't support the current directory functionality.
+<p>
 However, some of the XCE functions in the newlib library that we provide
 do support such functionality.
+The startup code (see <i>src/newlib/newlib/libc/sys/wince/startup.c</i>)
+sets up an environment variable PWD which it presets
+to either the current directory from the parent process,
+or the path extracted from the executable file we're running.
+Similarly a PATH variable is also put in the environment.
 <p>
+More information about this is in
+<a href="layer.html">The unix-like layer provided by CeGCC</a>.
 <h2>Standard C functions that aren't supported</h2>
 The functions supporting the <i>long double</i> type aren't supported by Windows.
 strtold is an example of that, replace it by strtod if you can.
@@ -248,7 +258,7 @@ The numbers above are just examples.
 <H1>CeGCC specifics</H1>
 <H2>Predefined macros</H2>
 <p>
-The arm-wince-pe-gcc C compiler is defining these macros :
+By default, the arm-wince-pe-gcc C compiler is defining these macros :
 <table border=1>
 	<tr><td>__CEGCC__</td><td>Use this to identify our environment</td></tr>
 	<tr><td>__CEGCC32__</td><td>Identify our environment even more, we may have a 64-bit environment in the future.</td></tr>
@@ -260,8 +270,6 @@ The arm-wince-pe-gcc C compiler is defining these macros :
 	<tr><td>_UNICODE</td><td></td></tr>
 	<tr><td>_M_ARM=1</td><td></td></tr>
 	<tr><td>ARM=1</td><td></td></tr>
-	<tr><td>__MINGWCE__</td><td></td></tr>
-	<tr><td>__MINGW32__</td><td></td></tr>
 	<tr><td>UNDER_CE</td><td></td></tr>
 </table>
 <p>
@@ -275,6 +283,16 @@ without change.
 To some of us, this seems wrong,
 but if this is the way that other projects are doing it,
 then we might as well be consistent in being wrong.
+<H2>Compiler command line options</H2>
+<P>
+<P>
+<table border=1>
+<tr><td>Option</td><td>Macros defined</td><td>Libs linked</td><td>When to use</td></tr>
+<tr><td>-mno-cegcc</td><td></td><td></td><td>Don't link standard libraries, also don't predefine unix macros.</td></tr>
+<tr><td>-mwin32</td><td></td><td>winsock, coredll, cegcc, gcc</td><td>Normal linking but macros indicate Windows environment, not Unix.</td></tr>
+<tr><td>-mthreads</td><td></td><td>crtmt.o</td><td>multi-thread support</td></tr>
+<tr><td></td><td></td><td></td><td></td></tr>
+</table>
 <H2>Macros that you may need to predefine</H2>
 <p>
 You may need to define these macros :
@@ -290,8 +308,8 @@ which our compiler uses to know things about the target environment.
 The <i>_WIN32_IE</i> macro is used in several of the target include files
 to selectively enable some definitions based on the version of Windows CE
 that we're building for.
-My own device runs a version of CE that identifies itself as <i>4.20.0</i>
-so I'm guessing this matches with a value of 0x0400.
+My own device runs a version of CE that identifies itself as <i>4.20.0</i>,
+this matches with a value of 0x0420.
 Here's an example of how the w32api include files require this symbol to be correctly set
 for some macros to be defined :
 <pre>
