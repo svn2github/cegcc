@@ -50,7 +50,7 @@
 #undef CPP_SPEC
 #define CPP_SPEC "%(cpp_cpu) %{posix:-D_POSIX_SOURCE} \
 %{mno-win32:%{mno-cegcc: %emno-cegcc and mno-win32 are not compatible}} \
-%{mno-cegcc: -D__MSVCRT__ -D__MINGW32__ %{!ansi:%{mthreads: -D_MT }}} \
+%{mno-cegcc: %{!ansi:%{mthreads: -D_MT }}} \
 %{!mno-cegcc: -D__CEGCC32__ -D__CEGCC__ %{!ansi:-Dunix} -D__unix__ -D__unix } \
 %{mwin32|mno-cegcc: -DWIN32 -D_WIN32 -D__WIN32 -D__WIN32__ } \
 %{!nostdinc:%{!mno-win32|mno-cegcc: -idirafter ../include/w32api%s -idirafter ../../include/w32api%s }} \
@@ -82,8 +82,6 @@
   {								\
       builtin_define ("_M_ARM=1");				\
       builtin_define ("ARM=1");					\
-      builtin_define ("__MINGWCE__");				\
-      builtin_define ("__MINGW32__");			   	\
       builtin_define_std ("UNDER_CE");				\
       builtin_define ("_UNICODE");				\
       builtin_define_std ("UNICODE");				\
