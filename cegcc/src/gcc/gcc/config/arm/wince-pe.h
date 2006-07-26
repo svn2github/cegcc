@@ -134,7 +134,6 @@ ld, but that doesn't work just yet.  */
   %{shared|mdll: -e DllMainCRTStartup} \
   "
 
-/* still needed ? */
 #define ARM_WINCE 1
 
 #undef  COMMON_ASM_OP
