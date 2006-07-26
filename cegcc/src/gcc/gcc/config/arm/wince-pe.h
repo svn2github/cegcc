@@ -128,8 +128,6 @@ ld, but that doesn't work just yet.  */
 
 #undef LINK_SPEC
 #define LINK_SPEC "\
-  %{mwindows:--subsystem windows} \
-  %{mconsole:--subsystem console} \
   %{shared: %{mdll: %eshared and mdll are not compatible}} \
   %{shared: --shared} %{mdll:--dll} \
   %{static:-Bstatic} %{!static:-Bdynamic} \
