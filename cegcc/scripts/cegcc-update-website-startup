@@ -1,8 +1,8 @@
 #!/bin/sh
-HOME_DIR=/home/users/dannybackx
+HOME_DIR=/home/groups/c/ce/cegcc
 TMP_DIR=$HOME_DIR/tmp
 NIGHTLY_DIR=$HOME_DIR/nightly-dir
-WEB_DIR=/home/groups/cegcc/htdocs
+WEB_DIR=$HOME_DIR/htdocs
 OUTPUT=out.`date +%y%m%d.%H%M`
 
 export NIGHTLY_DIR WEB_DIR
@@ -17,7 +17,8 @@ svn update >>$TMP_DIR/$OUTPUT 2>&1
 # Phase two - run it.
 #
 cd $HOME_DIR
-sh $NIGHTLY_DIR/scripts/cegcc-update-website >>$TMP_DIR/$OUTPUT 2>&1
+sh -x $NIGHTLY_DIR/scripts/cegcc-update-website
+# sh $NIGHTLY_DIR/scripts/cegcc-update-website >>$TMP_DIR/$OUTPUT 2>&1
 
 #
 # This is the old version - harder to maintain.
