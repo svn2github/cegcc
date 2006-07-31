@@ -3,10 +3,11 @@
 <html>
 <head>
 <title>Binary pre-release of CeGCC for Linux</title>
+<img src="images/banner1.png" alt="CeGCC cross compiler for PocketPC">
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 </head>
 <body>
-<img src="images/banner1.png" alt="CeGCC cross compiler for PocketPC">
+<H1>Binary pre-release of CeGCC for Linux</H1>
 <p>
 <font size="+1">
 A third binary pre-release for Linux is available for download at
@@ -20,6 +21,7 @@ In my case, the Linux platform is Mandriva 2006.0,
 the PC is a no brand Pentium IV (assembled it myself),
 and the PDA is a Mio 168 running Windows CE 4.20.0.
 The Mio's processor is an Intel PXA 255.
+<H2>Goal</H2>
 <p>
 The goal of this pre-release is timely distribution of the latest goodies,
 knowing full well that there are problems.
@@ -32,7 +34,7 @@ Feedback about this software should be sent to the CeGCC mailing list at
 <a href="mailto:cegcc-devel@lists.SourceForge.net">cegcc-devel@lists.sourceforge.net</a>.
 Questions, bug reports, .. should be addressed to that same address.
 <p>
-<b>How do you use the binary pre-release ?</b>
+<H2>How do you use the binary pre-release ?</H2>
 <br>
 The pre-release is the result of building the linux version of cegcc,
 using the scripts/linux/build.sh script as it is in the SVN.
@@ -101,7 +103,18 @@ You can download my version of
 <a href="ftp://ftp.berlios.de/pub/cegcc/f.exe">f.exe</a>
 for comparison.
 </font>
-<p>
+<H2>Known problems</H2>
+<P>
+<H3></H3>
+<P>
+Compiling a new executable for the Crosswords application
+appears to work, but creates an executable file that doesn't execute:
+Windows CE tells that it is "not a valid Pocket PC application".
+<H3></H3>
+<P>
+When compiling the debugging stub (src/gdb/gdb/wince-stub.c) with the -mno-cegcc compiler option,
+the resulting executable doesn't work.
+<P>
 <!--
   
      Button row at the top of the page.
