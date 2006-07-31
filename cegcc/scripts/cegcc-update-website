@@ -23,5 +23,5 @@ cp $NIGHTLY_DIR/docs/examples/* $WEB_DIR/docs/examples
 # This must happen last as it manipulates the index.html file.
 # It relies on a fresh copy of index.html from svn to work !
 #
-sh $NIGHTLY_DIR/scripts/update_news.sh
+# sh $NIGHTLY_DIR/scripts/update_news.sh
 exit 0
