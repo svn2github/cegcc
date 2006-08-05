@@ -110,9 +110,16 @@ for comparison.
 <P>
 <H3></H3>
 <P>
-Compiling a new executable for the Crosswords application
+<i>Compiling a new executable for the Crosswords application
 appears to work, but creates an executable file that doesn't execute:
 Windows CE tells that it is "not a valid Pocket PC application".
+</i>
+<p>
+<b>(Somewhat) solved :</b> this is due to an invalid aygshell.def file from which we
+were generating the libaygshell.a library,
+which in turn is some kind of a proxy for the Windows CE DLL <i>aygshell.dll</i>.
+(The library is used at link time, the DLL is a runtime component.
+They must match one another, but I haven't figured out the details yet.)
 <H3></H3>
 <P>
 When compiling the debugging stub (src/gdb/gdb/wince-stub.c) with the -mno-cegcc compiler option,
