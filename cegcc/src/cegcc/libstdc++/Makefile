@@ -20,7 +20,7 @@ all: clean mktmp version.rc.o extract delfiles $(DLLNAME) $(DLLNAME).def $(IMPLI
 install:
 	cp -vf $(DLLNAME) $(PREFIX)/arm-wince-pe/bin
 	cp -vf $(IMPLIB) $(PREFIX)/arm-wince-pe/lib
-	
+
 delfiles:
 	@list='$(RMFILES)'; \
 		for file in $$list; \
@@ -55,8 +55,8 @@ $(DLLNAME):
 
 
 installdll: stripped/$(DLLNAME)
-	pput.exe -v -v -f stripped\$(DLLNAME) \Windows\$(DLLNAME)
-	
+	pput.exe -v -v -f stripped/$(DLLNAME) "\Windows\$(DLLNAME)"
+
 clean:
 	rm -rf _tmp
 	rm -rf stripped
@@ -66,7 +66,7 @@ clean:
 mktmp:
 	rm -rf _tmp
 	mkdir _tmp
-	
+
 version.rc.o: version.rc
 	arm-wince-pe-windres version.rc -o $@
 	mv $@ _tmp
