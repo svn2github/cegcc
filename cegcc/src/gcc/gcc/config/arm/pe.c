@@ -61,6 +61,36 @@ static void pe_mark_dllimport (tree);
 #define DLL_EXPORT_PREFIX "@e."
 #endif
 
+/* Handle a "selectany" attribute;
+   arguments as in struct attribute_spec.handler.  */
+tree
+arm_pe_handle_selectany_attribute (tree *node, tree name,
+			         tree args ATTRIBUTE_UNUSED,
+			         int flags ATTRIBUTE_UNUSED,
+				 bool *no_add_attrs)
+{
+  /* The attribute applies only to objects that are initialized and have
+     external linkage,  */	
+  if (TREE_CODE (*node) == VAR_DECL && TREE_PUBLIC (*node)
+      && (DECL_INITIAL (*node)
+          /* If an object is initialized with a ctor, the static
+	     initialization and destruction code for it is present in
+	     each unit defining the object.  The code that calls the
+	     ctor is protected by a link-once guard variable, so that
+	     the object still has link-once semantics,  */
+    	  || TYPE_NEEDS_CONSTRUCTING (TREE_TYPE (*node))))
+    make_decl_one_only (*node);
+  else
+    {	
+      error ("%qs attribute applies only to initialized variables"
+       	     " with external linkage",  IDENTIFIER_POINTER (name));
+      *no_add_attrs = true;
+    }
+
+  return NULL_TREE;
+}
+
+
 /* Return the type that we should use to determine if DECL is
    imported or exported.  */
 
