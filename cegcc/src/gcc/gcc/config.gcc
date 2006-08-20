@@ -1234,6 +1234,18 @@ i[34567]86-*-pe | i[34567]86-*-cygwin*)
 		thread_file='posix'
 	fi
 	;;
+arm-wince-mingw32*)
+	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h arm/wince-pe.h arm/mingw32.h"
+	xm_file=arm/xm-mingw32.h
+	tmake_file="arm/t-arm arm/t-wince-pe arm/t-cygming arm/t-mingw32"
+	target_gtfiles="\$(srcdir)/config/arm/pe.c"
+	extra_options="${extra_options} arm/pe.opt arm/cygming.opt"
+	extra_objs="pe.o pe-stubs.o"
+	cxx_target_objs=pe-cxx.o
+	case ${enable_threads} in
+	  "" | yes | win32) thread_file='win32' ;;
+	esac
+	;;
 i[34567]86-*-mingw32*)
 	tm_file="${tm_file} i386/unix.h i386/bsd.h i386/gas.h dbxcoff.h i386/cygming.h i386/mingw32.h"
 	xm_file=i386/xm-mingw32.h
