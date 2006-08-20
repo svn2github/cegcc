@@ -224,6 +224,17 @@ static bool arm_tls_symbol_p (rtx x);
 #define TARGET_ASM_INTEGER arm_assemble_integer
 #endif
 
+#ifdef ARM_PE
+#undef  TARGET_ASM_UNALIGNED_HI_OP
+#define TARGET_ASM_UNALIGNED_HI_OP "\t.2byte\t"
+#undef  TARGET_ASM_UNALIGNED_SI_OP
+#define TARGET_ASM_UNALIGNED_SI_OP "\t.4byte\t"
+#undef  TARGET_ASM_UNALIGNED_DI_OP
+#define TARGET_ASM_UNALIGNED_DI_OP "\t.8byte\t"
+#undef  TARGET_ASM_UNALIGNED_TI_OP
+#define TARGET_ASM_UNALIGNED_TI_OP NULL
+#endif
+
 #undef  TARGET_ASM_FUNCTION_PROLOGUE
 #define TARGET_ASM_FUNCTION_PROLOGUE arm_output_function_prologue
 
