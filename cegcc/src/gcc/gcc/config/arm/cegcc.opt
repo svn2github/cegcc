@@ -19,10 +19,6 @@
 ; Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
 ; 02110-1301, USA.
 
-mconsole
-Target RejectNegative
-Create console application
-
 mcegcc
 Target
 Use the Cegcc interface
@@ -41,7 +37,3 @@ Use Cegcc-specific thread support
 mwin32
 Target
 Set Windows defines
-
-mwindows
-Target
-Create GUI application
