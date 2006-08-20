@@ -40,7 +40,7 @@ install:
 	arm-wince-pe-ar q $(PREFIX)/arm-wince-pe/lib/libc.dll.a
 	arm-wince-pe-ar q $(PREFIX)/arm-wince-pe/lib/libm.dll.a
 	arm-wince-pe-ar q $(PREFIX)/lib/gcc/arm-wince-pe/$(GCCVERSION)/libgcc.dll.a
-	
+
 delfiles:
 	@list='$(RMFILES)'; \
 		for file in $$list; \
@@ -97,8 +97,8 @@ $(DLLNAME):
 #	-Wl,--enable-runtime-pseudo-reloc \
 
 installdll: stripped/$(DLLNAME)
-	pput.exe -v -v -f stripped\$(DLLNAME) \Windows\$(DLLNAME)
-	
+	pput.exe -v -v -f stripped/$(DLLNAME) "\Windows\$(DLLNAME)"
+
 clean:
 	rm -rf _tmp
 	rm -rf _tmp_static
@@ -112,7 +112,7 @@ mktmp:
 mktmp_static:
 	rm -rf _tmp_static
 	mkdir _tmp_static
-	
+
 version.rc.o: version.rc
 	arm-wince-pe-windres version.rc -o $@
 	mv $@ _tmp
