@@ -24,9 +24,6 @@
 #undef  TARGET_DEFAULT
 #define TARGET_DEFAULT	(MASK_NOP_FUN_DLLIMPORT)
 
-#undef  USER_LABEL_PREFIX
-#define USER_LABEL_PREFIX ""
-
 #undef MATH_LIBRARY
 #define MATH_LIBRARY ""
 
@@ -71,7 +68,8 @@
 
 #undef SUBTARGET_EXTRA_SPECS
 #define SUBTARGET_EXTRA_SPECS \
-  { "subtarget_asm_float_spec", SUBTARGET_ASM_FLOAT_SPEC },
+  { "subtarget_asm_float_spec", SUBTARGET_ASM_FLOAT_SPEC }, \
+  { "mingw_include_path", DEFAULT_TARGET_MACHINE }
 
 #undef SUBTARGET_ASM_FLOAT_SPEC
 #define SUBTARGET_ASM_FLOAT_SPEC "\
@@ -90,6 +88,7 @@
       /* Even though linkonce works with static libs, this is needed 	\
           to compare typeinfo symbols across dll boundaries.  */	\
       builtin_define ("__GXX_MERGED_TYPEINFO_NAMES=0");		\
+      EXTRA_OS_CPP_BUILTINS ();					\
   }								\
   while (0)
 
@@ -214,6 +213,129 @@ the end of the file.  */
 #undef PTRDIFF_TYPE
 #define PTRDIFF_TYPE "int"
 
+#undef WCHAR_TYPE_SIZE
+#define WCHAR_TYPE_SIZE 16
+
+#undef WCHAR_TYPE
+#define WCHAR_TYPE "short unsigned int"
+
 /* Define as short unsigned for compatibility with MS runtime.  */
 #undef WINT_TYPE
 #define WINT_TYPE "short unsigned int"
+
+#define DWARF2_DEBUGGING_INFO 1
+
+#undef  PREFERRED_DEBUGGING_TYPE
+#define PREFERRED_DEBUGGING_TYPE DWARF2_DEBUG
+
+#undef HAVE_AS_DWARF2_DEBUG_LINE
+#define HAVE_AS_DWARF2_DEBUG_LINE 1
+
+/* Use section relative relocations for debugging offsets.  Unlike
+   other targets that fake this by putting the section VMA at 0, PE
+   won't allow it.  */
+#define ASM_OUTPUT_DWARF_OFFSET(FILE, SIZE, LABEL)    \
+  do {                                                \
+    if (SIZE != 4)                                    \
+      abort ();                                       \
+                                                      \
+    fputs ("\t.secrel32\t", FILE);                    \
+    assemble_name (FILE, LABEL);                      \
+  } while (0)
+
+
+/* Prefix for internally generated assembler labels.  If we aren't using
+   underscores, we are using prefix `.'s to identify labels that should
+   be ignored.  */
+
+#undef  LPREFIX
+#define LPREFIX ".L"
+
+#undef LOCAL_LABEL_PREFIX
+#define LOCAL_LABEL_PREFIX "."
+
+/* The prefix to add to user-visible assembler symbols.  */
+
+#undef  USER_LABEL_PREFIX
+#define USER_LABEL_PREFIX ""
+
+
+/* If user-symbols don't have underscores,
+   then it must take more than `L' to identify
+   a label that should be ignored.  */
+
+/* This is how to store into the string BUF
+   the symbol_ref name of an internal numbered label where
+   PREFIX is the class of label and NUM is the number within the class.
+   This is suitable for output with `assemble_name'.  */
+
+#undef  ASM_GENERATE_INTERNAL_LABEL
+#define ASM_GENERATE_INTERNAL_LABEL(BUF,PREFIX,NUMBER)	\
+  sprintf ((BUF), ".%s%ld", (PREFIX), (long)(NUMBER))
+
+
+/* Emit code to check the stack when allocating more that 4000
+   bytes in one go.  */
+
+#define CHECK_STACK_LIMIT 4000
+
+/* By default, target has a 80387, uses IEEE compatible arithmetic,
+   returns float values in the 387 and needs stack probes.
+   We also align doubles to 64-bits for MSVC default compatibility.  */
+
+#undef TARGET_SUBTARGET_DEFAULT
+#define TARGET_SUBTARGET_DEFAULT \
+   (MASK_IEEE_FP | MASK_ALIGN_DOUBLE)
+
+/* ### Needs better testing!*/
+/* Native complier aligns internal doubles in structures on dword boundaries.  */
+#undef	BIGGEST_FIELD_ALIGNMENT
+#define BIGGEST_FIELD_ALIGNMENT 64
+
+/* A bit-field declared as `int' forces `int' alignment for the struct.  */
+#undef PCC_BITFIELD_TYPE_MATTERS
+#define PCC_BITFIELD_TYPE_MATTERS 1
+#define GROUP_BITFIELDS_BY_ALIGN TYPE_NATIVE(rec)
+
+/* Enable alias attribute support.  */
+#ifndef SET_ASM_OP
+#define SET_ASM_OP "\t.set\t"
+#endif
+
+
+/* This implements the `alias' attribute.  */
+#undef	ASM_OUTPUT_DEF_FROM_DECLS
+#define	ASM_OUTPUT_DEF_FROM_DECLS(STREAM, DECL, TARGET) 		\
+  do									\
+    {									\
+      const char *alias;						\
+      rtx rtlname = XEXP (DECL_RTL (DECL), 0);				\
+      if (GET_CODE (rtlname) == SYMBOL_REF)				\
+	alias = XSTR (rtlname, 0);					\
+      else								\
+	abort ();							\
+      if (TREE_CODE (DECL) == FUNCTION_DECL)				\
+	arm_pe_declare_function_type (STREAM, alias,			\
+				       TREE_PUBLIC (DECL));		\
+      ASM_OUTPUT_DEF (STREAM, alias, IDENTIFIER_POINTER (TARGET));	\
+    } while (0)
+
+/* FIXME: SUPPORTS_WEAK && TARGET_HAVE_NAMED_SECTIONS is true,
+   but for .jcr section to work we also need crtbegin and crtend
+   objects.  */
+#define TARGET_USE_JCR_SECTION 0
+
+/* Decide whether it is safe to use a local alias for a virtual function
+   when constructing thunks.  */
+#undef TARGET_USE_LOCAL_THUNK_ALIAS_P
+#define TARGET_USE_LOCAL_THUNK_ALIAS_P(DECL) (!DECL_ONE_ONLY (DECL))
+
+#define SUBTARGET_ATTRIBUTE_TABLE \
+  /* { name, min_len, max_len, decl_req, type_req, fn_type_req, handler } */ \
+  { "selectany", 0, 0, true, false, false, arm_pe_handle_selectany_attribute }
+
+#undef TREE
+
+#ifndef BUFSIZ
+# undef FILE
+#endif
