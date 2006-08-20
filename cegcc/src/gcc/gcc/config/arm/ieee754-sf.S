@@ -75,7 +75,7 @@ ARM_FUNC_ALIAS aeabi_fadd addsf3
 	teqne	r2, r3
 	mvnnes	ip, r2, asr #24
 	mvnnes	ip, r3, asr #24
-	beq	LSYM(Lad_s)
+	beq	LSYM(ad_s)
 
 	@ Compute exponent difference.  Make largest exponent in r2,
 	@ corresponding arg in r0, and positive exponent difference in r3.
@@ -106,8 +106,8 @@ ARM_FUNC_ALIAS aeabi_fadd addsf3
 	@ If exponent == difference, one or both args were denormalized.
 	@ Since this is not common case, rescale them off line.
 	teq	r2, r3
-	beq	LSYM(Lad_d)
-LSYM(Lad_x):
+	beq	LSYM(ad_d)
+LSYM(ad_x):
 
 	@ Compensate for the exponent overlapping the mantissa MSB added later
 	sub	r2, r2, #1
@@ -120,16 +120,16 @@ LSYM(Lad_x):
 
 	@ Keep absolute value in r0-r1, sign in r3 (the n bit was set above)
 	and	r3, r0, #0x80000000
-	bpl	LSYM(Lad_p)
+	bpl	LSYM(ad_p)
 	rsbs	r1, r1, #0
 	rsc	r0, r0, #0
 
 	@ Determine how to normalize the result.
-LSYM(Lad_p):
+LSYM(ad_p):
 	cmp	r0, #0x00800000
-	bcc	LSYM(Lad_a)
+	bcc	LSYM(ad_a)
 	cmp	r0, #0x01000000
-	bcc	LSYM(Lad_e)
+	bcc	LSYM(ad_e)
 
 	@ Result needs to be shifted right.
 	movs	r0, r0, lsr #1
@@ -138,13 +138,13 @@ LSYM(Lad_p):
 
 	@ Make sure we did not bust our exponent.
 	cmp	r2, #254
-	bhs	LSYM(Lad_o)
+	bhs	LSYM(ad_o)
 
 	@ Our result is now properly aligned into r0, remaining bits in r1.
 	@ Pack final result together.
 	@ Round with MSB of r1. If halfway between two numbers, round towards
 	@ LSB of r0 = 0. 
-LSYM(Lad_e):
+LSYM(ad_e):
 	cmp	r1, #0x80000000
 	adc	r0, r0, r2, lsl #23
 	biceq	r0, r0, #1
@@ -152,15 +152,15 @@ LSYM(Lad_e):
 	RET
 
 	@ Result must be shifted left and exponent adjusted.
-LSYM(Lad_a):
+LSYM(ad_a):
 	movs	r1, r1, lsl #1
 	adc	r0, r0, r0
 	tst	r0, #0x00800000
 	sub	r2, r2, #1
-	bne	LSYM(Lad_e)
+	bne	LSYM(ad_e)
 	
 	@ No rounding necessary since r1 will always be 0 at this point.
-LSYM(Lad_l):
+LSYM(ad_l):
 
 #if __ARM_ARCH__ < 5
 
@@ -199,20 +199,20 @@ LSYM(Lad_l):
 
 	@ Fixup and adjust bit position for denormalized arguments.
 	@ Note that r2 must not remain equal to 0.
-LSYM(Lad_d):
+LSYM(ad_d):
 	teq	r2, #0
 	eor	r1, r1, #0x00800000
 	eoreq	r0, r0, #0x00800000
 	addeq	r2, r2, #1
 	subne	r3, r3, #1
-	b	LSYM(Lad_x)
+	b	LSYM(ad_x)
 
-LSYM(Lad_s):
+LSYM(ad_s):
 	mov	r3, r1, lsl #1
 
 	mvns	ip, r2, asr #24
 	mvnnes	ip, r3, asr #24
-	beq	LSYM(Lad_i)
+	beq	LSYM(ad_i)
 
 	teq	r2, r3
 	beq	1f
@@ -240,7 +240,7 @@ LSYM(Lad_s):
 	and	r3, r0, #0x80000000
 
 	@ Overflow: return INF.
-LSYM(Lad_o):
+LSYM(ad_o):
 	orr	r0, r3, #0x7f000000
 	orr	r0, r0, #0x00800000
 	RET
@@ -251,7 +251,7 @@ LSYM(Lad_o):
 	@   if r0 or r1 is NAN: return NAN
 	@   if opposite sign: return NAN
 	@   otherwise return r0 (which is INF or -INF)
-LSYM(Lad_i):
+LSYM(ad_i):
 	mvns	r2, r2, asr #24
 	movne	r0, r1
 	mvneqs	r3, r3, asr #24
@@ -411,8 +411,8 @@ ARM_FUNC_ALIAS aeabi_fmul mulsf3
 	andnes	r3, ip, r1, lsr #23
 	teqne	r2, ip
 	teqne	r3, ip
-	beq	LSYM(Lml_s)
-LSYM(Lml_x):
+	beq	LSYM(ml_s)
+LSYM(ml_x):
 
 	@ Add exponents together
 	add	r2, r2, r3
@@ -425,7 +425,7 @@ LSYM(Lml_x):
 	@ Make up for final alignment.
 	movs	r0, r0, lsl #9
 	movnes	r1, r1, lsl #9
-	beq	LSYM(Lml_1)
+	beq	LSYM(ml_1)
 	mov	r3, #0x08000000
 	orr	r0, r3, r0, lsr #5
 	orr	r1, r3, r1, lsr #5
@@ -471,7 +471,7 @@ LSYM(Lml_x):
 	@ Apply exponent bias, check for under/overflow.
 	sbc	r2, r2, #127
 	cmp	r2, #(254 - 1)
-	bhi	LSYM(Lml_u)
+	bhi	LSYM(ml_u)
 
 	@ Round the result, merge final exponent.
 	cmp	r3, #0x80000000
@@ -480,7 +480,7 @@ LSYM(Lml_x):
 	RET
 
 	@ Multiplication by 0x1p*: let''s shortcut a lot of code.
-LSYM(Lml_1):
+LSYM(ml_1):
 	teq	r0, #0
 	and	ip, ip, #0x80000000
 	moveq	r1, r1, lsl #9
@@ -496,9 +496,9 @@ LSYM(Lml_1):
 	mov	r3, #0
 	subs	r2, r2, #1
 
-LSYM(Lml_u):
+LSYM(ml_u):
 	@ Overflow?
-	bgt	LSYM(Lml_o)
+	bgt	LSYM(ml_o)
 
 	@ Check if denormalized result is possible, otherwise return signed 0.
 	cmn	r2, #(24 + 1)
@@ -519,7 +519,7 @@ LSYM(Lml_u):
 
 	@ One or both arguments are denormalized.
 	@ Scale them leftwards and preserve sign bit.
-LSYM(Lml_d):
+LSYM(ml_d):
 	teq	r2, #0
 	and	ip, r0, #0x80000000
 1:	moveq	r0, r0, lsl #1
@@ -534,9 +534,9 @@ LSYM(Lml_d):
 	subeq	r3, r3, #1
 	beq	2b
 	orr	r1, r1, ip
-	b	LSYM(Lml_x)
+	b	LSYM(ml_x)
 
-LSYM(Lml_s):
+LSYM(ml_s):
 	@ Isolate the INF and NAN cases away
 	and	r3, ip, r1, lsr #23
 	teq	r2, ip
@@ -546,10 +546,10 @@ LSYM(Lml_s):
 	@ Here, one or more arguments are either denormalized or zero.
 	bics	ip, r0, #0x80000000
 	bicnes	ip, r1, #0x80000000
-	bne	LSYM(Lml_d)
+	bne	LSYM(ml_d)
 
 	@ Result is 0, but determine sign anyway.
-LSYM(Lml_z):
+LSYM(ml_z):
 	eor	r0, r0, r1
 	bic	r0, r0, #0x7fffffff
 	RET
@@ -560,30 +560,30 @@ LSYM(Lml_z):
 	moveq	r0, r1
 	teqne	r1, #0x0
 	teqne	r1, #0x80000000
-	beq	LSYM(Lml_n)		@ 0 * INF or INF * 0 -> NAN
+	beq	LSYM(ml_n)		@ 0 * INF or INF * 0 -> NAN
 	teq	r2, ip
 	bne	1f
 	movs	r2, r0, lsl #9
-	bne	LSYM(Lml_n)		@ NAN * <anything> -> NAN
+	bne	LSYM(ml_n)		@ NAN * <anything> -> NAN
 1:	teq	r3, ip
-	bne	LSYM(Lml_i)
+	bne	LSYM(ml_i)
 	movs	r3, r1, lsl #9
 	movne	r0, r1
-	bne	LSYM(Lml_n)		@ <anything> * NAN -> NAN
+	bne	LSYM(ml_n)		@ <anything> * NAN -> NAN
 
 	@ Result is INF, but we need to determine its sign.
-LSYM(Lml_i):
+LSYM(ml_i):
 	eor	r0, r0, r1
 
 	@ Overflow: return INF (sign already in r0).
-LSYM(Lml_o):
+LSYM(ml_o):
 	and	r0, r0, #0x80000000
 	orr	r0, r0, #0x7f000000
 	orr	r0, r0, #0x00800000
 	RET
 
 	@ Return a quiet NAN.
-LSYM(Lml_n):
+LSYM(ml_n):
 	orr	r0, r0, #0x7f000000
 	orr	r0, r0, #0x00c00000
 	RET
@@ -600,8 +600,8 @@ ARM_FUNC_ALIAS aeabi_fdiv divsf3
 	andnes	r3, ip, r1, lsr #23
 	teqne	r2, ip
 	teqne	r3, ip
-	beq	LSYM(Ldv_s)
-LSYM(Ldv_x):
+	beq	LSYM(dv_s)
+LSYM(dv_x):
 
 	@ Substract divisor exponent from dividend''s
 	sub	r2, r2, r3
@@ -613,7 +613,7 @@ LSYM(Ldv_x):
 	@ Dividend -> r3, divisor -> r1.
 	movs	r1, r1, lsl #9
 	mov	r0, r0, lsl #9
-	beq	LSYM(Ldv_1)
+	beq	LSYM(dv_1)
 	mov	r3, #0x10000000
 	orr	r1, r3, r1, lsr #4
 	orr	r3, r3, r0, lsr #4
@@ -647,7 +647,7 @@ LSYM(Ldv_x):
 
 	@ Check exponent for under/overflow.
 	cmp	r2, #(254 - 1)
-	bhi	LSYM(Lml_u)
+	bhi	LSYM(ml_u)
 
 	@ Round the result, merge final exponent.
 	cmp	r3, r1
@@ -656,7 +656,7 @@ LSYM(Ldv_x):
 	RET
 
 	@ Division by 0x1p*: let''s shortcut a lot of code.
-LSYM(Ldv_1):
+LSYM(dv_1):
 	and	ip, ip, #0x80000000
 	orr	r0, ip, r0, lsr #9
 	adds	r2, r2, #127
@@ -667,11 +667,11 @@ LSYM(Ldv_1):
 	orr	r0, r0, #0x00800000
 	mov	r3, #0
 	subs	r2, r2, #1
-	b	LSYM(Lml_u)
+	b	LSYM(ml_u)
 
 	@ One or both arguments are denormalized.
 	@ Scale them leftwards and preserve sign bit.
-LSYM(Ldv_d):
+LSYM(dv_d):
 	teq	r2, #0
 	and	ip, r0, #0x80000000
 1:	moveq	r0, r0, lsl #1
@@ -686,35 +686,35 @@ LSYM(Ldv_d):
 	subeq	r3, r3, #1
 	beq	2b
 	orr	r1, r1, ip
-	b	LSYM(Ldv_x)
+	b	LSYM(dv_x)
 
 	@ One or both arguments are either INF, NAN, zero or denormalized.
-LSYM(Ldv_s):
+LSYM(dv_s):
 	and	r3, ip, r1, lsr #23
 	teq	r2, ip
 	bne	1f
 	movs	r2, r0, lsl #9
-	bne	LSYM(Lml_n)		@ NAN / <anything> -> NAN
+	bne	LSYM(ml_n)		@ NAN / <anything> -> NAN
 	teq	r3, ip
-	bne	LSYM(Lml_i)		@ INF / <anything> -> INF
+	bne	LSYM(ml_i)		@ INF / <anything> -> INF
 	mov	r0, r1
-	b	LSYM(Lml_n)		@ INF / (INF or NAN) -> NAN
+	b	LSYM(ml_n)		@ INF / (INF or NAN) -> NAN
 1:	teq	r3, ip
 	bne	2f
 	movs	r3, r1, lsl #9
-	beq	LSYM(Lml_z)		@ <anything> / INF -> 0
+	beq	LSYM(ml_z)		@ <anything> / INF -> 0
 	mov	r0, r1
-	b	LSYM(Lml_n)		@ <anything> / NAN -> NAN
+	b	LSYM(ml_n)		@ <anything> / NAN -> NAN
 2:	@ If both are nonzero, we need to normalize and resume above.
 	bics	ip, r0, #0x80000000
 	bicnes	ip, r1, #0x80000000
-	bne	LSYM(Ldv_d)
+	bne	LSYM(dv_d)
 	@ One or both arguments are zero.
 	bics	r2, r0, #0x80000000
-	bne	LSYM(Lml_i)		@ <non_zero> / 0 -> INF
+	bne	LSYM(ml_i)		@ <non_zero> / 0 -> INF
 	bics	r3, r1, #0x80000000
-	bne	LSYM(Lml_z)		@ 0 / <non_zero> -> 0
-	b	LSYM(Lml_n)		@ 0 / 0 -> NAN
+	bne	LSYM(ml_z)		@ 0 / <non_zero> -> 0
+	b	LSYM(ml_n)		@ 0 / 0 -> NAN
 
 	FUNC_END aeabi_fdiv
 	FUNC_END divsf3
