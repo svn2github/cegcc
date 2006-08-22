@@ -75,6 +75,8 @@
 #define SUBTARGET_ASM_FLOAT_SPEC "\
 %{!mfpu=*:-mfpu=vfp}"
 
+#define EXTRA_OS_CPP_BUILTINS()
+
 #define TARGET_OS_CPP_BUILTINS()				\
   do								\
   {								\

@@ -23,7 +23,7 @@ Boston, MA 02110-1301, USA.  */
 #undef TARGET_VERSION
 #define TARGET_VERSION fprintf (stderr, " (arm MinGW)"); 
 
-/* See i386/crtdll.h for an alternative definition.  */
+#undef EXTRA_OS_CPP_BUILTINS
 #define EXTRA_OS_CPP_BUILTINS()					\
   do								\
     {								\
