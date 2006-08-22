@@ -1491,7 +1491,14 @@ WINBASEAPI DWORD WINAPI GetPrivateProfileStringA(LPCSTR,LPCSTR,LPCSTR,LPSTR,DWOR
 WINBASEAPI DWORD WINAPI GetPrivateProfileStringW(LPCWSTR,LPCWSTR,LPCWSTR,LPWSTR,DWORD,LPCWSTR);
 WINBASEAPI BOOL WINAPI GetPrivateProfileStructA(LPCSTR,LPCSTR,LPVOID,UINT,LPCSTR);
 WINBASEAPI BOOL WINAPI GetPrivateProfileStructW(LPCWSTR,LPCWSTR,LPVOID,UINT,LPCWSTR);
+#ifdef _WIN32_WCE
+# if (_WIN32_WCE >= 0x300)
+WINBASEAPI FARPROC WINAPI GetProcAddressA(HINSTANCE,LPCSTR);
+# endif
+WINBASEAPI FARPROC WINAPI GetProcAddressW(HINSTANCE,LPCWSTR);
+#else
 WINBASEAPI FARPROC WINAPI GetProcAddress(HINSTANCE,LPCSTR);
+#endif
 WINBASEAPI BOOL WINAPI GetProcessAffinityMask(HANDLE,PDWORD,PDWORD);
 #if (_WIN32_WINNT >= 0x0502)
 WINBASEAPI BOOL WINAPI GetProcessHandleCount(HANDLE,PDWORD);
@@ -2135,6 +2142,9 @@ typedef PCACTCTXW PCACTCTX;
 #define GetPrivateProfileSectionNames GetPrivateProfileSectionNamesW
 #define GetPrivateProfileString GetPrivateProfileStringW
 #define GetPrivateProfileStruct GetPrivateProfileStructW
+#ifdef _WIN32_WCE
+# define GetProcAddress GetProcAddressW
+#endif
 #define GetProfileInt GetProfileIntW
 #define GetProfileSection GetProfileSectionW
 #define GetProfileString GetProfileStringW
