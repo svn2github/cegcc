@@ -93,7 +93,8 @@
 #define __USE_W32_SOCKETS
 #endif
 #endif
-#if defined(__USE_W32_SOCKETS) || !(defined(__CYGWIN__) || defined(__MSYS__) || defined(_UWIN))
+#if defined(__USE_W32_SOCKETS) || !(defined(__CYGWIN__) || defined(__MSYS__) \
+                                    || defined(_UWIN) || defined(__CEGCC__))
 #if (_WIN32_WINNT >= 0x0400)
 #include <winsock2.h>
 /*

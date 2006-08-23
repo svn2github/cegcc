@@ -16,6 +16,10 @@
 
 #define _GNU_H_WINDOWS32_SOCKETS
 
+#ifndef _WINSOCKAPI
+#define _WINSOCKAPI
+#endif
+
 #include <windows.h>
 
 #ifdef __cplusplus
