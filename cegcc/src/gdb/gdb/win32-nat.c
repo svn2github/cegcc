@@ -24,6 +24,9 @@
 
 /* Originally by Steve Chamberlain, sac@cygnus.com */
 
+#define	WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
 /* We assume we're being built with and will be used for cygwin.  */
 
 #ifdef SHx
@@ -47,7 +50,9 @@
 #include <stdlib.h>
 #include <windows.h>
 #include <imagehlp.h>
+#ifdef	__CYGWIN__
 #include <sys/cygwin.h>
+#endif
 
 
 #include "buildsym.h"
@@ -1037,9 +1042,14 @@ get_image_name (HANDLE h, void *address, int unicode, char* buf)
 out:
 	if (!unicode)
 		memcpy (buf, read_buf, len);
-	else
+	else {
+#ifdef	__CYGWIN__
 		WideCharToMultiByte (CP_ACP, 0, (LPCWSTR) read_buf, len,
-		buf, len, 0, 0);
+				buf, len, 0, 0);
+#else
+		(void)MyWcstombs(buf, read_buf, len);
+#endif
+	}
 
 #if 0
   cygwin_conv_to_posix_path (buf, read_buf);
@@ -1212,8 +1222,12 @@ handle_output_debug_string (struct target_waitstatus *ourstatus)
       return gotasig;
     /* nbytes_read should be even. Include terminator char in conversion. */
     gdb_assert((nbytes_read % 2) == 0);
+#ifdef	__CYGWIN__
     WideCharToMultiByte (CP_ACP, 0, (LPCWSTR) buf, (int) (nbytes_read/sizeof (WCHAR)),
       s, sizeof (s), NULL, NULL);
+#else
+    (void)MyWcstombs(s, buf, (int) (nbytes_read/sizeof (WCHAR)));
+#endif
   }
   else
   {
@@ -1971,8 +1985,10 @@ win32_attach (char *args, int from_tty)
 
   if (!ok)
     {
+#ifdef	__CYGWIN__
       /* Try fall back to Cygwin pid */
       pid = cygwin_internal (CW_CYGWIN_PID_TO_WINPID, pid);
+#endif
 
       if (pid > 0)
 	ok = DEBUG_DebugActiveProcess (pid);
@@ -2084,6 +2100,44 @@ win32_open (char *arg, int from_tty)
   error (_("Use the \"run\" command to start a Unix child process."));
 }
 
+#ifndef	__CYGWIN__
+static int isdrive(const char *path)
+{
+	if (isalpha(path[0]) && path[1] == ':')
+		return 1;
+	else
+		return 0;
+}
+
+int
+cygwin_posix_path_list_p (const char *path)
+{
+	int posix_p = !(strchr (path, ';') || isdrive (path));
+	return posix_p;
+}
+
+int
+cygwin_posix_to_win32_path_list_buf_size (const char *path_list)
+{
+	/* For now, do something silly */
+	return strlen(path_list) * 2 + 128;
+}
+
+int
+cygwin_posix_to_win32_path_list (const char *posix, char *win32)
+{
+	int	i;
+
+	for (i=0; posix[i]; i++) {
+		win32[i] = (posix[i] == ':') ? ';' : posix[i];
+		win32[i+1] = '\0';
+	}
+//	fprintf(stderr, "cygwin_posix_to_win32_path_list(%s) -> {%s}\n", posix, win32);
+	return 0;
+}
+
+#endif	/* __CYGWIN__ */
+
 /* Start an inferior win32 child process and sets inferior_ptid to its pid.
    EXEC_FILE is the file to run.
    ALLARGS is a string containing the arguments to the program.
@@ -2138,7 +2192,11 @@ win32_create_inferior (char *exec_file, char *allargs, char **env,
       sh = getenv ("SHELL");
       if (!sh)
 	sh = "/bin/sh";
+#ifdef	__CYGWIN__
       cygwin_conv_to_win32_path (sh, shell);
+#else
+      strncpy(shell, sh, MAX_PATH);
+#endif
       newallargs = alloca (sizeof (" -c 'exec  '") + strlen (exec_file)
 			   + strlen (allargs) + 2);
       sprintf (newallargs, " -c 'exec %s %s'", exec_file, allargs);
@@ -2596,6 +2654,59 @@ dll_code_sections_add (const char *dll_name, int base_addr, struct target_ops *t
   return 1;
 }
 
+#ifndef	__CYGWIN__
+/* Stolen from <cygwin/core_dump.h> */
+#define NOTE_INFO_PROCESS       1
+#define NOTE_INFO_THREAD        2
+#define NOTE_INFO_MODULE        3
+
+struct win32_core_process_info {
+	DWORD pid;
+	int signal;
+	int command_line_size;
+	char command_line[1];
+}
+#ifdef __GNUC__
+	__attribute__ ((packed))
+#endif
+;
+
+struct win32_core_thread_info {
+	DWORD tid;
+	BOOL is_active_thread;
+	CONTEXT thread_context;
+}
+#ifdef __GNUC__
+	__attribute__ ((packed))
+#endif
+;
+
+struct win32_core_module_info {
+	void* base_address;
+	int module_name_size;
+	char module_name[1];
+}
+#ifdef __GNUC__
+	__attribute__ ((packed))
+#endif
+;
+
+struct win32_pstatus {
+	unsigned long data_type;
+	union {
+		struct win32_core_process_info process_info;
+		struct win32_core_thread_info thread_info;
+		struct win32_core_module_info module_info;
+	} data;
+}
+#ifdef __GNUC__
+	__attribute__ ((packed))
+#endif
+;
+
+typedef struct win32_pstatus win32_pstatus_t ;
+#endif
+
 static void
 core_section_load_dll_symbols (bfd *abfd, asection *sect, void *obj)
 {
@@ -2982,3 +3093,39 @@ _initialize_check_for_gdb_ini (void)
     }
 }
 
+#ifndef	__CYGWIN__
+/*
+ * When not on Cygwin, simulate some of the Win32 calls.
+ */
+static DWORD win32_last_error;
+
+WINBASEAPI DWORD WINAPI GetLastError(void)
+{
+	return win32_last_error;
+}
+
+WINBASEAPI void WINAPI SetLastError(DWORD error)
+{
+	win32_last_error = error;
+}
+
+/*
+ * Synce's Rapi doesn't implement these yet
+ */
+BOOL CeGetFileTime(HANDLE hFile,
+		LPFILETIME lpCreationTime,
+		LPFILETIME lpLastAccessTime,
+		LPFILETIME lpLastWriteTime) 
+{
+	return FALSE;
+}
+
+BOOL CeSetFileTime(HANDLE hFile,
+		const FILETIME* lpCreationTime,
+		const FILETIME* lpLastAccessTime,
+		const FILETIME* lpLastWriteTime) 
+{
+	return FALSE;
+}
+
+#endif
