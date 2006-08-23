@@ -13,15 +13,24 @@
 
 #include "sys/ceshared.h"
 
+#ifndef INFINITE
 #define INFINITE 0xffffffffL
-#define STARTF_USESHOWWINDOW 0x00000001
-#define STARTF_USESIZE       0x00000002
-#define STARTF_USESTDHANDLES 0x00000100
-#define SW_HIDE 0
+#endif
 
-#define STD_INPUT_HANDLE  0
-#define STD_OUTPUT_HANDLE 1
-#define STD_ERROR_HANDLE  2
+#ifndef STARTF_USESHOWWINDOW
+/* The SDK doesn't have these defines, because the
+   functionality we are implementing doesn't exits in CE.
+   w32api defines them, so we guard against multiple definition.  */
+# define STARTF_USESHOWWINDOW 1
+# define STARTF_USESIZE       2
+# define STARTF_USESTDHANDLES 256
+
+# define STD_INPUT_HANDLE  0
+# define STD_OUTPUT_HANDLE 1
+# define STD_ERROR_HANDLE  2
+#endif
+
+#define SW_HIDE 0
 
 // NOTE: This function cannot be used as the real SearchPath!!!
 static int
