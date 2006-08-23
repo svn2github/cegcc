@@ -1245,7 +1245,7 @@ Show whether to display Windows CE support specific debugging."), NULL,
  *
  * we're using this to make our own version of FormatMessageA print sensible messages.
  */
-struct _my_wce_error_message_t _my_wce_error_messages[] = {
+static const struct _my_wce_error_message_t _my_wce_error_messages[] = {
 { ERROR_SUCCESS, "The operation completed successfully. " /* 0  */ },
 { ERROR_INVALID_FUNCTION, "Incorrect function. " /* 1  */ },
 { ERROR_FILE_NOT_FOUND, "The system cannot find the file specified. " /* 2  */ },
