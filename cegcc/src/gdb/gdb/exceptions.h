@@ -50,7 +50,7 @@ typedef int return_mask;
 /* Describe all exceptions.  */
 
 enum errors {
-  NO_ERROR,
+  GDB_NO_ERROR,
   /* Any generic error, the corresponding text is in
      exception.message.  */
   GENERIC_ERROR,
