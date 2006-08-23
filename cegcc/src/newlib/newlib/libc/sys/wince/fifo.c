@@ -16,7 +16,17 @@
 
 static int   master = FALSE;
 
-_devops_t _devops_fifo = { "fifo", _fifo_open, _fifo_close, _fifo_read, _fifo_write, _fifo_lseek, _fifo_ioctl };
+_devops_t _devops_fifo = 
+{ 
+  "fifo",
+  _fifo_open,
+  _fifo_close,
+  _fifo_read,
+  _fifo_write,
+  _fifo_lseek,
+  _fifo_ioctl
+};
+
 _DEVOPS _fifo_devops = &_devops_fifo;
 
 void _fifo_setmaster()
@@ -229,7 +239,7 @@ _fifo_close(struct _reent *r, int fd, void *cxt)
   return(retval);
 }
 
-int
+long
 _fifo_read(struct _reent *r, int fd, char *ptr, int len, void *cxt)
 {
   int retval, nread, ncopy;
@@ -356,8 +366,8 @@ _fifo_read(struct _reent *r, int fd, char *ptr, int len, void *cxt)
   return(nread);
 }
 
-int
-_fifo_write(struct _reent *r, int fd, char *ptr, int len, void *cxt)
+long
+_fifo_write(struct _reent *r, int fd, const char *ptr, int len, void *cxt)
 {
   
   int retval, nwrite;
@@ -395,7 +405,7 @@ _fifo_write(struct _reent *r, int fd, char *ptr, int len, void *cxt)
   return(nwrite);
 }
 
-int
+off_t
 _fifo_lseek(struct _reent *r, int fd, off_t offset, int whence, void *cxt)
 {
   errno = ENOSYS;

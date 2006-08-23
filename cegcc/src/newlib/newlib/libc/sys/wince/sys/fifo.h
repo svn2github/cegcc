@@ -83,9 +83,9 @@ void *_fifo_getiocxt(int fd);
 /* The device operations */
 int _fifo_open(struct _reent *r, const char *path, int flags, int mode, void *cxt);
 int _fifo_close(struct _reent *r, int fd, void *cxt); 
-int _fifo_read(struct _reent *r, int fd, char *ptr, int len, void *cxt);
-int _fifo_write(struct _reent *r, int fd, char *ptr, int len, void *cxt);
-int _fifo_lseek(struct _reent *r, int fd, off_t offset, int whence, void *cxt);
+long _fifo_read(struct _reent *r, int fd, char *ptr, int len, void *cxt);
+long _fifo_write(struct _reent *r, int fd, const char *ptr, int len, void *cxt);
+off_t _fifo_lseek(struct _reent *r, int fd, off_t offset, int whence, void *cxt);
 int _fifo_ioctl(struct _reent *r, int fd, int request, void *cxt, ...);
 
 #ifdef __cplusplus
