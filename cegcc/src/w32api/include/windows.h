@@ -129,4 +129,8 @@
 #undef BOOL
 #endif
 
+#ifdef _WIN32_WCE
+#include <excpt.h>
+#endif
+
 #endif
