@@ -1084,7 +1084,7 @@ struct _my_wce_error_message_t {
 	DWORD	e;
 	char	*msg;
 };
-struct _my_wce_error_message_t _my_wce_error_messages[];
+static const struct _my_wce_error_message_t _my_wce_error_messages[];
 
 static const char* werror (DWORD err)
 {
@@ -1923,7 +1923,6 @@ struct _my_wce_error_message_t _my_wce_error_messages[] = {
 { ERROR_NO_BROWSER_SERVERS_FOUND, "The list of servers for this workgroup is not currently available. " /* 6118  */ },
 { 0, 0 /* The end */ }
 };
-#endif	/* __CYGWIN__ */
 
 /*
  * Private WCS functions
@@ -1985,3 +1984,5 @@ static int MyWcslen(const wchar_t *s)
 	for (p=(char *)s, i=0; p[i] != '\0' || p[i+1] != '\0'; i += 2) ;
 	return i + 2;
 }
+
+#endif	/* __CYGWIN__ */
