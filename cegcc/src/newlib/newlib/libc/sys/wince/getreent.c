@@ -10,7 +10,9 @@
 #include <reent.h>
 #include <windows.h>
 
+#ifndef TLS_OUT_OF_INDEXES
 #define TLS_OUT_OF_INDEXES ((DWORD)0xffffffff)
+#endif
 
 static DWORD libc_thread_index = TLS_OUT_OF_INDEXES;
 
