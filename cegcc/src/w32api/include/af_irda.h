@@ -1,7 +1,7 @@
 #ifndef AF_IRDA_H
 #define AF_IRDA_H
 
-#include <winsock.h>
+#include <winsock2.h>
 
 typedef struct _SOCKADDR_IRDA {
   u_short irdaAddressFamily;
