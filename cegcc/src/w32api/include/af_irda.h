@@ -23,4 +23,45 @@ typedef struct DEVICELIST {
 
 typedef _DEVICELIST DEVICELIST;
 
+typedef struct IAS_QUERY {
+  u_char irdaDeviceID[4];
+  char irdaClassName[61];
+  char irdaAttribName[61];
+  u_short irdaAttribType;
+  union {
+    int irdaAttribInt;
+    struct {
+      int Len;
+      u_char OctetSeq[1];
+      u_char Reserved[3];
+    } irdaAttribOctetSeq;
+    struct {
+      int Len;
+      u_char CharSet;
+      u_char UsrStr[1];
+      u_char Reserved[2];
+    } irdaAttribUsrStr;
+  } irdaAttribute; 
+} _IAS_QUERY, *PIAS_QUERY;
+
+typedef struct _IAS_SET {
+  char irdaClassName[61];
+  char irdaAttribName[61];
+  u_short irdaAttribType;
+  union {
+    int irdaAttribInt;
+    struct {
+      int Len;
+      u_char OctetSeq[1];
+      u_char Reserved[3];
+    } irdaAttribOctetSeq;
+    struct {
+      int Len;
+      u_char CharSet;
+      u_char UsrStr[1];
+      u_char Reserved[2];
+    } irdaAttribUsrStr;
+  } irdaAttribute;
+} _IAS_SET, *PIAS_SET;
+
 #endif
