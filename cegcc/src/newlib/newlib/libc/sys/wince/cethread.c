@@ -20,6 +20,7 @@
 #include <windows.h>
 
 #include <stdint.h>
+#include <stdlib.h>
 
 static DWORD _threadstart(void *);
 static DWORD _threadstartex(void * ptd);

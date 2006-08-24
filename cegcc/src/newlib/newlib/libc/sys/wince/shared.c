@@ -295,12 +295,6 @@ _shared_attach()
 	return(0);
 }
 
-#if 0
-#define STD_INPUT_HANDLE                 ((DWORD)-10)
-#define STD_OUTPUT_HANDLE                ((DWORD)-11)
-#define STD_ERROR_HANDLE                 ((DWORD)-12)
-#endif
-
 int
 _shared_dettach()
 {

@@ -16,10 +16,6 @@
 #define CACHE_SYNC_INSTRUCTIONS  2
 #define CACHE_SYNC_WRITEBACK	   4
 
-#define STD_INPUT_HANDLE  0
-#define STD_OUTPUT_HANDLE 1
-#define STD_ERROR_HANDLE  2
-
 HANDLE XCECreateEventA(LPSECURITY_ATTRIBUTES lpEventAttributes, BOOL bManualReset, BOOL bInitialState, const char *lpName);
 
 #ifndef _WIN32_WCE_EMULATION

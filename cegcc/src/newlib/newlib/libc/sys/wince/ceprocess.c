@@ -12,6 +12,7 @@
 #include "sys/wcetrace.h"
 
 #include "sys/ceshared.h"
+#include "sys/wcefile.h"
 
 #ifndef INFINITE
 #define INFINITE 0xffffffffL
@@ -24,10 +25,6 @@
 # define STARTF_USESHOWWINDOW 1
 # define STARTF_USESIZE       2
 # define STARTF_USESTDHANDLES 256
-
-# define STD_INPUT_HANDLE  0
-# define STD_OUTPUT_HANDLE 1
-# define STD_ERROR_HANDLE  2
 #endif
 
 #define SW_HIDE 0

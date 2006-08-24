@@ -6,10 +6,24 @@
 #include <windows.h>
 #undef WIN32_LEAN_AND_MEAN
 
-#define FILE_TYPE_UNKNOWN          1
-#define FILE_TYPE_DISK	           2
-#define FILE_TYPE_CHAR	           3
-#define FILE_TYPE_PIPE             4
+#ifndef FILE_TYPE_UNKNOWN
+/* WinCE SDK doesn't define these, 
+   but let's match the desktop windows numbers,
+   in case we are building with w32api headers.  */
+#define FILE_TYPE_UNKNOWN          0
+#define FILE_TYPE_DISK	           1
+#define FILE_TYPE_CHAR	           2
+#define FILE_TYPE_PIPE             3
+#endif
+
+#ifndef STD_INPUT_HANDLE
+/* WinCE SDK doesn't define these, 
+   but let's match the desktop windows numbers,
+   in case we are building with w32api headers.  */
+#define STD_INPUT_HANDLE (DWORD)(0xfffffff6)
+#define STD_OUTPUT_HANDLE (DWORD)(0xfffffff5)
+#define STD_ERROR_HANDLE (DWORD)(0xfffffff4)
+#endif
 
 #ifdef __cplusplus
 extern "C" {

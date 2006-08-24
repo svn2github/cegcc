@@ -843,8 +843,9 @@ again:
 	non_sockets_ready = 0;
 
 #if 1
-#define PM_NOREMOVE 0x0000
-#define WM_KEYDOWN 0x0100
+// ### TODO: Are these really needed on SDK headers?
+//#define PM_NOREMOVE 0x0000
+//#define WM_KEYDOWN 0x0100
 	if(PeekMessageW(&msg, NULL, 0, 0, PM_NOREMOVE) != FALSE)
 	{
 		if(msg.message != WM_KEYDOWN)
