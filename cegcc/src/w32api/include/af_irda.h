@@ -64,4 +64,7 @@ typedef struct _IAS_SET {
   } irdaAttribute;
 } _IAS_SET, *PIAS_SET;
 
+#define IRLMP_ENUMDEVICES 0x00000010
+#define SOL_IRLMP 0x00FF
+
 #endif
