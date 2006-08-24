@@ -9,6 +9,10 @@
 #ifndef	_W32API_KFUNCS_H_
 #define	_W32API_KFUNCS_H_
 
+#ifndef _WIN32_WCE
+#error "_WIN32_WCE is not defined."
+#endif
+
 #define	PUserKData		((LPBYTE)0xFFFFC800)
 #define	SYSHANDLE_OFFSET	0x004
 #define	SYS_HANDLE_BASE		64
@@ -31,5 +35,13 @@
 #define	PulseEvent(x)	EventModify(x, EVENT_PULSE)
 #define	ResetEvent(x)	EventModify(x, EVENT_RESET)
 #define	SetEvent(x)	EventModify(x, EVENT_SET)
+
+/* TLS Constants and Constructs */
+#define TLS_FUNCALLOC   0
+#define TLS_FUNCFREE    1
+
+DWORD TlsCall(DWORD func, DWORD val);
+#define TlsAlloc()  (TlsCall(TLS_FUNCALLOC, 0))
+#define TlsFree(x)  (TlsCall(TLS_FUNCFREE, x))
 
 #endif

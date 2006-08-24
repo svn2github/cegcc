@@ -1401,12 +1401,11 @@ WINBASEAPI DWORD WINAPI GetCurrentDirectoryA(DWORD,LPSTR);
 WINBASEAPI DWORD WINAPI GetCurrentDirectoryW(DWORD,LPWSTR);
 WINBASEAPI BOOL WINAPI GetCurrentHwProfileA(LPHW_PROFILE_INFOA);
 WINBASEAPI BOOL WINAPI GetCurrentHwProfileW(LPHW_PROFILE_INFOW);
+#ifndef _WIN32_WCE
+/* These are defined in kfuncs.h.  */
 WINBASEAPI HANDLE WINAPI GetCurrentProcess(void);
 WINBASEAPI DWORD WINAPI GetCurrentProcessId(void);
 WINBASEAPI HANDLE WINAPI GetCurrentThread(void);
-#ifdef _WIN32_WCE
-extern DWORD GetCurrentThreadId(void);
-#else
 WINBASEAPI DWORD WINAPI GetCurrentThreadId(void);
 #endif
 #define GetCurrentTime GetTickCount
@@ -1964,8 +1963,11 @@ WINBASEAPI BOOL WINAPI SystemTimeToFileTime(const SYSTEMTIME*,LPFILETIME);
 WINBASEAPI BOOL WINAPI SystemTimeToTzSpecificLocalTime(LPTIME_ZONE_INFORMATION,LPSYSTEMTIME,LPSYSTEMTIME);
 WINBASEAPI BOOL WINAPI TerminateProcess(HANDLE,UINT);
 WINBASEAPI BOOL WINAPI TerminateThread(HANDLE,DWORD);
+#ifndef _WIN32_WCE
+/* In kfuncs.h */
 WINBASEAPI DWORD WINAPI TlsAlloc(VOID);
 WINBASEAPI BOOL WINAPI TlsFree(DWORD);
+#endif
 WINBASEAPI PVOID WINAPI TlsGetValue(DWORD);
 WINBASEAPI BOOL WINAPI TlsSetValue(DWORD,PVOID);
 WINBASEAPI BOOL WINAPI TransactNamedPipe(HANDLE,PVOID,DWORD,PVOID,DWORD,PDWORD,LPOVERLAPPED);
@@ -2428,6 +2430,10 @@ typedef PCACTCTXA PCACTCTX;
 #define WriteProfileSection WriteProfileSectionA
 #define WriteProfileString WriteProfileStringA
 #endif
+#endif
+
+#ifdef _WIN32_WCE
+#include <kfuncs.h>
 #endif
 
 #ifdef __cplusplus
