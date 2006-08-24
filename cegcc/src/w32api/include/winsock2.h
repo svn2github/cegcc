@@ -329,11 +329,17 @@ typedef WSADATA *LPWSADATA;
 #define	AF_FIREFOX	19
 #define	AF_UNKNOWN1	20
 #define	AF_BAN	21
+#ifndef _WIN32_WCE
 #define AF_ATM	22
+#endif
 #define AF_INET6	23
 #define AF_CLUSTER  24
 #define AF_12844    25
+#ifdef _WIN32_WCE
+#define AF_IRDA     22
+#else
 #define AF_IRDA     26
+#endif
 #define AF_NETDES   28
 #if !(defined (__INSIDE_CYGWIN__) || defined (__INSIDE_MSYS__))
 #define AF_MAX	29
