@@ -183,8 +183,11 @@ extern void arm_pe_record_exported_symbol (const char *, int);
 extern void arm_pe_file_end (void);
 extern int arm_pe_dllexport_name_p (const char *);
 extern int arm_pe_dllimport_name_p (const char *);
-
 extern bool arm_pe_valid_dllimport_attribute_p (tree);
+extern tree arm_pe_handle_selectany_attribute (tree *node, tree name,
+			         tree args ATTRIBUTE_UNUSED,
+			         int flags ATTRIBUTE_UNUSED,
+				   bool *no_add_attrs);
 
 /* In pe-cxx.c and pe-stubs.c  */
 extern void arm_pe_adjust_class_at_definition (tree);
