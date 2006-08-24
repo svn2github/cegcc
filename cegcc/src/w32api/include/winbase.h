@@ -1198,6 +1198,9 @@ WINBASEAPI LPVOID WINAPI CreateFiberEx(SIZE_T,SIZE_T,DWORD,LPFIBER_START_ROUTINE
 #endif
 WINBASEAPI HANDLE WINAPI CreateFileA(LPCSTR,DWORD,DWORD,LPSECURITY_ATTRIBUTES,DWORD,DWORD,HANDLE);
 WINBASEAPI HANDLE WINAPI CreateFileW(LPCWSTR,DWORD,DWORD,LPSECURITY_ATTRIBUTES,DWORD,DWORD,HANDLE);
+#ifdef _WIN32_WCE
+HANDLE CreateFileForMappingW(LPCTSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
+#endif
 WINBASEAPI HANDLE WINAPI CreateFileMappingA(HANDLE,LPSECURITY_ATTRIBUTES,DWORD,DWORD,DWORD,LPCSTR);
 WINBASEAPI HANDLE WINAPI CreateFileMappingW(HANDLE,LPSECURITY_ATTRIBUTES,DWORD,DWORD,DWORD,LPCWSTR);
 #if (_WIN32_WINNT >= 0x0500)
@@ -2056,6 +2059,9 @@ typedef PCACTCTXW PCACTCTX;
 #define CreateDirectoryEx CreateDirectoryExW
 #define CreateEvent CreateEventW
 #define CreateFile CreateFileW
+#ifdef _WIN32_WCE
+#define CreateFileForMapping CreateFileForMappingW
+#endif
 #define CreateFileMapping CreateFileMappingW
 #if (_WIN32_WINNT >= 0x0500)
 #define CreateHardLink CreateHardLinkW
