@@ -46,10 +46,10 @@ typedef struct
     __u_long __val[2];
   } __u_quad_t;
 #endif
+
+#if !defined(_SYS_TYPES_H)
 typedef signed char __int8_t;
 typedef unsigned char __uint8_t;
-/* CAV */
-#if !defined(_SYS_TYPES_H)
 typedef signed short int __int16_t;
 typedef unsigned short int __uint16_t;
 typedef signed int __int32_t;
