@@ -1,0 +1,22 @@
+/ChangeLog/1.72/Mon May 22 09:07:19 2006//
+/cris.cpu/1.5/Tue Dec  6 21:48:28 2005//
+/frv.cpu/1.22/Tue May 10 10:21:06 2005//
+/frv.opc/1.14/Fri Oct 28 19:33:06 2005//
+/iq10.cpu/1.2/Tue May 10 10:21:07 2005//
+/iq2000.cpu/1.5/Mon May 22 09:07:20 2006//
+/iq2000.opc/1.7/Fri Feb 10 12:05:11 2006//
+/iq2000m.cpu/1.3/Tue May 10 10:21:07 2005//
+/m32c.cpu/1.13/Tue Mar 14 04:20:53 2006//
+/m32c.opc/1.10/Mon Apr 10 21:19:14 2006//
+/m32r.cpu/1.3/Tue May 10 10:21:07 2005//
+/m32r.opc/1.10/Wed Oct 26 07:49:05 2005//
+/mt.cpu/1.2/Fri Dec 16 10:23:07 2005//
+/mt.opc/1.2/Fri Dec 16 10:23:07 2005//
+/sh.cpu/1.2/Tue May 10 10:21:07 2005//
+/sh.opc/1.3/Fri Jul  1 11:16:30 2005//
+/sh64-compact.cpu/1.2/Tue May 10 10:21:07 2005//
+/sh64-media.cpu/1.2/Tue May 10 10:21:07 2005//
+/simplify.inc/1.2/Tue May 10 10:21:07 2005//
+/xc16x.cpu/1.2/Fri Mar  3 15:57:43 2006//
+/xc16x.opc/1.2/Fri Mar  3 15:57:43 2006//
+D
