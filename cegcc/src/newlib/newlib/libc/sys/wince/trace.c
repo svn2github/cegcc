@@ -4,17 +4,22 @@
 #include <stdarg.h>
 #include <alloca.h>
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
 #include "sys/wcetrace.h"
 #include "sys/wcefile.h"
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include <kfuncs.h>
 
 #ifndef CE_NOTRACE
 
 static HANDLE __wcetracehnd = NULL;
 static int __wcetrace = 0;
-static int __wcetrace_debugger = WCE_ALL;
+/*
+ * This used to be WCE_ALL
+ */
+static int __wcetrace_debugger = WCE_IO | WCE_NETWORK;
 
 void
 WCETRACESET(int trace)
@@ -63,20 +68,18 @@ static const trace_entry trace_entries[] =
   { NULL, 0 }
 };
 
-void NKDbgPrintfA(const char *fmt, ...);
-
 static void set_from_env(const char* env, int* what)
 {
-  char buf[512];
+  char  buf[256];
   const char *trace = getenv(env);
   if (!trace)
   {
-    NKDbgPrintfA("\"%s\" not found in registry\n", env);
+    NKDbgPrintfW(L"%S not found in registry\n", env);
     return;
   }
   else
   {
-    NKDbgPrintfA("parsing: \"%s\":\"%s\"\n", env, trace);
+    NKDbgPrintfW(L"parsing: %S:%S\n", env, trace);
   }
 
   *what = 0;
@@ -86,7 +89,7 @@ static void set_from_env(const char* env, int* what)
   const char *p;
 
   for (p = strtok(buf, ":"); p; p = strtok(NULL, ":")) {
-    NKDbgPrintfA("option token \"%s\"\n", p);
+    NKDbgPrintfW(L"option token %S\n", p);
     int neg = 0;
     if (p[0] == '-' && p[1] != '\0') {
       NKDbgPrintfW(L"neg option\n");
@@ -94,11 +97,11 @@ static void set_from_env(const char* env, int* what)
       neg = 1;
     }
 
-    NKDbgPrintfW(L"checking option\n");
+    NKDbgPrintfW(L"check valid\n");
 
     for (entry = trace_entries; entry->str; entry++) {
       if (!strcmp(p, entry->str)) {
-        NKDbgPrintfW(L"valid option found.\n");
+        NKDbgPrintfW(L"valid option.\n");
         if (neg)
           *what &= ~entry->flag;
         else

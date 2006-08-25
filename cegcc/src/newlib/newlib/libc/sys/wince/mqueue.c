@@ -18,6 +18,16 @@
 
 #include "sys/wcetrace.h"
 
+#ifndef ResetEvent
+#define EVENT_PULSE     1
+#define EVENT_RESET     2
+#define EVENT_SET       3
+
+#define PulseEvent(x) EventModify(x, EVENT_PULSE)
+#define ResetEvent(x) EventModify(x, EVENT_RESET)
+#define SetEvent(x) EventModify(x, EVENT_SET)
+#endif
+
 #define NAMELEN  (32)
 #define S_IXUSR  0000100
 #define sleep(a) Sleep((a)*1000)
