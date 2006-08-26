@@ -3469,13 +3469,8 @@ WINUSERAPI BOOL WINAPI DestroyWindow(HWND);
 #define DialogBoxIndirectW(i,t,p,f) DialogBoxIndirectParamW(i,t,p,f,0)
 WINUSERAPI int WINAPI DialogBoxIndirectParamA(HINSTANCE,LPCDLGTEMPLATE,HWND,DLGPROC,LPARAM);
 WINUSERAPI int WINAPI DialogBoxIndirectParamW(HINSTANCE,LPCDLGTEMPLATE,HWND,DLGPROC,LPARAM);
-#ifdef _WIN32_WCE
-extern int DialogBoxParamA(HINSTANCE,LPCSTR,HWND,DLGPROC,LPARAM);
-extern int DialogBoxParamW(HINSTANCE,LPCWSTR,HWND,DLGPROC,LPARAM);
-#else
 WINUSERAPI int WINAPI DialogBoxParamA(HINSTANCE,LPCSTR,HWND,DLGPROC,LPARAM);
 WINUSERAPI int WINAPI DialogBoxParamW(HINSTANCE,LPCWSTR,HWND,DLGPROC,LPARAM);
-#endif
 WINUSERAPI LONG WINAPI DispatchMessageA(const MSG*);
 WINUSERAPI LONG WINAPI DispatchMessageW(const MSG*);
 WINUSERAPI int WINAPI DlgDirListA(HWND,LPSTR,int,int,UINT);
@@ -4371,6 +4366,11 @@ typedef NONCLIENTMETRICSA NONCLIENTMETRICS,*LPNONCLIENTMETRICS;
 #endif /* NOGDI */
 #endif /* UNICODE */
 #endif /* RC_INVOKED */
+
+/*
+ * This appears to be an addition for Win CE
+ */
+#define       WM_HIBERNATE                    0x03FF
 
 #ifdef __cplusplus
 }
