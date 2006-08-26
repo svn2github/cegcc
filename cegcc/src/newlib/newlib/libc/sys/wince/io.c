@@ -17,7 +17,6 @@
 #include "sys/wcetrace.h"
 
 #include <winsock2.h>
-#include <kfuncs.h>
 
 void* _fifo_alloc();
 

@@ -8,17 +8,10 @@
 #include "getreent.h"
 
 #include <reent.h>
-#define	WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#ifndef	TlsAlloc
-/* Stolen from sys/oldsys/wcethread.h */
-/* TLS Constants and Constructs */
-#define TLS_FUNCALLOC   0
-#define TLS_FUNCFREE    1
-
-#define TlsAlloc()  (TlsCall(TLS_FUNCALLOC, 0))
-#define TlsFree(x)  (TlsCall(TLS_FUNCFREE, x))
+#ifndef TLS_OUT_OF_INDEXES
+#define TLS_OUT_OF_INDEXES ((DWORD)0xffffffff)
 #endif
 
 static DWORD libc_thread_index = TLS_OUT_OF_INDEXES;

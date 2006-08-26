@@ -2,15 +2,14 @@
 //
 // Time-stamp: <23/02/02 11:36:31 keuchel@netwave.de>
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
 #include "sys/ceshared.h"
 #include "sys/wcetrace.h"
 #include "sys/wcefile.h"
 
 #include <errno.h>
-#include <kfuncs.h>
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 /* Cache manipulation constants */
 #define CACHE_SYNC_DISCARD       1
