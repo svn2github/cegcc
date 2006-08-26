@@ -15,7 +15,7 @@ if [ -d $BUILD_DIR/gdb ]; then
 	rm -rf $BUILD_DIR/gdb
 fi
 #
-mkdir -p $BUILD_DIR/gdb
+mkdir -p $BUILD_DIR/gdb || exit 1
 cd $BUILD_DIR/gdb
 #
 CFLAGS="-I$TOP_SRCDIR/src/w32api/include -D__USE_W32_SOCKETS"

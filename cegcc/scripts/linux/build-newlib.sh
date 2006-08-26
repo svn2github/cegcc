@@ -14,14 +14,17 @@ if [ -d $BUILD_DIR/newlib ]; then
 	rm -rf $BUILD_DIR/newlib
 fi
 #
-mkdir -p $BUILD_DIR/newlib
+mkdir -p $BUILD_DIR/newlib || exit 1
 cd $BUILD_DIR/newlib
 #
-CC=$PREFIX/bin/$TARGET_ARCH-gcc
-LD=$PREFIX/bin/$TARGET_ARCH-ld
-CFLAGS="-march=armv4 -DGNUWINCE -DSARM -DWANT_PRINTF_LONG_LONG -DCOMPILING_NEWLIB -D_WIN32_WCE=420"
-export CC LD CFLAGS
+export CC=$PREFIX/bin/$TARGET_ARCH-gcc
+export LD=$PREFIX/bin/$TARGET_ARCH-ld
+export RANLIB=$PREFIX/bin/$TARGET_ARCH-ranlib
+export CFLAGS="-march=armv4 -DGNUWINCE -DSARM -DWANT_PRINTF_LONG_LONG -DCOMPILING_NEWLIB -D_WIN32_WCE=420"
 #
-$TOP_SRCDIR/src/newlib/newlib/configure --prefix=$PREFIX --target=$TARGET_ARCH $TARGET_ARCH || exit 1
+$TOP_SRCDIR/src/newlib/newlib/configure \
+	--prefix=$PREFIX \
+	--target=$TARGET_ARCH $TARGET_ARCH || exit 1
+#
 make || exit 1
 exit 0

@@ -7,10 +7,8 @@ if [ -r settings.sh ]; then
 else
 	. scripts/linux/settings.sh
 fi
-cd $BUILD_DIR/gcc
+cd $BUILD_DIR/gdb
 #
-# It is very important to specify the right target here.
-#
-make install-gcc || exit 1
+make install-gdb || exit 1
 #
 exit 0
