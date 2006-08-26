@@ -14,7 +14,7 @@
 
 static HANDLE __wcetracehnd = NULL;
 static int __wcetrace = 0;
-static int __wcetrace_debugger = WCE_ALL;
+static int __wcetrace_debugger = WCE_IO | WCE_NETWORK;	/* Used to be WCE_ALL */
 
 void
 WCETRACESET(int trace)
