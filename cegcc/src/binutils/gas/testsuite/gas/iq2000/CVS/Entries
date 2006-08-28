@@ -1,5 +1,4 @@
 /allinsn.d/1.1/Fri Jan  3 21:38:50 2003//
-/allinsn.exp/1.2/Wed Nov 24 13:23:52 2004//
 /allinsn.s/1.1/Fri Jan  3 21:38:50 2003//
 /hazard0.s/1.1/Fri Jan  3 21:38:50 2003//
 /hazard1.s/1.1/Fri Jan  3 21:38:50 2003//
@@ -18,4 +17,5 @@
 /yield0.s/1.1/Fri Jan  3 21:38:50 2003//
 /yield1.s/1.1/Fri Jan  3 21:38:50 2003//
 /yield2.s/1.1/Fri Jan  3 21:38:50 2003//
+/allinsn.exp/1.2/Wed Nov 24 13:23:51 2004//
 D

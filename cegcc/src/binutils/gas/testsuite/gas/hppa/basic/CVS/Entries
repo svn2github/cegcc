@@ -6,7 +6,6 @@
 /branch2.s/1.2/Mon Aug 30 18:20:18 1999//
 /comclr.s/1.2/Mon Aug 30 18:20:18 1999//
 /copr.s/1.2/Mon Aug 30 18:20:18 1999//
-/coprmem.s/1.3/Mon Jul 10 15:21:06 2000//
 /dcor.s/1.4/Thu Jun  6 06:49:46 2002//
 /dcor2.s/1.2/Mon Aug 30 18:20:18 1999//
 /deposit.s/1.2/Mon Aug 30 18:20:18 1999//
@@ -17,8 +16,6 @@
 /extract2.s/1.2/Mon Aug 30 18:20:18 1999//
 /extract3.s/1.2/Mon Aug 30 18:20:18 1999//
 /fmem.s/1.2/Mon Aug 30 18:20:18 1999//
-/fmemLRbug.s/1.2/Mon Jul 10 15:21:06 2000//
-/fp_comp.s/1.3/Tue Jul 19 01:41:22 2005//
 /fp_comp2.s/1.2/Mon Aug 30 18:20:18 1999//
 /fp_conv.s/1.2/Mon Aug 30 18:20:18 1999//
 /fp_fcmp.s/1.2/Mon Aug 30 18:20:18 1999//
@@ -38,14 +35,17 @@
 /shift3.s/1.2/Mon Aug 30 18:20:18 1999//
 /shladd.s/1.3/Thu Jun  6 06:49:46 2002//
 /shladd2.s/1.2/Mon Aug 30 18:20:18 1999//
-/special.s/1.3/Tue Jul 19 01:41:22 2005//
 /spop.s/1.2/Mon Aug 30 18:20:18 1999//
-/sub.s/1.4/Thu Jun  6 06:49:48 2002//
 /sub2.s/1.2/Mon Aug 30 18:20:18 1999//
 /subi.s/1.3/Mon Aug 30 18:20:18 1999//
 /system.s/1.4/Thu Oct 13 02:26:34 2005//
 /system2.s/1.2/Mon Aug 30 18:20:18 1999//
-/unit.s/1.4/Thu Jun  6 06:49:48 2002//
 /unit2.s/1.2/Mon Aug 30 18:20:18 1999//
 /weird.s/1.1.1.1/Mon May  3 07:28:50 1999//
+/coprmem.s/1.3/Mon Jul 10 15:21:05 2000//
+/fmemLRbug.s/1.2/Mon Jul 10 15:21:05 2000//
+/fp_comp.s/1.3/Tue Jul 19 01:41:21 2005//
+/special.s/1.3/Tue Jul 19 01:41:21 2005//
+/sub.s/1.4/Thu Jun  6 06:49:47 2002//
+/unit.s/1.4/Thu Jun  6 06:49:47 2002//
 D
