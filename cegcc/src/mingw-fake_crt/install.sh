@@ -1,8 +1,8 @@
 #!/bin/sh
 
 PREFIX=/usr/local/mingw32ce
-LIBDIR=${PREFIX}/lib
 TARGET=arm-wince-mingw32
+LIBDIR=${PREFIX}/${TARGET}/lib
 
 AS=${TARGET}-as
 AR=${TARGET}-ar
@@ -13,5 +13,6 @@ ${AS} crt2.s -o crt2.o
 cp -fv crt2.o ${LIBDIR}/crt2.o
 
 for lib in $FAKE_LIBS; do
+   rm -f ${LIBDIR}/$lib
    ${AR} vq ${LIBDIR}/$lib
 done
