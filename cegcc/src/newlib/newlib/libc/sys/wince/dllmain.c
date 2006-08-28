@@ -12,13 +12,6 @@ BOOL DllMain(HANDLE hinstDLL, DWORD dwReason, LPVOID foo)
   MessageBoxW(0, cmdnameBufW, L"default DllMain called", 0);
 #endif
 
-  /*
-   * Maybe this needs to be called only in some cases of dwReason,
-   * that is to be determined.
-   * FIX ME
-   */
-  _initstdio();
-
   switch (dwReason) {
   case DLL_PROCESS_ATTACH:
   case DLL_PROCESS_DETACH:
