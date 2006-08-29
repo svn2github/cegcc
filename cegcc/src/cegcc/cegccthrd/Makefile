@@ -47,5 +47,5 @@ ${OUTFILE}.dll : $(OBJECTS) Makefile
 	-Wl,--output-def=${OUTFILE}.def
 
 clean: 
-	rm -rfv ${OUTFILE}.dll lib${OUTFILE}.a ${OUTFILE}.def \
+	rm -rfv ${OUTFILE}.dll lib${OUTFILE}.dll.a ${OUTFILE}.def \
 		   stripped $(OBJECTS) ${OUTFILE}.map
