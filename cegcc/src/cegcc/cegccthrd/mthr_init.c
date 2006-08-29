@@ -20,16 +20,12 @@
  *
  */
 
-#ifndef GNUWINCE
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #undef WIN32_LEAN_AND_MEAN
-#else
-#include <sys/wcebase.h>
-#include <sys/wcethread.h>
-#include <sys/wceerror.h>
-#include "mthr.h"
-#define APIENTRY
+
+#ifdef __CEGCC__
+# include "mthr.h"
 #endif
 
 #include <stdio.h>
@@ -64,7 +60,7 @@ DllMain (HANDLE hDllHandle /* Library instance handle. */,
 
 #ifdef DEBUG
   printf ("%s: reason %d\n", __FUNCTION__, reason);
-  NKDbgPrintfW("%S: reason %d\n", __FUNCTION__, reason);
+  NKDbgPrintfW(L"DllMain: reason %d\n", reason);
 #define NAME_LEN    64
   WCHAR cmdnameBufW[NAME_LEN];
   int len = GetModuleFileNameW(hDllHandle, cmdnameBufW, NAME_LEN);

@@ -10,7 +10,7 @@ OUTFILE = cegccthrd
 
 CC = arm-wince-pe-gcc
 
-CFLAGS = -g -DGNUWINCE
+CFLAGS = -g -mwin32
 CFLAGS +=-DDEBUG
 #CFLAGS +=-DDEBUG_PRINTF
 
@@ -32,20 +32,20 @@ version.rc.o: version.rc
 
 installdev: all
 	pput -v -v -f stripped/${OUTFILE}.dll \Windows
-	
+
 stripped/${OUTFILE}.dll : ${OUTFILE}.dll
 	mkdir -p stripped
 	cp -v ${OUTFILE}.dll stripped/${OUTFILE}.dll
 	arm-wince-pe-strip.exe stripped/${OUTFILE}.dll
-	
+
 ${OUTFILE}.dll : $(OBJECTS) Makefile
 	$(CC) -o $@ -shared $(LDFLAGS) \
 	-Wl,--whole-archive $(OBJECTS) \
 	-Wl,--no-whole-archive -lcegcc \
 	-Wl,--enable-auto-import \
 	-Wl,--out-implib=lib${OUTFILE}.dll.a \
-	-Wl,--output-def=${OUTFILE}.dll.def
+	-Wl,--output-def=${OUTFILE}.def
 
 clean: 
-	rm -rfv ${OUTFILE}.dll lib${OUTFILE}.dll.a ${OUTFILE}.dll.def \
+	rm -rfv ${OUTFILE}.dll lib${OUTFILE}.a ${OUTFILE}.def \
 		   stripped $(OBJECTS) ${OUTFILE}.map

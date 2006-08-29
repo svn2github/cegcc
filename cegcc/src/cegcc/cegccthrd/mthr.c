@@ -18,15 +18,12 @@
  *
  */
 
-#ifndef GNUWINCE
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #undef WIN32_LEAN_AND_MEAN
-#else
-# include <sys/wcebase.h>
-# include <sys/wcethread.h>
-# include <sys/wceerror.h>
-# include "mthr.h"
+
+#ifdef __CEGCC__
+#include "mthr.h"
 #endif
 
 #include <stdlib.h>
@@ -188,7 +185,7 @@ __mingwthr_run_key_dtors (void)
   LeaveCriticalSection (&__mingwthr_cs);
 
 #ifdef DEBUG
-  NKDbgPrintfW ("%S: Exiting Thread id 0x%08x\n", __FUNCTION__, GetCurrentThreadId() );
+  NKDbgPrintfW (L"%S: Exiting Thread id 0x%08x\n", __FUNCTION__, GetCurrentThreadId() );
 #ifdef DEBUG_PRINTF
   printf ("%s: Exiting Thread id 0x%08x\n", __FUNCTION__, GetCurrentThreadId() );
 #endif
