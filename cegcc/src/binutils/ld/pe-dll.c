@@ -101,7 +101,7 @@
     (so, DLL name is referenced by multiple entries), and pointer to symbol
     name thunk. Symbol name thunk is singleton vector (__nm_th_<symbol>)
     pointing to IMAGE_IMPORT_BY_NAME structure (__nm_<symbol>) directly
-    containing imported name. Here comes that "om the edge" problem mentioned
+    containing imported name. Here comes that "on the edge" problem mentioned
     above: PE specification rambles that name vector (OriginalFirstThunk)
     should run in parallel with addresses vector (FirstThunk), i.e. that they
     should have same number of elements and terminated with zero. We violate
@@ -422,7 +422,7 @@ pe_dll_add_excludes (const char *new_excludes, const int type)
    It can be used for contextual checks.  */
 
 static int
-auto_export (bfd *abfd, def_file *d, const char *n)
+auto_export (bfd *abfd, def_file *d, const char *n, bfd_boolean possibly_underscored)
 {
   int i;
   struct exclude_list_struct *ex;
@@ -432,8 +432,13 @@ auto_export (bfd *abfd, def_file *d, const char *n)
     libname = lbasename (abfd->my_archive->filename);
 
   /* We should not re-export imported stuff.  */
-  if (strncmp (n, "_imp_", 5) == 0)
+  if (strncmp (n, "__imp_", 6) == 0)
     return 0;
+
+  /* Some symbols are never underscored. Ex: fastcall functions.
+     In those cases, the underscore is part of the symbols name.  */
+  if (possibly_underscored && pe_details->underscored && *n == '_')
+    n++;
 
   for (i = 0; i < d->num_exports; i++)
     if (strcmp (d->exports[i].name, n) == 0)
@@ -589,7 +594,7 @@ process_def_file (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
 		  /* We should not re-export imported stuff.  */
 		  {
 		    char *name = xmalloc (strlen (sn) + 2 + 6);
-		    sprintf (name, "%s%s", U("_imp_"), sn);
+		    sprintf (name, "__imp_%s", sn);
 
 		    blhe = bfd_link_hash_lookup (info->hash, name,
 						 FALSE, FALSE, FALSE);
@@ -599,10 +604,7 @@ process_def_file (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
 		      continue;
 		  }
 
-		  if (*sn == '_')
-		    sn++;
-
-		  if (auto_export (b, pe_def_file, sn))
+		  if (auto_export (b, pe_def_file, sn, TRUE))
 		    {
 		      def_file_export *p;
 		      p=def_file_add_export (pe_def_file, sn, 0, -1);
@@ -647,11 +649,12 @@ process_def_file (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
 	{
 	  if (strchr (pe_def_file->exports[i].name, '@'))
 	    {
-	      int lead_at = (*pe_def_file->exports[i].name == '@');
+        int lead_at = (*pe_def_file->exports[i].name == '@');
 	      char *tmp = xstrdup (pe_def_file->exports[i].name + lead_at);
 
 	      *(strchr (tmp, '@')) = 0;
-	      if (auto_export (NULL, pe_def_file, tmp))
+	      /* Fastcall functions are never underscored.  */
+	      if (auto_export (NULL, pe_def_file, tmp, !lead_at))
 		def_file_add_export (pe_def_file, tmp,
 				     pe_def_file->exports[i].internal_name,
 				     -1);
@@ -1881,7 +1884,7 @@ make_one (def_file_export *exp, bfd *parent)
 		    BSF_GLOBAL, 0);
       if (! exp->flag_data)
 	quick_symbol (abfd, "", exp->internal_name, "", tx, BSF_GLOBAL, 0);
-      quick_symbol (abfd, U ("_imp_"), exp->internal_name, "", id5,
+      quick_symbol (abfd, "__imp_", exp->internal_name, "", id5,
 		    BSF_GLOBAL, 0);
       /* Fastcall applies only to functions,
 	 so no need for auto-import symbol.  */
@@ -1893,12 +1896,12 @@ make_one (def_file_export *exp, bfd *parent)
       if (! exp->flag_data)
 	quick_symbol (abfd, U (""), exp->internal_name, "", tx,
 		      BSF_GLOBAL, 0);
-      quick_symbol (abfd, U ("_imp__"), exp->internal_name, "", id5,
+      quick_symbol (abfd, "__imp_", U (""), exp->internal_name, id5,
 		    BSF_GLOBAL, 0);
       /* Symbol to reference ord/name of imported
 	 data symbol, used to implement auto-import.  */
       if (exp->flag_data)
-	quick_symbol (abfd, U("_nm__"), exp->internal_name, "", id6,
+	quick_symbol (abfd, U ("_nm_"), U (""), exp->internal_name, id6,
 		      BSF_GLOBAL,0);
     }
   if (pe_dll_compat_implib)
@@ -2231,7 +2234,7 @@ pe_create_runtime_relocator_reference (bfd *parent)
   symtab = xmalloc (2 * sizeof (asymbol *));
   extern_rt_rel = quick_section (abfd, ".rdata", SEC_HAS_CONTENTS, 2);
 
-  quick_symbol (abfd, "", "__pei386_runtime_relocator", "", UNDSEC,
+  quick_symbol (abfd, "", U ("_pei386_runtime_relocator"), "", UNDSEC,
 		BSF_NO_FLAGS, 0);
 
   bfd_set_section_size (abfd, extern_rt_rel, 4);
@@ -2432,7 +2435,7 @@ pe_process_import_defs (bfd *output_bfd, struct bfd_link_info *link_info)
 	    char *name = xmalloc (len + 2 + 6);
 
  	    if (lead_at)
-	      sprintf (name, "%s%s", "",
+	      sprintf (name, "%s",
 		       pe_def_file->imports[i].internal_name);
 	    else
 	      sprintf (name, "%s%s",U (""),
@@ -2444,10 +2447,9 @@ pe_process_import_defs (bfd *output_bfd, struct bfd_link_info *link_info)
 	    if (!blhe || (blhe && blhe->type != bfd_link_hash_undefined))
 	      {
 		if (lead_at)
-		  sprintf (name, "%s%s", U ("_imp_"),
-			   pe_def_file->imports[i].internal_name);
+		  sprintf (name, "__imp_%s", pe_def_file->imports[i].internal_name);
 		else
-		  sprintf (name, "%s%s", U ("_imp__"),
+		  sprintf (name, "__imp_%s%s", pe_details->underscored ? "_" : "",
 			   pe_def_file->imports[i].internal_name);
 
 		blhe = bfd_link_hash_lookup (link_info->hash, name,

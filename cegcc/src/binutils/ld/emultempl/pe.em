@@ -115,6 +115,14 @@ cat >>e${EMULATION_NAME}.c <<EOF
 #define PE_DEF_FILE_ALIGNMENT		0x00000200
 #endif
 
+#if defined(TARGET_IS_arm_wince_pe)
+/* Windows CE ignores the image base, but we want to
+   be compatible with MSFT's tools.  */
+#undef NT_DLL_IMAGE_BASE
+#define NT_DLL_IMAGE_BASE		0x00010000
+#endif
+
+#define U(S) (${TARGET_UNDERSCORE} S)
 
 static struct internal_extra_pe_aouthdr pe;
 static int dll;
@@ -400,7 +408,7 @@ set_pe_subsystem (void)
       { "windows", 2, "WinMainCRTStartup" },
       { "console", 3, "mainCRTStartup" },
       { "posix",   7, "__PosixProcessStartup"},
-      { "wince",   9, "_WinMainCRTStartup" },
+      { "wince",   9, "WinMainCRTStartup" },
       { "xbox",   14, "mainCRTStartup" },
       { NULL, 0, NULL }
     };
@@ -461,7 +469,7 @@ set_pe_subsystem (void)
 
   set_pe_name ("__subsystem__", subsystem);
 
-  initial_symbol_char = ${INITIAL_SYMBOL_CHAR};
+  initial_symbol_char = ${TARGET_UNDERSCORE};
   if (*initial_symbol_char != '\0')
     {
       char *alc_entry;
@@ -925,15 +933,15 @@ pe_find_data_imports (void)
 
 	      for (i = 0; i < nsyms; i++)
 		{
-		  if (memcmp (symbols[i]->name, "__head_",
-			      sizeof ("__head_") - 1))
+		  if (memcmp (symbols[i]->name, U ("_head_"),
+			      sizeof (U ("_head_")) - 1))
 		    continue;
 
 		  if (pe_dll_extra_pe_debug)
 		    printf ("->%s\n", symbols[i]->name);
 
 		  pe_data_import_dll = (char*) (symbols[i]->name +
-						sizeof ("__head_") - 1);
+						sizeof (U ("_head_")) - 1);
 		  break;
 		}
 
