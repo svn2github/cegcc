@@ -36,7 +36,7 @@ installdev: all
 stripped/${OUTFILE}.dll : ${OUTFILE}.dll
 	mkdir -p stripped
 	cp -v ${OUTFILE}.dll stripped/${OUTFILE}.dll
-	arm-wince-pe-strip.exe stripped/${OUTFILE}.dll
+	arm-wince-pe-strip stripped/${OUTFILE}.dll
 
 ${OUTFILE}.dll : $(OBJECTS) Makefile
 	$(CC) -o $@ -shared $(LDFLAGS) \
