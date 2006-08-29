@@ -28,6 +28,7 @@ Boston, MA 02110-1301, USA.  */
   do								\
     {								\
       builtin_define ("__MSVCRT__");				\
+      builtin_define ("__COREDLL__");				\
       builtin_define ("__MINGW32__");			   	\
       builtin_define ("__MINGW32CE__");			   	\
       builtin_define ("_WIN32");				\
