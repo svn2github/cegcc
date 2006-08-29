@@ -225,6 +225,9 @@ the end of the file.  */
 #undef WINT_TYPE
 #define WINT_TYPE "short unsigned int"
 
+#undef DWARF2_UNWIND_INFO
+#define DWARF2_UNWIND_INFO 0
+
 #define DWARF2_DEBUGGING_INFO 1
 
 #undef  PREFERRED_DEBUGGING_TYPE
