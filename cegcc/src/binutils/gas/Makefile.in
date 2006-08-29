@@ -38,6 +38,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+LIBOBJDIR =
 noinst_PROGRAMS = as-new$(EXEEXT)
 EXTRA_PROGRAMS = itbl-test$(EXEEXT)
 DIST_COMMON = $(srcdir)/../config.guess $(srcdir)/../config.sub NEWS \

@@ -37,6 +37,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+LIBOBJDIR =
 noinst_PROGRAMS = ld-new$(EXEEXT)
 DIST_COMMON = $(srcdir)/../config.guess $(srcdir)/../config.sub NEWS \
 	README ChangeLog $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
