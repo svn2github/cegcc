@@ -2,7 +2,6 @@
 
 	.text
 
-	.globl __EH_FRAME_BEGIN__
 	.globl WinMainCRTStartup
 	.globl _mainCRTStartup
 
@@ -15,10 +14,6 @@
 	.extern _eh_handler
 	.extern __set_runtime_thread_mode
 	
-@ dummy, needed for eh!?
-
-__EH_FRAME_BEGIN__: .word 0
-
 @ for kernel exception handler, must be directly before ___EH_CODE_START__
 	FUNC_START __EH_HANDLER__
 	.word _eh_handler @handler
