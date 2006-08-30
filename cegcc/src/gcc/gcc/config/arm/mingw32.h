@@ -27,7 +27,6 @@ Boston, MA 02110-1301, USA.  */
 #define EXTRA_OS_CPP_BUILTINS()					\
   do								\
     {								\
-      builtin_define ("__MSVCRT__");				\
       builtin_define ("__COREDLL__");				\
       builtin_define ("__MINGW32__");			   	\
       builtin_define ("__MINGW32CE__");			   	\
