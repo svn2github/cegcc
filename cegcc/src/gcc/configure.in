@@ -608,13 +608,11 @@ case "${target}" in
   *-wince-mingw32*)
     target_configdirs="$target_configdirs target-mingw"
     noconfigdirs="$noconfigdirs expect target-libgloss ${libgcj}"
-
-    # Can't build gdb for mingw32 if not native.
-    case "${host}" in
-      *-wince-mingw32*) ;; # keep gdb tcl tk expect etc.
-      *) noconfigdirs="$noconfigdirs gdb tcl tk expect itcl gnuserv"
-         ;;
-    esac
+    noconfigdirs="$noconfigdirs dejagnu"
+    noconfigdirs="$noconfigdirs target-examples"
+    noconfigdirs="$noconfigdirs target-libiberty texinfo send-pr"
+    noconfigdirs="$noconfigdirs tcl tk itcl libgui sim"
+#    noconfigdirs="$noconfigdirs expect itcl gnuserv"
     ;;    
   i[[3456789]]86-*-mingw32*)
     target_configdirs="$target_configdirs target-mingw"
