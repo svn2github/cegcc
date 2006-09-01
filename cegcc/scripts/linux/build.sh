@@ -40,6 +40,8 @@ sh $SCRIPTDIR/build-newlib.sh || exit 1
 sh $SCRIPTDIR/install-newlib.sh || exit 1
 sh $SCRIPTDIR/build-libs.sh || exit 1
 sh $SCRIPTDIR/install-libs.sh || exit 1
+sh $SCRIPTDIR/build-dll.sh || exit 1
+sh $SCRIPTDIR/install-dll.sh || exit 1
 #
 sh $SCRIPTDIR/build-gdb.sh || exit 1
 sh $SCRIPTDIR/install-gdb.sh || exit 1
@@ -53,8 +55,8 @@ sh $SCRIPTDIR/install-gpp.sh || exit 1
 #
 # Use the MinGW runtime to support spooky compiler options.
 #
-sh $SCRIPTDIR/build-mingw.sh || exit 1
-sh $SCRIPTDIR/install-mingw.sh || exit 1
+# sh $SCRIPTDIR/build-mingw.sh || exit 1
+# sh $SCRIPTDIR/install-mingw.sh || exit 1
 #
 # We should be done now.
 #
