@@ -1,6 +1,6 @@
 /* wince-stub.c -- debugging stub for a Windows CE device
 
-   Copyright 1999, 2000, 1006 Free Software Foundation, Inc.
+   Copyright 1999, 2000, 2006 Free Software Foundation, Inc.
    Contributed by Cygnus Solutions, A Red Hat Company.
 
    This file is part of GDB.
@@ -26,6 +26,7 @@
 */
 
 #include <winsock.h>
+#include <stdio.h>
 #include <stdarg.h>
 #include <windows.h>
 
