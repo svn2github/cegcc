@@ -9,7 +9,7 @@ else
 fi
 
 CFLAGS="-mwin32 "
-LDFLAGS="-e WinMainCRTStartup"
+LDFLAGS="-e WinMainCRTStartup -lwinsock"
 
 ${TARGET_ARCH}-gcc ${CFLAGS} ${STUB_SRC} -o ${STUB_EXE} ${LDFLAGS} || exit 1
 
