@@ -8,8 +8,8 @@ else
 	. scripts/linux/settings.sh
 fi
 
-CFLAGS="-mwin32 "
-LDFLAGS="-e WinMainCRTStartup -lwinsock"
+CFLAGS="-mwin32 -D_WINSOCKAPI_"
+LDFLAGS="-e WinMainCRTStartup -lws2"
 
 ${TARGET_ARCH}-gcc ${CFLAGS} ${STUB_SRC} -o ${STUB_EXE} ${LDFLAGS} || exit 1
 
