@@ -484,7 +484,8 @@ static void inherit_parent(void)
 
   memset(&tbuf, 0, sizeof(tbuf));
   tbuf.c_lflag = (ECHO | ICANON);
-  tcsetattr(0, 0, &tbuf);
+  tcsetattr(0, 0, &tbuf);		/* This always fails when under GDB */
+  					/* It's odd that this is happening before _initstdio() */
 }
 
 extern void __s_reinit(struct _reent *s);
