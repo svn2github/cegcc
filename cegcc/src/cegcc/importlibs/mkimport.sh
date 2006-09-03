@@ -2,6 +2,7 @@
 
 DLLTOOL=arm-wince-pe-dlltool
 OBJCOPY=arm-wince-pe-objcopy
+RANLIB=arm-wince-pe-ranlib
 
 if [ $# -lt 2 ] ; then
 	echo "usage:"
@@ -25,6 +26,7 @@ fi
 echo "$def -> $outputdir/lib$lib.a"
 rm -f $outputdir/lib$lib.a
 $DLLTOOL -d $def -l $outputdir/lib$lib.a
+$RANLIB $outputdir/lib$lib.a
 if [ ! -f $outputdir/lib$lib.a ]
 then
 	exit 1
