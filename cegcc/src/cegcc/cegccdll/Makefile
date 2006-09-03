@@ -30,8 +30,9 @@ all: clean mktmp mktmp_static version.rc.o extract delfiles $(DLLNAME) $(DLLNAME
 
 install:
 	@echo "installing files for gcc $(GCCVERSION)"
-	cp -vf $(DLLNAME) $(PREFIX)/arm-wince-pe/bin
-	cp -vf stripped/$(DLLNAME) $(PREFIX)/arm-wince-pe/bin/$(DLLNAME).stripped
+	mkdir -p $(PREFIX)/arm-wince-pe/bin/device
+	cp -vf $(DLLNAME) $(PREFIX)/arm-wince-pe/bin/device
+	cp -vf stripped/$(DLLNAME) $(PREFIX)/arm-wince-pe/bin/device/$(DLLNAME).stripped
 	cp -vf $(IMPLIB) $(PREFIX)/arm-wince-pe/lib
 # force the usage of all symbols from the dll
 # by making empty stubs. when -static is used the real static versions are found instead.
