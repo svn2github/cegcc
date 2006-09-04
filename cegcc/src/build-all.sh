@@ -202,10 +202,11 @@ STUB_SRC=${BASE_DIRECTORY}/gdb/gdb/wince-stub.c
 #Useful for debugging cegcc.dll itself.
 #Actually, the stub would better be built with -mno-cegcc/arm-wince-mingw32
 #To remove the newlib/cegcc.dll dependency, since it mostly uses win32 api.
+#Removed for now, as it is giving problems.
 ${TARGET}-gcc -O2 -mwin32      \
            ${STUB_SRC}         \
            -o ${STUB_EXE}      \
-           -static -lwinsock || exit 1
+           -lwinsock || exit 1
 ${TARGET}-strip ${STUB_EXE} || exit 1
 
 cd ${BASE_DIRECTORY} || exit 1
