@@ -1,11 +1,17 @@
 #Pedro Alves <pedro_alves@portugalmail.pt> (C) 2006
 
 PREFIX?=/usr/local
+
 DLLNAME=libstdc++.dll
 IMPLIB=$(DLLNAME).a
+TARGET=arm-wince-pe
 
-AR=arm-wince-pe-ar -x
-LIB_PATH=$(PREFIX)/arm-wince-pe/lib
+AR=$(TARGET)-ar
+CC=$(TARGET)-gcc
+STRIP=$(TARGET)-strip
+WINDRES=$(TARGET)-windres
+
+LIB_PATH=$(PREFIX)/$(TARGET)/lib
 
 LDFLAGS += -Wl,-Map,$(DLLNAME).map
 #LDFLAGS += -Wl,--verbose -Wl,--enable-extra-pe-debug
@@ -18,9 +24,9 @@ RMFILES=
 all: clean mktmp version.rc.o extract delfiles $(DLLNAME) $(DLLNAME).def $(IMPLIB) stripped/$(DLLNAME)
 
 install:
-	cp -vf $(DLLNAME) $(PREFIX)/arm-wince-pe/lib
-	cp -vf $(IMPLIB) $(PREFIX)/arm-wince-pe/lib
-	cp -vf stripped/$(DLLNAME) $(PREFIX)/arm-wince-pe/lib/device
+	cp -vf $(DLLNAME) $(LIB_PATH)
+	cp -vf $(IMPLIB) $(LIB_PATH)
+	cp -vf stripped/$(DLLNAME) $(LIB_PATH)/device
 
 delfiles:
 	@list='$(RMFILES)'; \
@@ -30,21 +36,21 @@ delfiles:
 	done
 
 extract:
-	$(AR) $(LIB_PATH)/libsupc++.a
-	$(AR) $(LIB_PATH)/libstdc++.a
+	$(AR) -x $(LIB_PATH)/libsupc++.a
+	$(AR) -x $(LIB_PATH)/libstdc++.a
 	mv *.o _tmp
 
 stripped/$(DLLNAME):
 	@mkdir -p stripped
 	rm -f stripped/$(DLLNAME)
 	@cp -vf $(DLLNAME) $(DLLNAME)-stripped.dll
-	arm-wince-pe-strip $(DLLNAME)-stripped.dll
+	$(STRIP) $(DLLNAME)-stripped.dll
 	@mv -vf $(DLLNAME)-stripped.dll stripped/$(DLLNAME)
 
 $(DLLNAME).a \
 $(DLLNAME).def \
 $(DLLNAME):
-	arm-wince-pe-gcc $(LDFLAGS) -shared \
+	$(CC) $(LDFLAGS) -shared \
 		-Wl,--enable-auto-import \
 		-Wl,--enable-runtime-pseudo-reloc \
 		-Wl,--export-all-symbols \
@@ -69,7 +75,7 @@ mktmp:
 	mkdir _tmp
 
 version.rc.o: version.rc
-	arm-wince-pe-windres version.rc -o $@
+	$(WINDRES) version.rc -o $@
 	mv $@ _tmp
 
 .PHONY: all extract clean delfiles mktmp strip
