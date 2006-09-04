@@ -18,6 +18,8 @@ echo "source: ${BASE_DIRECTORY}"
 echo "build: ${BUILD_DIR}"
 echo "prefix: ${PREFIX}"
 
+export PATH=${PREFIX}/bin:$PATH
+
 mkdir -p ${BUILD_DIR} || exit 1
 mkdir -p ${PREFIX} || exit 1
 
