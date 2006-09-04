@@ -167,6 +167,9 @@ echo ""
 
 mkdir -p ${BUILD_DIR}/gdb || exit 1
 cd ${BUILD_DIR}/gdb || exit 1
+
+export CFLAGS="-I${BASE_DIRECTORY}/w32api/include"
+
 ${BASE_DIRECTORY}/gdb/configure  \
   --with-gcc                     \
   --with-gnu-ld                  \
@@ -179,6 +182,8 @@ ${BASE_DIRECTORY}/gdb/configure  \
   --disable-interwork            \
   --enable-checking              \
   || exit
+
+export CFLAGS=
 
 make         || exit 1
 make install || exit 1
@@ -209,3 +214,4 @@ echo ""
 echo "Done. --------------------------"
 echo ""
 echo ""
+
