@@ -35,7 +35,7 @@ export PATH=${PREFIX}/bin:${PATH}
 #
 # The name of this release
 #
-CEGCC_RELEASE=0.06
+CEGCC_RELEASE=0.07
 export CEGCC_RELEASE
 #
 # The debugging stub

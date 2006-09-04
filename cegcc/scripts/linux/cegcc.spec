@@ -1,13 +1,13 @@
 Summary:	CeGCC offers cross-development to create Windows CE apps for ARM processors
 Name:		cegcc
-Version:	0.06
+Version:	0.07
 Release:	1
 License:	open
 Packager:	Danny Backx <dannybackx@users.sourceforge.net>
 Group:		Development/Tools
 Prefixes:	/usr/ppc
 # Source:		http://sourceforge.net/project/showfiles.php?group_id=173455
-Source:		/tmp/cegcc-src-0.06.tar.gz
+Source:		/tmp/cegcc-src-0.07.tar.gz
 # BuildRoot:	/tmp/cegcc
 
 %description
