@@ -95,7 +95,7 @@ ${BASE_DIRECTORY}/gcc/configure		 \
   --disable-win32-registry       \
   --disable-multilib             \
   --disable-interwork            \
-  --with-newlib                  \
+  --without-headers              \
   --enable-checking              \
   || exit 1
 
@@ -163,7 +163,6 @@ ${BASE_DIRECTORY}/gcc/configure		 \
   --disable-win32-registry       \
   --disable-multilib             \
   --disable-interwork            \
-  --with-newlib                  \
   --enable-checking              \
   || exit 1
 
