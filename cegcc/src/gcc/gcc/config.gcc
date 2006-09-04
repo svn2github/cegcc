@@ -743,6 +743,12 @@ arm-*-pe*)
 	extra_objs="pe.o pe-stubs.o"
 	cxx_target_objs=pe-cxx.o
 	target_gtfiles="\$(srcdir)/config/arm/pe.c"
+	case ${enable_threads} in
+	  "" | yes | win32)
+	  thread_file='win32'
+	  tmake_file="${tmake_file} arm/t-gthr-win32"
+	  ;;
+	esac
 	;;
 arm*-*-kaos*)
 	tm_file="dbxelf.h elfos.h arm/unknown-elf.h arm/elf.h arm/aout.h arm/arm.h kaos.h arm/kaos-arm.h"
@@ -1243,7 +1249,10 @@ arm-wince-mingw32*)
 	extra_objs="pe.o pe-stubs.o"
 	cxx_target_objs=pe-cxx.o
 	case ${enable_threads} in
-	  "" | yes | win32) thread_file='win32' ;;
+	  "" | yes | win32)
+	  thread_file='win32'
+	  tmake_file="${tmake_file} arm/t-gthr-win32"
+	  ;;
 	esac
 	;;
 i[34567]86-*-mingw32*)
