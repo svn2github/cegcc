@@ -4,7 +4,12 @@ PREFIX?=/usr/local
 
 OUTFILE = cegccthrd
 
-CC = arm-wince-pe-gcc
+TARGET=arm-wince-pe
+
+AR=$(TARGET)-ar
+CC=$(TARGET)-gcc
+STRIP=$(TARGET)-strip
+WINDRES=$(TARGET)-windres
 
 CFLAGS = -g -mwin32
 CFLAGS +=-DDEBUG
@@ -20,12 +25,12 @@ OBJECTS = $(addsuffix .o, $(basename $(CFILES))) version.rc.o
 all: stripped/${OUTFILE}.dll
 
 install: all
-	cp -vf ${OUTFILE}.dll $(PREFIX)/arm-wince-pe/lib
-	cp -vf lib${OUTFILE}.dll.a $(PREFIX)/arm-wince-pe/lib
-	cp -vf stripped/${OUTFILE}.dll $(PREFIX)/arm-wince-pe/lib/device
+	cp -vf ${OUTFILE}.dll $(PREFIX)/$(TARGET)/lib
+	cp -vf lib${OUTFILE}.dll.a $(PREFIX)/$(TARGET)/lib
+	cp -vf stripped/${OUTFILE}.dll $(PREFIX)/$(TARGET)/lib/device
 
 version.rc.o: version.rc
-	arm-wince-pe-windres version.rc -o $@
+	$(WINDRES) version.rc -o $@
 
 installdev: all
 	pput -v -v -f stripped/${OUTFILE}.dll \Windows
@@ -33,7 +38,7 @@ installdev: all
 stripped/${OUTFILE}.dll : ${OUTFILE}.dll
 	mkdir -p stripped
 	cp -v ${OUTFILE}.dll stripped/${OUTFILE}.dll
-	arm-wince-pe-strip stripped/${OUTFILE}.dll
+	$(STRIP) stripped/${OUTFILE}.dll
 
 ${OUTFILE}.dll : $(OBJECTS) Makefile
 	$(CC) -o $@ -shared $(LDFLAGS) \
