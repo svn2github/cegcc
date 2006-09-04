@@ -1248,8 +1248,8 @@ case "${target}" in
     noconfigdirs="$noconfigdirs tcl tk itcl libgui sim"
     noconfigdirs="$noconfigdirs expect dejagnu"
     # the C++ libraries don't build on top of CE's C libraries
-    noconfigdirs="$noconfigdirs target-libstdc++-v3"
-    noconfigdirs="$noconfigdirs target-newlib"
+#    noconfigdirs="$noconfigdirs target-libstdc++-v3"
+#    noconfigdirs="$noconfigdirs target-newlib"
     case "${host}" in
       *-*-cygwin*) ;; # keep gdb and readline
       *) noconfigdirs="$noconfigdirs gdb readline"
