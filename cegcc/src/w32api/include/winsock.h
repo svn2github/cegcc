@@ -461,8 +461,13 @@ DECLARE_STDCALL_P(struct protoent *) getprotobynumber(int);
 DECLARE_STDCALL_P(struct protoent *) getprotobyname(const char*);
 int PASCAL WSAStartup(WORD,LPWSADATA);
 int PASCAL WSACleanup(void);
+#ifdef _WIN32_WCE
+#define WSASetLastError SetLastError
+#define WSAGetLastError GetLastError
+#else
 void PASCAL WSASetLastError(int);
 int PASCAL WSAGetLastError(void);
+#endif
 BOOL PASCAL WSAIsBlocking(void);
 int PASCAL WSAUnhookBlockingHook(void);
 FARPROC PASCAL WSASetBlockingHook(FARPROC);
