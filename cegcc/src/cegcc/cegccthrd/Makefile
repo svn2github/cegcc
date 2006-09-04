@@ -1,10 +1,6 @@
 # Pedro Alves <pedro_alves@portugalmail.pt> (C) 2006
 
-PREFIX=/usr/local
-
-SOURCEDIR = $(shell pwd)/..
-
-VPATH = $(SOURCEDIR)
+PREFIX?=/usr/local
 
 OUTFILE = cegccthrd
 
@@ -26,6 +22,7 @@ all: stripped/${OUTFILE}.dll
 install: all
 	cp -vf ${OUTFILE}.dll $(PREFIX)/arm-wince-pe/bin
 	cp -vf lib${OUTFILE}.dll.a $(PREFIX)/arm-wince-pe/lib
+	cp -vf stripped/${OUTFILE}.dll $(PREFIX)/arm-wince-pe/lib/device
 
 version.rc.o: version.rc
 	arm-wince-pe-windres version.rc -o $@

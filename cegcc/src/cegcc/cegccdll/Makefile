@@ -3,7 +3,8 @@
 #
 # Pedro Alves <pedro_alves@portugalmail.pt> (C) 2006
 
-PREFIX=/usr/local
+PREFIX?=/usr/local
+
 TARGET=arm-wince-pe
 DLLNAME=cegcc.dll
 IMPLIB=lib$(DLLNAME).a

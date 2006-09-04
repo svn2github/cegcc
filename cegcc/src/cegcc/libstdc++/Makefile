@@ -1,6 +1,6 @@
 #Pedro Alves <pedro_alves@portugalmail.pt> (C) 2006
 
-PREFIX=/usr/local
+PREFIX?=/usr/local
 DLLNAME=libstdc++.dll
 IMPLIB=$(DLLNAME).a
 
@@ -18,8 +18,9 @@ RMFILES=
 all: clean mktmp version.rc.o extract delfiles $(DLLNAME) $(DLLNAME).def $(IMPLIB) stripped/$(DLLNAME)
 
 install:
-	cp -vf $(DLLNAME) $(PREFIX)/arm-wince-pe/bin
+	cp -vf $(DLLNAME) $(PREFIX)/arm-wince-pe/lib
 	cp -vf $(IMPLIB) $(PREFIX)/arm-wince-pe/lib
+	cp -vf stripped/$(DLLNAME) $(PREFIX)/arm-wince-pe/lib/device
 
 delfiles:
 	@list='$(RMFILES)'; \
