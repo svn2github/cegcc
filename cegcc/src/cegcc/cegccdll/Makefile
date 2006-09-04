@@ -4,13 +4,18 @@
 # Pedro Alves <pedro_alves@portugalmail.pt> (C) 2006
 
 PREFIX=/usr/local
+TARGET=arm-wince-pe
 DLLNAME=cegcc.dll
 IMPLIB=lib$(DLLNAME).a
 
 GCCVERSION=$(shell ./gccversion.sh)
 
-AR=arm-wince-pe-ar -x
-LIB_PATH=$(PREFIX)/arm-wince-pe/lib
+AR=$(TARGET)-ar
+CC=$(TARGET)-gcc
+STRIP=$(TARGET)-strip
+WINDRES=$(TARGET)-windres
+
+LIB_PATH=$(PREFIX)/$(TARGET)/lib
 
 # link to local ${IMPLIB} instead of preinstalled one
 LDFLAGS += -L . -Wl,-Map,$(DLLNAME).map
@@ -30,18 +35,18 @@ all: clean mktmp mktmp_static version.rc.o extract delfiles $(DLLNAME) $(DLLNAME
 
 install:
 	@echo "installing files for gcc $(GCCVERSION)"
-	mkdir -p $(PREFIX)/arm-wince-pe/bin/device
-	cp -vf $(DLLNAME) $(PREFIX)/arm-wince-pe/bin
-	cp -vf stripped/$(DLLNAME) $(PREFIX)/arm-wince-pe/bin/device/$(DLLNAME)
-	cp -vf $(IMPLIB) $(PREFIX)/arm-wince-pe/lib
+	cp -vf $(DLLNAME) $(LIB_PATH)
+	mkdir -p $(LIB_PATH)/device
+	cp -vf stripped/$(DLLNAME) $(LIB_PATH)/device/
+	cp -vf $(IMPLIB) $(LIB_PATH)
 # force the usage of all symbols from the dll
 # by making empty stubs. when -static is used the real static versions are found instead.
-	rm -f $(PREFIX)/arm-wince-pe/lib/libc.dll.a
-	rm -f $(PREFIX)/arm-wince-pe/lib/libm.dll.a
-	rm -f $(PREFIX)/lib/gcc/arm-wince-pe/$(GCCVERSION)/libgcc.dll.a
-	arm-wince-pe-ar q $(PREFIX)/arm-wince-pe/lib/libc.dll.a
-	arm-wince-pe-ar q $(PREFIX)/arm-wince-pe/lib/libm.dll.a
-	arm-wince-pe-ar q $(PREFIX)/lib/gcc/arm-wince-pe/$(GCCVERSION)/libgcc.dll.a
+	rm -f $(LIB_PATH)/libc.dll.a
+	rm -f $(LIB_PATH)/libm.dll.a
+	rm -f $(PREFIX)/lib/gcc/$(TARGET)/$(GCCVERSION)/libgcc.dll.a
+	$(AR) q $(LIB_PATH)/libc.dll.a
+	$(AR) q $(LIB_PATH)/libm.dll.a
+	$(AR) q $(PREFIX)/lib/gcc/$(TARGET)/$(GCCVERSION)/libgcc.dll.a
 
 delfiles:
 	@list='$(RMFILES)'; \
@@ -64,16 +69,16 @@ delfiles:
 
 extract:
 	@echo "extracting files for gcc $(GCCVERSION)"
-	$(AR) $(LIB_PATH)/libc.a
-#	$(AR) $(LIB_PATH)/libg.a
-	$(AR) $(LIB_PATH)/libm.a
-	$(AR) $(LIB_PATH)/../../lib/gcc/arm-wince-pe/$(GCCVERSION)/libgcc.a
+	$(AR) -x $(LIB_PATH)/libc.a
+#	$(AR) -x $(LIB_PATH)/libg.a
+	$(AR) -x $(LIB_PATH)/libm.a
+	$(AR) -x $(LIB_PATH)/../../lib/gcc/$(TARGET)/$(GCCVERSION)/libgcc.a
 	mv *.o _tmp
 
 stripped/$(DLLNAME):
 	rm -f stripped/$(DLLNAME)
 	@cp -vf $(DLLNAME) $(DLLNAME).stripped.dll
-	arm-wince-pe-strip $(DLLNAME).stripped.dll
+	$(STRIP) $(DLLNAME).stripped.dll
 	@mkdir -p stripped
 	@mv -vf $(DLLNAME).stripped.dll stripped/$(DLLNAME)
 
@@ -84,14 +89,14 @@ stripped/$(DLLNAME):
 $(DLLNAME):
 	rm -f $(IMPLIB)
 	rm -f $(IMPLIB).tmp
-	arm-wince-pe-ar q $(IMPLIB) _tmp_static/*.o
-	arm-wince-pe-gcc -o $@ $(LDFLAGS) -shared -nostdlib \
+	$(AR) q $(IMPLIB) _tmp_static/*.o
+	$(CC) -o $@ $(LDFLAGS) -shared -nostdlib \
 	-Wl,--whole-archive _tmp/*.o ${LIB_PATH}/dllcrt1.o \
 	-Wl,--no-whole-archive -lcegcc -lcoredll -liphlpapi \
 	-Wl,--output-def=$(DLLNAME).def \
 	-Wl,--out-implib,$(IMPLIB).tmp
 	mv -f libcegcc.dll.a.tmp libcegcc.dll.a
-	arm-wince-pe-ar q $(IMPLIB) _tmp_static/*.o
+	$(AR) q $(IMPLIB) _tmp_static/*.o
 
 #	-Wl,--verbose \
 #	-Wl,--enable-extra-pe-debug \
@@ -116,7 +121,7 @@ mktmp_static:
 	mkdir _tmp_static
 
 version.rc.o: version.rc
-	arm-wince-pe-windres version.rc -o $@
+	$(WINDRES) version.rc -o $@
 	mv $@ _tmp
 
 .PHONY: all extract clean delfiles mktmp mktmp_static strip
