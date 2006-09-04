@@ -21,7 +21,8 @@ struct _reent *reent_ptr)
 	TIME_ZONE_INFORMATION tzinfo;
 	int defused;
 
-	// no race condition because this function is called wrapped in a lock. see _tzset_r
+	/* No race condition here, because this function is called 
+        wrapped in a lock. see _tzset_r.  */
 	static int alloced = 0;
 	if (!alloced)
 	{
@@ -52,9 +53,6 @@ struct _reent *reent_ptr)
 		_daylight = 0;
 		_dstbias = 0;
 	}
-
-#define WC_COMPOSITECHECK         0x00000200
-#define WC_SEPCHARS               0x00000020
 
 	if ( (WideCharToMultiByte( CP_ACP,
 		WC_COMPOSITECHECK | WC_SEPCHARS,
