@@ -33,7 +33,7 @@ Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
    This exception does not however invalidate any other reasons why
    the executable file might be covered by the GNU General Public License.  */
 
-#if defined __MINGW32__ && !defined UNDER_CE
+#if defined __MINGW32__
 #include <_mingw.h>
 #endif
 
@@ -43,7 +43,7 @@ Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
 # define __GTHREAD_HIDE_WIN32API 1
 #endif
 #undef  __GTHREAD_I486_INLINE_LOCK_PRIMITIVES
-#ifndef UNDER_CE
+#ifdef __i386__
 #define __GTHREAD_I486_INLINE_LOCK_PRIMITIVES
 #endif
 #include <gthr-win32.h>
