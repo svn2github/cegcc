@@ -80,8 +80,8 @@ echo ""
 echo "Building bootstrap gcc. ----------------------"
 echo ""
 
-mkdir -p ${BUILD_DIR}/gcc || exit 1
-cd ${BUILD_DIR}/gcc || exit 1
+mkdir -p ${BUILD_DIR}/gcc-bootstrap || exit 1
+cd ${BUILD_DIR}/gcc-bootstrap || exit 1
 
 ${BASE_DIRECTORY}/gcc/configure		 \
   --with-gcc                     \
@@ -89,9 +89,9 @@ ${BASE_DIRECTORY}/gcc/configure		 \
   --with-gnu-as                  \
   --target=${TARGET}             \
   --prefix=${PREFIX}             \
-  --enable-threads=win32         \
+  --disable-threads              \
   --disable-nls                  \
-  --enable-languages=c,c++       \
+  --enable-languages=c           \
   --disable-win32-registry       \
   --disable-multilib             \
   --disable-interwork            \
@@ -147,6 +147,25 @@ echo ""
 echo "Building full gcc. --------------------------"
 echo ""
 echo ""
+
+mkdir -p ${BUILD_DIR}/gcc || exit 1
+cd ${BUILD_DIR}/gcc || exit 1
+
+${BASE_DIRECTORY}/gcc/configure		 \
+  --with-gcc                     \
+  --with-gnu-ld                  \
+  --with-gnu-as                  \
+  --target=${TARGET}             \
+  --prefix=${PREFIX}             \
+  --enable-threads=win32         \
+  --disable-nls                  \
+  --enable-languages=c,c++       \
+  --disable-win32-registry       \
+  --disable-multilib             \
+  --disable-interwork            \
+  --with-newlib                  \
+  --enable-checking              \
+  || exit 1
 
 cd ${BUILD_DIR}/gcc || exit 1
 make || exit 1
