@@ -38,7 +38,7 @@ ${BASE_DIRECTORY}/binutils/configure \
 make         || exit 1
 make install || exit 1
 
-cd ${BASE_DIRECTORY} || exit
+cd ${BASE_DIRECTORY} || exit 1
 
 ##########################################################
 
@@ -48,8 +48,10 @@ echo ""
 echo ""
 
 mkdir -p ${PREFIX}/${TARGET}/lib
-IMPORT_LIBS_DIR=${SOURCE_DIR}/cegcc/importlibs
-${IMPORT_LIBS_DIR}/build.sh ${IMPORT_LIBS_DIR}/defs ${PREFIX}/${TARGET}/lib
+cd ${BASE_DIRECTORY}/cegcc/importlibs || exit 1
+./build.sh ./defs ${PREFIX}/${TARGET}/lib || exit 1
+
+cd ${BASE_DIRECTORY} || exit 1
 
 ##########################################################
 
