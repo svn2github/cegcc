@@ -20,7 +20,7 @@ OBJECTS = $(addsuffix .o, $(basename $(CFILES))) version.rc.o
 all: stripped/${OUTFILE}.dll
 
 install: all
-	cp -vf ${OUTFILE}.dll $(PREFIX)/arm-wince-pe/bin
+	cp -vf ${OUTFILE}.dll $(PREFIX)/arm-wince-pe/lib
 	cp -vf lib${OUTFILE}.dll.a $(PREFIX)/arm-wince-pe/lib
 	cp -vf stripped/${OUTFILE}.dll $(PREFIX)/arm-wince-pe/lib/device
 
