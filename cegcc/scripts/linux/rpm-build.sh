@@ -67,3 +67,25 @@ sh $SCRIPTDIR/install-gpp.sh || exit 1
 # We should be done now.
 #
 exit 0
+
+
+
+#!/bin/sh
+#
+# Read the settings
+#
+if [ -r settings.sh ]; then
+	. settings.sh
+else
+	. scripts/linux/settings.sh
+fi
+#
+# Put the cleanup here instead of in the calling script
+#
+if [ -d $BUILD_DIR/gcc ]; then
+	rm -rf $BUILD_DIR/gcc
+fi
+#
+cd $BUILD_DIR
+# make all-gcc || exit 1
+exit 0

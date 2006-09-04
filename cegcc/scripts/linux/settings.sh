@@ -10,12 +10,16 @@ fi
 #
 export SCRIPTDIR TOP_SRCDIR
 #
-PREFIX=/usr/ppc
+# Check whether we're running under "rpmbuild".
+# If we do, use a temporary directory as prefix.
+#
+if [ x$MY_RPM_PREFIX != x ]; then
+	PREFIX=$MY_RPM_PREFIX
+	mkdir -p $PREFIX
+else
+	PREFIX=/usr/ppc
+fi
 export PREFIX
-#
-# Use a different compiler
-#
-# export CC=/tmp/gcc-4/bin/gcc
 #
 MY_HOST_ARCH=`$TOP_SRCDIR/src/gcc/config.guess`
 TARGET_ARCH=arm-wince-pe
@@ -31,8 +35,8 @@ export PATH=${PREFIX}/bin:${PATH}
 #
 # The name of this release
 #
-RELEASE=0.04-alpha
-export RELEASE
+CEGCC_RELEASE=0.06
+export CEGCC_RELEASE
 #
 # The debugging stub
 #
