@@ -23,6 +23,6 @@ export CFLAGS
 #
 $TOP_SRCDIR/src/gdb/configure \
 	--prefix=$PREFIX \
-	--target=$TARGET_ARCH || exit 1
+	--target=$TGT_ARCH || exit 1
 make || exit 1
 exit 0

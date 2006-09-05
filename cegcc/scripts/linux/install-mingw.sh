@@ -10,5 +10,5 @@ fi
 #
 cd $BUILD_DIR/mingw-runtime
 #
-make install prefix=${PREFIX}/${TARGET_ARCH} || exit 1
+make install prefix=${PREFIX}/${TGT_ARCH} || exit 1
 exit 0

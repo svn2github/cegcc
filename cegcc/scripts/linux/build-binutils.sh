@@ -23,7 +23,7 @@ export LDFLAGS=""
 #
 $TOP_SRCDIR/src/binutils/configure --prefix=$PREFIX \
 	--exec-prefix=$PREFIX \
-	--target=${TARGET_ARCH} \
+	--target=${TGT_ARCH} \
 	--disable-nls \
 	--includedir=$PREFIX/include || exit 1
 make || exit 1

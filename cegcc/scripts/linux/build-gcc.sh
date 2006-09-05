@@ -32,7 +32,7 @@ $TOP_SRCDIR/src/gcc/configure \
 	--enable-checking \
 	--disable-multilib \
 	--without-headers \
-	--target=$TARGET_ARCH $MY_HOST_ARCH || exit 1
+	--target=$TGT_ARCH $MY_HOST_ARCH || exit 1
 #
 # It is very important to specify the "all-gcc" target here,
 # just making the default target won't work because we're building binutils,

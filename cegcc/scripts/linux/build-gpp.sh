@@ -27,7 +27,7 @@ $TOP_SRCDIR/src/gcc/configure \
 	--disable-nls \
 	--enable-checking \
 	--disable-multilib \
-	--target=$TARGET_ARCH $MY_HOST_ARCH || exit 1
+	--target=$TGT_ARCH $MY_HOST_ARCH || exit 1
 #
 make
 #

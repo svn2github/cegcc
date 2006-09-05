@@ -4,7 +4,7 @@
 #
 # $TOP_SRCDIR/src/w32api/configure \
 #	 --prefix=$PREFIX \
-#	--target=$TARGET_ARCH
+#	--target=$TGT_ARCH
 # make
 #
 # Instead we're relying on the fact that the w32api/include contains
@@ -21,12 +21,12 @@ DIRS=`find . -type d -print | grep -v /.svn`
 # echo "Include file directories : [$DIRS]"
 for d in $DIRS
 do
-	mkdir -p $PREFIX/$TARGET_ARCH/include/w32api/$d
+	mkdir -p $PREFIX/$TGT_ARCH/include/w32api/$d
 done
 FILES=`find . -type f -name \*.h -print | grep -v /.svn/ `
 # echo "Files : [" $FILES "]"
 for i in $FILES
 do
-	install -m 0644 $i $PREFIX/$TARGET_ARCH/include/w32api/$i
+	install -m 0644 $i $PREFIX/$TGT_ARCH/include/w32api/$i
 done
 exit 0

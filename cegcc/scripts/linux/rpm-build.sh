@@ -19,7 +19,7 @@ fi
 #
 if [ x$PREFIX != x ]; then
 	if [ -d $PREFIX -a $PREFIX = /usr/ppc ]; then
-		for i in $TARGET_ARCH bin info lib man include libexec share
+		for i in $TGT_ARCH bin info lib man include libexec share
 		do
 			if [ -d $PREFIX/$i ]; then
 				echo "rm -rf $PREFIX/$i"

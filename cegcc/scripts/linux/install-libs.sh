@@ -17,8 +17,8 @@ cd $BUILD_DIR/libs
 #
 for i in $LIST
 do
-	install -m 0755 lib$i.a $PREFIX/$TARGET_ARCH/lib
-	$TARGET_ARCH-ranlib $PREFIX/$TARGET_ARCH/lib/lib$i.a
+	install -m 0755 lib$i.a $PREFIX/$TGT_ARCH/lib
+	$TGT_ARCH-ranlib $PREFIX/$TGT_ARCH/lib/lib$i.a
 done
 # #
 # # Set up a libcegcc.a library.
@@ -27,12 +27,12 @@ done
 # cd /tmp/libs-$$
 # for i in $LIBS_CEGCC_LIB
 # do
-# 	$TARGET_ARCH-ar x $PREFIX/$TARGET_ARCH/lib/lib$i.a
+# 	$TGT_ARCH-ar x $PREFIX/$TGT_ARCH/lib/lib$i.a
 # done
-# $TARGET_ARCH-ar r $PREFIX/$TARGET_ARCH/lib/libcegcc.a *.o
+# $TGT_ARCH-ar r $PREFIX/$TGT_ARCH/lib/libcegcc.a *.o
 # cd $BUILD_DIR/libs
 # rm /tmp/libs-$$/*.o
-# $TARGET_ARCH-ranlib $PREFIX/$TARGET_ARCH/lib/libcegcc.a
+# $TGT_ARCH-ranlib $PREFIX/$TGT_ARCH/lib/libcegcc.a
 #
 # End
 #
