@@ -14,8 +14,11 @@ fi
 #
 # Non-standard build
 #
-cd $TOP_SRCDIR/src/cegcc/cegccthrd
-make PREFIX=$PREFIX install
+cd $TOP_SRCDIR/src/cegcc/cegccthrd || exit 1
+make PREFIX=$PREFIX install || exit 1
+#
+cd $TOP_SRCDIR/src/cegcc/libstdc++ || exit 1
+make PREFIX=$PREFIX install || exit 1
 #
 # End
 #
