@@ -19,22 +19,15 @@ mkdir gcc
 cd gcc
 #
 # This is currently a hack so we don't compile gcc/gcc/config/arm/gthr-win32.c .
+# Replaced by --disable-threads.
 #
-export CFLAGS="-DCEGCC_LINUX"
+# export CFLAGS="-DCEGCC_LINUX"
 #
-# $TOP_SRCDIR/src/gcc/configure \
-# 	--prefix=$PREFIX \
-# 	--enable-languages=c \
-# 	--disable-interwork \
-# 	--disable-nls \
-# 	--enable-checking \
-# 	--disable-multilib \
-# 	--with-headers=${TOP_SRCDIR}/src/newlib/newlib/libc/include \
-# 	--target=$TARGET_ARCH $MY_HOST_ARCH || exit 1
 $TOP_SRCDIR/src/gcc/configure \
 	--prefix=$PREFIX \
 	--enable-languages=c \
 	--disable-interwork \
+	--disable-threads \
 	--disable-nls \
 	--enable-checking \
 	--disable-multilib \
