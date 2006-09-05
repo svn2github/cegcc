@@ -124,26 +124,6 @@ cd ${BASE_DIRECTORY} || exit 1
 
 ##############################################################
 echo ""
-echo "Building cegcc.dll --------------------------"
-echo ""
-echo ""
-
-cd ${BASE_DIRECTORY}/cegcc/cegccdll || exit 1
-make || exit 1
-make install || exit 1
-
-##############################################################
-echo ""
-echo "Building cegccthrd.dll --------------------------"
-echo ""
-echo ""
-
-cd ${BASE_DIRECTORY}/cegcc/cegccthrd || exit 1
-make  || exit 1
-make install || exit 1
-
-##############################################################
-echo ""
 echo "Building full gcc. --------------------------"
 echo ""
 echo ""
@@ -168,6 +148,26 @@ ${BASE_DIRECTORY}/gcc/configure		 \
 
 cd ${BUILD_DIR}/gcc || exit 1
 make || exit 1
+make install || exit 1
+
+##############################################################
+echo ""
+echo "Building cegcc.dll --------------------------"
+echo ""
+echo ""
+
+cd ${BASE_DIRECTORY}/cegcc/cegccdll || exit 1
+make || exit 1
+make install || exit 1
+
+##############################################################
+echo ""
+echo "Building cegccthrd.dll --------------------------"
+echo ""
+echo ""
+
+cd ${BASE_DIRECTORY}/cegcc/cegccthrd || exit 1
+make  || exit 1
 make install || exit 1
 
 ##############################################################
