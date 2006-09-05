@@ -2,6 +2,11 @@
 
 PREFIX?=/usr/local
 
+BUILD_DIR?=.
+MY_DIR=${BUILD_DIR}/libstdc++
+TOP_SRCDIR?=../../..
+SRCDIR=${TOP_SRCDIR}/src/cegcc/libstdc++
+
 DLLNAME=libstdc++.dll
 IMPLIB=$(DLLNAME).a
 TARGET=arm-wince-pe
@@ -13,7 +18,7 @@ WINDRES=$(TARGET)-windres
 
 LIB_PATH=$(PREFIX)/$(TARGET)/lib
 
-LDFLAGS += -Wl,-Map,$(DLLNAME).map
+LDFLAGS += -Wl,-Map,${MY_DIR}/$(DLLNAME).map
 #LDFLAGS += -Wl,--verbose -Wl,--enable-extra-pe-debug
 
 RMFILES=
@@ -21,61 +26,65 @@ RMFILES=
 # this should be solved with defines passed to libstdc++. see libmath
 #RMFILES+=wf_hypot.o 
 
-all: clean mktmp version.rc.o extract delfiles $(DLLNAME) $(DLLNAME).def $(IMPLIB) stripped/$(DLLNAME)
+all::
+	mkdir -p ${MY_DIR}
+
+all:: clean mktmp ${MY_DIR}/version.rc.o extract delfiles ${MY_DIR}/$(DLLNAME) ${MY_DIR}/$(DLLNAME).def ${MY_DIR}/$(IMPLIB) ${MY_DIR}/stripped/$(DLLNAME)
 
 install:
-	cp -vf $(DLLNAME) $(LIB_PATH)
-	cp -vf $(IMPLIB) $(LIB_PATH)
-	cp -vf stripped/$(DLLNAME) $(LIB_PATH)/device
+	cp -vf ${MY_DIR}/$(DLLNAME) $(LIB_PATH)
+	cp -vf ${MY_DIR}/$(IMPLIB) $(LIB_PATH)
+	cp -vf ${MY_DIR}/stripped/$(DLLNAME) $(LIB_PATH)/device
 
 delfiles:
 	@list='$(RMFILES)'; \
 		for file in $$list; \
-			do rm -f _tmp/$$file \
+			do rm -f ${MY_DIR}/_tmp/$$file \
 		done; \
 	done
 
 extract:
-	$(AR) -x $(LIB_PATH)/libsupc++.a
-	$(AR) -x $(LIB_PATH)/libstdc++.a
-	mv *.o _tmp
+	cd ${MY_DIR}/_tmp; $(AR) -x $(LIB_PATH)/libsupc++.a
+	cd ${MY_DIR}/_tmp; $(AR) -x $(LIB_PATH)/libstdc++.a
+#	mv ${MY_DIR}/*.o ${MY_DIR}/_tmp
 
-stripped/$(DLLNAME):
-	@mkdir -p stripped
-	rm -f stripped/$(DLLNAME)
-	@cp -vf $(DLLNAME) $(DLLNAME)-stripped.dll
-	$(STRIP) $(DLLNAME)-stripped.dll
-	@mv -vf $(DLLNAME)-stripped.dll stripped/$(DLLNAME)
+${MY_DIR}/stripped/$(DLLNAME):
+	@mkdir -p ${MY_DIR}/stripped
+	rm -f ${MY_DIR}/stripped/$(DLLNAME)
+	@cp -vf ${MY_DIR}/$(DLLNAME) ${MY_DIR}/$(DLLNAME)-stripped.dll
+	$(STRIP) ${MY_DIR}/$(DLLNAME)-stripped.dll
+	@mv -vf ${MY_DIR}/$(DLLNAME)-stripped.dll ${MY_DIR}/stripped/$(DLLNAME)
 
-$(DLLNAME).a \
-$(DLLNAME).def \
-$(DLLNAME):
+${MY_DIR}/$(DLLNAME).a \
+${MY_DIR}/$(DLLNAME).def \
+${MY_DIR}/$(DLLNAME):
 	$(CC) $(LDFLAGS) -shared \
 		-Wl,--enable-auto-import \
 		-Wl,--enable-runtime-pseudo-reloc \
 		-Wl,--export-all-symbols \
-		-o $(DLLNAME) \
-		-Wl,--out-implib,$(DLLNAME).a \
-		-Wl,--output-def,$(DLLNAME).def \
-		-Wl,--whole-archive _tmp/*.o \
+		-o ${MY_DIR}/$(DLLNAME) \
+		-Wl,--out-implib,${MY_DIR}/$(DLLNAME).a \
+		-Wl,--output-def,${MY_DIR}/$(DLLNAME).def \
+		-Wl,--whole-archive ${MY_DIR}/_tmp/*.o \
 		-Wl,-no-whole-archive -lcegcc -lcoredll
 
 
-installdll: stripped/$(DLLNAME)
-	pput.exe -v -v -f stripped/$(DLLNAME) "\Windows\$(DLLNAME)"
+installdll: ${MY_DIR}/stripped/$(DLLNAME)
+	pput.exe -v -v -f ${MY_DIR}/stripped/$(DLLNAME) "\Windows\$(DLLNAME)"
 
 clean:
-	rm -rf _tmp
-	rm -rf stripped
-	rm -f version.aps
-	rm -f $(DLLNAME) $(IMPLIB) $(DLLNAME).def $(DLLNAME).map
+	rm -rf ${MY_DIR}/_tmp
+	rm -rf ${MY_DIR}/stripped
+	rm -f ${MY_DIR}/version.aps
+	rm -f ${MY_DIR}/$(DLLNAME) ${MY_DIR}/$(IMPLIB) ${MY_DIR}/$(DLLNAME).def ${MY_DIR}/$(DLLNAME).map
+	rm -rf ${MY_DIR}
 
 mktmp:
-	rm -rf _tmp
-	mkdir _tmp
+	rm -rf ${MY_DIR}/_tmp
+	mkdir -p ${MY_DIR}/_tmp
 
-version.rc.o: version.rc
+${MY_DIR}/version.rc.o: version.rc
 	$(WINDRES) version.rc -o $@
-	mv $@ _tmp
+	mv $@ ${MY_DIR}/_tmp
 
 .PHONY: all extract clean delfiles mktmp strip
