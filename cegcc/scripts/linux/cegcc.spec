@@ -27,7 +27,7 @@ CeGCC
 #	RPM_ARCH=i386
 #	
 %prep
-%setup -n cegcc-0.06
+%setup -n cegcc-0.07
 
 echo script
 
