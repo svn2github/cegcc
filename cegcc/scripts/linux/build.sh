@@ -59,6 +59,11 @@ sh $SCRIPTDIR/install-stub.sh || exit 1
 sh $SCRIPTDIR/build-gpp.sh || exit 1
 sh $SCRIPTDIR/install-gpp.sh || exit 1
 #
+# These depend on the better compiler
+#
+sh $SCRIPTDIR/build-libs2.sh || exit 1
+sh $SCRIPTDIR/install-libs2.sh || exit 1
+#
 # Use the MinGW runtime to support spooky compiler options.
 #
 # sh $SCRIPTDIR/build-mingw.sh || exit 1
