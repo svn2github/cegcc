@@ -5,9 +5,9 @@
 
 BUILD_DIR="build-mingw32ce"
 MINGW_VERSION=
-SOURCE_DIR=${BASE_DIRECTORY}/mingw${GCC_VERSION}
 
 export BASE_DIRECTORY=${PWD}
+export SOURCE_DIR=${BASE_DIRECTORY}/mingw${MINGW_VERSION}
 export BUILD=`sh ${SOURCE_DIR}/config.guess`
 export HOST="arm-wince-mingw32"
 export TARGET=${HOST}
@@ -30,13 +30,15 @@ echo ""
 echo BUILD=${BUILD}
 echo HOST=${HOST}
 echo TARGET=${TARGET}
+
 echo SOURCE_DIR=${SOURCE_DIR}
 echo BUILD_DIR=${BUILD_DIR}
 echo PREFIX=${PREFIX}
 
-mkdir -p ${BUILD_DIR} || exit 1
-${BASE_DIRECTORY}/mingw-fake_crt/install.sh ${PREFIX} || exit 1
+cd ${BASE_DIRECTORY}/mingw-fake_crt || exit 1
+./install.sh ${PREFIX} || exit 1
 
+mkdir -p ${BUILD_DIR} || exit 1
 cd ${BUILD_DIR} || exit 1
 
 ${SOURCE_DIR}/configure          \
