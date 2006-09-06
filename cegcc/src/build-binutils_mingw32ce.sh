@@ -1,20 +1,19 @@
 #!/bin/sh
 
-BUILD_DIR="build-binutils_cvs_mingwce"
-BIN_VERSION=cvs
+BUILD_DIR="build-binutils_mingw32ce"
+BIN_VERSION=
 BASE_DIRECTORY=${PWD}
 
-export TARGET="arm-wince-mingw32"
-export PREFIX="/usr/local/mingw32ce"
+mkdir -p ${BUILD_DIR} || exit
 
-export CFLAGS='-g3 -O0'
+export TARGET="arm-wince-mingw32"
+export PREFIX="/opt/mingw32ce"
 
 echo ""
 echo "BUILDING BINUTILS --------------------------"
 echo ""
-mkdir -p ${BUILD_DIR} || exit
 cd ${BUILD_DIR} || exit
-${BASE_DIRECTORY}/binutils-${BIN_VERSION}/configure \
+${BASE_DIRECTORY}/binutils${BIN_VERSION}/configure \
   --prefix=${PREFIX}      \
   --exec-prefix=${PREFIX} \
   --bindir=${PREFIX}/bin  \
