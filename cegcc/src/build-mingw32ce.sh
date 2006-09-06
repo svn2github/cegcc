@@ -38,6 +38,7 @@ echo PREFIX=${PREFIX}
 cd ${BASE_DIRECTORY}/mingw-fake_crt || exit 1
 ./install.sh ${PREFIX} || exit 1
 
+cd ${BASE_DIRECTORY} || exit 1
 mkdir -p ${BUILD_DIR} || exit 1
 cd ${BUILD_DIR} || exit 1
 
