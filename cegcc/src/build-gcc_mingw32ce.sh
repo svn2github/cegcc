@@ -28,6 +28,7 @@ echo ""
 
 echo "Copying headers... "
 
+mkdir -p ${PREFIX}/${TARGET}/include/
 cp -rfp ${BASE_DIRECTORY}/mingw/include/*.h ${PREFIX}/${TARGET}/include/
 cp -rfp ${BASE_DIRECTORY}/w32api/include/*.h ${PREFIX}/${TARGET}/include/
 
