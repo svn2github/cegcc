@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PREFIX=/usr/local/mingw32ce
+PREFIX?=/opt/mingw32ce
 TARGET=arm-wince-mingw32
 LIBDIR=${PREFIX}/${TARGET}/lib
 
