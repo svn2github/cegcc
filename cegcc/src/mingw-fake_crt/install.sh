@@ -1,6 +1,13 @@
 #!/bin/sh
 
-PREFIX?=/opt/mingw32ce
+if [ $# -lt 1 ] ; then
+        echo "usage:"
+        echo "$0 [prefix dir]"
+        exit 1
+fi
+
+
+PREFIX=$1
 TARGET=arm-wince-mingw32
 LIBDIR=${PREFIX}/${TARGET}/lib
 
