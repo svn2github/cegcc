@@ -65,8 +65,7 @@ Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
 
 #define __GTHREADS 1
 
-#include <errno.h>
-#if defined __MINGW32__ && !defined UNDER_CE
+#if defined __MINGW32__
 #include <_mingw.h>
 #endif
 
@@ -364,7 +363,7 @@ typedef struct {
 #define __GTHREAD_RECURSIVE_MUTEX_INIT_DEFAULT {-1, 0, 0, 0}
 
 #if __MINGW32_MAJOR_VERSION >= 1 || \
-  (__MINGW32_MAJOR_VERSION == 0 && __MINGW32_MINOR_VERSION > 2) || defined(UNDER_CE)
+  (__MINGW32_MAJOR_VERSION == 0 && __MINGW32_MINOR_VERSION > 2) || defined(__CEGCC__)
 #define MINGW32_SUPPORTS_MT_EH 1
 /* Mingw runtime >= v0.3 provides a magic variable that is set to nonzero
    if -mthreads option was specified, or 0 otherwise. This is to get around

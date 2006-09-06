@@ -83,7 +83,7 @@ int
 __gthr_win32_once (__gthread_once_t *once, void (*func) (void))
 {
   if (once == NULL || func == NULL)
-    return EINVAL;
+    return -1;
 
   if (! once->done)
     {
