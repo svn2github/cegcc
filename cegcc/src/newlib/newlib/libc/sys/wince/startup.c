@@ -361,17 +361,10 @@ int __init_c__()
   WCETRACE(WCE_IO, "WCETRACE initialized");
 #endif
 
+  /* Trigger _initenv_from_reg.  */
+  _initenv(0);
+
   WCETRACE(WCE_IO, "in __init_c__()");
-
-  process_args();
-
-  WCETRACE(WCE_IO, "__argc = %d", __argc);
-  int i;
-  for (i = 0 ; i < __argc ;i++)
-    WCETRACE(WCE_IO, "__argv[%d] = %s", i, __argv[i]);
-
-  _initenv(shmblk);
-  _shared_attach();
   return initted;
 }
 
@@ -507,6 +500,16 @@ _startup_(fnmain *_main)
 {
   int initres = __init_c__();
   WCETRACE(WCE_IO, "initres = %d", initres);
+
+  process_args();
+
+  WCETRACE(WCE_IO, "__argc = %d", __argc);
+  int i;
+  for (i = 0 ; i < __argc ;i++)
+    WCETRACE(WCE_IO, "__argv[%d] = %s", i, __argv[i]);
+
+  _initenv(shmblk);
+  _shared_attach();
 
   __main_thread = GetCurrentThread();
 

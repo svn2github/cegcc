@@ -28,7 +28,7 @@ int __DllMainCRTStartup(HANDLE hinstDLL, DWORD dwReason, LPVOID lpvReserved)
 #ifdef DEBUG_DLL_LOAGING
     MessageBoxW(0, cmdnameBufW, L"dll loaded", 0);
 #endif
-    //	__init_c__();
+    __init_c__();
 //    _shared_attach();
 //    __gccmain();
 #ifdef DEBUG_DLL_LOAGING
