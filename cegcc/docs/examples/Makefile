@@ -38,3 +38,8 @@ hello-small-s.exe:	hello-dialog.c
 hello-small.exe:	hello-dialog.c
 	arm-wince-mingw32-gcc -o $@ $?
 
+menu-resource.tar.gz:	Makefile menu-resource.c menu-resource.rc \
+			menu-resource.h menu-resource.exe
+	tar cfz menu-resource.tar.gz \
+		Makefile menu-resource.c menu-resource.rc \
+		menu-resource.h menu-resource.exe
