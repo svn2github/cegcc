@@ -15,10 +15,15 @@ cd $BUILD_DIR/libs
 #
 # Loop over the list
 #
-for i in $LIST
+for i in $INSTALL_PE_TGT
 do
 	install -m 0755 lib$i.a $PREFIX/$TGT_ARCH/lib
 	$TGT_ARCH-ranlib $PREFIX/$TGT_ARCH/lib/lib$i.a
+done
+for i in $INSTALL_MINGW_TGT
+do
+	install -m 0755 lib$i.a $PREFIX/$MINGW_TGT_ARCH/lib
+	$MINGW_TGT_ARCH-ranlib $PREFIX/$MINGW_TGT_ARCH/lib/lib$i.a
 done
 # #
 # # Set up a libcegcc.a library.

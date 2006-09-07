@@ -18,9 +18,9 @@ cd $TOP_SRCDIR/src/cegcc/cegccthrd || exit 1
 make clean || exit 1
 make all PREFIX=$PREFIX || exit 1
 #
-cd $TOP_SRCDIR/src/cegcc/libstdc++ || exit 1
-make clean || exit 1
-make all PREFIX=$PREFIX || exit 1
+# cd $TOP_SRCDIR/src/cegcc/libstdc++ || exit 1
+# make clean || exit 1
+# make all PREFIX=$PREFIX || exit 1
 #
 # End
 #

@@ -21,7 +21,7 @@ cd libs
 #
 # Loop over the list
 #
-for i in $LIST
+for i in $BUILD_LIBS_LIST
 do
 	sh $TOP_SRCDIR/src/cegcc/importlibs/mkimport.sh $TOP_SRCDIR/src/cegcc/importlibs/defs/$i.def . || exit 1
 done

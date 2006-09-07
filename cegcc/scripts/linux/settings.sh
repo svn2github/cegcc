@@ -23,6 +23,8 @@ export PREFIX
 #
 MY_HOST_ARCH=`$TOP_SRCDIR/src/gcc/config.guess`
 TGT_ARCH=arm-wince-pe
+PE_TGT_ARCH=arm-wince-pe
+MINGW_TGT_ARCH=arm-wince-mingw32
 export MY_HOST_ARCH TGT_ARCH
 #
 BUILD_DIR=$TOP_SRCDIR/build/$MY_HOST_ARCH/$TGT_ARCH
