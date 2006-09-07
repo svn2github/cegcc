@@ -20,11 +20,12 @@ cd $BUILD_DIR/newlib
 export CC=$PREFIX/bin/$TGT_ARCH-gcc
 export LD=$PREFIX/bin/$TGT_ARCH-ld
 export RANLIB=$PREFIX/bin/$TGT_ARCH-ranlib
+
 export CFLAGS="-march=armv4 -DGNUWINCE -DSARM -DWANT_PRINTF_LONG_LONG -DCOMPILING_NEWLIB -D_WIN32_WCE=420 -shared"
 #
-$TOP_SRCDIR/src/newlib/newlib/configure \
+$TOP_SRCDIR/src/newlib/configure \
 	--prefix=$PREFIX \
-	--target=$TGT_ARCH $TGT_ARCH || exit 1
+	--target=$TGT_ARCH || exit 1
 #
-make || exit 1
+make all-target-newlib || exit 1
 exit 0

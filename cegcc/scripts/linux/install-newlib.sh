@@ -10,5 +10,5 @@ fi
 #
 cd $BUILD_DIR/newlib
 #
-make install || exit 1
+make install-target-newlib || exit 1
 exit 0
