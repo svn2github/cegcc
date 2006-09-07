@@ -64,30 +64,36 @@ processor line.
 Wince is shorthand for the 
 <a href="http://www.microsoft.com/windowsce">Windows CE</a> operating system.
 <p>
+In an apparent attempt to complicate matters,
+we implement not only the <b>arm-wince-pe</b> target (see above),
+but also the <b>arm-wince-mingw32</b> target.
+<a href="http://www.mingw.org">MinGW</a> is a free software project implementing a
+<b>Minimalist GNU for Windows</b>.
+We're using this target to build applications that merely use the Windows CE API,
+not our CeGCC (newlib based) library.
+<p>
 <table border=1>
-	<tr><td>arm-wince-pe-addr2line</td><td></td></tr>
-	<tr><td>arm-wince-pe-ar</td><td>archive library management tool</td></tr>
-	<tr><td>arm-wince-pe-as</td><td>the GNU assembler</td></tr>
-	<tr><td>arm-wince-pe-c++</td><td>the C++ compiler</td></tr>
-	<tr><td>arm-wince-pe-c++filt</td><td></td></tr>
-	<tr><td>arm-wince-pe-cpp</td><td>the C preprocessor</td></tr>
-	<tr><td>arm-wince-pe-dlltool</td><td>a tool to create DLLs</td></tr>
-	<tr><td>arm-wince-pe-gcc</td><td>the C compiler</td></tr>
-	<tr><td>arm-wince-pe-gcc-4.1.0</td><td></td></tr>
-	<tr><td>arm-wince-pe-gccbug</td><td></td></tr>
-	<tr><td>arm-wince-pe-gcov</td><td></td></tr>
-	<tr><td>arm-wince-pe-g++</td><td>the C++ compiler</td></tr>
-	<tr><td>arm-wince-pe-ld</td><td>the GNU linker</td></tr>
-	<tr><td>arm-wince-pe-nm</td><td>the tool to inspect symbols in load modules</td></tr>
-	<tr><td>arm-wince-pe-objcopy</td><td></td></tr>
-	<tr><td>arm-wince-pe-objdump</td><td>a tool to print data about object files</td></tr>
-	<tr><td>arm-wince-pe-ranlib</td><td>tool to add or refresh the library directory</td></tr>
-	<tr><td>arm-wince-pe-readelf</td><td></td></tr>
-	<tr><td>arm-wince-pe-size</td><td></td></tr>
-	<tr><td>arm-wince-pe-strings</td><td></td></tr>
-	<tr><td>arm-wince-pe-strip</td><td></td></tr>
-	<tr><td>arm-wince-pe-windres</td><td></td></tr>
-	<tr><td>cesetup</td><td></td></tr>
+	<tr><td>arm-wince-pe-addr2line</td><td>arm-wince-mingw32-addr2line</td><td></td></tr>
+	<tr><td>arm-wince-pe-ar</td><td>arm-wince-mingw32-ar</td><td>archive library management tool</td></tr>
+	<tr><td>arm-wince-pe-as</td><td>arm-wince-mingw32-as</td><td>the GNU assembler</td></tr>
+	<tr><td>arm-wince-pe-c++</td><td></td><td>the C++ compiler</td></tr>
+	<tr><td>arm-wince-pe-c++filt</td><td></td><td></td></tr>
+	<tr><td>arm-wince-pe-cpp</td><td>arm-wince-mingw32-cpp</td><td>the C preprocessor</td></tr>
+	<tr><td>arm-wince-pe-dlltool</td><td>arm-wince-mingw32-dlltool</td><td>a tool to create DLLs</td></tr>
+	<tr><td>arm-wince-pe-gcc</td><td>arm-wince-mingw32-gcc</td><td>the C compiler</td></tr>
+	<tr><td>arm-wince-pe-gcov</td><td>arm-wince-mingw32-gcov</td><td></td></tr>
+	<tr><td>arm-wince-pe-gprof</td><td>arm-wince-mingw32-gprof</td><td></td></tr>
+	<tr><td>arm-wince-pe-g++</td><td></td><td>the C++ compiler</td></tr>
+	<tr><td>arm-wince-pe-ld</td><td>arm-wince-mingw32-ld</td><td>the GNU linker</td></tr>
+	<tr><td>arm-wince-pe-nm</td><td>arm-wince-mingw32-nm</td><td>the tool to inspect symbols in load modules</td></tr>
+	<tr><td>arm-wince-pe-objcopy</td><td>arm-wince-mingw32-objcopy</td><td></td></tr>
+	<tr><td>arm-wince-pe-objdump</td><td>arm-wince-mingw32-objdump</td><td>a tool to print data about object files</td></tr>
+	<tr><td>arm-wince-pe-ranlib</td><td>arm-wince-mingw32-ranlib</td><td>tool to add or refresh the library directory</td></tr>
+	<tr><td>arm-wince-pe-readelf</td><td>arm-wince-mingw32-readelf</td><td></td></tr>
+	<tr><td>arm-wince-pe-size</td><td>arm-wince-mingw32-size</td><td></td></tr>
+	<tr><td>arm-wince-pe-strings</td><td>arm-wince-mingw32-strings</td><td></td></tr>
+	<tr><td>arm-wince-pe-strip</td><td>arm-wince-mingw32-strip</td><td></td></tr>
+	<tr><td>arm-wince-pe-windres</td><td>arm-wince-mingw32-windres</td><td></td></tr>
 </table>
 <H1>How to build a Makefile that works</H1>
 <p>
@@ -183,6 +189,18 @@ arm-wince-pe-windres menu-resource.rc menu-resource.rsc
 arm-wince-pe-gcc -D_WIN32_IE=0x0400   -o menu-resource.exe menu-resource.o menu-resource.rsc -lcommctrl
 % 
 </pre>
+<H2>Using the arm-wince-mingw32 target</H2>
+<p>
+The only difference with all the above is the name of all the tools.
+You can still call e.g. the compiler in the same way, it just has a slightly different name.
+The Makefile that you can <a href="">download</a> (see above)
+is actually slightly larger than described here.
+Issuing a simple <i>make</i> command will also run compile commands such as :
+<pre>
+arm-wince-mingw32-gcc -o hello-small.exe hello-dialog.c
+</pre>
+which creates an executable which only calls Windows CE's coredll,
+not the CeGCC DLL (cegcc.dll).
 <H1>Things you want to know when porting sources</H1>
 <p>
 This needs to be expanded, please provide feedback with your experience so this chapter grows.
