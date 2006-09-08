@@ -57,8 +57,6 @@ sh $TOP_SRCDIR/src/mingw-fake_crt/install.sh || exit 1
 #
 sh $SCRIPTDIR/build-libs.sh || exit 1
 sh $SCRIPTDIR/install-libs.sh || exit 1
-sh $SCRIPTDIR/build-dll.sh || exit 1
-sh $SCRIPTDIR/install-dll.sh || exit 1
 #
 sh $SCRIPTDIR/build-gdb.sh || exit 1
 sh $SCRIPTDIR/install-gdb.sh || exit 1
@@ -69,6 +67,11 @@ sh $SCRIPTDIR/install-stub.sh || exit 1
 #
 sh $SCRIPTDIR/build-gpp.sh || exit 1
 sh $SCRIPTDIR/install-gpp.sh || exit 1
+#
+# This must happen with the complete compiler to have threads support.
+#
+sh $SCRIPTDIR/build-dll.sh || exit 1
+sh $SCRIPTDIR/install-dll.sh || exit 1
 #
 # These depend on the better compiler
 #
