@@ -22,11 +22,29 @@ DIRS=`find . -type d -print | grep -v /.svn`
 for d in $DIRS
 do
 	mkdir -p $PREFIX/$TGT_ARCH/include/w32api/$d
+	mkdir -p $PREFIX/$MINGW_TGT_ARCH/include/w32api/$d
 done
 FILES=`find . -type f -name \*.h -print | grep -v /.svn/ `
 # echo "Files : [" $FILES "]"
 for i in $FILES
 do
 	install -m 0644 $i $PREFIX/$TGT_ARCH/include/w32api/$i
+	install -m 0644 $i $PREFIX/$MINGW_TGT_ARCH/include/w32api/$i
+done
+#
+# Install the mingw include directory only in one of the targets
+#
+cd $TOP_SRCDIR/src/mingw/include
+DIRS=`find . -type d -print | grep -v /.svn`
+# echo "Include file directories : [$DIRS]"
+for d in $DIRS
+do
+	mkdir -p $PREFIX/$MINGW_TGT_ARCH/include/w32api/$d
+done
+FILES=`find . -type f -name \*.h -print | grep -v /.svn/ `
+# echo "Files : [" $FILES "]"
+for i in $FILES
+do
+	install -m 0644 $i $PREFIX/$MINGW_TGT_ARCH/include/w32api/$i
 done
 exit 0
