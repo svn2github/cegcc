@@ -1,0 +1,152 @@
+<HTML>
+<HEAD>
+<TITLE>Details - macros, libraries, ..</TITLE>
+<img src="../images/banner1.png" alt="CeGCC cross compiler for PocketPC">
+</HEAD>
+<BODY>
+<h2>Linker arguments to define</h2>
+<p>
+The linker allows for a number of parameters that influence the behaviour of
+Windows CE when the application runs,
+it looks like they describe versions of CE :
+<ul>
+	<li> -Wl,--major-subsystem-version,4
+	<li> -Wl,--minor-subsystem-version,20
+</ul>
+<p>
+The numbers above are just examples.
+<font color=red>we should have a table describing the meaning of these</font>
+<p>
+<table border=1>
+	<tr><td>Major</td><td>Minor</td><td width=500>Meaning</td></tr>
+	<tr><td>4</td><td>20</td><td>?</td></tr>
+	<tr><td>2</td><td>0</td><td>?</td></tr>
+</table>
+<H1>CeGCC specifics</H1>
+<H2>Predefined macros</H2>
+<p>
+By default, the arm-wince-pe-gcc C compiler is defining these macros :
+<table border=1>
+	<tr><td>__CEGCC__</td><td>Use this to identify our environment</td></tr>
+	<tr><td>__CEGCC32__</td><td>Identify our environment even more, we may have a 64-bit environment in the future.</td></tr>
+	<tr><td>unix</td><td>See below</td></tr>
+	<tr><td>__unix__</td><td>See below</td></tr>
+	<tr><td>__unix</td><td>See below</td></tr>
+
+	<tr><td>UNICODE</td><td></td></tr>
+	<tr><td>_UNICODE</td><td></td></tr>
+	<tr><td>_M_ARM=1</td><td></td></tr>
+	<tr><td>ARM=1</td><td></td></tr>
+	<tr><td>UNDER_CE</td><td></td></tr>
+</table>
+<p>
+Many of those are defined in <i>src/gcc/gcc/config/arm/wince-pe.h</i> .
+<p>
+The <i>unix</i> macros defined by the compiler are actually pretty strange.
+We're defining them in the same way as the Cygwin's C compiler does.
+The argument seems to be that we're providing a unix-like layer on top of Windows,
+and that therefore all applications that run against a UNIX API must be able to compile
+without change.
+To some of us, this seems wrong,
+but if this is the way that other projects are doing it,
+then we might as well be consistent in being wrong.
+<H2>Compiler command line options</H2>
+<P>
+<P>
+<table border=1>
+<tr><td>Option</td><td>Macros defined</td><td>Libs linked</td><td>When to use</td></tr>
+<tr><td>-mno-cegcc</td><td></td><td></td><td>Don't link standard libraries, also don't predefine unix macros.</td></tr>
+<tr><td>-mwin32</td><td></td><td>winsock, coredll, cegcc, gcc</td><td>Normal linking but macros indicate Windows environment, not Unix.</td></tr>
+<tr><td>-mthreads</td><td></td><td>crtmt.o</td><td>multi-thread support</td></tr>
+<tr><td></td><td></td><td></td><td></td></tr>
+</table>
+<H2>Macros that you may need to predefine</H2>
+<p>
+You may need to define these macros :
+<table border=1>
+	<tr><td>_WIN32_IE=0x0400</td><td>required for CE version dependencies in the target include files </td></tr>
+	<tr><td>_WINSOCKAPI_</td><td>We needed this in earlier distributions, this is probably no longer true.</td></tr>
+</table>
+<p>
+A target include file is an include file,
+in our case borrowed from the MinGW project's w32api module,
+which our compiler uses to know things about the target environment.
+<p>
+The <i>_WIN32_IE</i> macro is used in several of the target include files
+to selectively enable some definitions based on the version of Windows CE
+that we're building for.
+My own device runs a version of CE that identifies itself as <i>4.20.0</i>,
+this matches with a value of 0x0420.
+Here's an example of how the w32api include files require this symbol to be correctly set
+for some macros to be defined :
+<pre>
+#if (_WIN32_IE >= 0x0400)
+#define TB_ISBUTTONHIGHLIGHTED  (WM_USER+14)
+#endif
+</pre>
+<p>
+The _WINSOCKAPI_ symbol was required in early distributions of CeGCC.
+It deals with making a choice between two sets of include files,
+both of which define some socket API symbols.
+<H2>Libraries</H2>
+<p>
+The CeGCC compilers automatically link in a library called <i>libcegcc.a</i>
+which contains the merged versions of some of the other libraries.
+This is the default behaviour.
+<p>
+<font color=red>The text below is work in progress</font>
+There's a C compiler option called <i>-no-cegcc</i> which
+<ul>
+	<li>disables linking the standard set of libraries.
+	<li>disables defining the macros <i>unix</i>, <i>__unix__</i>, <i>__unix</i>.
+	<li>defines the macros <i>WIN32</i>, <i>__WIN32__</i>, <i>_WIN32</i>.
+</ul>
+<p>
+The C compiler option <i>-mwin32</i>
+<ul>
+	<li>defines the macros <i>WIN32</i>, <i>__WIN32__</i>, <i>_WIN32</i>.
+	<li>disables defining the macros <i>unix</i>, <i>__unix__</i>, <i>__unix</i>.
+</ul>
+<p>
+We probably should define some more by default (to be discussed) :
+<ul>
+	<li>UNDER_CE=420</li>
+	<li>__CE_VERSION__=420</li>
+	<li>_WIN32_WCE=420</li>
+	<li>_WIN32_IE=420</li>
+</ul>
+<font color=red>End work in progress</font>
+<H2>Linux specific</H2>
+<p>
+<H2>Cygwin specific<H2>
+<p>
+<H1>For the detail-hungry : what does it do and define</H1>
+This output of a compiler run with the "-v" option shows exactly what it does, and which preprocessor symbols get defined.
+<P>
+<PRE>
+% arm-wince-pe-gcc -g -o fibo.exe fibo.c -v
+Using built-in specs.
+Target: arm-wince-pe
+Configured with: /home/danny/src/cegcc/svn.berlios.de/cegcc/branches/linux-build/src/gcc/configure --prefix=/usr/ppc --enable-languages=c --disable-interwork --disable-nls --enable-checking --disable-multilib --without-headers --target=arm-wince-pe i686-pc-linux-gnu
+Thread model: single
+gcc version 4.1.0
+ /usr/ppc/libexec/gcc/arm-wince-pe/4.1.0/cc1 -quiet -v -D__CEGCC32__ -D__CEGCC__ -Dunix -D__unix__ -D__unix -idirafter /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/../include/w32api -idirafter ../../include/w32api fibo.c -quiet -dumpbase fibo.c -auxbase fibo -g -version -o /home/danny/tmp/ccJiorQQ.s
+ignoring nonexistent directory "/usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/sys-include"
+ignoring nonexistent directory "../../include/w32api"
+#include "..." search starts here:
+#include <...> search starts here:
+ /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/include
+ /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/include
+ /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/../include/w32api
+End of search list.
+GNU C version 4.1.0 (arm-wince-pe)
+        compiled by GNU C version 4.0.1 (4.0.1-5mdk for Mandriva Linux release 2006.0).
+GGC heuristics: --param ggc-min-expand=30 --param ggc-min-heapsize=4096
+Compiler executable checksum: c79cd29fe777b4560060b27dfea36e84
+fibo.c:16: warning: '__stdcall__' attribute directive ignored
+ /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/bin/as -mfpu=vfp -o /home/danny/tmp/ccv2vDh2.o /home/danny/tmp/ccJiorQQ.s
+ /usr/ppc/libexec/gcc/arm-wince-pe/4.1.0/collect2 -Bdynamic -o fibo.exe /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/crt0.o /usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib/crtst.o -L/usr/ppc/lib/gcc/arm-wince-pe/4.1.0 -L/usr/ppc/lib/gcc/arm-wince-pe/4.1.0/../../../../arm-wince-pe/lib /home/danny/tmp/ccv2vDh2.o -lcegcc -lgcc -lcoredll -lcegcc -lgcc
+% 
+</PRE>
+</BODY>
+</HTML>
