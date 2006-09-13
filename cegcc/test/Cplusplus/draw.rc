@@ -1,0 +1,10 @@
+#include "draw.h"
+
+ACTION_MAIN_MENU MENU DISCARDABLE 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&Do it !",	ACTION_MENU_DRAW
+        MENUITEM "E&xit",	ACTION_MENU_EXIT
+    END
+END

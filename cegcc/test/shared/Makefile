@@ -1,5 +1,5 @@
 T=		arm-wince-pe
-CC=		${T}-gcc
+CC=		${T}-gcc -g
 DLLTOOL=	${T}-dlltool
 
 SRC=	demodll.c demodll.def Makefile testdll.c usedemo.c
