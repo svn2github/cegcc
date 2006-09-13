@@ -1,0 +1,66 @@
+<html>
+<head>
+<title>Choosing in which environment to develop</title>
+<img src="../images/banner1.png" alt="CeGCC cross compiler for PocketPC">
+</head>
+<body>
+<h1>Choosing in which environment to develop</h1>
+<p>
+<h2>A Unix-like application</h2>
+<p>
+<h2>Use only the Windows CE API</h2>
+<p>
+<h2>Choosing in which environment to develop</h2>
+<p>
+<h2>Microsoft environment equivalents</h2>
+<p>
+The Microsoft compilers offer several so-called subsystems,
+and some choices are made by the compiler based on the application sources offered to it.
+The CeGCC compiler doesn't offer all of that behaviour,
+as we outline below.
+<p>
+<table>
+	<tr>
+		<td>Microsoft subsystem</td>
+		<td>short decsription</td>
+		<td>CeGCC equivalent ?</td>
+	</tr>
+	<tr>
+		<td>CONSOLE</td>
+		<td>character-mode applications</td>
+		<td>not offered (currently, the Voxware tools had something in this area).
+			It is possible to create applications without a console
+			but also without windows (applications that just manipulate files)
+			though.</td>
+	</tr>
+	<tr>
+		<td>WINDOWS, WINDOWSCE</td>
+		<td>applications that create their own windows</td>
+		<td>this is the standard behaviour for the arm-wince-mingw32 tools</td>
+	</tr>
+	<tr>
+		<td>NATIVE</td>
+		<td>this applies to device drivers</td>
+		<td>not offered</td>
+	</tr>
+	<tr>
+		<td>POSIX</td>
+		<td>unix-like applications</td>
+		<td>this is the standard behaviour for the arm-wince-pe tools</td>
+	</tr>
+</table>
+<p>
+<font color="red">Important</font> : the above is interpretation.
+You may be inclined to believe that it is more recommended to use the arm-wince-mingw32 tools,
+or the other way around.
+We offer both sets of tools, neither is believed to be superior to the other.
+They both have their uses.
+<p>
+The Microsoft tools have some default behaviour,
+such as <i>if main is defined then CONSOLE is the default</i>.
+CeGCC doesn't mimic that behaviour.
+<p>
+The <b>/ENTRY</b> option to the Microsoft compiler is equivalent to CeGCC's <b>-e</b> option.
+</p>
+</body>
+</html>
