@@ -1,8 +1,12 @@
 #!/bin/bash
 
-DLLTOOL=arm-wince-pe-dlltool
-OBJCOPY=arm-wince-pe-objcopy
-RANLIB=arm-wince-pe-ranlib
+if [ x${TARGET} = x ] ; then
+TARGET=arm-wince-pe
+fi
+
+DLLTOOL=${TARGET}-dlltool
+OBJCOPY=${TARGET}-objcopy
+RANLIB=${TARGET}-ranlib
 
 if [ $# -lt 2 ] ; then
 	echo "usage:"
