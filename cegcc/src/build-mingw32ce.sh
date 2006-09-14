@@ -113,11 +113,11 @@ function build_mingw_runtime()
 
     mkdir -p ${BUILD_DIR}/mingw || exit 1
     cd ${BUILD_DIR}/mingw || exit 1
-    ${SOURCE_DIR}/configure          \
-	--build=${BUILD}             \
-	--host=${TARGET}             \
-	--target=${TARGET}           \
-	--prefix=${PREFIX}           \
+    ${BASE_DIRECTORY}/mingw/configure \
+	--build=${BUILD}              \
+	--host=${TARGET}              \
+	--target=${TARGET}            \
+	--prefix=${PREFIX}            \
 	|| exit 1
 
     make || exit 1
@@ -132,7 +132,7 @@ function build_gcc()
     mkdir -p ${BUILD_DIR}/gcc || exit 1
     cd ${BUILD_DIR}/gcc || exit
 
-    ${SOURCE_DIR}/configure	       \
+    ${BASE_DIRECTORY}/gcc/configure	\
 	--with-gcc                     \
 	--with-gnu-ld                  \
 	--with-gnu-as                  \
