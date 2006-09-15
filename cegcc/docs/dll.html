@@ -1,0 +1,40 @@
+<HTML>
+<HEAD>
+<TITLE>Beware! need to install CeGCC DLL's first</TITLE>
+<img src="../images/banner1.png" alt="CeGCC cross compiler for PocketPC">
+</HEAD>
+<BODY>
+<P>
+CeGCC ships with three DLL files.
+You can find them at
+<PRE>
+/usr/ppc/arm-wince-pe/lib/device/cegcc.dll
+/usr/ppc/arm-wince-pe/lib/device/cegccthrd.dll
+/usr/ppc/arm-wince-pe/lib/device/libstdc++.dll
+</PRE>
+<P>
+The good thing about those DLLs is they allow you to create
+smaller and more efficient applications.
+<b>DLLs are a good thing</b>, let's be clear about that !
+They do have a downside, however.
+<P>
+If you try to run an application that requires a DLL
+and that DLL isn't available, then Windows CE will simply tell you
+that this application or a part of it was not found.
+No reference to which DLL you're missing.
+<P>
+The DLLs which we ship in <i>/usr/ppc/arm-wince-pe/lib/device</i>
+are stripped version, meant to be installed on your PDA.
+In the directory above, files of the same name (but bigger) exist.
+They are unstripped versions (they still contain named symbol definitions),
+which you don't need on your PDA.
+<P>
+Depending on the tools available to you,
+you will want to run commands such as
+<PRE>
+pcp /usr/ppc/arm-wince-pe/lib/device/cegcc.dll /windows/cegcc.dll
+pcp /usr/ppc/arm-wince-pe/lib/device/cegccthrd.dll /windows/cegccthrd.dll
+pcp /usr/ppc/arm-wince-pe/lib/device/libstdc++.dll /windows/libstdc++.dll
+</PRE>
+</BODY>
+</HTML>
