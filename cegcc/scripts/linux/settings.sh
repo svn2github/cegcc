@@ -21,6 +21,12 @@ else
 fi
 export PREFIX
 #
+if [ "x$SCRIPT_DEBUG" != x ]; then
+	echo "###"
+	echo "### setting PREFIX to $PREFIX"
+	echo "###"
+fi
+#
 MY_HOST_ARCH=`$TOP_SRCDIR/src/gcc/config.guess`
 TGT_ARCH=arm-wince-pe
 PE_TGT_ARCH=arm-wince-pe
@@ -37,7 +43,7 @@ export PATH=${PREFIX}/bin:${PATH}
 #
 # The name of this release
 #
-CEGCC_RELEASE=0.07
+CEGCC_RELEASE=0.08
 export CEGCC_RELEASE
 #
 # The debugging stub
