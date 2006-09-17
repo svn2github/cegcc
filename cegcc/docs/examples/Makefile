@@ -14,7 +14,7 @@ CFLAGS=		-g
 .c.exe:
 	${ARCH}-gcc ${CFLAGS} -o $@ $?
 
-all::	fibo.exe hello-dialog.exe menu-resource.exe \
+all::	f.exe fibo.exe hello-dialog.exe menu-resource.exe \
 	hello-small.exe hello-small-g.exe hello-small-s.exe
 
 menu-resource.exe:	menu-resource.o menu-resource.rsc
@@ -43,3 +43,6 @@ menu-resource.tar.gz:	Makefile menu-resource.c menu-resource.rc \
 	tar cfz menu-resource.tar.gz \
 		Makefile menu-resource.c menu-resource.rc \
 		menu-resource.h menu-resource.exe
+
+f.exe:	fibo.c
+	${ARCH}-gcc -o $@ $?
