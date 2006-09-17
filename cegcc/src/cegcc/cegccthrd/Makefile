@@ -33,6 +33,7 @@ all::
 all::	 ${MY_DIR}/stripped/${OUTFILE}.dll
 
 install: all
+	mkdir -p $(PREFIX)/$(TARGET)/lib $(PREFIX)/$(TARGET)/lib/device
 	cp -vf ${MY_DIR}/${OUTFILE}.dll $(PREFIX)/$(TARGET)/lib
 	cp -vf ${MY_DIR}/lib${OUTFILE}.dll.a $(PREFIX)/$(TARGET)/lib
 	cp -vf ${MY_DIR}/stripped/${OUTFILE}.dll $(PREFIX)/$(TARGET)/lib/device

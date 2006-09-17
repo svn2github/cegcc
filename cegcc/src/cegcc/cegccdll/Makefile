@@ -42,8 +42,8 @@ all: clean mktmp mktmp_static version.rc.o extract delfiles ${MY_DIR}/$(DLLNAME)
 
 install:
 	@echo "installing files for gcc $(GCCVERSION)"
+	mkdir -p $(LIB_PATH) $(LIB_PATH)/device
 	cp -vf ${MY_DIR}/$(DLLNAME) $(LIB_PATH)
-	mkdir -p $(LIB_PATH)/device
 	cp -vf ${MY_DIR}/stripped/$(DLLNAME) $(LIB_PATH)/device/
 	cp -vf ${MY_DIR}/$(IMPLIB) $(LIB_PATH)
 # force the usage of all symbols from the dll
@@ -118,6 +118,7 @@ clean:
 	rm -rf ${MY_DIR}/_tmp_static
 	rm -rf ${MY_DIR}/stripped
 	rm -f ${MY_DIR}/$(DLLNAME) ${MY_DIR}/$(IMPLIB).tmp ${MY_DIR}/$(IMPLIB) ${MY_DIR}/$(DLLNAME).def ${MY_DIR}/$(DLLNAME).map
+	rm -rf ${MY_DIR}
 
 mktmp:
 	rm -rf ${MY_DIR}/_tmp

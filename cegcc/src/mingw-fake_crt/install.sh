@@ -29,6 +29,8 @@ AR=${TARGET}-ar
 FAKE_LIBS="libcoldname.a libmingwex.a libmoldname.a libmingw32.a libmingwthrd.a libmoldnamed.a"
 
 ${AS} crt2.s -o ${MY_DIR}/crt2.o
+
+mkdir -p ${LIBDIR}
 cp -fv ${MY_DIR}/crt2.o ${LIBDIR}/crt2.o
 
 for lib in $FAKE_LIBS; do
