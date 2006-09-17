@@ -13,6 +13,10 @@ cd $BUILD_DIR/libs
 #
 . $SCRIPTDIR/list-libs.sh
 #
+# Create directory
+#
+mkdir -p $PREFIX/$TGT_ARCH/lib $PREFIX/$MINGW_TGT_ARCH/lib
+#
 # Loop over the list
 #
 for i in $INSTALL_PE_TGT
