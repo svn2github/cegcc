@@ -14,8 +14,8 @@ fi
 #
 # Non-standard build
 #
-cd $TOP_SRCDIR/src/cegcc/cegccdll
-make PREFIX=$PREFIX install
+cd $TOP_SRCDIR/src/cegcc/cegccdll || exit 1
+make PREFIX=$PREFIX install || exit 1
 #
 # End
 #

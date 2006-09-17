@@ -14,9 +14,9 @@ fi
 #
 # Non-standard build
 #
-cd $TOP_SRCDIR/src/cegcc/cegccdll
+cd $TOP_SRCDIR/src/cegcc/cegccdll || exit 1
 make clean
-make PREFIX=$PREFIX
+make PREFIX=$PREFIX || exit 1
 #
 # End
 #
