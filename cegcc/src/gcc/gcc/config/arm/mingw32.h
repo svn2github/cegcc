@@ -44,7 +44,8 @@ Boston, MA 02110-1301, USA.  */
 #define STANDARD_INCLUDE_COMPONENT "MINGW"
 
 #undef CPP_SPEC
-#define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{mthreads:-D_MT}"
+#define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{mthreads:-D_MT} \
+%{!nostdinc: -idirafter ../include/w32api%s -idirafter ../../include/w32api%s }"
 
 #undef LIB_SPEC
 #define LIB_SPEC "%{pg:-lgmon} -lcoredll"
