@@ -30,7 +30,7 @@ extern "C" {
 #ifndef _WIN32_WCE
 #define _WIN32_WCE 0x0300
 /*
- * If you need WinCE API features newer the WinCE 3.0 then you must
+ * If you need WinCE API features newer than WinCE 3.0 then you must
  * define _WIN32_WCE to the value required before including windows.h 
  * or any other method of including the windef.h header.
  */
