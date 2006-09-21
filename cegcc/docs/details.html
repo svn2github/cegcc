@@ -41,15 +41,23 @@ By default, the arm-wince-pe-gcc C compiler is defining these macros :
 </table>
 <p>
 Many of those are defined in <i>src/gcc/gcc/config/arm/wince-pe.h</i> .
+For the arm-wince-mingw32-gcc compiler, the source to watch is
+<i>src/gcc/gcc/config/arm/mingw32.h</i> .
+The list of predefined macros for that compiler is :
+<table border=1>
+	<tr><td>__MINGW32__</td><td></td></tr>
+	<tr><td>__MINGW32CE__</td><td></td></tr>
+	<tr><td>_WIN32</td><td></td></tr>
+	<tr><td>WIN32</td><td></td></tr>
+	<tr><td>WINNT</td><td></td></tr>
+	<tr><td>__COREDLL__</td><td></td></tr>
+</table>
 <p>
-The <i>unix</i> macros defined by the compiler are actually pretty strange.
-We're defining them in the same way as the Cygwin's C compiler does.
-The argument seems to be that we're providing a unix-like layer on top of Windows,
-and that therefore all applications that run against a UNIX API must be able to compile
+The <i>unix</i> macros defined by the compiler may appear strange.
+The arm-wince-pe-gcc compiler defines them to state
+that we're providing a unix-like layer on top of Windows,
+and that applications that run against a UNIX API might compile
 without change.
-To some of us, this seems wrong,
-but if this is the way that other projects are doing it,
-then we might as well be consistent in being wrong.
 <H2>Compiler command line options</H2>
 <P>
 <P>
