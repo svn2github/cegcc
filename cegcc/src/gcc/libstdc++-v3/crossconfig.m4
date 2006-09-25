@@ -235,10 +235,11 @@ case "${host}" in
     fi
     ;;
   *-mingw32*)
-    AC_CHECK_HEADERS([sys/types.h locale.h float.h])
+    AC_CHECK_HEADERS([sys/types.h errno.h unistd.h signal.h locale.h float.h])
     GLIBCXX_CHECK_LINKER_FEATURES
     GLIBCXX_CHECK_COMPLEX_MATH_SUPPORT
     GLIBCXX_CHECK_ICONV_SUPPORT
+    GLIBCXX_CHECK_STDLIB_SUPPORT
     ;;
   *arm-wince-pe)
     AC_CHECK_HEADERS([sys/types.h locale.h float.h])
@@ -343,6 +344,7 @@ case "${host}" in
          # GLIBCXX_CHECK_ICONV_SUPPORT in acinclude.m4
          AC_DEFINE(_GLIBCXX_USE_WCHAR_T) 
          # Are these tested for even when cross?
+         AC_DEFINE(HAVE_ERRNO_H)
          AC_DEFINE(HAVE_FLOAT_H)
          AC_DEFINE(HAVE_IEEEFP_H)
          AC_DEFINE(HAVE_INTTYPES_H)
