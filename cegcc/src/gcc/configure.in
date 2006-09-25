@@ -605,8 +605,9 @@ case "${target}" in
     # if the --with-newlib option has been given, because otherwise
     # 'target-newlib' will appear in skipdirs.
     ;;
-  *-wince-mingw32*)
+  *-mingw32ce*)
     target_configdirs="$target_configdirs target-mingw"
+    noconfigdirs="$noconfigdirs target-libssp"
     noconfigdirs="$noconfigdirs expect target-libgloss ${libgcj}"
     noconfigdirs="$noconfigdirs dejagnu"
     noconfigdirs="$noconfigdirs target-examples"
