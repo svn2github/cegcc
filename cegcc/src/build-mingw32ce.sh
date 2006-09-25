@@ -1,17 +1,29 @@
 #!/bin/sh
 
-if [ $# -lt 4 ] ; then
-        echo "usage:"
-        echo "$0 [source dir] [build directory] [prefix dir] [build_opt]"
-        exit 1
+if [ $# -lt 2 ] ; then
+
+echo "Using defaults:"
+export BASE_DIRECTORY=`readlink -f .`
+export BUILD_DIR=build-mingw32ce
+export PREFIX=/opt/mingw32ce
+
+if [ $# -lt 1 ] ; then
+BUILD_OPT="all"
+else
+BUILD_OPT="$1"
+shift
 fi
+
+else
 
 export BASE_DIRECTORY=`readlink -f $1`
 export BUILD_DIR=`readlink -f $2`
 export PREFIX=`readlink -f $3`
-shift 3
+BUILD_OPT="$1"
+shift 4
+fi
 
-export TARGET="arm-wince-mingw32"
+export TARGET="arm-wince-mingw32ce"
 export BUILD=`sh ${BASE_DIRECTORY}/gcc/config.guess`
 
 echo "Building mingw32:"
@@ -23,6 +35,20 @@ export PATH=${PREFIX}/bin:${PATH}
 
 mkdir -p ${BUILD_DIR} || exit 1
 mkdir -p ${PREFIX} || exit 1
+
+function build_all
+{
+    build_binutils
+    build_import_libs
+    build_mingw_fake_runtime
+    copy_headers
+    build_bootstrap_gcc
+    build_mingw_runtime
+    build_gcc
+#    build_gdb
+#    build_gdbstub
+}
+
 
 function build_binutils()
 {
@@ -147,7 +173,10 @@ function build_gcc()
 	--without-newlib               \
 	--enable-checking              \
 	|| exit
-    
+
+# we build libstdc++ as dll, so we don't need this.    
+#  --enable-fully-dynamic-string  \
+
 #  --disable-clocale              \
 
     make || exit 1
@@ -225,7 +254,11 @@ function build_all
 #    build_gdbstub
 }
 
-case "$1" in
+case $BUILD_OPT in
+ --help)
+        echo "usage:"
+        echo "$0 [source dir] [build directory] [prefix dir] [build_opt]"
+		;;
  binutils) build_binutils ;;
  importlibs) build_import_libs ;;
  headers) copy_headers ;;
