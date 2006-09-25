@@ -222,6 +222,9 @@ case "${host_os}" in
     atomicity_dir=os/irix
     atomic_word_dir=os/irix
     ;;
+  mingw32ce*)
+    os_include_dir="os/mingw32ce"
+    ;;
   mingw32*)
     os_include_dir="os/mingw32"
     ;;
