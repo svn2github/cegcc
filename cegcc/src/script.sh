@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # Based on script from:
 # http://cygwin.com/ml/cygwin-apps/2006-05/msg00044.html
@@ -7,8 +7,10 @@ TARGET=arm-wince-mingw32ce
 PREFIX=/opt/mingw32ce
 GCC_VERSION=4.1.0
 
+export PATH=${PREFIX}/bin:${PATH}
+
 srcdir=`readlink -f ./gcc`
-builddir=`readlink -f build-mingw32ce/gcc`
+builddir=`readlink -f build-mingw32ce`
 
 pushd ${PREFIX}/${TARGET}/lib
 
@@ -31,7 +33,7 @@ LIBSTDCPP_DLLVER=$(($LIBVER_c - $LIBVER_a))
 
 pushd ${PREFIX}/lib/gcc/${TARGET}/${GCC_VERSION}
 ${TARGET}-dlltool --output-def libgcc.def --export-all libgcc.a
-${builddir}/gcc/xgcc -shared -olibgcc.dll \
+${builddir}/gcc/gcc/xgcc -shared -olibgcc.dll \
   -Wl,--out-implib,libgcc.dll.a \
   ./libgcc.def \
   ./libgcc.a
@@ -39,7 +41,7 @@ ${builddir}/gcc/xgcc -shared -olibgcc.dll \
 popd
 
 ${TARGET}-dlltool --output-def libsupc++.def --export-all libsupc++.a
-${builddir}/gcc/xgcc -shared -olibsupc++-${LIBSTDCPP_DLLVER}.dll \
+${builddir}/gcc/gcc/xgcc -shared -olibsupc++-${LIBSTDCPP_DLLVER}.dll \
   -Wl,--out-implib,libsupc++-${LIBSTDCPP_DLLVER}.dll.a \
   ./libsupc++.def \
   ./libsupc++.a
@@ -47,13 +49,28 @@ rm -f libsupc++.dll.a
 ln -s libsupc++-${LIBSTDCPP_DLLVER}.dll.a libsupc++.dll.a
 
 ${TARGET}-dlltool --output-def libstdc++.def --export-all libstdc++.a
-${builddir}/gcc/xgcc -shared -olibstdc++-${LIBSTDCPP_DLLVER}.dll \
+${builddir}/gcc/gcc/xgcc -shared -olibstdc++-${LIBSTDCPP_DLLVER}.dll \
   -Wl,--out-implib,libstdc++-${LIBSTDCPP_DLLVER}.dll.a \
   ./libstdc++.def \
   ./libstdc++.a
 
 rm -f libstdc++.dll.a
 ln -s libstdc++-${LIBSTDCPP_DLLVER}.dll.a libstdc++.dll.a
+
+mkdir -p ${builddir}/device
+pushd ${builddir}/device
+rm -f libsupc++-${LIBSTDCPP_DLLVER}.dll
+rm -f libstdc++-${LIBSTDCPP_DLLVER}.dll
+rm -f libgcc.dll
+
+cp -f ${PREFIX}/lib/gcc/${TARGET}/${GCC_VERSION}/libgcc.dll .
+cp -f ${PREFIX}/${TARGET}/lib/libsupc++-${LIBSTDCPP_DLLVER}.dll .
+cp -f ${PREFIX}/${TARGET}/lib/libstdc++-${LIBSTDCPP_DLLVER}.dll .
+
+${TARGET}-strip libgcc.dll
+${TARGET}-strip libsupc++-${LIBSTDCPP_DLLVER}.dll
+${TARGET}-strip libstdc++-${LIBSTDCPP_DLLVER}.dll
+popd
 
 ## MUNGE the .la files
 mv libstdc++.la libstdc++.la.SAVE
