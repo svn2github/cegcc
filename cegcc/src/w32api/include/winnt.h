@@ -3903,6 +3903,7 @@ typedef unsigned int size_t;
 #ifndef offsetof
 #define offsetof(type, ident) ((size_t)&(((type*)0)->ident))
 #endif
+#endif
 
 #endif /* RC_INVOKED */
 
