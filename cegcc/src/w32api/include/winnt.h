@@ -3898,6 +3898,12 @@ static __inline__ struct _TEB * NtCurrentTeb(void)
 #endif /* __GNUC__ */
 #endif /* _X86_ */
 
+#ifdef _WIN32_WCE
+typedef unsigned int size_t;
+#ifndef offsetof
+#define offsetof(type, ident) ((size_t)&(((type*)0)->ident))
+#endif
+
 #endif /* RC_INVOKED */
 
 #ifdef __cplusplus
