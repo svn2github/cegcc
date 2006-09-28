@@ -39,8 +39,9 @@
 #include <fcntl.h>
 #include <stdlib.h>
 
-#define	WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+
 #include <basetyps.h>	/* required for <rapi.h> on linux + w32api.  */
 #include <rapi.h>
 #include <netdb.h>
@@ -68,7 +69,6 @@
 #include "gdb_assert.h"
 
 #ifndef __CYGWIN__
-static int MyWcslen (const wchar_t *);
 static int MyMbstowcs(wchar_t *dest, const char *src, int n);
 #endif
 
@@ -1970,19 +1970,6 @@ int MyWcstombs(char *dest, const wchar_t *src, int n)
 		dest[i+1] = '\0';
 	}
 	return i;
-}
-
-/*
- * This function is slightly different from "wcslen" - it returns the number of bytes,
- * not characters, so no more need to multiply by the size of a character.
- */
-static int MyWcslen(const wchar_t *s)
-{
-	int	i;
-	char	*p;
-
-	for (p=(char *)s, i=0; p[i] != '\0' || p[i+1] != '\0'; i += 2) ;
-	return i + 2;
 }
 
 #endif	/* __CYGWIN__ */
