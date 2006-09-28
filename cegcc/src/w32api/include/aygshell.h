@@ -1,11 +1,11 @@
-#ifndef	_AYGSHELL_H_INCLUDE_
-#define	_AYGSHELL_H_INCLUDE_
+#ifndef	_AYGSHELL_H
+#define	_AYGSHELL_H
 
 #if __GNUC__ >= 3
 #pragma GCC system_header
 #endif
 
-#if	_WIN32_WCE >= 400
+#if _WIN32_WCE >= 400
 
 #include <windows.h>
 #include <basetyps.h>	/* Make sure we have a CLSID definition */
@@ -157,4 +157,4 @@ extern BOOL SHFullScreen(HWND, DWORD);
 
 #endif	/* _WIN32_WCE >= 400 */
 
-#endif	/* _AYGSHELL_H_INCLUDE_ */
+#endif	/* _AYGSHELL_H */
