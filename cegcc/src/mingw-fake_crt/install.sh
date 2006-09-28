@@ -13,14 +13,14 @@ if [ "x$PREFIX" = "x" ]; then
 	PREFIX=$1
 fi
 
-if [ "x$BUILD_DIR" != "x" ]; then
+if [ "x$BUILD_DIR" != "x" ] && [ "x$TOP_SRCDIR" != "x" ]; then
 	MY_DIR=$BUILD_DIR/mingw-libs
 	mkdir -p ${MY_DIR}
 	cd $TOP_SRCDIR/src/mingw-fake_crt
 else
 	MY_DIR=.
 fi
-TARGET=arm-wince-mingw32
+TARGET=arm-wince-mingw32ce
 LIBDIR=${PREFIX}/${TARGET}/lib
 
 AS=${TARGET}-as
