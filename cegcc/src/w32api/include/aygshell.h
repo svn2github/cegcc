@@ -36,14 +36,14 @@ extern "C" {
 /*
  * Menu Bar
  */
-typedef struct SHMENUBARINFO {
+typedef struct tagSHMENUBARINFO {
 	DWORD		cbSize;
 	HWND		hwndParent;
 	DWORD		dwFlags;
 	UINT		nToolBarId;
 	HINSTANCE	hInstRes;
-	int		nBmpId,
-			cBmpImages;
+	int nBmpId;
+	int cBmpImages;
 	HWND		hwndMB;
 	COLORREF	clrBk;
 } SHMENUBARINFO, *PSHMENUBARINFO;
