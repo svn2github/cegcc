@@ -1,8 +1,10 @@
 #ifndef WIN32_H
 #define WIN32_H
 
-#include <windows.h>
 #include "frame.h"		/* required by inferior.h */
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 /* Thread information structure used to track information that is
 not available in gdb's thread structure. */
