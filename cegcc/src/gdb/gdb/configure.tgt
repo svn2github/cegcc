@@ -52,7 +52,7 @@ alpha*-*-*)		gdb_target=alpha ;;
 # mn10300 / am33 liunux
 am33_2.0*-*-linux*)	gdb_target=linux ;;
 
-arm*-wince-pe)		gdb_target=wince ;;
+arm*-wince-*)		gdb_target=wince ;;
 arm*-*-linux*)		gdb_target=linux
 			build_gdbserver=yes
 			;;
