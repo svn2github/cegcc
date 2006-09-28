@@ -1,5 +1,5 @@
-#ifndef AF_IRDA_H
-#define AF_IRDA_H
+#ifndef _AF_IRDA_H
+#define _AF_IRDA_H
 
 #include <winsock2.h>
 
