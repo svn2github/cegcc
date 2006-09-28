@@ -209,7 +209,7 @@ function build_gdb()
 	--disable-multilib             \
 	--disable-interwork            \
 	--enable-checking              \
-	|| exit
+	|| exit 1
 
     export CFLAGS=${PREV_CFLAGS}
 
@@ -227,11 +227,6 @@ function build_gdbstub()
     STUB_EXE=${PREFIX}/bin/${TARGET}-stub.exe
     STUB_SRC=${BASE_DIRECTORY}/gdb/gdb/wince-stub.c
 
-    #pass -static so the stub doesn't depend on cegcc.dll. 
-    #Useful for debugging cegcc.dll itself.
-    #Actually, the stub would better be built with -mno-cegcc/arm-wince-mingw32
-    #To remove the newlib/cegcc.dll dependency, since it mostly uses win32 api.
-    #Removed for now, as it is giving problems.
     ${TARGET}-gcc -O2  \
            ${STUB_SRC}         \
            -o ${STUB_EXE}      \
@@ -250,8 +245,8 @@ function build_all
     build_bootstrap_gcc
     build_mingw_runtime
     build_gcc
-#    build_gdb
-#    build_gdbstub
+    build_gdb
+    build_gdbstub
 }
 
 case $BUILD_OPT in
