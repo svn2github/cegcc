@@ -1423,8 +1423,12 @@ HRESULT WINAPI SHGetDataFromIDListW(LPSHELLFOLDER,LPCITEMIDLIST,int,PVOID,int);
 HRESULT WINAPI SHGetDesktopFolder(LPSHELLFOLDER*);
 HRESULT WINAPI SHGetInstanceExplorer(IUnknown **);
 HRESULT WINAPI SHGetMalloc(LPMALLOC*);
+#ifdef _WIN32_WCE
+BOOL WINAPI SHGetPathFromIDList(LPCITEMIDLIST,LPWSTR);
+#else
 BOOL WINAPI SHGetPathFromIDListA(LPCITEMIDLIST,LPSTR);
 BOOL WINAPI SHGetPathFromIDListW(LPCITEMIDLIST,LPWSTR);
+#endif
 HRESULT WINAPI SHGetSpecialFolderLocation(HWND,int,LPITEMIDLIST*);
 HRESULT WINAPI SHLoadInProc(REFCLSID);
 #if (_WIN32_IE >= 0x0400)
@@ -1476,7 +1480,9 @@ typedef IShellLinkW IShellLink;
 typedef BROWSEINFOW BROWSEINFO,*PBROWSEINFO,*LPBROWSEINFO;
 #define SHBrowseForFolder SHBrowseForFolderW
 #define SHGetDataFromIDList SHGetDataFromIDListW
+#ifndef _WIN32_WCE
 #define SHGetPathFromIDList SHGetPathFromIDListW
+#endif
 #if (_WIN32_IE >= 0x0400)
 #define SHGetSpecialFolderPath SHGetSpecialFolderPathW
 #endif
