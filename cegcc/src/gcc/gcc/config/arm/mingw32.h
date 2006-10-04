@@ -59,7 +59,7 @@ Boston, MA 02110-1301, USA.  */
 /* Include in the mingw32 libraries with libgcc */
 #undef LIBGCC_SPEC
 #define LIBGCC_SPEC \
-  "%{mthreads:-lmingwthrd} -lmingw32 -lgcc -lmoldname -lmingwex -lcoredll"
+  "%{mthreads:-lmingwthrd} -lmingw32 -lgcc -lceoldname -lmingwex -lcoredll"
 
 #undef STARTFILE_SPEC
 #define STARTFILE_SPEC "%{shared|mdll:dllcrt2%O%s} \
