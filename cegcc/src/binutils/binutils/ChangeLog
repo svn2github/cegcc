@@ -1,3 +1,104 @@
+2006-10-04  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* readelf.c (debug_apply_rela_addends): Don't ignore relocation
+	against symbols without type.
+
+2006-09-25 Pedro Alves <pedro_alves@portugalmail.pt>
+
+	* nlmconv.c (main) : Use LITMEMCPY.
+	* prdbg.c (tg_class_static_member) : Use LITSTRCPY.
+
+2006-09-26  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR binutils/3257
+	* strings.c (main): Handle "-T format".
+
+2006-09-26  Nick Clifton  <nickc@redhat.com>
+
+	* MAINTAINERS: Add Mei Ligang as maintainer of the Score port.
+
+2006-09-26  Thiemo Seufer  <ths@networkno.de>
+
+	* configure.in: Remove broken changequote lines.
+
+2006-09-20  Kai Tietz  <Kai.Tietz@onevision.com>
+
+	* configure.in: Add new target x86_64-pc-mingw64.
+	* configure: Regenerate.
+	* dlltool.c: Adjust include for this target.
+	(DLLTOOL_MX86_64): Added macro to handle target specific code.
+	(mname): Added default target static as "i386:x86-64".
+	(MX86):	Added macro for target ident.
+	(mtable): Added target specific definitions.
+	(rvaafter): Add handling of MX86.
+	(rvabefore): Add handling of MX86.
+	(asmprefix): Add handling of MX86.
+
+2006-09-17  Mei Ligang  <ligang@sunnorth.com.cn>
+
+	* readelf.c: Add support for Score binaries.
+	* Makefile.am: Update readelf's dependencies.
+	* Makefile.in: Regenerate.
+
+2006-09-16  Nick Clifton  <nickc@redhat.com>
+	    Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* ar.c: Make use of new STRING_COMMA_LEN and CONST_STRNEQ
+	macros defined in bfd.h.
+	* dlltool.c: Likewise.
+	* emul_aix.c: Likewise.
+	* nlmconv.c: Likewise.
+	* objdump.c: Likewise.
+	* prdbg.c: Likewise.
+	* stabs.c: Likewise.
+	* readelf.c (const_strneq): New macro.
+	(process_section_headers, slurp_ia64_unwind_table,
+	slurp_hppa_unwind_table, display_debug_section, process_notes,
+	process_archive): Use the new macro.
+
+2006-09-14  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR binutils/3181
+	* objcopy.c (group_signature): Return proper group signature.
+
+2006-09-14  Alan Modra  <amodra@bigpond.net.au>
+
+	PR 3181
+	* objcopy.c (group_signature): New function, split out from..
+	(setup_section): ..here.
+	(is_strip_section): Return true for SHT_GROUP sections that are
+	going to lose their group signature symbol.
+
+2006-09-14  Alan Modra  <amodra@bigpond.net.au>
+
+	PR 3181
+	* objcopy.c (copy_object): Load symbols earlier.
+	(setup_section): Mark group signature symbols with BSF_KEEP.
+
+2006-09-09  Nick Clifton  <nickc@redhat.com>
+
+	PR binutils/3110
+	* objcopy.c (copy_archive): Add new parameter:
+	force_output_target.  If not true, then perserve the file formats
+	of each copied archive element, otherwise force them to be one
+	specific file format.
+	(copy_file): Compute force_output_target parameter to pass to
+	copy_archive. 
+
+2006-09-05  Nick Clifton  <nickc@redhat.com>
+
+	PR binutils/3166
+	* objcopy.c (is_strip_section): Do not treat group sections as
+	debugging sections.
+	* doc/binutils.texi (--only-keep-debug): Document that this switch
+	is only intended for use on fully linked files.
+
+2006-09-01  Nick Clifton  <nickc@redhat.com>
+
+	PR binutils/3146
+	* readelf.c (dump_relocations): Check for a NULL value in rtype
+	before using it.
+
 2006-08-21  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* configure.in: Split arm-pe and arm-wince-pe. Build dlltool

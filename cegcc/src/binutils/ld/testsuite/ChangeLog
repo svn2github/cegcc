@@ -1,3 +1,149 @@
+2006-10-03  Jakub Jelinek  <jakub@redhat.com>
+
+	* ld-elf/eh4.d: New test.
+	* ld-elf/eh4.s: New file.
+	* ld-elf/eh4a.s: New file.
+
+2006-10-02  Vladimir Prus  <vladimir@codesourcery.com>
+
+	* ld-arm/use-thumb-lib.sym: Robustify, by ignoring symbols we're
+	not interested in and bucket number.
+
+2006-10-02  Kai Tietz  <Kai.Tietz@onevision.com>
+
+	* ld-fastcall/fastcall.exp: Add x86_64-pc-mingw64 as valid target.
+	* ld-pe/pe.exp: Likewise.
+	* lib/ld-lib.exp ( is_pecoff_format): Accept x86_64-pc-mingw64.
+
+2006-09-29  Kaz Kojima  <kkojima@rr.iij4u.or.jp>
+
+	* ld-sh/tlspic-2.d: Update.
+
+2006-09-26  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR ld/3223
+	PR ld/3267
+	* ld-scripts/empty-address-1.d: New file.
+	* ld-scripts/empty-address-1.s: Likewise.
+	* ld-scripts/empty-address-1.t: Likewise.
+	* ld-scripts/empty-address-2.s: Likewise.
+	* ld-scripts/empty-address-2a.d: Likewise.
+	* ld-scripts/empty-address-2a.t: Likewise.
+	* ld-scripts/empty-address-2b.d: Likewise.
+	* ld-scripts/empty-address-2b.t: Likewise.
+	* ld-scripts/empty-address-3.s: Likewise.
+	* ld-scripts/empty-address-3a.d: Likewise.
+	* ld-scripts/empty-address-3a.t: Likewise.
+	* ld-scripts/empty-address-3b.d: Likewise.
+	* ld-scripts/empty-address-3b.t: Likewise.
+	* ld-scripts/empty-address-3c.d: Likewise.
+	* ld-scripts/empty-address-3c.t: Likewise.
+	* ld-scripts/empty-address.exp: Likewise.
+
+2006-09-21  Andreas Schwab  <schwab@suse.de>
+
+	* ld-m68k/plt1-68020.d: Fix patterns to match also for 64-bit
+	hosts.
+
+2006-09-20  Kai Tietz  <Kai.Tietz@onevision.com>
+
+	* bootstrap/bootstrap.exp: Fix x86_64-mingw32 target test.
+	* ld-fastcall/fastcall.exp: Likewise.
+	* ld-scripts/align.exp: Likewise.
+	* ld-scripts/align2a.d: Likewise.
+	* ld-scripts/defined.exp: Likewise.
+	* ld-scripts/provide.exp: Likewise.
+	* ld-scripts/script.exp: Likewise.
+	* ld-scripts/weak.exp: Likewise.
+	* lib/ld-lib.exp: Detect target as pecoff file format.
+
+2006-09-18  Thiemo Seufer  <ths@networkno.de>
+            Maciej W. Rozycki  <macro@mips.com>
+
+	* ld-mips-elf/mips-elf.exp: Add test for R_MIPS16_GPREL relocations.
+	* ld-mips-elf/reloc-3-n32.d, ld-mips-elf/reloc-3.d: New files.
+
+2006-09-18  Thiemo Seufer  <ths@networkno.de>
+
+	* ld-elfcomm/elfcomm.exp: Enable the alignment test for
+	mips*-*-*.
+
+2006-09-17  Mei Ligang  <ligang@sunnorth.com.cn>
+
+	* ld-elf/merge.d: Add special case for Score target.
+	* ld-elfcomm/elfcomm.exp: Likewise.
+	* ld-srec/srec.exp: Likewise.
+
+2006-09-15  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* ld-scripts/overlay-size.t: Discard .reginfo sections.
+
+2006-09-15  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* ld-elf/hash.d: Don't run for mips targets.
+
+2006-09-15  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* ld-elf/loadaddr.s: Pad sections to 16 bytes.
+	* ld-elf/loadaddr1.d: Updated.
+	* ld-elf/loadaddr2.d: Likewise.
+	* ld-elf/loadaddr3a.d: Likewise.
+	* ld-elf/loadaddr3b.d: Likewise.
+
+2006-09-12  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR ld/3197
+	* ld-elf/hash.d: New test.
+
+2006-09-04  Vladimir Prus  <vladimir@codesourcery.com>
+
+	* ld-arm/use-thumb-lib.sym: Use regexps instead of
+	absolute addresses, for robustness.
+
+2006-09-07  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* ld-elf/dl1.c: New file.
+	* ld-elf/dl1.list: Likewise.
+	* ld-elf/dl1.out: Likewise.
+	* ld-elf/dl1main.c: Likewise.
+	* ld-elf/dl2.c: Likewise.
+	* ld-elf/dl2.list: Likewise.
+	* ld-elf/dl2a.out: Likewise.
+	* ld-elf/dl2b.out: Likewise.
+	* ld-elf/dl2main.c: Likewise.
+	* ld-elf/dl2xxx.c: Likewise.
+	* ld-elf/dl2xxx.list: Likewise.
+	* ld-elf/dl3.cc: Likewise.
+	* ld-elf/dl3.list: Likewise.
+	* ld-elf/dl3a.out: Likewise.
+	* ld-elf/dl3b.out: Likewise.
+	* ld-elf/dl3header.h: Likewise.
+	* ld-elf/dl3main.cc: Likewise.
+
+	* ld-elf/shared.exp: Updated.
+
+	* lib/ld-lib.exp (run_ld_link_exec_tests): Take an optional
+	argument for source language. Use CC/CXX for link, depending
+	on source language.
+	(run_cc_link_tests): Likewise.
+
+2006-08-29  Alan Modra  <amodra@bigpond.net.au>
+
+	* ld-elf/loadaddr3a.d: Adjust target test.
+	* ld-elf/loadaddr3b.d: Likewise.
+
+2006-08-29  Nathan Sidwell  <nathan@codesourcery.com>
+
+	* ld-elf/loadaddr3.t: New.
+	* ld-elf/loadaddr3a.d: New.
+	* ld-elf/loadaddr3b.d: New.
+
+2006-08-23  Alan Modra  <amodra@bigpond.net.au>
+
+	* ld-powerpc/plt1.s: New.
+	* ld-powerpc/plt1.d: New.
+	* ld-powerpc/powerpc.exp: Run it.
+
 2006-08-23  H.J. Lu  <hongjiu.lu@intel.com>
 
 	PR ld/3052

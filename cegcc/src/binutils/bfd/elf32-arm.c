@@ -835,12 +835,12 @@ static reloc_howto_type elf32_arm_howto_table_1[] =
 	 13,			/* bitsize */
 	 TRUE,			/* pc_relative */
 	 0,			/* bitpos */
-	 complain_overflow_signed,/* complain_on_overflow */
+	 complain_overflow_dont,/* complain_on_overflow */
 	 bfd_elf_generic_reloc,	/* special_function */
 	 "R_ARM_THM_ALU_PREL_11_0",/* name */
 	 FALSE,			/* partial_inplace */
-	 0x040070ff,		/* src_mask */
-	 0x040070ff,		/* dst_mask */
+	 0xffffffff,		/* src_mask */
+	 0xffffffff,		/* dst_mask */
 	 TRUE),			/* pcrel_offset */
 
   HOWTO (R_ARM_THM_PC12,	/* type */
@@ -849,12 +849,12 @@ static reloc_howto_type elf32_arm_howto_table_1[] =
 	 13,			/* bitsize */
 	 TRUE,			/* pc_relative */
 	 0,			/* bitpos */
-	 complain_overflow_signed,/* complain_on_overflow */
+	 complain_overflow_dont,/* complain_on_overflow */
 	 bfd_elf_generic_reloc,	/* special_function */
 	 "R_ARM_THM_PC12",	/* name */
 	 FALSE,			/* partial_inplace */
-	 0x040070ff,		/* src_mask */
-	 0x040070ff,		/* dst_mask */
+	 0xffffffff,		/* src_mask */
+	 0xffffffff,		/* dst_mask */
 	 TRUE),			/* pcrel_offset */
 
   HOWTO (R_ARM_ABS32_NOI,	/* type */
@@ -2221,9 +2221,9 @@ reloc_section_p (struct elf32_arm_link_hash_table *htab,
 		 const char *name, asection *s)
 {
   if (htab->use_rel)
-    return strncmp (name, ".rel", 4) == 0 && strcmp (s->name, name + 4) == 0;
+    return CONST_STRNEQ (name, ".rel") && strcmp (s->name, name + 4) == 0;
   else
-    return strncmp (name, ".rela", 5) == 0 && strcmp (s->name, name + 5) == 0;
+    return CONST_STRNEQ (name, ".rela") && strcmp (s->name, name + 5) == 0;
 }
 
 /* Create .got, .gotplt, and .rel(a).got sections in DYNOBJ, and set up
@@ -3944,6 +3944,81 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
       value |= bfd_get_16 (input_bfd, hit_data) & 0xf83f;
       bfd_put_16 (input_bfd, value, hit_data);
       return bfd_reloc_ok;
+
+    case R_ARM_THM_ALU_PREL_11_0:
+      /* Corresponds to: addw.w reg, pc, #offset (and similarly for subw).  */
+      {
+	bfd_vma insn;
+	bfd_signed_vma relocation;
+
+	insn = (bfd_get_16 (input_bfd, hit_data) << 16)
+             | bfd_get_16 (input_bfd, hit_data + 2);
+
+        if (globals->use_rel)
+          {
+            signed_addend = (insn & 0xff) | ((insn & 0x7000) >> 4)
+                          | ((insn & (1 << 26)) >> 15);
+            if (insn & 0xf00000)
+              signed_addend = -signed_addend;
+          }
+
+	relocation = value + signed_addend;
+	relocation -= (input_section->output_section->vma
+		       + input_section->output_offset
+		       + rel->r_offset);
+
+        value = abs (relocation);
+
+        if (value >= 0x1000)
+          return bfd_reloc_overflow;
+
+	insn = (insn & 0xfb0f8f00) | (value & 0xff)
+             | ((value & 0x700) << 4)
+             | ((value & 0x800) << 15);
+        if (relocation < 0)
+          insn |= 0xa00000;
+
+	bfd_put_16 (input_bfd, insn >> 16, hit_data);
+	bfd_put_16 (input_bfd, insn & 0xffff, hit_data + 2);
+
+        return bfd_reloc_ok;
+      }
+
+    case R_ARM_THM_PC12:
+      /* Corresponds to: ldr.w reg, [pc, #offset].  */
+      {
+	bfd_vma insn;
+	bfd_signed_vma relocation;
+
+	insn = (bfd_get_16 (input_bfd, hit_data) << 16)
+             | bfd_get_16 (input_bfd, hit_data + 2);
+
+        if (globals->use_rel)
+          {
+            signed_addend = insn & 0xfff;
+            if (!(insn & (1 << 23)))
+              signed_addend = -signed_addend;
+          }
+
+	relocation = value + signed_addend;
+	relocation -= (input_section->output_section->vma
+		       + input_section->output_offset
+		       + rel->r_offset);
+
+        value = abs (relocation);
+
+        if (value >= 0x1000)
+          return bfd_reloc_overflow;
+
+	insn = (insn & 0xff7ff000) | value;
+        if (relocation >= 0)
+          insn |= (1 << 23);
+
+	bfd_put_16 (input_bfd, insn >> 16, hit_data);
+	bfd_put_16 (input_bfd, insn & 0xffff, hit_data + 2);
+
+        return bfd_reloc_ok;
+      }
 
     case R_ARM_THM_XPC22:
     case R_ARM_THM_CALL:
@@ -6614,39 +6689,21 @@ elf32_arm_get_symbol_type (Elf_Internal_Sym * elf_sym, int type)
 }
 
 static asection *
-elf32_arm_gc_mark_hook (asection *                   sec,
-			struct bfd_link_info *       info ATTRIBUTE_UNUSED,
-			Elf_Internal_Rela *          rel,
-			struct elf_link_hash_entry * h,
-			Elf_Internal_Sym *           sym)
+elf32_arm_gc_mark_hook (asection *sec,
+			struct bfd_link_info *info,
+			Elf_Internal_Rela *rel,
+			struct elf_link_hash_entry *h,
+			Elf_Internal_Sym *sym)
 {
   if (h != NULL)
-    {
-      switch (ELF32_R_TYPE (rel->r_info))
+    switch (ELF32_R_TYPE (rel->r_info))
       {
       case R_ARM_GNU_VTINHERIT:
       case R_ARM_GNU_VTENTRY:
-        break;
+	return NULL;
+      }
 
-      default:
-        switch (h->root.type)
-          {
-          case bfd_link_hash_defined:
-          case bfd_link_hash_defweak:
-            return h->root.u.def.section;
-
-          case bfd_link_hash_common:
-            return h->root.u.c.p->section;
-
-	  default:
-	    break;
-          }
-       }
-     }
-   else
-     return bfd_section_from_elf_index (sec->owner, sym->st_shndx);
-
-  return NULL;
+  return _bfd_elf_gc_mark_hook (sec, info, rel, h, sym);
 }
 
 /* Update the got entry reference counts for the section being removed.  */
@@ -7863,7 +7920,7 @@ elf32_arm_size_dynamic_sections (bfd * output_bfd ATTRIBUTE_UNUSED,
 	  /* Remember whether there is a PLT.  */
 	  plt = s->size != 0;
 	}
-      else if (strncmp (name, ".rel", 4) == 0)
+      else if (CONST_STRNEQ (name, ".rel"))
 	{
 	  if (s->size != 0)
 	    {
@@ -7877,7 +7934,7 @@ elf32_arm_size_dynamic_sections (bfd * output_bfd ATTRIBUTE_UNUSED,
 	      s->reloc_count = 0;
 	    }
 	}
-      else if (strncmp (name, ".got", 4) != 0
+      else if (! CONST_STRNEQ (name, ".got")
 	       && strcmp (name, ".dynbss") != 0)
 	{
 	  /* It's not one of our sections, so don't allocate space.  */
@@ -8605,12 +8662,8 @@ elf32_arm_final_write_processing (bfd *abfd, bfd_boolean linker ATTRIBUTE_UNUSED
 static bfd_boolean
 is_arm_elf_unwind_section_name (bfd * abfd ATTRIBUTE_UNUSED, const char * name)
 {
-  size_t len1, len2;
-
-  len1 = sizeof (ELF_STRING_ARM_unwind) - 1;
-  len2 = sizeof (ELF_STRING_ARM_unwind_once) - 1;
-  return (strncmp (name, ELF_STRING_ARM_unwind, len1) == 0
-	  || strncmp (name, ELF_STRING_ARM_unwind_once, len2) == 0);
+  return (CONST_STRNEQ (name, ELF_STRING_ARM_unwind)
+	  || CONST_STRNEQ (name, ELF_STRING_ARM_unwind_once));
 }
 
 
@@ -9267,13 +9320,14 @@ elf32_arm_symbol_processing (bfd *abfd ATTRIBUTE_UNUSED,
 
 /* Mangle thumb function symbols as we read them in.  */
 
-static void
+static bfd_boolean
 elf32_arm_swap_symbol_in (bfd * abfd,
 			  const void *psrc,
 			  const void *pshn,
 			  Elf_Internal_Sym *dst)
 {
-  bfd_elf32_swap_symbol_in (abfd, psrc, pshn, dst);
+  if (!bfd_elf32_swap_symbol_in (abfd, psrc, pshn, dst))
+    return FALSE;
 
   /* New EABI objects mark thumb function symbols by setting the low bit of
      the address.  Turn these into STT_ARM_TFUNC.  */
@@ -9283,6 +9337,7 @@ elf32_arm_swap_symbol_in (bfd * abfd,
       dst->st_info = ELF_ST_INFO (ELF_ST_BIND (dst->st_info), STT_ARM_TFUNC);
       dst->st_value &= ~(bfd_vma) 1;
     }
+  return TRUE;
 }
 
 
@@ -9310,14 +9365,12 @@ elf32_arm_swap_symbol_out (bfd *abfd,
              linker will simulate the work of dynamic linker of resolving
              symbols and will carry over the thumbness of found symbols to
              the output symbol table. It's not clear how it happens, but
-             the thumbness of underfined symbols can well be different at
+             the thumbness of undefined symbols can well be different at
              runtime, and writing '1' for them will be confusing for users
              and possibly for dynamic linker itself.
           */
           newsym.st_value |= 1;
         }
-
-      newsym.st_value |= 1;
       
       src = &newsym;
     }
@@ -9583,18 +9636,18 @@ elf32_arm_symbian_special_sections[] =
      the loadable read-only segment.  The post-linker may wish to
      refer to these sections, but they are not part of the final
      program image.  */
-  { ".dynamic",        8,  0, SHT_DYNAMIC,  0 },
-  { ".dynstr",         7,  0, SHT_STRTAB,   0 },
-  { ".dynsym",         7,  0, SHT_DYNSYM,   0 },
-  { ".got",            4,  0, SHT_PROGBITS, 0 },
-  { ".hash",           5,  0, SHT_HASH,     0 },
+  { STRING_COMMA_LEN (".dynamic"),       0, SHT_DYNAMIC,  0 },
+  { STRING_COMMA_LEN (".dynstr"),        0, SHT_STRTAB,   0 },
+  { STRING_COMMA_LEN (".dynsym"),        0, SHT_DYNSYM,   0 },
+  { STRING_COMMA_LEN (".got"),           0, SHT_PROGBITS, 0 },
+  { STRING_COMMA_LEN (".hash"),          0, SHT_HASH,     0 },
   /* These sections do not need to be writable as the SymbianOS
      postlinker will arrange things so that no dynamic relocation is
      required.  */
-  { ".init_array",    11,  0, SHT_INIT_ARRAY, SHF_ALLOC },
-  { ".fini_array",    11,  0, SHT_FINI_ARRAY, SHF_ALLOC },
-  { ".preinit_array", 14,  0, SHT_PREINIT_ARRAY, SHF_ALLOC },
-  { NULL,              0,  0, 0,            0 }
+  { STRING_COMMA_LEN (".init_array"),    0, SHT_INIT_ARRAY,    SHF_ALLOC },
+  { STRING_COMMA_LEN (".fini_array"),    0, SHT_FINI_ARRAY,    SHF_ALLOC },
+  { STRING_COMMA_LEN (".preinit_array"), 0, SHT_PREINIT_ARRAY, SHF_ALLOC },
+  { NULL,                             0, 0, 0,                 0 }
 };
 
 static void

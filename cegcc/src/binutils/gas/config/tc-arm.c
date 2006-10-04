@@ -201,6 +201,8 @@ static const arm_feature_set arm_arch_full = ARM_FEATURE (-1, -1);
 static const arm_feature_set arm_arch_t2 = ARM_ARCH_THUMB2;
 static const arm_feature_set arm_arch_none = ARM_ARCH_NONE;
 
+static const arm_feature_set arm_cext_iwmmxt2 =
+  ARM_FEATURE (0, ARM_CEXT_IWMMXT2);
 static const arm_feature_set arm_cext_iwmmxt =
   ARM_FEATURE (0, ARM_CEXT_IWMMXT);
 static const arm_feature_set arm_cext_xscale =
@@ -1261,7 +1263,9 @@ parse_typed_reg_or_scalar (char **ccp, enum arm_reg_type type,
           && (reg->type == REG_TYPE_VFS || reg->type == REG_TYPE_VFD))
       || (type == REG_TYPE_NSDQ
           && (reg->type == REG_TYPE_VFS || reg->type == REG_TYPE_VFD
-              || reg->type == REG_TYPE_NQ)))
+              || reg->type == REG_TYPE_NQ))
+      || (type == REG_TYPE_MMXWC
+	  && (reg->type == REG_TYPE_MMXWCG)))
     type = reg->type;
 
   if (type != reg->type)
@@ -3626,6 +3630,7 @@ s_arm_unwind_movsp (int ignored ATTRIBUTE_UNUSED)
 {
   int reg;
   valueT op;
+  int offset;
 
   reg = arm_reg_parse (&input_line_pointer, REG_TYPE_RN);
   if (reg == FAIL)
@@ -3634,6 +3639,16 @@ s_arm_unwind_movsp (int ignored ATTRIBUTE_UNUSED)
       ignore_rest_of_line ();
       return;
     }
+
+  /* Optional constant.	 */
+  if (skip_past_comma (&input_line_pointer) != FAIL)
+    {
+      if (immediate_for_directive (&offset) == FAIL)
+	return;
+    }
+  else
+    offset = 0;
+
   demand_empty_rest_of_line ();
 
   if (reg == REG_SP || reg == REG_PC)
@@ -3651,7 +3666,7 @@ s_arm_unwind_movsp (int ignored ATTRIBUTE_UNUSED)
 
   /* Record the information for later.	*/
   unwind.fp_reg = reg;
-  unwind.fp_offset = unwind.frame_size;
+  unwind.fp_offset = unwind.frame_size - offset;
   unwind.sp_restored = 1;
 }
 
@@ -5358,6 +5373,7 @@ enum operand_parse_code
   OP_VMOV,      /* Neon VMOV operands.  */
   OP_RNDQ_IMVNb,/* Neon D or Q reg, or immediate good for VMVN.  */
   OP_RNDQ_I63b, /* Neon D or Q reg, or immediate for shift.  */
+  OP_RIWR_I32z, /* iWMMXt wR register, or immediate 0 .. 32 for iWMMXt2.  */
 
   OP_I0,        /* immediate zero */
   OP_I7,	/* immediate value 0 .. 7 */
@@ -5566,6 +5582,7 @@ parse_operands (char *str, const unsigned char *pattern)
         case OP_NILO:
           {
             po_reg_or_goto (REG_TYPE_NDQ, try_imm);
+	    inst.operands[i].present = 1;
             i++;
             skip_past_comma (&str);
             po_reg_or_goto (REG_TYPE_NDQ, one_reg_only);
@@ -5778,6 +5795,9 @@ parse_operands (char *str, const unsigned char *pattern)
 	  inst.operands[i].reg = val;
 	  inst.operands[i].isreg = 1;
 	  break;
+
+	case OP_RIWR_I32z: po_reg_or_goto (REG_TYPE_MMXWR, I32z); break;
+	I32z:		  po_imm_or_fail (0, 32, FALSE);	  break;
 
 	  /* Two kinds of register */
 	case OP_RIWR_RIWC:
@@ -7827,6 +7847,15 @@ do_iwmmxt_waligni (void)
 }
 
 static void
+do_iwmmxt_wmerge (void)
+{
+  inst.instruction |= inst.operands[0].reg << 12;
+  inst.instruction |= inst.operands[1].reg << 16;
+  inst.instruction |= inst.operands[2].reg;
+  inst.instruction |= inst.operands[3].imm << 21;
+}
+
+static void
 do_iwmmxt_wmov (void)
 {
   /* WMOV rD, rN is an alias for WOR rD, rN, rN.  */
@@ -7865,7 +7894,23 @@ static void
 do_iwmmxt_wldstd (void)
 {
   inst.instruction |= inst.operands[0].reg << 12;
-  encode_arm_cp_address (1, TRUE, FALSE, 0);
+  if (ARM_CPU_HAS_FEATURE (cpu_variant, arm_cext_iwmmxt2)
+      && inst.operands[1].immisreg)
+    {
+      inst.instruction &= ~0x1a000ff;
+      inst.instruction |= (0xf << 28);
+      if (inst.operands[1].preind)
+	inst.instruction |= PRE_INDEX;
+      if (!inst.operands[1].negative)
+	inst.instruction |= INDEX_UP;
+      if (inst.operands[1].writeback)
+	inst.instruction |= WRITE_BACK;
+      inst.instruction |= inst.operands[1].reg << 16;
+      inst.instruction |= inst.reloc.exp.X_add_number << 4;
+      inst.instruction |= inst.operands[1].imm;
+    }
+  else
+    encode_arm_cp_address (1, TRUE, FALSE, 0);
 }
 
 static void
@@ -7884,6 +7929,56 @@ do_iwmmxt_wzero (void)
   inst.instruction |= inst.operands[0].reg;
   inst.instruction |= inst.operands[0].reg << 12;
   inst.instruction |= inst.operands[0].reg << 16;
+}
+
+static void
+do_iwmmxt_wrwrwr_or_imm5 (void)
+{
+  if (inst.operands[2].isreg)
+    do_rd_rn_rm ();
+  else {
+    constraint (!ARM_CPU_HAS_FEATURE (cpu_variant, arm_cext_iwmmxt2),
+		_("immediate operand requires iWMMXt2"));
+    do_rd_rn ();
+    if (inst.operands[2].imm == 0)
+      {
+	switch ((inst.instruction >> 20) & 0xf)
+	  {
+	  case 4:
+	  case 5:
+	  case 6:
+	  case 7: 
+	    /* w...h wrd, wrn, #0 -> wrorh wrd, wrn, #16.  */
+	    inst.operands[2].imm = 16;
+	    inst.instruction = (inst.instruction & 0xff0fffff) | (0x7 << 20);
+	    break;
+	  case 8:
+	  case 9:
+	  case 10:
+	  case 11:
+	    /* w...w wrd, wrn, #0 -> wrorw wrd, wrn, #32.  */
+	    inst.operands[2].imm = 32;
+	    inst.instruction = (inst.instruction & 0xff0fffff) | (0xb << 20);
+	    break;
+	  case 12:
+	  case 13:
+	  case 14:
+	  case 15:
+	    {
+	      /* w...d wrd, wrn, #0 -> wor wrd, wrn, wrn.  */
+	      unsigned long wrn;
+	      wrn = (inst.instruction >> 16) & 0xf;
+	      inst.instruction &= 0xff0fff0f;
+	      inst.instruction |= wrn;
+	      /* Bail out here; the instruction is now assembled.  */
+	      return;
+	    }
+	  }
+      }
+    /* Map 32 -> 0, etc.  */
+    inst.operands[2].imm &= 0x1f;
+    inst.instruction |= (0xf << 28) | ((inst.operands[2].imm & 0x10) << 4) | (inst.operands[2].imm & 0xf);
+  }
 }
 
 /* Cirrus Maverick instructions.  Simple 2-, 3-, and 4-register
@@ -11618,15 +11713,11 @@ do_neon_dyadic_if_su_d (void)
 }
 
 static void
-do_neon_dyadic_if_i (void)
-{
-  neon_dyadic_misc (NT_unsigned, N_IF_32, 0);
-}
-
-static void
 do_neon_dyadic_if_i_d (void)
 {
-  neon_dyadic_misc (NT_unsigned, N_IF_32, 0);
+  /* The "untyped" case can't happen. Do this to stop the "U" bit being
+     affected if we specify unsigned args.  */
+  neon_dyadic_misc (NT_untyped, N_IF_32, 0);
 }
 
 enum vfp_or_neon_is_neon_bits
@@ -11841,7 +11932,11 @@ do_neon_mac_maybe_scalar (void)
       neon_mul_mac (et, neon_quad (rs));
     }
   else
-    do_neon_dyadic_if_i ();
+    {
+      /* The "untyped" case can't happen.  Do this to stop the "U" bit being
+	 affected if we specify unsigned args.  */
+      neon_dyadic_misc (NT_untyped, N_IF_32, 0);
+    }
 }
 
 static void
@@ -12492,6 +12587,9 @@ do_neon_dyadic_narrow (void)
 {
   struct neon_type_el et = neon_check_type (3, NS_QDD,
     N_EQK | N_DBL, N_EQK, N_I16 | N_I32 | N_I64 | N_KEY);
+  /* Operand sign is unimportant, and the U bit is part of the opcode,
+     so force the operand type to integer.  */
+  et.type = NT_integer;
   neon_mixed_length (et, et.size / 2);
 }
 
@@ -14824,7 +14922,9 @@ static const struct asm_opcode insns[] =
 
   UT(cbnz,      b900,    2, (RR, EXP), t_czb),
   UT(cbz,       b100,    2, (RR, EXP), t_czb),
- /* ARM does not really have an IT instruction.  */
+ /* ARM does not really have an IT instruction, so always allow it.  */
+#undef ARM_VARIANT
+#define ARM_VARIANT &arm_ext_v1
  TUE(it,        0, bf08, 1, (COND),    it, t_it),
  TUE(itt,       0, bf0c, 1, (COND),    it, t_it),
  TUE(ite,       0, bf04, 1, (COND),    it, t_it),
@@ -15533,14 +15633,13 @@ static const struct asm_opcode insns[] =
  nUF(vcltq,     vclt,    3, (RNQ,  oRNQ,  RNDQ_I0), neon_cmp_inv),
  nUF(vcle,      vcle,    3, (RNDQ, oRNDQ, RNDQ_I0), neon_cmp_inv),
  nUF(vcleq,     vcle,    3, (RNQ,  oRNQ,  RNDQ_I0), neon_cmp_inv),
-  /* Comparison. Type I8 I16 I32 F32. Non-immediate -> neon_dyadic_if_i.  */
+  /* Comparison. Type I8 I16 I32 F32.  */
  nUF(vceq,      vceq,    3, (RNDQ, oRNDQ, RNDQ_I0), neon_ceq),
  nUF(vceqq,     vceq,    3, (RNQ,  oRNQ,  RNDQ_I0), neon_ceq),
   /* As above, D registers only.  */
  nUF(vpmax,     vpmax,   3, (RND, oRND, RND), neon_dyadic_if_su_d),
  nUF(vpmin,     vpmin,   3, (RND, oRND, RND), neon_dyadic_if_su_d),
   /* Int and float variants, signedness unimportant.  */
-  /* If not scalar, fall back to neon_dyadic_if_i.  */
  nUF(vmlaq,     vmla,    3, (RNQ,  oRNQ,  RNDQ_RNSC), neon_mac_maybe_scalar),
  nUF(vmlsq,     vmls,    3, (RNQ,  oRNQ,  RNDQ_RNSC), neon_mac_maybe_scalar),
  nUF(vpadd,     vpadd,   3, (RND,  oRND,  RND),       neon_dyadic_if_i_d),
@@ -15851,34 +15950,34 @@ static const struct asm_opcode insns[] =
  cCE(wpackwus,	e900080, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
  cCE(wpackdss,	ef00080, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
  cCE(wpackdus,	ed00080, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
- cCE(wrorh,	e700040, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
+ cCE(wrorh,	e700040, 3, (RIWR, RIWR, RIWR_I32z),iwmmxt_wrwrwr_or_imm5),
  cCE(wrorhg,	e700148, 3, (RIWR, RIWR, RIWG),	    rd_rn_rm),
- cCE(wrorw,	eb00040, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
+ cCE(wrorw,	eb00040, 3, (RIWR, RIWR, RIWR_I32z),iwmmxt_wrwrwr_or_imm5),
  cCE(wrorwg,	eb00148, 3, (RIWR, RIWR, RIWG),	    rd_rn_rm),
- cCE(wrord,	ef00040, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
+ cCE(wrord,	ef00040, 3, (RIWR, RIWR, RIWR_I32z),iwmmxt_wrwrwr_or_imm5),
  cCE(wrordg,	ef00148, 3, (RIWR, RIWR, RIWG),	    rd_rn_rm),
  cCE(wsadb,	e000120, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
  cCE(wsadbz,	e100120, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
  cCE(wsadh,	e400120, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
  cCE(wsadhz,	e500120, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
  cCE(wshufh,	e0001e0, 3, (RIWR, RIWR, I255),	    iwmmxt_wshufh),
- cCE(wsllh,	e500040, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
+ cCE(wsllh,	e500040, 3, (RIWR, RIWR, RIWR_I32z),iwmmxt_wrwrwr_or_imm5),
  cCE(wsllhg,	e500148, 3, (RIWR, RIWR, RIWG),	    rd_rn_rm),
- cCE(wsllw,	e900040, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
+ cCE(wsllw,	e900040, 3, (RIWR, RIWR, RIWR_I32z),iwmmxt_wrwrwr_or_imm5),
  cCE(wsllwg,	e900148, 3, (RIWR, RIWR, RIWG),	    rd_rn_rm),
- cCE(wslld,	ed00040, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
+ cCE(wslld,	ed00040, 3, (RIWR, RIWR, RIWR_I32z),iwmmxt_wrwrwr_or_imm5),
  cCE(wslldg,	ed00148, 3, (RIWR, RIWR, RIWG),	    rd_rn_rm),
- cCE(wsrah,	e400040, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
+ cCE(wsrah,	e400040, 3, (RIWR, RIWR, RIWR_I32z),iwmmxt_wrwrwr_or_imm5),
  cCE(wsrahg,	e400148, 3, (RIWR, RIWR, RIWG),	    rd_rn_rm),
- cCE(wsraw,	e800040, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
+ cCE(wsraw,	e800040, 3, (RIWR, RIWR, RIWR_I32z),iwmmxt_wrwrwr_or_imm5),
  cCE(wsrawg,	e800148, 3, (RIWR, RIWR, RIWG),	    rd_rn_rm),
- cCE(wsrad,	ec00040, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
+ cCE(wsrad,	ec00040, 3, (RIWR, RIWR, RIWR_I32z),iwmmxt_wrwrwr_or_imm5),
  cCE(wsradg,	ec00148, 3, (RIWR, RIWR, RIWG),	    rd_rn_rm),
- cCE(wsrlh,	e600040, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
+ cCE(wsrlh,	e600040, 3, (RIWR, RIWR, RIWR_I32z),iwmmxt_wrwrwr_or_imm5),
  cCE(wsrlhg,	e600148, 3, (RIWR, RIWR, RIWG),	    rd_rn_rm),
- cCE(wsrlw,	ea00040, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
+ cCE(wsrlw,	ea00040, 3, (RIWR, RIWR, RIWR_I32z),iwmmxt_wrwrwr_or_imm5),
  cCE(wsrlwg,	ea00148, 3, (RIWR, RIWR, RIWG),	    rd_rn_rm),
- cCE(wsrld,	ee00040, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
+ cCE(wsrld,	ee00040, 3, (RIWR, RIWR, RIWR_I32z),iwmmxt_wrwrwr_or_imm5),
  cCE(wsrldg,	ee00148, 3, (RIWR, RIWR, RIWG),	    rd_rn_rm),
  cCE(wstrb,	c000000, 2, (RIWR, ADDR),	    iwmmxt_wldstbh),
  cCE(wstrh,	c400000, 2, (RIWR, ADDR),	    iwmmxt_wldstbh),
@@ -15913,6 +16012,66 @@ static const struct asm_opcode insns[] =
  cCE(wunpckilw, e9000e0, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
  cCE(wxor,	e100000, 3, (RIWR, RIWR, RIWR),	    rd_rn_rm),
  cCE(wzero,	e300000, 1, (RIWR),		    iwmmxt_wzero),
+
+#undef ARM_VARIANT
+#define ARM_VARIANT &arm_cext_iwmmxt2 /* Intel Wireless MMX technology, version 2.  */
+ cCE(torvscb,   e13f190, 1, (RR),		    iwmmxt_tandorc),
+ cCE(torvsch,   e53f190, 1, (RR),		    iwmmxt_tandorc),
+ cCE(torvscw,   e93f190, 1, (RR),		    iwmmxt_tandorc),
+ cCE(wabsb,     e2001c0, 2, (RIWR, RIWR),           rd_rn),
+ cCE(wabsh,     e6001c0, 2, (RIWR, RIWR),           rd_rn),
+ cCE(wabsw,     ea001c0, 2, (RIWR, RIWR),           rd_rn),
+ cCE(wabsdiffb, e1001c0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wabsdiffh, e5001c0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wabsdiffw, e9001c0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(waddbhusl, e2001a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(waddbhusm, e6001a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(waddhc,    e600180, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(waddwc,    ea00180, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(waddsubhx, ea001a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wavg4,	e400000, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wavg4r,    e500000, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmaddsn,   ee00100, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmaddsx,   eb00100, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmaddun,   ec00100, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmaddux,   e900100, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmerge,    e000080, 4, (RIWR, RIWR, RIWR, I7), iwmmxt_wmerge),
+ cCE(wmiabb,    e0000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmiabt,    e1000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmiatb,    e2000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmiatt,    e3000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmiabbn,   e4000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmiabtn,   e5000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmiatbn,   e6000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmiattn,   e7000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmiawbb,   e800120, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmiawbt,   e900120, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmiawtb,   ea00120, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmiawtt,   eb00120, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmiawbbn,  ec00120, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmiawbtn,  ed00120, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmiawtbn,  ee00120, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmiawttn,  ef00120, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmulsmr,   ef00100, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmulumr,   ed00100, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmulwumr,  ec000c0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmulwsmr,  ee000c0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmulwum,   ed000c0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmulwsm,   ef000c0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wmulwl,    eb000c0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wqmiabb,   e8000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wqmiabt,   e9000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wqmiatb,   ea000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wqmiatt,   eb000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wqmiabbn,  ec000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wqmiabtn,  ed000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wqmiatbn,  ee000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wqmiattn,  ef000a0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wqmulm,    e100080, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wqmulmr,   e300080, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wqmulwm,   ec000e0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wqmulwmr,  ee000e0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
+ cCE(wsubaddhx, ed001c0, 3, (RIWR, RIWR, RIWR),     rd_rn_rm),
 
 #undef ARM_VARIANT
 #define ARM_VARIANT &arm_cext_maverick /* Cirrus Maverick instructions.	*/
@@ -17229,11 +17388,11 @@ negate_data_op (unsigned long * instruction,
 /* Like negate_data_op, but for Thumb-2.   */
 
 static unsigned int
-thumb32_negate_data_op (offsetT *instruction, offsetT value)
+thumb32_negate_data_op (offsetT *instruction, unsigned int value)
 {
   int op, new_inst;
   int rd;
-  offsetT negated, inverted;
+  unsigned int negated, inverted;
 
   negated = encode_thumb32_immediate (-value);
   inverted = encode_thumb32_immediate (~value);
@@ -17294,7 +17453,7 @@ thumb32_negate_data_op (offsetT *instruction, offsetT value)
       return FAIL;
     }
 
-  if (value == FAIL)
+  if (value == (unsigned int)FAIL)
     return FAIL;
 
   *instruction &= T2_OPCODE_MASK;
@@ -18003,8 +18162,6 @@ md_apply_fix (fixS *	fixP,
 	newval = get_thumb32_insn (buf);
       newval &= 0xff7fff00;
       newval |= (value >> 2) | (sign ? INDEX_UP : 0);
-      if (value == 0)
-	newval &= ~WRITE_BACK;
       if (fixP->fx_r_type == BFD_RELOC_ARM_CP_OFF_IMM
 	  || fixP->fx_r_type == BFD_RELOC_ARM_CP_OFF_IMM_S2)
 	md_number_to_chars (buf, newval, INSN_SIZE);
@@ -19150,7 +19307,9 @@ md_begin (void)
 #endif
 
   /* Record the CPU type as well.  */
-  if (ARM_CPU_HAS_FEATURE (cpu_variant, arm_cext_iwmmxt))
+  if (ARM_CPU_HAS_FEATURE (cpu_variant, arm_cext_iwmmxt2))
+    mach = bfd_mach_arm_iWMMXt2;
+  else if (ARM_CPU_HAS_FEATURE (cpu_variant, arm_cext_iwmmxt))
     mach = bfd_mach_arm_iWMMXt;
   else if (ARM_CPU_HAS_FEATURE (cpu_variant, arm_cext_xscale))
     mach = bfd_mach_arm_XScale;
@@ -19529,6 +19688,7 @@ static const struct arm_cpu_option_table arm_cpus[] =
   {"xscale",		ARM_ARCH_XSCALE, FPU_ARCH_VFP_V2, NULL},
   /* ??? iwmmxt is not a processor.  */
   {"iwmmxt",		ARM_ARCH_IWMMXT, FPU_ARCH_VFP_V2, NULL},
+  {"iwmmxt2",		ARM_ARCH_IWMMXT2,FPU_ARCH_VFP_V2, NULL},
   {"i80200",		ARM_ARCH_XSCALE, FPU_ARCH_VFP_V2, NULL},
   /* Maverick */
   {"ep9312",	ARM_FEATURE(ARM_AEXT_V4T, ARM_CEXT_MAVERICK), FPU_ARCH_MAVERICK, "ARM920T"},
@@ -19578,6 +19738,7 @@ static const struct arm_arch_option_table arm_archs[] =
   {"armv7m",		ARM_ARCH_V7M,	 FPU_ARCH_VFP},
   {"xscale",		ARM_ARCH_XSCALE, FPU_ARCH_VFP},
   {"iwmmxt",		ARM_ARCH_IWMMXT, FPU_ARCH_VFP},
+  {"iwmmxt2",		ARM_ARCH_IWMMXT2,FPU_ARCH_VFP},
   {NULL,		ARM_ARCH_NONE,	 ARM_ARCH_NONE}
 };
 
@@ -19593,6 +19754,7 @@ static const struct arm_option_cpu_value_table arm_extensions[] =
   {"maverick",		ARM_FEATURE (0, ARM_CEXT_MAVERICK)},
   {"xscale",		ARM_FEATURE (0, ARM_CEXT_XSCALE)},
   {"iwmmxt",		ARM_FEATURE (0, ARM_CEXT_IWMMXT)},
+  {"iwmmxt2",		ARM_FEATURE (0, ARM_CEXT_IWMMXT2)},
   {NULL,		ARM_ARCH_NONE}
 };
 

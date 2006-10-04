@@ -444,6 +444,21 @@ bfd_elf_link_record_dynamic_symbol (struct bfd_link_info *info,
   return TRUE;
 }
 
+/* Mark a symbol dynamic.  */
+
+void
+bfd_elf_link_mark_dynamic_symbol (struct bfd_link_info *info,
+				  struct elf_link_hash_entry *h)
+{
+  struct bfd_elf_dynamic_list *d = info->dynamic;
+
+  if (d == NULL || info->relocatable)
+    return;
+
+  if ((*d->match) (&d->head, NULL, h->root.root.string))
+    h->dynamic = 1;
+}
+
 /* Record an assignment to a symbol made by a linker script.  We need
    this in case some dynamic object refers to this symbol.  */
 
@@ -477,7 +492,10 @@ bfd_elf_record_link_assignment (bfd *output_bfd,
     }
 
   if (h->root.type == bfd_link_hash_new)
-    h->non_elf = 0;
+    {
+      bfd_elf_link_mark_dynamic_symbol (info, h);
+      h->non_elf = 0;
+    }
 
   /* If this symbol is being provided by the linker script, and it is
      currently defined by a dynamic object, but not by a regular
@@ -814,6 +832,15 @@ _bfd_elf_merge_symbol (bfd *abfd,
   sec = *psec;
   bind = ELF_ST_BIND (sym->st_info);
 
+  /* Silently discard TLS symbols from --just-syms.  There's no way to
+     combine a static TLS block with a new TLS block for this executable.  */
+  if (ELF_ST_TYPE (sym->st_info) == STT_TLS
+      && sec->sec_info_type == ELF_INFO_TYPE_JUST_SYMS)
+    {
+      *skip = TRUE;
+      return TRUE;
+    }
+
   if (! bfd_is_und_section (sec))
     h = elf_link_hash_lookup (elf_hash_table (info), name, TRUE, FALSE, FALSE);
   else
@@ -840,6 +867,7 @@ _bfd_elf_merge_symbol (bfd *abfd,
 
   if (h->root.type == bfd_link_hash_new)
     {
+      bfd_elf_link_mark_dynamic_symbol (info, h);
       h->non_elf = 0;
       return TRUE;
     }
@@ -1626,6 +1654,10 @@ _bfd_elf_export_symbol (struct elf_link_hash_entry *h, void *data)
 {
   struct elf_info_failed *eif = data;
 
+  /* Ignore this if we won't export it.  */
+  if (!eif->info->export_dynamic && !h->dynamic)
+    return TRUE;
+
   /* Ignore indirect symbols.  These are added by the versioning code.  */
   if (h->root.type == bfd_link_hash_indirect)
     return TRUE;
@@ -2379,7 +2411,7 @@ _bfd_elf_fix_symbol_flags (struct elf_link_hash_entry *h,
   if (h->needs_plt
       && eif->info->shared
       && is_elf_hash_table (eif->info->hash)
-      && (eif->info->symbolic
+      && (SYMBOLIC_BIND (eif->info, h)
 	  || ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
       && h->def_regular)
     {
@@ -2608,7 +2640,7 @@ _bfd_elf_dynamic_symbol_p (struct elf_link_hash_entry *h,
 
   /* Identify the cases where name binding rules say that a
      visible symbol resolves locally.  */
-  binding_stays_local_p = info->executable || info->symbolic;
+  binding_stays_local_p = info->executable || SYMBOLIC_BIND (info, h);
 
   switch (ELF_ST_VISIBILITY (h->other))
     {
@@ -2671,7 +2703,7 @@ _bfd_elf_symbol_refs_local_p (struct elf_link_hash_entry *h,
   /* At this point, we know the symbol is defined and dynamic.  In an
      executable it must resolve locally, likewise when building symbolic
      shared libraries.  */
-  if (info->executable || info->symbolic)
+  if (info->executable || SYMBOLIC_BIND (info, h))
     return TRUE;
 
   /* Now deal with defined dynamic symbols in shared libraries.  Ones
@@ -3181,7 +3213,7 @@ elf_link_add_object_symbols (bfd *abfd, struct bfd_link_info *info)
 	  const char *name;
 
 	  name = bfd_get_section_name (abfd, s);
-	  if (strncmp (name, ".gnu.warning.", sizeof ".gnu.warning." - 1) == 0)
+	  if (CONST_STRNEQ (name, ".gnu.warning."))
 	    {
 	      char *msg;
 	      bfd_size_type sz;
@@ -4529,7 +4561,7 @@ elf_link_add_object_symbols (bfd *abfd, struct bfd_link_info *info)
 	  asection *stab;
 
 	  for (stab = abfd->sections; stab; stab = stab->next)
-	    if (strncmp (".stab", stab->name, 5) == 0
+	    if (CONST_STRNEQ (stab->name, ".stab")
 		&& (!stab->name[5] ||
 		    (stab->name[5] == '.' && ISDIGIT (stab->name[6])))
 		&& (stab->flags & SEC_MERGE) == 0
@@ -5322,7 +5354,8 @@ bfd_elf_size_dynamic_sections (bfd *output_bfd,
 
       /* If we are supposed to export all symbols into the dynamic symbol
 	 table (this is not the normal case), then do so.  */
-      if (info->export_dynamic)
+      if (info->export_dynamic
+	  || (info->executable && info->dynamic))
 	{
 	  elf_link_hash_traverse (elf_hash_table (info),
 				  _bfd_elf_export_symbol,
@@ -7037,8 +7070,6 @@ elf_link_output_extsym (struct elf_link_hash_entry *h, void *data)
   if (h->dynindx != -1
       && elf_hash_table (finfo->info)->dynamic_sections_created)
     {
-      size_t bucketcount;
-      size_t bucket;
       bfd_byte *esym;
 
       sym.st_name = h->dynstr_index;
@@ -7050,14 +7081,16 @@ elf_link_output_extsym (struct elf_link_hash_entry *h, void *data)
 	}
       bed->s->swap_symbol_out (finfo->output_bfd, &sym, esym, 0);
 
-      bucketcount = elf_hash_table (finfo->info)->bucketcount;
-      bucket = h->u.elf_hash_value % bucketcount;
-
       if (finfo->hash_sec != NULL)
 	{
 	  size_t hash_entry_size;
 	  bfd_byte *bucketpos;
 	  bfd_vma chain;
+	  size_t bucketcount;
+	  size_t bucket;
+
+	  bucketcount = elf_hash_table (finfo->info)->bucketcount;
+	  bucket = h->u.elf_hash_value % bucketcount;
 
 	  hash_entry_size
 	    = elf_section_data (finfo->hash_sec)->this_hdr.sh_entsize;
@@ -9224,13 +9257,43 @@ bfd_elf_final_link (bfd *abfd, struct bfd_link_info *info)
 
 /* Garbage collect unused sections.  */
 
-/* The mark phase of garbage collection.  For a given section, mark
-   it and any sections in this section's group, and all the sections
-   which define symbols to which it refers.  */
-
 typedef asection * (*gc_mark_hook_fn)
   (asection *, struct bfd_link_info *, Elf_Internal_Rela *,
    struct elf_link_hash_entry *, Elf_Internal_Sym *);
+
+/* Default gc_mark_hook.  */
+
+asection *
+_bfd_elf_gc_mark_hook (asection *sec,
+		       struct bfd_link_info *info ATTRIBUTE_UNUSED,
+		       Elf_Internal_Rela *rel ATTRIBUTE_UNUSED,
+		       struct elf_link_hash_entry *h,
+		       Elf_Internal_Sym *sym)
+{
+  if (h != NULL)
+    {
+      switch (h->root.type)
+	{
+	case bfd_link_hash_defined:
+	case bfd_link_hash_defweak:
+	  return h->root.u.def.section;
+
+	case bfd_link_hash_common:
+	  return h->root.u.c.p->section;
+
+	default:
+	  break;
+	}
+    }
+  else
+    return bfd_section_from_elf_index (sec->owner, sym->st_shndx);
+
+  return NULL;
+}
+
+/* The mark phase of garbage collection.  For a given section, mark
+   it and any sections in this section's group, and all the sections
+   which define symbols to which it refers.  */
 
 bfd_boolean
 _bfd_elf_gc_mark (struct bfd_link_info *info,
@@ -9667,21 +9730,24 @@ bfd_elf_gc_sections (bfd *abfd, struct bfd_link_info *info)
 	 easily due to needing special relocs to handle the
 	 difference of two symbols in separate sections.
 	 Don't keep code sections referenced by .eh_frame.  */
+#define TEXT_PREFIX			".text."
+#define GCC_EXCEPT_TABLE_PREFIX		".gcc_except_table."
       for (o = sub->sections; o != NULL; o = o->next)
 	if (!o->gc_mark && o->gc_mark_from_eh && (o->flags & SEC_CODE) == 0)
 	  {
-	    if (strncmp (o->name, ".gcc_except_table.", 18) == 0)
+	    if (CONST_STRNEQ (o->name, GCC_EXCEPT_TABLE_PREFIX))
 	      {
-		unsigned long len;
 		char *fn_name;
+		const char *sec_name;
 		asection *fn_text;
+		unsigned o_name_prefix_len  = strlen (GCC_EXCEPT_TABLE_PREFIX);
+		unsigned fn_name_prefix_len = strlen (TEXT_PREFIX);
 
-		len = strlen (o->name + 18) + 1;
-		fn_name = bfd_malloc (len + 6);
+		sec_name = o->name + o_name_prefix_len;
+		fn_name = bfd_malloc (strlen (sec_name) + fn_name_prefix_len + 1);
 		if (fn_name == NULL)
 		  return FALSE;
-		memcpy (fn_name, ".text.", 6);
-		memcpy (fn_name + 6, o->name + 18, len);
+		sprintf (fn_name, "%s%s", TEXT_PREFIX, sec_name);
 		fn_text = bfd_get_section_by_name (sub, fn_name);
 		free (fn_name);
 		if (fn_text == NULL || !fn_text->gc_mark)
@@ -10200,7 +10266,7 @@ _bfd_elf_section_already_linked (bfd *abfd, struct bfd_section * sec)
 
   name = bfd_get_section_name (abfd, sec);
 
-  if (strncmp (name, ".gnu.linkonce.", sizeof (".gnu.linkonce.") - 1) == 0
+  if (CONST_STRNEQ (name, ".gnu.linkonce.")
       && (p = strchr (name + sizeof (".gnu.linkonce.") - 1, '.')) != NULL)
     p++;
   else

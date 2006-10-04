@@ -785,6 +785,30 @@ is_specified_symbol (const char *name, struct symlist *list)
   return FALSE;
 }
 
+/* Return a pointer to the symbol used as a signature for GROUP.  */
+
+static asymbol *
+group_signature (asection *group)
+{
+  bfd *abfd = group->owner;
+  Elf_Internal_Shdr *ghdr;
+
+  if (bfd_get_flavour (abfd) != bfd_target_elf_flavour)
+    return NULL;
+
+  ghdr = &elf_section_data (group)->this_hdr;
+  if (ghdr->sh_link < elf_numsections (abfd))
+    {
+      const struct elf_backend_data *bed = get_elf_backend_data (abfd);
+      Elf_Internal_Shdr *symhdr = elf_elfsections (abfd) [ghdr->sh_link];
+
+      if (symhdr->sh_type == SHT_SYMTAB
+	  && ghdr->sh_info < symhdr->sh_size / bed->s->sizeof_sym)
+	return isympp[ghdr->sh_info - 1];
+    }
+  return NULL;
+}
+
 /* See if a section is being removed.  */
 
 static bfd_boolean
@@ -813,6 +837,31 @@ is_strip_section (bfd *abfd ATTRIBUTE_UNUSED, asection *sec)
 
       if (strip_symbols == STRIP_NONDEBUG)
 	return FALSE;
+    }
+
+  if ((bfd_get_section_flags (abfd, sec) & SEC_GROUP) != 0)
+    {
+      asymbol *gsym;
+      const char *gname;
+
+      /* PR binutils/3166
+	 Group sections look like debugging sections but they are not.
+	 (They have a non-zero size but they are not ALLOCated).  */
+      if (strip_symbols == STRIP_NONDEBUG)
+	return TRUE;
+
+      /* PR binutils/3181
+	 If we are going to strip the group signature symbol, then
+	 strip the group section too.  */
+      gsym = group_signature (sec);
+      if (gsym != NULL)
+	gname = gsym->name;
+      else
+	gname = sec->name;
+      if ((strip_symbols == STRIP_ALL
+	   && !is_specified_symbol (gname, keep_specific_list))
+	  || is_specified_symbol (gname, strip_specific_list))
+	return TRUE;
     }
 
   return FALSE;
@@ -1318,6 +1367,21 @@ copy_object (bfd *ibfd, bfd *obfd)
   isympp = NULL;
   osympp = NULL;
 
+  symsize = bfd_get_symtab_upper_bound (ibfd);
+  if (symsize < 0)
+    {
+      bfd_nonfatal (bfd_get_archive_filename (ibfd));
+      return FALSE;
+    }
+
+  osympp = isympp = xmalloc (symsize);
+  symcount = bfd_canonicalize_symtab (ibfd, isympp);
+  if (symcount < 0)
+    {
+      bfd_nonfatal (bfd_get_filename (ibfd));
+      return FALSE;
+    }
+
   /* BFD mandates that all output sections be created and sizes set before
      any output is done.  Thus, we traverse all sections multiple times.  */
   bfd_map_over_sections (ibfd, setup_section, obfd);
@@ -1537,21 +1601,6 @@ copy_object (bfd *ibfd, bfd *obfd)
   /* Symbol filtering must happen after the output sections
      have been created, but before their contents are set.  */
   dhandle = NULL;
-  symsize = bfd_get_symtab_upper_bound (ibfd);
-  if (symsize < 0)
-    {
-      bfd_nonfatal (bfd_get_archive_filename (ibfd));
-      return FALSE;
-    }
-
-  osympp = isympp = xmalloc (symsize);
-  symcount = bfd_canonicalize_symtab (ibfd, isympp);
-  if (symcount < 0)
-    {
-      bfd_nonfatal (bfd_get_filename (ibfd));
-      return FALSE;
-    }
-
   if (convert_debugging)
     dhandle = read_debugging_info (ibfd, isympp, symcount);
 
@@ -1723,10 +1772,14 @@ copy_object (bfd *ibfd, bfd *obfd)
 #endif
 
 /* Read each archive element in turn from IBFD, copy the
-   contents to temp file, and keep the temp file handle.  */
+   contents to temp file, and keep the temp file handle.
+   If 'force_output_target' is TRUE then make sure that
+   all elements in the new archive are of the type
+   'output_target'.  */
 
 static void
-copy_archive (bfd *ibfd, bfd *obfd, const char *output_target)
+copy_archive (bfd *ibfd, bfd *obfd, const char *output_target,
+	      bfd_boolean force_output_target)
 {
   struct name_list
     {
@@ -1782,7 +1835,6 @@ copy_archive (bfd *ibfd, bfd *obfd, const char *output_target)
 				bfd_get_filename (this_element), (char *) 0);
 	}
 
-      output_bfd = bfd_openw (output_name, output_target);
       if (preserve_dates)
 	{
 	  stat_status = bfd_stat_arch_elt (this_element, &buf);
@@ -1798,11 +1850,18 @@ copy_archive (bfd *ibfd, bfd *obfd, const char *output_target)
       l->obfd = NULL;
       list = l;
 
-      if (output_bfd == NULL)
-	RETURN_NONFATAL (output_name);
-
       if (bfd_check_format (this_element, bfd_object))
 	{
+	  /* PR binutils/3110: Cope with archives
+	     containing multiple target types.  */
+	  if (force_output_target)
+	    output_bfd = bfd_openw (output_name, output_target);
+	  else
+	    output_bfd = bfd_openw (output_name, bfd_get_target (this_element));
+
+	  if (output_bfd == NULL)
+	    RETURN_NONFATAL (output_name);
+
 	  delete = ! copy_object (this_element, output_bfd);
 
 	  if (! delete
@@ -1823,6 +1882,7 @@ copy_archive (bfd *ibfd, bfd *obfd, const char *output_target)
 	  non_fatal (_("Unable to recognise the format of the input file `%s'"),
 		     bfd_get_archive_filename (this_element));
 
+	  output_bfd = bfd_openw (output_name, output_target);
 copy_unknown_element:
 	  delete = !copy_unknown_object (this_element, output_bfd);
 	  if (!bfd_close_all_done (output_bfd))
@@ -1904,18 +1964,24 @@ copy_file (const char *input_filename, const char *output_filename,
 
   if (bfd_check_format (ibfd, bfd_archive))
     {
+      bfd_boolean force_output_target;
       bfd *obfd;
 
       /* bfd_get_target does not return the correct value until
          bfd_check_format succeeds.  */
       if (output_target == NULL)
-	output_target = bfd_get_target (ibfd);
+	{
+	  output_target = bfd_get_target (ibfd);
+	  force_output_target = FALSE;
+	}
+      else
+	force_output_target = TRUE;
 
       obfd = bfd_openw (output_filename, output_target);
       if (obfd == NULL)
 	RETURN_NONFATAL (output_filename);
 
-      copy_archive (ibfd, obfd, output_target);
+      copy_archive (ibfd, obfd, output_target, force_output_target);
     }
   else if (bfd_check_format_matches (ibfd, bfd_object, &obj_matching))
     {
@@ -2189,6 +2255,13 @@ setup_section (bfd *ibfd, sec_ptr isection, void *obfdarg)
     {
       err = _("private data");
       goto loser;
+    }
+  else if ((isection->flags & SEC_GROUP) != 0)
+    {
+      asymbol *gsym = group_signature (isection);
+
+      if (gsym != NULL)
+	gsym->flags |= BSF_KEEP;
     }
 
   /* All went well.  */

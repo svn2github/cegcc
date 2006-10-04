@@ -153,7 +153,10 @@ typedef struct lang_output_section_statement_struct
   unsigned int processed_vma : 1;
   unsigned int processed_lma : 1;
   unsigned int all_input_readonly : 1;
+  /* If this section should be ignored.  */
   unsigned int ignored : 1; 
+  /* If there is a symbol relative to this section.  */
+  unsigned int section_relative_symbol : 1; 
 } lang_output_section_statement_type;
 
 typedef struct
@@ -602,6 +605,8 @@ extern struct bfd_elf_version_deps *lang_add_vers_depend
   (struct bfd_elf_version_deps *, const char *);
 extern void lang_register_vers_node
   (const char *, struct bfd_elf_version_tree *, struct bfd_elf_version_deps *);
+extern void lang_append_dynamic_list (struct bfd_elf_version_expr *);
+extern void lang_append_dynamic_list_cpp_typeinfo (void);
 bfd_boolean unique_section_p
   (const asection *);
 extern void lang_add_unique

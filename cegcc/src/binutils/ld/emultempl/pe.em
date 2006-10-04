@@ -122,7 +122,7 @@ cat >>e${EMULATION_NAME}.c <<EOF
 #define NT_DLL_IMAGE_BASE		0x00010000
 #endif
 
-#define U(S) (${TARGET_UNDERSCORE} S)
+#define U(S) ${INITIAL_SYMBOL_CHAR} S
 
 static struct internal_extra_pe_aouthdr pe;
 static int dll;
@@ -469,7 +469,7 @@ set_pe_subsystem (void)
 
   set_pe_name ("__subsystem__", subsystem);
 
-  initial_symbol_char = ${TARGET_UNDERSCORE};
+  initial_symbol_char = ${INITIAL_SYMBOL_CHAR};
   if (*initial_symbol_char != '\0')
     {
       char *alc_entry;
@@ -933,8 +933,7 @@ pe_find_data_imports (void)
 
 	      for (i = 0; i < nsyms; i++)
 		{
-		  if (memcmp (symbols[i]->name, U ("_head_"),
-			      sizeof (U ("_head_")) - 1))
+		  if (! CONST_STRNEQ (symbols[i]->name, U ("_head_")))
 		    continue;
 
 		  if (pe_dll_extra_pe_debug)
@@ -1068,7 +1067,7 @@ gld_${EMULATION_NAME}_after_open (void)
 	      {
 		if (strcmp (sec->name, ".idata\$2") == 0)
 		  idata2 = 1;
-		if (strncmp (sec->name, ".idata\$", 7) == 0)
+		if (CONST_STRNEQ (sec->name, ".idata\$"))
 		  is_imp = 1;
 		reloc_count += sec->reloc_count;
 	      }
@@ -1351,7 +1350,7 @@ gld_${EMULATION_NAME}_unrecognized_file (lang_input_statement_type *entry ATTRIB
 	    {
 	      struct bfd_link_hash_entry *h;
 
-	      sprintf (buf, "_%s", pe_def_file->exports[i].internal_name);
+	      sprintf (buf, "%s%s", U (""), pe_def_file->exports[i].internal_name);
 
 	      h = bfd_link_hash_lookup (link_info.hash, buf, TRUE, TRUE, TRUE);
 	      if (h == (struct bfd_link_hash_entry *) NULL)

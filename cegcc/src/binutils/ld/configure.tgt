@@ -219,6 +219,8 @@ i[3-7]86-*-cygwin*)	targ_emul=i386pe ;
 			test "$targ" != "$host" && LIB_PATH='${tooldir}/lib/w32api' ;;
 i[3-7]86-*-mingw32*)	targ_emul=i386pe ;
 			targ_extra_ofiles="deffilep.o pe-dll.o" ;;
+x86_64-*-mingw64*)	targ_emul=i386pep ;
+			targ_extra_ofiles="deffilep.o pep-dll.o" ;;
 i[3-7]86-*-interix*)	targ_emul=i386pe_posix;
  			targ_extra_ofiles="deffilep.o pe-dll.o" ;;
 i[3-7]86-*-beospe*)	targ_emul=i386beos ;;
@@ -323,6 +325,10 @@ mips*vr4100el-*-elf*)	targ_emul=elf32l4300 ;;
 mips*vr4100-*-elf*)	targ_emul=elf32b4300 ;;
 mips*vr5000el-*-elf*)	targ_emul=elf32l4300 ;;
 mips*vr5000-*-elf*)	targ_emul=elf32b4300 ;;
+mips*el-sde-elf*)	targ_emul=elf32ltsmip
+			targ_extra_emuls="elf32btsmip elf32ltsmipn32 elf64ltsmip elf32btsmipn32 elf64btsmip" ;;
+mips*-sde-elf*)		targ_emul=elf32btsmip
+			targ_extra_emuls="elf32ltsmip elf32btsmipn32 elf64btsmip elf32ltsmipn32 elf64ltsmip" ;;
 mips*el-*-elf*)		targ_emul=elf32elmip ;;
 mips*-*-elf*)		targ_emul=elf32ebmip ;;
 mips*-*-rtems*)		targ_emul=elf32ebmip ;;
@@ -445,6 +451,7 @@ s390-*-linux*)          targ_emul=elf_s390
 			  tdir_elf64_s390=`echo ${targ_alias} | sed -e 's/s390/s390x/'`
 			fi
 			;;
+score-*-elf)            targ_emul=scoreelf ;;
 sh-*-linux*)		targ_emul=shlelf_linux
 			targ_extra_emuls=shelf_linux
 			targ_extra_libpath=shelf_linux ;;

@@ -1,3 +1,152 @@
+2006-10-03  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* pe-dll.c : Fix typo.
+	(autofilter_symbolprefixlist) : Remove __imp_.
+	(is_import) : New.
+	(auto-export) : Remove  re-import check. Moved to callers.
+	(process_def_file) : Check is symbol is an import. Always
+	underscore __imp_.
+	Only skip underscore on underscored targets.
+	(make_one) : Always underscore __imp_.
+	(pe_create_runtime_relocator_reference) : Only underscore
+	_pei386_runtime_relocator on underscored targets.
+	(pe_process_import_defs) : Always underscore __imp_.
+	* pe.em (U) : New macro.
+	(set_pe_subsystem) : Remove underscore from _WinMainCRTStartup
+	on wince subsystem case.
+	(pe_find_data_imports) : Use U on "_head_".
+	(gld_${EMULATION_NAME}_unrecognized_file) : Use U.
+
+2006-09-26  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR ld/3223
+	PR ld/3267
+	* ld.texinfo: Updated Output Section Discarding.
+
+	* ldlang.h (lang_output_section_statement_type): Add
+	section_relative_symbol.
+	* ldlang.c (strip_excluded_output_sections): Don't strip a
+	section with a symbol relative to it.
+	(lang_size_sections_1): Mark if an output section has a symbol
+	symbol relative to it.
+
+2006-09-25  Bob Wilson  <bob.wilson@acm.org>
+
+	* ld.texinfo (Options): Update description of local symbols for -X.
+
+2006-09-23  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR ld/3249
+	* scripttempl/elf.sc: Don't combine .gnu.linkonce.d.*personality*
+	and .gnu.linkonce.wi.* sections with .data and .debug_info for
+	relocatable link.
+
+2006-09-20  Kai Tietz  <Kai.Tietz@onevision.com>
+
+	* configure.in: Add new target x86_64-pc-mingw64.
+	* configure: Regenerate.
+	* configure.tgt: Add definition of target emulation i386pep.
+	* Makefile.am: Add new target files for target-all.
+	* Makefile.in: Regenerate.
+	* pe-dll.c: Adjust to be inheritable by pep_dll.c as include.
+	Fix memory out of bounds excess for idata relocation section data.
+	* pep-dll.c: Add target specific shared object handling.
+	* pep-dll.h: Add target specific definitions for shared object handling.
+	* emulparams/i386pep.sh: Add new emulation params for target x86_64 coff.
+	* emultempl/pep.em: Add new emulation file for target x86_64 coff.
+	* po/POTFILES.in: Regenerate.
+	* scripttempl/pep.sc: Add linker script template for target x86_64 coff.
+	* NEWS: Mention new target.
+
+2006-09-18  Thiemo Seufer  <ths@networkno.de>
+
+	* configure.tgt: Add mips*el-sde-elf* and mips*-sde-elf*
+	configurations.
+
+2006-09-17  Mei Ligang  <ligang@sunnorth.com.cn>
+
+	* emulparams/scoreelf.sh: New file.
+	* emultempl/scoreelf.em: New file.
+	* Makefile.am: Add Score files.
+	* Makefile.in: Regenerate.
+	* configure.tgt: Add Score target.
+	* NEWS: Mention new target support.
+	
+2006-09-16  Nick Clifton  <nickc@redhat.com>
+	    Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* ldctor.c: Make use of new STRING_COMMA_LEN and CONST_STRNEQ
+	macros defined in bfd.h.
+	* ldmain.c: Likewise.
+	* ldwrite.c: Likewise.
+	* lexsup.c: Likewise.
+	* pe-dll.c: Likewise.
+	* emultempl/aix.em: Likewise.
+	* emultempl/beos.em: Likewise.
+	* emultempl/elf32.em: Likewise.
+	* emultempl/pe.em: Likewise.
+	* emultempl/sunos.em: Likewise.
+	* emultempl/xtensaelf.em: Likewise.
+
+2006-09-15  Nick Clifton  <nickc@redhat.com>
+
+	PR ld/3107
+	* ldlang.c (lang_size_sections_1): Do not abort when encountering
+	a non-empty section that is ignored.  Instead produce a warning
+	message.
+
+2006-09-08  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* ld.texinfo: Document --dynamic-list-cpp-typeinfo.
+
+2006-09-07  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* Makefile.am (CXX): Set to g++.
+	(CXX_FOR_TARGET): Likewise.
+	* Makefile.in: Regenerated.
+
+	* NEWS: Mention --dynamic-list.
+
+	* ld.texinfo: Document --dynamic-list.
+
+	* ldgram.y: Support dynamic list.
+
+	* ldlang.c (lang_process): Call lang_finalize_version_expr_head
+	on link_info.dynamic if needed.
+	(lang_append_dynamic_list): New.
+	(lang_append_dynamic_list_cpp_typeinfo): New.
+	* ldlang.h (lang_append_dynamic_list): Likewise.
+	* ldlang.h (lang_append_dynamic_list_cpp_typeinfo): Likewise.
+
+	* ldlex.h (input_enum): Add input_dynamic_list.
+	* ldlex.l: Handle it.
+
+	* ldmain.c (main): Initialize link_info.dynamic.
+
+	* lexsup.c (option_values): Add OPTION_DYNAMIC_LIST and
+	OPTION_DYNAMIC_LIST_CPP_TYPEINFO.
+	(ld_options): Add entries for OPTION_DYNAMIC_LIST and
+	OPTION_DYNAMIC_LIST_CPP_TYPEINFO.
+	(parse_args): Handle OPTION_DYNAMIC_LIST and
+	OPTION_DYNAMIC_LIST_CPP_TYPEINFO.
+
+2006-09-07  Joel Sherrill <joel.sherrill@oarcorp.com>
+
+	* emulparams/h8300elf.sh: _tinydata should not be placed in
+	relocatables.
+	* emulparams/h8300.sh: Likewise.
+	* emulparams/h8300sxelf.sh: Likewise.
+
+2006-09-05  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR ld/3015
+	* emultempl/elf32.em: Enable "-z relro" only if $COMMONPAGESIZE
+	is defined.
+
+2006-08-29  Nathan Sidwell  <nathan@codesourcery.com>
+
+	* ldlang.c (walk_wild): Allow * to glob '/' in wildcarded match.
+
 2006-08-28  Alan Modra  <amodra@bigpond.net.au>
 
 	* scripttempl/elf.sc: Ensure that crtbegin and crtend entries will

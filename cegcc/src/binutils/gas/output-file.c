@@ -36,11 +36,12 @@ output_file_create (char *name)
 
   else if (!(stdoutput = bfd_openw (name, TARGET_FORMAT)))
     {
-      if (bfd_get_error () == bfd_error_invalid_target)
-	as_perror (_("Selected target format '%s' unknown"), TARGET_FORMAT);
+      bfd_error_type err = bfd_get_error ();
+
+      if (err == bfd_error_invalid_target)
+	as_fatal (_("selected target format '%s' unknown"), TARGET_FORMAT);
       else
-	as_perror (_("FATAL: can't create %s"), name);
-      exit (EXIT_FAILURE);
+	as_fatal (_("can't create %s: %s"), name, bfd_errmsg (err));
     }
 
   bfd_set_format (stdoutput, bfd_object);
@@ -52,12 +53,19 @@ output_file_create (char *name)
 void
 output_file_close (char *filename)
 {
+  bfd_boolean res;
+
+  if (stdoutput == NULL)
+    return;
+    
   /* Close the bfd.  */
-  if (bfd_close (stdoutput) == 0)
-    {
-      bfd_perror (filename);
-      as_perror (_("FATAL: can't close %s\n"), filename);
-      exit (EXIT_FAILURE);
-    }
-  stdoutput = NULL;		/* Trust nobody!  */
+  res = bfd_close (stdoutput);
+
+  /* Prevent an infinite loop - if the close failed we will call as_fatal
+     which will call xexit() which may call this function again...  */
+  stdoutput = NULL;
+
+  if (! res)
+    as_fatal (_("can't close %s: %s"), filename,
+	      bfd_errmsg (bfd_get_error ()));
 }

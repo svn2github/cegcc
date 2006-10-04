@@ -103,6 +103,7 @@ ALL_MACHINES = \
 	cpu-powerpc.lo \
 	cpu-rs6000.lo \
 	cpu-s390.lo \
+	cpu-score.lo \
 	cpu-sh.lo \
 	cpu-sparc.lo \
 	cpu-tic30.lo \
@@ -165,6 +166,7 @@ ALL_MACHINES_CFILES = \
 	cpu-powerpc.c \
 	cpu-rs6000.c \
 	cpu-s390.c \
+	cpu-score.c \
 	cpu-sh.c \
 	cpu-sparc.c \
 	cpu-tic30.c \
@@ -271,6 +273,7 @@ BFD32_BACKENDS = \
 	elf32-pj.lo \
 	elf32-ppc.lo \
 	elf32-s390.lo \
+	elf32-score.lo \
 	elf32-sh.lo \
 	elf32-sh-symbian.lo \
 	elf32-sh64.lo \
@@ -447,6 +450,7 @@ BFD32_BACKENDS_CFILES = \
 	elf32-sh64.c \
 	elf32-sh64-com.c \
 	elf32-s390.c \
+	elf32-score.c \
 	elf32-sh.c \
 	elf32-sh-symbian.c \
 	elfxx-sparc.c \
@@ -559,7 +563,11 @@ BFD64_BACKENDS = \
 	mmo.lo \
 	nlm32-alpha.lo \
 	nlm64.lo \
-	pepigen.lo
+	coff-x86_64.lo \
+	pe-x86_64.lo \
+	pei-x86_64.lo \
+	pepigen.lo \
+	pex64igen.lo
 
 BFD64_BACKENDS_CFILES = \
 	aix5ppc-core.c \
@@ -582,7 +590,10 @@ BFD64_BACKENDS_CFILES = \
 	elf64.c \
 	mmo.c \
 	nlm32-alpha.c \
-	nlm64.c
+	nlm64.c \
+	coff-x86_64.c \
+	pe-x86_64.c \
+	pei-x86_64.c
 
 OPTIONAL_BACKENDS = \
 	aix386-core.lo \
@@ -632,7 +643,7 @@ SOURCE_CFILES = \
 	$(OPTIONAL_BACKENDS_CFILES)
 
 BUILD_CFILES = \
-	elf32-ia64.c elf64-ia64.c peigen.c pepigen.c
+	elf32-ia64.c elf64-ia64.c peigen.c pepigen.c pex64igen.c
 
 CFILES = $(SOURCE_CFILES) $(BUILD_CFILES)
 
@@ -789,6 +800,11 @@ pepigen.c : peXXigen.c
 	rm -f pepigen.c
 	sed -e s/XX/pep/g < $(srcdir)/peXXigen.c > pepigen.new
 	mv -f pepigen.new pepigen.c
+
+pex64igen.c: peXXigen.c
+	rm -f pex64igen.c
+	sed -e s/XX/pex64/g < $(srcdir)/peXXigen.c > pex64igen.new
+	mv -f pex64igen.new pex64igen.c
 
 BFD_H_DEPS= $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h
 LOCAL_H_DEPS= libbfd.h sysdep.h config.h
@@ -1058,6 +1074,7 @@ cpu-pj.lo: cpu-pj.c $(INCDIR)/filenames.h $(INCDIR)/hashtab.h
 cpu-powerpc.lo: cpu-powerpc.c $(INCDIR)/filenames.h \
   $(INCDIR)/hashtab.h
 cpu-rs6000.lo: cpu-rs6000.c $(INCDIR)/filenames.h $(INCDIR)/hashtab.h
+cpu-score.lo: cpu-score.c $(INCDIR)/filenames.h
 cpu-s390.lo: cpu-s390.c $(INCDIR)/filenames.h $(INCDIR)/hashtab.h
 cpu-sh.lo: cpu-sh.c $(INCDIR)/filenames.h $(INCDIR)/hashtab.h \
   $(srcdir)/../opcodes/sh-opc.h
@@ -1436,6 +1453,10 @@ elf32-sh64-com.lo: elf32-sh64-com.c $(INCDIR)/filenames.h \
   $(INCDIR)/elf/internal.h $(INCDIR)/elf/external.h $(INCDIR)/bfdlink.h \
   $(INCDIR)/elf/sh.h $(INCDIR)/elf/reloc-macros.h elf32-sh64.h \
   $(srcdir)/../opcodes/sh64-opc.h
+elf32-score.lo: elf32-score.c $(INCDIR)/filenames.h \
+  elf-bfd.h $(INCDIR)/elf/common.h $(INCDIR)/elf/internal.h \
+  $(INCDIR)/elf/external.h $(INCDIR)/elf/score.h \
+  $(INCDIR)/elf/reloc-macros.h elf32-target.h
 elf32-s390.lo: elf32-s390.c $(INCDIR)/filenames.h $(INCDIR)/bfdlink.h \
   $(INCDIR)/hashtab.h elf-bfd.h $(INCDIR)/elf/common.h \
   $(INCDIR)/elf/internal.h $(INCDIR)/elf/external.h $(INCDIR)/elf/s390.h \
@@ -1851,5 +1872,8 @@ peigen.lo: peigen.c $(INCDIR)/filenames.h $(INCDIR)/hashtab.h \
   $(INCDIR)/coff/pe.h libcoff.h $(INCDIR)/bfdlink.h libpei.h
 pepigen.lo: pepigen.c $(INCDIR)/filenames.h $(INCDIR)/hashtab.h \
   $(INCDIR)/coff/internal.h $(INCDIR)/coff/ia64.h $(INCDIR)/coff/external.h \
+  $(INCDIR)/coff/pe.h libcoff.h $(INCDIR)/bfdlink.h libpei.h
+pex64igen.lo: pex64igen.c $(INCDIR)/filenames.h $(INCDIR)/hashtab.h \
+  $(INCDIR)/coff/internal.h $(INCDIR)/coff/x86_64.h $(INCDIR)/coff/external.h \
   $(INCDIR)/coff/pe.h libcoff.h $(INCDIR)/bfdlink.h libpei.h
 # IF YOU PUT ANYTHING HERE IT WILL GO AWAY

@@ -1,3 +1,382 @@
+2006-10-03  Jakub Jelinek  <jakub@redhat.com>
+
+	* elf-bfd.h (struct eh_cie_fde): Add set_loc pointer.
+	* elf-eh-frame.c (skip_cfa_op): Fix handling of DW_CFA_advance_loc.
+	Handle DW_CFA_{remember,restore}_state, DW_CFA_GNU_window_save,
+	DW_CFA_val_{offset{,_sf},expression}.
+	(skip_non_nops): Record number of DW_CFA_set_loc ops.
+	(_bfd_elf_discard_section_eh_frame): Require skip_non_nops recognizes
+	all ops.  If there are any DW_CFA_set_loc ops and they are pcrel
+	or going to be pcrel, compute set_loc array.
+	(_bfd_elf_eh_frame_section_offset): If make_relative, kill relocations
+	against DW_CFA_set_loc operands.
+	(_bfd_elf_write_section_eh_frame): Handle DW_CFA_set_loc adjusting.
+
+2006-10-02  Daniel Jacobowitz  <dan@codesourcery.com>
+
+	* elflink.c (_bfd_elf_merge_symbol): Discard references to TLS
+	symbols from the --just-syms file.
+
+2006-10-01  Alan Modra  <amodra@bigpond.net.au>
+
+	* elf64-ppc.c (ppc64_elf_build_stubs): Test glink size for
+	existence of PLT.
+
+2006-09-29  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR ld/3283
+	* elf64-x86-64.c (elf64_x86_64_relocate_section): Don't ignore
+	relocation overflow on branches to undefweaks.
+
+2006-09-29  Alan Modra  <amodra@bigpond.net.au>
+
+	* po/BLD-POTFILES.in: Regenerate.
+	* po/SRC-POTFILES.in: Regenerate.
+
+2006-09-29  Danny Smith  <dannysmith@users.sourceforge.net>
+
+	PR 3276
+	* pei-i386.c (COFF_SECTION_ALIGNMENT_ENTRIES): Enable 16 byte
+	alignment for .data$, .rdata$ and .text$ sections so that sse
+	and sse2 code will work for linkonce sections too. 
+	* pe-i386.c (COFF_SECTION_ALIGNMENT_ENTRIES): Likewise.
+
+2006-09-28  Alan Modra  <amodra@bigpond.net.au>
+
+	* elflink.c (_bfd_elf_gc_mark_hook): New function.
+	* elf-bfd.h (_bfd_elf_gc_mark_hook): Declare.
+	* elfxx-target.h (elf_backend_gc_mark_hook): Default to above.
+	* elf-m10300.c (mn10300_elf_gc_mark_hook): Use _bfd_elf_gc_mark_hook.
+	* elf32-arm.c (elf32_arm_gc_mark_hook): Likewise.
+	* elf32-cris.c (cris_elf_gc_mark_hook): Likewise.
+	* elf32-hppa.c (elf32_hppa_gc_mark_hook): Likewise.
+	* elf32-i386.c (elf_i386_gc_mark_hook): Likewise.
+	* elf32-m32r.c (m32r_elf_gc_mark_hook): Likewise.
+	* elf32-m68k.c (elf_m68k_gc_mark_hook): Likewise.
+	* elf32-mcore.c (mcore_elf_gc_mark_hook): Likewise.
+	* elf32-ppc.c (ppc_elf_gc_mark_hook): Likewise.
+	* elf32-s390.c (elf_s390_gc_mark_hook): Likewise.
+	* elf32-score.c (_bfd_score_elf_gc_mark_hook): Likewise.
+	* elf32-sh.c (sh_elf_gc_mark_hook): Likewise.
+	* elf32-vax.c (elf_vax_gc_mark_hook): Likewise.
+	* elf32-xtensa.c (elf_xtensa_gc_mark_hook): Likewise.
+	* elf64-mmix.c (mmix_elf_gc_mark_hook): Likewise.
+	* elf64-s390.c (elf_s390_gc_mark_hook): Likewise.
+	* elf64-x86-64.c (elf64_x86_64_gc_mark_hook): Likewise.
+	* elfxx-mips.c (_bfd_mips_elf_gc_mark_hook): Likewise.
+	* elfxx-sparc.c (_bfd_sparc_elf_gc_mark_hook): Likewise.
+	* elf32-bfin.c (bfin_gc_mark_hook): Likewise.
+	(bfinfdpic_gc_sweep_hook): Delete.
+	(elf_backend_gc_sweep_hook): Don't define for elf32-bfinfdpic.
+	* elf32-d10v.c (elf32_d10v_gc_mark_hook): Use _bfd_elf_gc_mark_hook.
+	(elf32_d10v_gc_sweep_hook): Delete.
+	(elf_backend_gc_sweep_hook): Don't define.
+	* elf32-fr30.c (fr30_elf_gc_mark_hook): Use _bfd_elf_gc_mark_hook.
+	(fr30_elf_gc_sweep_hook): Delete.
+	(elf_backend_gc_sweep_hook): Don't define.
+	* elf32-frv.c (elf32_frv_gc_mark_hook): Use _bfd_elf_gc_mark_hook.
+	(elf32_frv_gc_sweep_hook): Delete.
+	(elf_backend_gc_sweep_hook): Don't define.
+	* elf32-iq2000.c (iq2000_elf_gc_mark_hook): Use _bfd_elf_gc_mark_hook.
+	(iq2000_elf_gc_sweep_hook): Delete.
+	(elf_backend_gc_sweep_hook): Don't define.
+	* elf32-openrisc.c (openrisc_elf_gc_mark_hook): Use
+	_bfd_elf_gc_mark_hook.
+	(openrisc_elf_gc_sweep_hook): Delete.
+	(elf_backend_gc_sweep_hook): Don't define.
+	* elf32-v850.c (v850_elf_gc_mark_hook): Use _bfd_elf_gc_mark_hook.
+	(v850_elf_gc_sweep_hook): Delete.
+	(elf_backend_gc_sweep_hook): Don't define.
+	* elf32-xstormy16.c (xstormy16_elf_gc_mark_hook): Use
+	_bfd_elf_gc_mark_hook.
+	(xstormy16_elf_gc_sweep_hook): Delete.
+	(elf_backend_gc_sweep_hook): Don't define.
+	* elf64-sh64.c (sh_elf64_gc_mark_hook): Use _bfd_elf_gc_mark_hook.
+	(sh_elf64_gc_sweep_hook): Delete.
+	(elf_backend_gc_sweep_hook): Don't define.
+	* elf32-avr.c (elf32_avr_gc_mark_hook): Delete.
+	(elf32_avr_gc_sweep_hook): Delete.
+	(elf_backend_gc_mark_hook, elf_backend_gc_mark_hook): Don't define.
+	* elf32-cr16c.c (elf32_cr16c_gc_mark_hook): Delete.
+	(elf32_cr16c_gc_sweep_hook): Delete.
+	(elf_backend_gc_mark_hook, elf_backend_gc_mark_hook): Don't define.
+	* elf32-crx.c (elf32_crx_gc_mark_hook): Delete.
+	(elf32_crx_gc_sweep_hook): Delete.
+	(elf_backend_gc_mark_hook, elf_backend_gc_mark_hook): Don't define.
+	* elf32-h8300.c (elf32_h8_gc_mark_hook): Delete.
+	(elf32_h8_gc_sweep_hook): Delete.
+	(elf_backend_gc_mark_hook, elf_backend_gc_mark_hook): Don't define.
+	* elf32-ip2k.c (ip2k_elf_gc_mark_hook): Delete.
+	(ip2k_elf_gc_sweep_hook): Delete.
+	(elf_backend_gc_mark_hook, elf_backend_gc_mark_hook): Don't define.
+	* elf32-m32c.c (m32c_elf_gc_mark_hook, m32c_elf_gc_sweep_hook): Delete.
+	(elf_backend_gc_mark_hook, elf_backend_gc_mark_hook): Don't define.
+	* elf32-m68hc11.c (elf_backend_gc_mark_hook): Don't define.
+	(elf_backend_gc_sweep_hook): Don't define.
+	* elf32-m68hc12.c (elf_backend_gc_mark_hook): Don't define.
+	(elf_backend_gc_sweep_hook): Don't define.
+	* elf32-m68hc1x.c (elf32_m68hc11_gc_mark_hook): Delete.
+	(elf32_m68hc11_gc_sweep_hook): Delete.
+	* elf32-m68hc1x.h (elf32_m68hc11_gc_mark_hook): Delete.
+	(elf32_m68hc11_gc_sweep_hook): Delete.
+	* elf32-msp430.c (elf32_msp430_gc_mark_hook): Delete.
+	(elf32_msp430_gc_sweep_hook): Delete.
+	(elf_backend_gc_mark_hook, elf_backend_gc_mark_hook): Don't define.
+	* elf32-mt.c (mt_elf_gc_mark_hook, mt_elf_gc_sweep_hook): Delete.
+	(elf_backend_gc_mark_hook, elf_backend_gc_mark_hook): Don't define.
+
+2006-09-25 Pedro Alves <pedro_alves@portugalmail.pt>
+
+	* bfd-in.h (CONST_STRNCPY) : Delete.
+	(LITSTRCPY) : New.
+	(LITMEMCPY) : New.
+	* bfd-in2.h : Regenerate.
+	* elflink.c  (bfd_elf_gc_sections) : Use LITMEMCPY. Don't manually
+	calculate string lengths.
+	* nlmcode.h (nlm_swap_auxiliary_headers_in) : Use LITMEMCPY.
+
+2006-09-26  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR ld/3223
+	PR ld/3267
+	* elf.c (assign_file_positions_for_non_load_sections): Don't
+	warn zero size allocated sections.
+
+2006-09-27  Alan Modra  <amodra@bigpond.net.au>
+
+	* elf32-score.c (_bfd_score_elf_relocate_section): Move assignment
+	to "name" so that compiler realizes it is never uninitialized.
+	Use bfd_elf_sym_name.
+
+2006-09-26  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR binutils/3262
+	* elf.c (rewrite_elf_program_header): Use bfd_zalloc instead of
+	bfd_alloc to allocate segment map.
+	(copy_elf_program_header): Likewise.
+
+2006-09-26  Mark Shinwell  <shinwell@codesourcery.com>
+            Joseph Myers  <joseph@codesourcery.com>
+            Ian Lance Taylor  <ian@wasabisystems.com>
+            Ben Elliston  <bje@wasabisystems.com>
+
+	* archures.c: Add definition for bfd_mach_arm_iWMMXt2.
+	* cpu-arm.c (processors): Add bfd_mach_arm_iWMMXt2.
+	(arch_info_struct, bfd_arm_update_notes): Likewise.
+	(architectures): Likewise.
+	(bfd_arm_merge_machines): Check for iWMMXt2.
+	* bfd-in2.h: Rebuild.
+
+2006-09-24  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* configure: Regenerated.
+
+2006-09-22  Alan Modra  <amodra@bigpond.net.au>
+
+	* elfcode.h (elf_swap_symbol_in): Return bfd_boolean.  Don't abort
+	on error.
+	* elf-bfd.h (elf_size_info <swap_symbol_in>): Adjust decl.
+	(bfd_elf32_swap_symbol_in, bfd_elf64_swap_symbol_in): Likewise.
+	* elf.c (bfd_elf_get_elf_syms): Test return of swap_symbol_in,
+	and report error.
+	* elf32-arm.c (elf32_arm_swap_symbol_in): Return bfd_boolean.
+
+2006-09-20  Martin Schwidefsky  <schwidefsky@de.ibm.com>
+
+	* elf32-s390.c (elf_s390_relocate_section): Remove check for code
+	section in LD to LE linker relaxation for R_390_TLS_LDO32.
+	* elf64-s390.c (elf_s390_relocate_section): Likewise for
+	R_390_TLS_LDO64.
+
+2006-09-20  Kai Tietz  <Kai.Tietz@onevision.com>
+
+	* configure.in:	Added new target-vectors x86_64coff_vec,
+	x86_64pe_vec, and x86_64pei_vec.
+	* configure: Regenerate.
+	* config.bfd: Adjusted x86_64 target architecture detection.
+	* bfd.c: Add for new target "coff-x86-64"
+	(bfd_get_sign_extend): Add target vector idents for pe-x86-64. and pei-x86-64.
+	* coff-x86_64.c: Add new file for x86_64 (AMD64) coff support.
+	* libpei.h: Adjustments for COFF_WITH_pex64.
+	* coffcode.h: Add for new target machine, architecture, signature, and internal
+	signature handler.
+	* Makefile.am: Add new files to target-all and define make-rule for pex64igen.c
+	* Makefile.in: Regenerate.
+	* pe-x86_64.c: Add for new target "pe-x86-64".
+	* pei-x86_64.c:	Add for new target "pei-x86-64".
+	* peicode.h: Adjusts for new targets.
+	(coff_swap_filehdr_out): Set for this target to
+	_bfd_pex64_only_swap_filehdr_out.
+	(SIZEOF_IDATA4): Define it as 8 byte size for this target.
+	(SIZEOF_IDATA5): Define it as 8 byte size for this target.
+	(jump_table jtab): Add for AMD64MAGIC.
+	(pe_ILF_build_a_bfd): Adjusts for new size of SIZEOF_IDATA4 and SIZE_IDATA5.
+	(pe_ILF_object_p): Add coff image-file signature to internal
+	signature translation.
+	* peXXigen.c: Adjust proper include of target coff-header and
+	introduced target specific code
+	(COFF_WITH_pex64): New macro for this target.
+	(pe_print_idata): New dumping method for import section of PE+ files.
+	* targets.c: Add new target vectors declarations for x86_64 coff targets.
+	* coffcode.h: Support code to support the x86_64 PE magic number.
+	* coff-x86_64.c: New file.
+
+2006-09-17  Hans-Peter Nilsson  <hp@axis.com>
+
+	* elf.c (special_sections_s): Revert last STRING_COMMA_LEN change
+	for .stabstr entry, explain why.
+
+2006-09-17  Anton Blanchard  <anton@samba.org>
+	    Alan Modra  <amodra@bigpond.net.au>
+
+	* dwarf2.c (concat_filename): Apply DW_AT_comp_dir if dir table
+	entry isn't absolute.
+
+2006-09-17  Mei Ligang  <ligang@sunnorth.com.cn>
+
+	* cpu-score.c: New file.
+	* elf32-score.c: New file.
+	* config.bfd: Add Score target.
+	* Makefile.am: Add Score files.
+	* Makefile.in: Regenerate.
+	* archures.c: Add Score architecture.
+	* reloc.c: Add Score relocs.
+	* targets.c: Add Score target vectors.
+	* bfd-in2.h: Regenerate.
+	* libbfd.h: Regenerate.
+	* configure.in: Add Score target.
+	* configure: Regenerate.
+
+2006-09-16  Nick Clifton  <nickc@redhat.com>
+	    Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* bfd-in.h (STRING_AND_COMMA): New macro.  Takes one constant
+	string as its argument and emits the string followed by a comma
+	and then the length of the string.
+	(CONST_STRNEQ): New macro.  Checks to see if a variable string
+	has a constant string as its initial characters.
+	(CONST_STRNCPY): New macro.  Copies a constant string to the start
+	of a variable string.
+	* bfd-in2.h: Regenerate.
+	* archive.c: Make use of the new macros.
+	* archive64.c: Likewise.
+	* bfd.c: Likewise.
+	* coff-ppc.c: Likewise.
+	* coff-stgo32.c: Likewise.
+	* coffcode.h: Likewise.
+	* cofflink.c: Likewise.
+	* cpu-i960.c: Likewise.
+	* dwarf2.c: Likewise.
+	* ecoff.c: Likewise.
+	* elf-m10300.c: Likewise.
+	* elf.c: Likewise.
+	* elf32-arm.c: Likewise.
+	* elf32-bfin.c: Likewise.
+	* elf32-cris.c: Likewise.
+	* elf32-hppa.c: Likewise.
+	* elf32-i370.c: Likewise.
+	* elf32-i386.c: Likewise.
+	* elf32-iq2000.c: Likewise.
+	* elf32-m32r.c: Likewise.
+	* elf32-m68hc11.c: Likewise.
+	* elf32-m68hc12.c: Likewise.
+	* elf32-m68k.c: Likewise.
+	* elf32-mcore.c: Likewise.
+	* elf32-ppc.c: Likewise.
+	* elf32-s390.c: Likewise.
+	* elf32-sh-symbian.c: Likewise.
+	* elf32-sh.c: Likewise.
+	* elf32-sh64.c: Likewise.
+	* elf32-v850.c: Likewise.
+	* elf32-vax.c: Likewise.
+	* elf32-xtensa.c: Likewise.
+	* elf64-alpha.c: Likewise.
+	* elf64-hppa.c: Likewise.
+	* elf64-mmix.c: Likewise.
+	* elf64-ppc.c: Likewise.
+	* elf64-s390.c: Likewise.
+	* elf64-sh64.c: Likewise.
+	* elf64-x86-64.c: Likewise.
+	* elflink.c: Likewise.
+	* elfxx-ia64.c: Likewise.
+	* elfxx-mips.c: Likewise.
+	* elfxx-sparc.c: Likewise.
+	* hpux-core.c: Likewise.
+	* i386linux.c: Likewise.
+	* ieee.c: Likewise.
+	* libpei.h: Likewise.
+	* linker.c: Likewise.
+	* m68klinux.c: Likewise.
+	* mmo.c: Likewise.
+	* nlmcode.h: Likewise.
+	* osf-core.c: Likewise.
+	* pef.c: Likewise.
+	* som.c: Likewise.
+	* sparclinux.c: Likewise.
+	* vms-hdr.c: Likewise.
+
+2006-09-14  Alan Modra  <amodra@bigpond.net.au>
+
+	PR 3181
+	* elf.c (_bfd_elf_copy_private_header_data): Fix group members
+	that have had their SHT_GROUP section removed.
+
+2006-09-12  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR ld/3197
+	* elflink.c (elf_link_output_extsym): Compute bucket only if
+	needed.
+
+2006-09-10  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR binutils/3186
+	* elf.c (_bfd_elf_make_section_from_shdr): Correct length of
+	"gnu.linkonce.wi.".
+
+2006-09-08  Vladimir Prus  <vladimir@codesourcery.com>
+
+	* elf32-arm.c (elf32_arm_swap_symbol_out): Remove
+	unconditional setting of low bit for Thumb symbol
+	mistakenly left behind after check for external
+	symbols was added.  Fix comment typo.
+
+2006-09-07  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* elf-bfd.h (elf_link_hash_entry): Add a dynamic field.
+	(bfd_elf_link_mark_dynamic_symbol): New.
+	(SYMBOLIC_BIND): New.
+
+	* elf32-i386.c (elf_i386_check_relocs): Replace info->symbolic
+	with SYMBOLIC_BIND (info, h).
+	(elf_i386_relocate_section): Likewise.
+	* elf64-x86-64.c (elf64_x86_64_check_relocs): Likewise.
+	(elf64_x86_64_relocate_section): Likewise.
+	* elfxx-ia64.c (elfNN_ia64_check_relocs): Likewise.
+
+	* elflink.c (bfd_elf_link_mark_dynamic_symbol): New.
+	(bfd_elf_record_link_assignment): Call
+	bfd_elf_link_mark_dynamic_symbol on new entry.
+	(_bfd_elf_merge_symbol): Likewise.
+	(_bfd_elf_export_symbol): Return if the symbol isn't exported.
+	(_bfd_elf_fix_symbol_flags): Replace info->symbolic with
+	SYMBOLIC_BIND (info, h).
+	(_bfd_elf_dynamic_symbol_p): Likewise.
+	(_bfd_elf_symbol_refs_local_p): Likewise.
+	(bfd_elf_size_dynamic_sections): Updated.
+
+2006-09-05  Bibo Mao  <bibo.mao@intel.com>
+
+	PR binutils/3171
+	* coffcode.h (coff_write_object_contents): Set the optional
+	header magic number to PE32PMAGIC instead of ZMAGIC for ia64.
+
+2006-09-04  Mark Shinwell  <shinwell@codesourcery.com>
+
+        * elf32-arm.c (elf32_arm_howto_table_1): Adjust entries for
+        R_ARM_THM_ALU_PREL_11_0 and R_ARM_THM_PC12 relocations.
+        (elf32_arm_final_link_relocate): Handle R_ARM_THM_ALU_PREL_11_0
+        and R_ARM_THM_PC12 relocations.
+
 2006-08-24  Bob Wilson  <bob.wilson@acm.org>
 
 	* elf32-xtensa.c (xtensa_get_property_section_name): Delete.

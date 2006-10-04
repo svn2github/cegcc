@@ -73,6 +73,7 @@
 #include "elf/avr.h"
 #include "elf/bfin.h"
 #include "elf/cris.h"
+#include "elf/crx.h"
 #include "elf/d10v.h"
 #include "elf/d30v.h"
 #include "elf/dlx.h"
@@ -86,6 +87,7 @@
 #include "elf/i960.h"
 #include "elf/ia64.h"
 #include "elf/ip2k.h"
+#include "elf/iq2000.h"
 #include "elf/m32c.h"
 #include "elf/m32r.h"
 #include "elf/m68k.h"
@@ -102,14 +104,13 @@
 #include "elf/ppc.h"
 #include "elf/ppc64.h"
 #include "elf/s390.h"
+#include "elf/score.h"
 #include "elf/sh.h"
 #include "elf/sparc.h"
 #include "elf/v850.h"
 #include "elf/vax.h"
 #include "elf/x86-64.h"
 #include "elf/xstormy16.h"
-#include "elf/crx.h"
-#include "elf/iq2000.h"
 #include "elf/xtensa.h"
 
 #include "aout/ar.h"
@@ -263,6 +264,7 @@ static void (*byte_put) (unsigned char *, bfd_vma, int);
 /* This is just a bit of syntatic sugar.  */
 #define streq(a,b)	(strcmp ((a), (b)) == 0)
 #define strneq(a,b,n)	(strncmp ((a), (b), (n)) == 0)
+#define const_strneq(a,b) (strncmp ((a), (b), sizeof (b) - 1) == 0)
 
 static void *
 get_data (void *var, FILE *file, long offset, size_t size, size_t nmemb,
@@ -565,6 +567,7 @@ guess_is_rela (unsigned long e_machine)
     case EM_CYGNUS_D10V:
     case EM_MIPS:
     case EM_MIPS_RS3_LE:
+    case EM_SCORE:
       return FALSE;
 
       /* Targets that use RELA relocations.  */
@@ -1098,6 +1101,10 @@ dump_relocations (FILE *file,
 	  rtype = elf_s390_reloc_type (type);
 	  break;
 
+	case EM_SCORE:
+	  rtype = elf_score_reloc_type (type);
+	  break;
+
 	case EM_XSTORMY16:
 	  rtype = elf_xstormy16_reloc_type (type);
 	  break;
@@ -1135,7 +1142,6 @@ dump_relocations (FILE *file,
 	case EM_BLACKFIN:
 	  rtype = elf_bfin_reloc_type (type);
 	  break;
-
 	}
 
       if (rtype == NULL)
@@ -1148,6 +1154,7 @@ dump_relocations (FILE *file,
 	printf (do_wide ? "%-22.22s" : "%-17.17s", rtype);
 
       if (elf_header.e_machine == EM_ALPHA
+	  && rtype != NULL
 	  && streq (rtype, "R_ALPHA_LITUSE")
 	  && is_rela)
 	{
@@ -1246,7 +1253,9 @@ dump_relocations (FILE *file,
 	  print_vma (rels[i].r_addend, LONG_HEX);
 	}
 
-      if (elf_header.e_machine == EM_SPARCV9 && streq (rtype, "R_SPARC_OLO10"))
+      if (elf_header.e_machine == EM_SPARCV9
+	  && rtype != NULL
+	  && streq (rtype, "R_SPARC_OLO10"))
 	printf (" + %lx", (unsigned long) ELF64_R_TYPE_DATA (info));
 
       putchar ('\n');
@@ -1429,6 +1438,23 @@ get_alpha_dynamic_type (unsigned long type)
 }
 
 static const char *
+get_score_dynamic_type (unsigned long type)
+{
+  switch (type)
+    {
+    case DT_SCORE_BASE_ADDRESS: return "SCORE_BASE_ADDRESS";
+    case DT_SCORE_LOCAL_GOTNO:  return "SCORE_LOCAL_GOTNO";
+    case DT_SCORE_SYMTABNO:     return "SCORE_SYMTABNO";
+    case DT_SCORE_GOTSYM:       return "SCORE_GOTSYM";
+    case DT_SCORE_UNREFEXTNO:   return "SCORE_UNREFEXTNO";
+    case DT_SCORE_HIPAGENO:     return "SCORE_HIPAGENO";
+    default:
+      return NULL;
+    }
+}
+
+
+static const char *
 get_dynamic_type (unsigned long type)
 {
   static char buff[64];
@@ -1535,6 +1561,9 @@ get_dynamic_type (unsigned long type)
 	      break;
 	    case EM_ALPHA:
 	      result = get_alpha_dynamic_type (type);
+	      break;
+	    case EM_SCORE:
+	      result = get_score_dynamic_type (type);
 	      break;
 	    default:
 	      result = NULL;
@@ -1690,6 +1719,7 @@ get_machine_name (unsigned e_machine)
     case EM_X86_64:		return "Advanced Micro Devices X86-64";
     case EM_S390_OLD:
     case EM_S390:		return "IBM S/390";
+    case EM_SCORE:		return "SUNPLUS S+Core";
     case EM_XSTORMY16:		return "Sanyo Xstormy16 CPU core";
     case EM_OPENRISC:
     case EM_OR32:		return "OpenRISC";
@@ -1965,7 +1995,7 @@ get_machine_flags (unsigned e_flags, unsigned e_machine)
 	      char const *isa = _("unknown");
 	      char const *mac = _("unknown mac");
 	      char const *additional = NULL;
-      
+
 	      switch (e_flags & EF_M68K_ISA_MASK)
 		{
 		case EF_M68K_ISA_A_NODIV:
@@ -2046,7 +2076,6 @@ get_machine_flags (unsigned e_flags, unsigned e_machine)
 	case EM_CYGNUS_M32R:
 	  if ((e_flags & EF_M32R_ARCH) == E_M32R_ARCH)
 	    strcat (buf, ", m32r");
-
 	  break;
 
 	case EM_MIPS:
@@ -4067,7 +4096,7 @@ process_section_headers (FILE *file)
 		|| do_debug_lines || do_debug_pubnames || do_debug_aranges
 		|| do_debug_frames || do_debug_macinfo || do_debug_str
 		|| do_debug_loc || do_debug_ranges)
-	       && strneq (name, ".debug_", 7))
+	       && const_strneq (name, ".debug_"))
 	{
 	  name += 7;
 
@@ -4087,7 +4116,7 @@ process_section_headers (FILE *file)
 	}
       /* linkonce section to be combined with .debug_info at link time.  */
       else if ((do_debugging || do_debug_info)
-	       && strneq (name, ".gnu.linkonce.wi.", 17))
+	       && const_strneq (name, ".gnu.linkonce.wi."))
 	request_dump (i, DEBUG_DUMP);
       else if (do_debug_frames && streq (name, ".eh_frame"))
 	request_dump (i, DEBUG_DUMP);
@@ -4923,7 +4952,7 @@ slurp_ia64_unwind_table (FILE *file,
 	      sym = aux->symtab + ELF64_R_SYM (rp->r_info);
 	    }
 
-	  if (! strneq (relname, "R_IA64_SEGREL", 13))
+	  if (! const_strneq (relname, "R_IA64_SEGREL"))
 	    {
 	      warn (_("Skipping unexpected relocation type %s\n"), relname);
 	      continue;
@@ -5336,7 +5365,7 @@ slurp_hppa_unwind_table (FILE *file,
 	    }
 
 	  /* R_PARISC_SEGREL32 or R_PARISC_SEGREL64.  */
-	  if (strncmp (relname, "R_PARISC_SEGREL", 15) != 0)
+	  if (! const_strneq (relname, "R_PARISC_SEGREL"))
 	    {
 	      warn (_("Skipping unexpected relocation type %s\n"), relname);
 	      continue;
@@ -7718,6 +7747,10 @@ debug_apply_rela_addends (void *file,
 
 	      if (ELF32_R_SYM (rp->r_info) != 0
 		  && ELF32_ST_TYPE (sym->st_info) != STT_SECTION
+		  /* Relocations against symbols without type can happen.
+		     Gcc -feliminate-dwarf2-dups may generate symbols
+		     without type for debug info.  */
+		  && ELF32_ST_TYPE (sym->st_info) != STT_NOTYPE
 		  /* Relocations against object symbols can happen,
 		     eg when referencing a global array.  For an
 		     example of this see the _clz.o binary in libgcc.a.  */
@@ -7747,6 +7780,7 @@ debug_apply_rela_addends (void *file,
 
 	      if (ELF64_R_SYM (rp->r_info) != 0
 		  && ELF64_ST_TYPE (sym->st_info) != STT_SECTION
+		  && ELF64_ST_TYPE (sym->st_info) != STT_NOTYPE
 		  && ELF64_ST_TYPE (sym->st_info) != STT_OBJECT)
 		{
 		  warn (_("skipping unexpected symbol type %s in relocation in section .rela.%s\n"),
@@ -7823,7 +7857,7 @@ display_debug_section (Elf_Internal_Shdr *section, FILE *file)
       return 0;
     }
 
-  if (strneq (name, ".gnu.linkonce.wi.", 17))
+  if (const_strneq (name, ".gnu.linkonce.wi."))
     name = ".debug_info";
 
   /* See if we know how to display the contents of this section.  */
@@ -8868,7 +8902,7 @@ process_note (Elf_Internal_Note *pnote)
        note type strings.  */
     nt = get_note_type (pnote->type);
 
-  else if (strneq (pnote->namedata, "NetBSD-CORE", 11))
+  else if (const_strneq (pnote->namedata, "NetBSD-CORE"))
     /* NetBSD-specific core file notes.  */
     nt = get_netbsd_elfcore_note_type (pnote->type);
 
@@ -9316,7 +9350,7 @@ process_archive (char *file_name, FILE *file)
       return 1;
     }
 
-  if (memcmp (arhdr.ar_name, "/               ", 16) == 0)
+  if (const_strneq (arhdr.ar_name, "/               "))
     {
       /* This is the archive symbol table.  Skip it.
 	 FIXME: We should have an option to dump it.  */
@@ -9338,7 +9372,7 @@ process_archive (char *file_name, FILE *file)
 	}
     }
 
-  if (memcmp (arhdr.ar_name, "//              ", 16) == 0)
+  if (const_strneq (arhdr.ar_name, "//              "))
     {
       /* This is the archive string table holding long member
 	 names.  */

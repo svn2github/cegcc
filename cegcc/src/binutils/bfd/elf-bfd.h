@@ -155,6 +155,8 @@ struct elf_link_hash_entry
   unsigned int hidden : 1;
   /* Symbol was forced to local scope due to a version script file.  */
   unsigned int forced_local : 1;
+  /* Symbol was forced to be dynamic due to a version script file.  */
+  unsigned int dynamic : 1;
   /* Symbol was marked during garbage collection.  */
   unsigned int mark : 1;
   /* Symbol is referenced by a non-GOT/non-PLT relocation.  This is
@@ -302,6 +304,7 @@ struct eh_cie_fde
   unsigned int make_lsda_relative : 1;
   unsigned int need_lsda_relative : 1;
   unsigned int per_encoding_relative : 1;
+  unsigned int *set_loc;
 };
 
 struct eh_frame_sec_info
@@ -466,7 +469,7 @@ struct elf_size_info {
     (*write_shdrs_and_ehdr) (bfd *);
   void (*write_relocs)
     (bfd *, asection *, void *);
-  void (*swap_symbol_in)
+  bfd_boolean (*swap_symbol_in)
     (bfd *, const void *, const void *, Elf_Internal_Sym *);
   void (*swap_symbol_out)
     (bfd *, const Elf_Internal_Sym *, void *, void *);
@@ -1742,7 +1745,7 @@ extern int bfd_elf32_core_file_failing_signal
 extern bfd_boolean bfd_elf32_core_file_matches_executable_p
   (bfd *, bfd *);
 
-extern void bfd_elf32_swap_symbol_in
+extern bfd_boolean bfd_elf32_swap_symbol_in
   (bfd *, const void *, const void *, Elf_Internal_Sym *);
 extern void bfd_elf32_swap_symbol_out
   (bfd *, const Elf_Internal_Sym *, void *, void *);
@@ -1784,7 +1787,7 @@ extern int bfd_elf64_core_file_failing_signal
 extern bfd_boolean bfd_elf64_core_file_matches_executable_p
   (bfd *, bfd *);
 
-extern void bfd_elf64_swap_symbol_in
+extern bfd_boolean bfd_elf64_swap_symbol_in
   (bfd *, const void *, const void *, Elf_Internal_Sym *);
 extern void bfd_elf64_swap_symbol_out
   (bfd *, const Elf_Internal_Sym *, void *, void *);
@@ -1828,6 +1831,9 @@ extern bfd_boolean bfd_elf_link_record_dynamic_symbol
 extern int bfd_elf_link_record_local_dynamic_symbol
   (struct bfd_link_info *, bfd *, long);
 
+extern void bfd_elf_link_mark_dynamic_symbol
+  (struct bfd_link_info *, struct elf_link_hash_entry *);
+
 extern bfd_boolean _bfd_elf_close_and_cleanup
   (bfd *);
 
@@ -1861,6 +1867,10 @@ extern bfd_boolean bfd_elf_gc_record_vtinherit
 
 extern bfd_boolean bfd_elf_gc_record_vtentry
   (bfd *, asection *, struct elf_link_hash_entry *, bfd_vma);
+
+extern asection *_bfd_elf_gc_mark_hook
+  (asection *, struct bfd_link_info *, Elf_Internal_Rela *,
+   struct elf_link_hash_entry *, Elf_Internal_Sym *);
 
 extern bfd_boolean _bfd_elf_gc_mark
   (struct bfd_link_info *, asection *,
@@ -1979,5 +1989,10 @@ extern bfd_boolean _sh_elf_set_mach_from_flags
 	}								\
     }									\
   while (0)
+
+/* Will a symbol be bound to the the definition within the shared
+   library, if any.  */
+#define SYMBOLIC_BIND(INFO, H) \
+    ((INFO)->symbolic || ((INFO)->dynamic && !(H)->dynamic))
 
 #endif /* _LIBELF_H_ */

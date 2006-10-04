@@ -624,6 +624,8 @@ extern const bfd_target bfd_elf32_powerpc_vec;
 extern const bfd_target bfd_elf32_powerpcle_vec;
 extern const bfd_target bfd_elf32_powerpc_vxworks_vec;
 extern const bfd_target bfd_elf32_s390_vec;
+extern const bfd_target bfd_elf32_bigscore_vec;
+extern const bfd_target bfd_elf32_littlescore_vec;
 extern const bfd_target bfd_elf32_sh64_vec;
 extern const bfd_target bfd_elf32_sh64l_vec;
 extern const bfd_target bfd_elf32_sh64lin_vec;
@@ -787,6 +789,9 @@ extern const bfd_target vms_alpha_vec;
 extern const bfd_target vms_vax_vec;
 extern const bfd_target w65_vec;
 extern const bfd_target we32kcoff_vec;
+extern const bfd_target x86_64pe_vec;
+extern const bfd_target x86_64pei_vec;
+extern const bfd_target x86_64coff_vec;
 extern const bfd_target z80coff_vec;
 extern const bfd_target z8kcoff_vec;
 
@@ -811,8 +816,8 @@ extern const bfd_target sco5_core_vec;
 extern const bfd_target trad_core_vec;
 
 extern const bfd_target bfd_elf32_am33lin_vec;
-static const bfd_target * const _bfd_target_vector[] = {
-
+static const bfd_target * const _bfd_target_vector[] =
+{
 #ifdef SELECT_VECS
 
 	SELECT_VECS,
@@ -944,6 +949,8 @@ static const bfd_target * const _bfd_target_vector[] = {
 	&bfd_elf32_powerpc_vxworks_vec,
 	&bfd_elf32_powerpcle_vec,
 	&bfd_elf32_s390_vec,
+	&bfd_elf32_bigscore_vec,
+	&bfd_elf32_littlescore_vec, 
         &bfd_elf32_sh_vec,
         &bfd_elf32_shblin_vec,
         &bfd_elf32_shl_vec,
@@ -1050,6 +1057,11 @@ static const bfd_target * const _bfd_target_vector[] = {
 	&i386os9k_vec,
 	&i386pe_vec,
 	&i386pei_vec,
+#ifdef BFD64
+	&x86_64coff_vec,
+	&x86_64pe_vec,
+	&x86_64pei_vec,
+#endif
 	&i860coff_vec,
 	&icoff_big_vec,
 	&icoff_little_vec,

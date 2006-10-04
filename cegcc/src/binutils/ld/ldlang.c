@@ -83,6 +83,8 @@ static void print_input_section (asection *);
 static bfd_boolean lang_one_common (struct bfd_link_hash_entry *, void *);
 static void lang_record_phdrs (void);
 static void lang_do_version_exports_section (void);
+static void lang_finalize_version_expr_head
+  (struct bfd_elf_version_expr_head *);
 
 /* Exported variables.  */
 lang_output_section_statement_type *abs_output_section;
@@ -791,7 +793,7 @@ walk_wild (lang_wild_statement_type *s, callback_t callback, void *data)
     {
       LANG_FOR_EACH_INPUT_STATEMENT (f)
 	{
-	  if (fnmatch (file_spec, f->filename, FNM_FILE_NAME) == 0)
+	  if (fnmatch (file_spec, f->filename, 0) == 0)
 	    walk_wild_file (s, f, callback, data);
 	}
     }
@@ -3340,6 +3342,7 @@ strip_excluded_output_sections (void)
 	continue;
 
       exclude = (output_section->rawsize == 0
+		 && !os->section_relative_symbol
 		 && (output_section->flags & SEC_KEEP) == 0
 		 && !bfd_section_removed_from_list (output_bfd,
 						    output_section));
@@ -4365,7 +4368,18 @@ lang_size_sections_1
 	    os->processed_vma = TRUE;
 
 	    if (bfd_is_abs_section (os->bfd_section) || os->ignored)
-	      ASSERT (os->bfd_section->size == 0);
+	      {
+		if (os->bfd_section->size > 0)
+		  {
+		    /* PR ld/3107:  Do not abort when a buggy linker script
+		       causes a non-empty section to be discarded.  */
+		    if (bfd_is_abs_section (os->bfd_section))
+		      einfo (_("%P%X: internal error: attempting to take the size of the non-section *ABS*\n"));
+		    else
+		      einfo (_("%P: warning: discarding non-empty, well known section %A\n"),
+			     os->bfd_section);
+		  }
+	      }
 	    else
 	      {
 		dot = os->bfd_section->vma;
@@ -4616,10 +4630,18 @@ lang_size_sections_1
 	case lang_assignment_statement_enum:
 	  {
 	    bfd_vma newdot = dot;
+	    etree_type *tree = s->assignment_statement.exp;
 
-	    exp_fold_tree (s->assignment_statement.exp,
+	    exp_fold_tree (tree,
 			   output_section_statement->bfd_section,
 			   &newdot);
+
+	    /* This symbol is relative to this section.  */
+	    if ((tree->type.node_class == etree_provided 
+		 || tree->type.node_class == etree_assign)
+		&& (tree->assign.dst [0] != '.'
+		    || tree->assign.dst [1] != '\0'))
+	      output_section_statement->section_relative_symbol = 1;
 
 	    if (!output_section_statement->ignored)
 	      {
@@ -5624,6 +5646,10 @@ relax_sections (void)
 void
 lang_process (void)
 {
+  /* Finalize dynamic list.  */
+  if (link_info.dynamic)
+    lang_finalize_version_expr_head (&link_info.dynamic->head);
+
   current_target = default_target;
 
   /* Open the output file.  */
@@ -6925,4 +6951,46 @@ lang_add_unique (const char *name)
   ent->name = xstrdup (name);
   ent->next = unique_section_list;
   unique_section_list = ent;
+}
+
+/* Append the list of dynamic symbols to the existing one.  */
+
+void
+lang_append_dynamic_list (struct bfd_elf_version_expr *dynamic)
+{
+  if (link_info.dynamic)
+    {
+      dynamic->next = link_info.dynamic->head.list;
+      link_info.dynamic->head.list = dynamic;
+    }
+  else
+    {
+      struct bfd_elf_dynamic_list *d;
+
+      d = xcalloc (1, sizeof *d);
+      d->head.list = dynamic;
+      d->match = lang_vers_match;
+      link_info.dynamic = d;
+    }
+}
+
+/* Append the list of C++ typeinfo dynamic symbols to the existing
+   one.  */
+
+void
+lang_append_dynamic_list_cpp_typeinfo (void)
+{
+  const char * symbols [] =
+    {
+      "typeinfo name for*",
+      "typeinfo for*"
+    };
+  struct bfd_elf_version_expr *dynamic = NULL;
+  unsigned int i;
+
+  for (i = 0; i < ARRAY_SIZE (symbols); i++)
+    dynamic = lang_new_vers_pattern (dynamic, symbols [i], "C++",
+				     FALSE);
+
+  lang_append_dynamic_list (dynamic);
 }

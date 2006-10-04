@@ -469,12 +469,18 @@ static const arch_entry cpu_arch[] =
   {"nocona", PROCESSOR_NOCONA,
    Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuP4|CpuMMX
    |CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3},
-  {"yonah", PROCESSOR_YONAH,
+  {"yonah", PROCESSOR_CORE,
    Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuP4|CpuMMX
    |CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3},
-  {"merom", PROCESSOR_MEROM,
+  {"core", PROCESSOR_CORE,
    Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuP4|CpuMMX
-   |CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3|CpuMNI},
+   |CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3},
+  {"merom", PROCESSOR_CORE2,
+   Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuP4|CpuMMX
+   |CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3},
+  {"core2", PROCESSOR_CORE2,
+   Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuP4|CpuMMX
+   |CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3},
   {"k6", PROCESSOR_K6,
    Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|CpuK6|CpuMMX},
   {"k6_2", PROCESSOR_K6,
@@ -503,6 +509,8 @@ static const arch_entry cpu_arch[] =
    CpuMMX|CpuMMX2|CpuSSE|CpuSSE2},
   {".sse3", PROCESSOR_UNKNOWN,
    CpuMMX|CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3},
+  {".ssse3", PROCESSOR_UNKNOWN,
+   CpuMMX|CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3},
   {".3dnow", PROCESSOR_UNKNOWN,
    CpuMMX|Cpu3dnow},
   {".3dnowa", PROCESSOR_UNKNOWN,
@@ -750,9 +758,9 @@ i386_align_code (fragP, count)
      1. For PROCESSOR_I486, PROCESSOR_PENTIUM and PROCESSOR_GENERIC32,
      f32_patt will be used.
      2. For PROCESSOR_K8 and PROCESSOR_AMDFAM10 in 64bit, NOPs with 0x66 prefix will be used.
-     3. For PROCESSOR_MEROM, alt_long_patt will be used.
+     3. For PROCESSOR_CORE2, alt_long_patt will be used.
      4. For PROCESSOR_PENTIUMPRO, PROCESSOR_PENTIUM4, PROCESSOR_NOCONA,
-     PROCESSOR_YONAH, PROCESSOR_MEROM, PROCESSOR_K6, PROCESSOR_ATHLON
+     PROCESSOR_CORE, PROCESSOR_CORE2, PROCESSOR_K6, PROCESSOR_ATHLON
      and PROCESSOR_GENERIC64, alt_short_patt will be used.
 
      When -mtune= isn't used, alt_short_patt will be used if
@@ -809,13 +817,13 @@ i386_align_code (fragP, count)
 	      else
 		patt = f32_patt;
 	      break;
-	    case PROCESSOR_MEROM:
+	    case PROCESSOR_CORE2:
 	      patt = alt_long_patt;
 	      break;
 	    case PROCESSOR_PENTIUMPRO:
 	    case PROCESSOR_PENTIUM4:
 	    case PROCESSOR_NOCONA:
-	    case PROCESSOR_YONAH:
+	    case PROCESSOR_CORE:
 	    case PROCESSOR_K6:
 	    case PROCESSOR_ATHLON:
 	    case PROCESSOR_K8:
@@ -845,7 +853,7 @@ i386_align_code (fragP, count)
 	    case PROCESSOR_PENTIUMPRO:
 	    case PROCESSOR_PENTIUM4:
 	    case PROCESSOR_NOCONA:
-	    case PROCESSOR_YONAH:
+	    case PROCESSOR_CORE:
 	    case PROCESSOR_K6:
 	    case PROCESSOR_ATHLON:
 	    case PROCESSOR_K8:
@@ -858,7 +866,7 @@ i386_align_code (fragP, count)
 	      else
 		patt = f32_patt;
 	      break;
-	    case PROCESSOR_MEROM:
+	    case PROCESSOR_CORE2:
 	      if ((cpu_arch_isa_flags & Cpu686) != 0)
 		patt = alt_long_patt;
 	      else
@@ -2563,6 +2571,8 @@ match_template ()
   unsigned int overlap0, overlap1, overlap2;
   unsigned int found_reverse_match;
   int suffix_check;
+  unsigned int operand_types [3];
+  int addr_prefix_disp;
 
 #define MATCH(overlap, given, template)				\
   ((overlap & ~JumpAbsolute)					\
@@ -2581,6 +2591,10 @@ match_template ()
   overlap1 = 0;
   overlap2 = 0;
   found_reverse_match = 0;
+  operand_types [0] = 0;
+  operand_types [1] = 0;
+  operand_types [2] = 0;
+  addr_prefix_disp = -1;
   suffix_check = (i.suffix == BYTE_MNEM_SUFFIX
 		  ? No_bSuf
 		  : (i.suffix == WORD_MNEM_SUFFIX
@@ -2596,6 +2610,8 @@ match_template ()
 
   for (t = current_templates->start; t < current_templates->end; t++)
     {
+      addr_prefix_disp = -1;
+
       /* Must have right number of operands.  */
       if (i.operands != t->operands)
 	continue;
@@ -2606,6 +2622,10 @@ match_template ()
 	       && (t->opcode_modifier & IgnoreSize)))
 	continue;
 
+      operand_types [0] = t->operand_types [0];
+      operand_types [1] = t->operand_types [1];
+      operand_types [2] = t->operand_types [2];
+
       /* In general, don't allow 64-bit operands in 32-bit mode.  */
       if (i.suffix == QWORD_MNEM_SUFFIX
 	  && flag_code != CODE_64BIT
@@ -2613,8 +2633,8 @@ match_template ()
 	      ? (!(t->opcode_modifier & IgnoreSize)
 		 && !intel_float_operand (t->name))
 	      : intel_float_operand (t->name) != 2)
-	  && (!(t->operand_types[0] & (RegMMX | RegXMM))
-	      || !(t->operand_types[t->operands > 1] & (RegMMX | RegXMM)))
+	  && (!(operand_types[0] & (RegMMX | RegXMM))
+	      || !(operand_types[t->operands > 1] & (RegMMX | RegXMM)))
 	  && (t->base_opcode != 0x0fc7
 	      || t->extension_opcode != 1 /* cmpxchg8b */))
 	continue;
@@ -2628,41 +2648,76 @@ match_template ()
 	  break;
 	}
 
-      overlap0 = i.types[0] & t->operand_types[0];
+      /* Address size prefix will turn Disp64/Disp32/Disp16 operand
+	 into Disp32/Disp16/Disp32 operand.  */
+      if (i.prefix[ADDR_PREFIX] != 0)
+	  {
+	    unsigned int j, DispOn = 0, DispOff = 0;
+
+	    switch (flag_code)
+	    {
+	    case CODE_16BIT:
+	      DispOn = Disp32;
+	      DispOff = Disp16;
+	      break;
+	    case CODE_32BIT:
+	      DispOn = Disp16;
+	      DispOff = Disp32;
+	      break;
+	    case CODE_64BIT:
+	      DispOn = Disp32;
+	      DispOff = Disp64;
+	      break;
+	    }
+
+	    for (j = 0; j < 3; j++)
+	      {
+		/* There should be only one Disp operand.  */
+		if ((operand_types[j] & DispOff))
+		  {
+		    addr_prefix_disp = j;
+		    operand_types[j] |= DispOn;
+		    operand_types[j] &= ~DispOff;
+		    break;
+		  }
+	      }
+	  }
+
+      overlap0 = i.types[0] & operand_types[0];
       switch (t->operands)
 	{
 	case 1:
-	  if (!MATCH (overlap0, i.types[0], t->operand_types[0]))
+	  if (!MATCH (overlap0, i.types[0], operand_types[0]))
 	    continue;
 	  break;
 	case 2:
 	case 3:
-	  overlap1 = i.types[1] & t->operand_types[1];
-	  if (!MATCH (overlap0, i.types[0], t->operand_types[0])
-	      || !MATCH (overlap1, i.types[1], t->operand_types[1])
+	  overlap1 = i.types[1] & operand_types[1];
+	  if (!MATCH (overlap0, i.types[0], operand_types[0])
+	      || !MATCH (overlap1, i.types[1], operand_types[1])
 	      /* monitor in SSE3 is a very special case.  The first
 		 register and the second register may have different
 		 sizes.  */
 	      || !((t->base_opcode == 0x0f01
 		    && t->extension_opcode == 0xc8)
 		   || CONSISTENT_REGISTER_MATCH (overlap0, i.types[0],
-						 t->operand_types[0],
+						 operand_types[0],
 						 overlap1, i.types[1],
-						 t->operand_types[1])))
+						 operand_types[1])))
 	    {
 	      /* Check if other direction is valid ...  */
 	      if ((t->opcode_modifier & (D | FloatD)) == 0)
 		continue;
 
 	      /* Try reversing direction of operands.  */
-	      overlap0 = i.types[0] & t->operand_types[1];
-	      overlap1 = i.types[1] & t->operand_types[0];
-	      if (!MATCH (overlap0, i.types[0], t->operand_types[1])
-		  || !MATCH (overlap1, i.types[1], t->operand_types[0])
+	      overlap0 = i.types[0] & operand_types[1];
+	      overlap1 = i.types[1] & operand_types[0];
+	      if (!MATCH (overlap0, i.types[0], operand_types[1])
+		  || !MATCH (overlap1, i.types[1], operand_types[0])
 		  || !CONSISTENT_REGISTER_MATCH (overlap0, i.types[0],
-						 t->operand_types[1],
+						 operand_types[1],
 						 overlap1, i.types[1],
-						 t->operand_types[0]))
+						 operand_types[0]))
 		{
 		  /* Does not match either direction.  */
 		  continue;
@@ -2678,12 +2733,12 @@ match_template ()
 		 reverse match 3 operand instructions, and all 3
 		 operand instructions only need to be checked for
 		 register consistency between operands 2 and 3.  */
-	      overlap2 = i.types[2] & t->operand_types[2];
-	      if (!MATCH (overlap2, i.types[2], t->operand_types[2])
+	      overlap2 = i.types[2] & operand_types[2];
+	      if (!MATCH (overlap2, i.types[2], operand_types[2])
 		  || !CONSISTENT_REGISTER_MATCH (overlap1, i.types[1],
-						 t->operand_types[1],
+						 operand_types[1],
 						 overlap2, i.types[2],
-						 t->operand_types[2]))
+						 operand_types[2]))
 
 		continue;
 	    }
@@ -2711,7 +2766,7 @@ match_template ()
     {
       if (!intel_syntax
 	  && ((i.types[0] & JumpAbsolute)
-	      != (t->operand_types[0] & JumpAbsolute)))
+	      != (operand_types[0] & JumpAbsolute)))
 	{
 	  as_warn (_("indirect %s without `*'"), t->name);
 	}
@@ -2727,6 +2782,11 @@ match_template ()
 
   /* Copy the template we found.  */
   i.tm = *t;
+
+  if (addr_prefix_disp != -1)
+    i.tm.operand_types[addr_prefix_disp]
+      = operand_types[addr_prefix_disp];
+
   if (found_reverse_match)
     {
       /* If we found a reverse match we must alter the opcode
@@ -2735,8 +2795,8 @@ match_template ()
 
       i.tm.base_opcode ^= found_reverse_match;
 
-      i.tm.operand_types[0] = t->operand_types[1];
-      i.tm.operand_types[1] = t->operand_types[0];
+      i.tm.operand_types[0] = operand_types[1];
+      i.tm.operand_types[1] = operand_types[0];
     }
 
   return 1;
@@ -3831,10 +3891,11 @@ output_insn ()
       unsigned char *q;
       unsigned int prefix;
 
-      /* All opcodes on i386 have either 1 or 2 bytes.  Merom New
-	 Instructions have 3 bytes.  We may use one more higher byte
-	 to specify a prefix the instruction requires.  */
-      if ((i.tm.cpu_flags & CpuMNI) != 0)
+      /* All opcodes on i386 have either 1 or 2 bytes.  Supplemental
+	 Streaming SIMD extensions 3 Instructions have 3 bytes.  We may
+	 use one more higher byte to specify a prefix the instruction
+	 requires.  */
+      if ((i.tm.cpu_flags & CpuSSSE3) != 0)
 	{
 	  if (i.tm.base_opcode & 0xff000000)
 	    {
@@ -3875,7 +3936,7 @@ output_insn ()
 	}
       else
 	{
-	  if ((i.tm.cpu_flags & CpuMNI) != 0)
+	  if ((i.tm.cpu_flags & CpuSSSE3) != 0)
 	    {
 	      p = frag_more (3);
 	      *p++ = (i.tm.base_opcode >> 16) & 0xff;
@@ -5766,9 +5827,10 @@ const char *md_shortopts = "qn";
 #define OPTION_MARCH (OPTION_MD_BASE + 3)
 #define OPTION_MTUNE (OPTION_MD_BASE + 4)
 
-struct option md_longopts[] = {
+struct option md_longopts[] =
+{
   {"32", no_argument, NULL, OPTION_32},
-#if defined (OBJ_ELF) || defined (OBJ_MAYBE_ELF)
+#if defined (OBJ_ELF) || defined (OBJ_MAYBE_ELF) || defined(TE_PEP)
   {"64", no_argument, NULL, OPTION_64},
 #endif
   {"divide", no_argument, NULL, OPTION_DIVIDE},
@@ -5812,14 +5874,18 @@ md_parse_option (int c, char *arg)
       /* -s: On i386 Solaris, this tells the native assembler to use
 	 .stab instead of .stab.excl.  We always use .stab anyhow.  */
       break;
-
+#endif
+#if defined (OBJ_ELF) || defined (OBJ_MAYBE_ELF) || defined(TE_PEP)
     case OPTION_64:
       {
 	const char **list, **l;
 
 	list = bfd_target_list ();
 	for (l = list; *l != NULL; l++)
-	  if (strncmp (*l, "elf64-x86-64", 12) == 0)
+	  if (   strncmp (*l, "elf64-x86-64", 12) == 0
+	      || strcmp (*l, "coff-x86-64") == 0
+	      || strcmp (*l, "pe-x86-64") == 0
+	      || strcmp (*l, "pei-x86-64") == 0)
 	    {
 	      default_arch = "x86_64";
 	      break;
@@ -5923,9 +5989,29 @@ md_show_usage (stream)
   fprintf (stream, _("\
   -march=CPU/-mtune=CPU   generate code/optimize for CPU, where CPU is one of:\n\
                            i386, i486, pentium, pentiumpro, pentium4, nocona,\n\
-			   yonah, merom, k6, athlon, k8, generic32, generic64\n"));
+			   core, core2, k6, athlon, k8, generic32, generic64\n"));
 
 }
+
+#if defined(TE_PEP)
+const char *
+x86_64_target_format (void)
+{
+  if (strcmp (default_arch, "x86_64") == 0)
+    {
+      set_code_flag (CODE_64BIT);
+      return COFF_TARGET_FORMAT;
+    }
+  else if (strcmp (default_arch, "i386") == 0)
+    {
+      set_code_flag (CODE_32BIT);
+      return "coff-i386";
+    }
+
+  as_fatal (_("Unknown architecture"));
+  return NULL;
+}
+#endif
 
 #if ((defined (OBJ_MAYBE_COFF) && defined (OBJ_MAYBE_AOUT)) \
      || defined (OBJ_ELF) || defined (OBJ_MAYBE_ELF))

@@ -487,9 +487,9 @@ back to the symbols defined by the program, rather than some other
 dynamic object, then you will probably need to use this option when
 linking the program itself.
 
-You can also use the version script to control what symbols should
+You can also use the dynamic list to control what symbols should
 be added to the dynamic symbol table if the output format supports it.
-See the description of @samp{--version-script} in @ref{VERSION}.
+See the description of @samp{--dynamic-list}.
 
 @ifclear SingleFormat
 @cindex big-endian objects
@@ -909,11 +909,11 @@ Delete all local symbols.
 @kindex -X
 @kindex --discard-locals
 @cindex local symbols, deleting
-@cindex L, deleting symbols beginning
 @item -X
 @itemx --discard-locals
-Delete all temporary local symbols.  For most targets, this is all local
-symbols whose names begin with @samp{L}.
+Delete all temporary local symbols.  (These symbols start with
+system-specific local label prefixes, typically @samp{.L} for ELF systems
+or @samp{L} for traditional a.out systems.)
 
 @kindex -y @var{symbol}
 @kindex --trace-symbol=@var{symbol}
@@ -1129,6 +1129,23 @@ definition within the shared library, if any.  Normally, it is possible
 for a program linked against a shared library to override the definition
 within the shared library.  This option is only meaningful on ELF
 platforms which support shared libraries.
+
+@kindex --dynamic-list=@var{dynamic-list-file}
+@item --dynamic-list=@var{dynamic-list-file}
+Specify the name of a dynamic list file to the linker.  This is
+typically used when creating shared libraries to specify a list of
+global symbols whose references shouldn't be bound to the definition
+within the shared library, or creating dynamically linked executables
+to specify a list of symbols which should be added to the symbol table
+in the executable.  This option is only meaningful on ELF platforms
+which support shared libraries.
+
+The format of the dynamic list is the same as the version node without
+scope and node name.  See @ref{VERSION} for more information.
+
+@kindex --dynamic-list-cpp-typeinfo
+@item --dynamic-list-cpp-typeinfo
+Provide the builtin dynamic list for C++ runtime type identification.
 
 @kindex --check-sections
 @kindex --no-check-sections
@@ -3671,7 +3688,7 @@ The linker will not create output section which do not have any
 contents.  This is for convenience when referring to input sections that
 may or may not be present in any of the input files.  For example:
 @smallexample
-.foo @{ *(.foo) @}
+.foo : @{ *(.foo) @}
 @end smallexample
 @noindent
 will only create a @samp{.foo} section in the output file if there is a
@@ -3680,6 +3697,8 @@ will only create a @samp{.foo} section in the output file if there is a
 If you use anything other than an input section description as an output
 section command, such as a symbol assignment, then the output section
 will always be created, even if there are no matching input sections.
+When a section is discarded, its address (@xref{Output Section Address})
+will also be ignored.
 
 @cindex /DISCARD/
 The special output section name @samp{/DISCARD/} may be used to discard

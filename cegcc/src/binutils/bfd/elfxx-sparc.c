@@ -1430,7 +1430,7 @@ _bfd_sparc_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 		  if (name == NULL)
 		    return FALSE;
 
-		  BFD_ASSERT (strncmp (name, ".rela", 5) == 0
+		  BFD_ASSERT (CONST_STRNEQ (name, ".rela")
 			      && strcmp (bfd_get_section_name (abfd, sec),
 					 name + 5) == 0);
 
@@ -1532,35 +1532,14 @@ _bfd_sparc_elf_gc_mark_hook (asection *sec,
 			     Elf_Internal_Sym *sym)
 {
   if (h != NULL)
-    {
-      struct _bfd_sparc_elf_link_hash_table *htab;
-
-      htab = _bfd_sparc_elf_hash_table (info);
-      switch (SPARC_ELF_R_TYPE (rel->r_info))
+    switch (SPARC_ELF_R_TYPE (rel->r_info))
       {
       case R_SPARC_GNU_VTINHERIT:
       case R_SPARC_GNU_VTENTRY:
-	break;
-
-      default:
-	switch (h->root.type)
-	  {
-	  case bfd_link_hash_defined:
-	  case bfd_link_hash_defweak:
-	    return h->root.u.def.section;
-
-	  case bfd_link_hash_common:
-	    return h->root.u.c.p->section;
-
-	  default:
-	    break;
-	  }
+	return NULL;
       }
-    }
-  else
-    return bfd_section_from_elf_index (sec->owner, sym->st_shndx);
 
-  return NULL;
+  return _bfd_elf_gc_mark_hook (sec, info, rel, h, sym);
 }
 
 /* Update the got entry reference counts for the section being removed.  */
@@ -2290,7 +2269,7 @@ _bfd_sparc_elf_size_dynamic_sections (bfd *output_bfd,
 	  /* Strip this section if we don't need it; see the
 	     comment below.  */
 	}
-      else if (strncmp (s->name, ".rela", 5) == 0)
+      else if (CONST_STRNEQ (s->name, ".rela"))
 	{
 	  if (s->size != 0)
 	    {

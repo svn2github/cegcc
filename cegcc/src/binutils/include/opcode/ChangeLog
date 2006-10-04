@@ -1,3 +1,19 @@
+2006-09-28  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* i386.h: Replace CpuMNI with CpuSSSE3.
+
+2006-09-26  Mark Shinwell  <shinwell@codesourcery.com>
+            Joseph Myers  <joseph@codesourcery.com>
+            Ian Lance Taylor  <ian@wasabisystems.com>
+            Ben Elliston  <bje@wasabisystems.com>
+
+	* arm.h (ARM_CEXT_IWMMXT2, ARM_ARCH_IWMMXT2): Define.
+
+2006-09-17  Mei Ligang  <ligang@sunnorth.com.cn>
+
+	* score-datadep.h: New file.
+	* score-inst.h: New file.
+
 2006-07-14  H.J. Lu  <hongjiu.lu@intel.com>
 
 	* i386.h (i386_optab): Remove InvMem from maskmovq, movhlps,

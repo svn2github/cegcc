@@ -62,6 +62,8 @@ case ${cpu} in
   rs6000*)		cpu_type=ppc ;;
   s390x*)		cpu_type=s390 arch=s390x ;;
   s390*)		cpu_type=s390 arch=s390 ;;
+  score*l)              cpu_type=score endian=little ;;
+  score*)               cpu_type=score endian=big ;;
   sh5le*)		cpu_type=sh64 endian=little ;;
   sh5*)			cpu_type=sh64 endian=big ;;
   sh64le*)		cpu_type=sh64 endian=little ;;
@@ -77,7 +79,7 @@ case ${cpu} in
   strongarm*b)		cpu_type=arm endian=big ;;
   strongarm*)		cpu_type=arm endian=little ;;
   v850*)		cpu_type=v850 ;;
-  x86_64)		cpu_type=i386 arch=x86_64;;
+  x86_64*)		cpu_type=i386 arch=x86_64;;
   xscale*be|xscale*b)	cpu_type=arm endian=big ;;
   xscale*)		cpu_type=arm endian=little ;;
   xtensa*)		cpu_type=xtensa arch=xtensa ;;
@@ -210,6 +212,7 @@ case ${generic_target} in
   i386-*-cygwin*)			fmt=coff em=pe ;;
   i386-*-interix*)			fmt=coff em=interix ;;
   i386-*-mingw32*)			fmt=coff em=pe ;;
+  i386-*-mingw64*)			fmt=coff em=pep ;;
   i386-*-nto-qnx*)			fmt=elf ;;
   i386-*-*nt*)				fmt=coff em=pe ;;
   i386-*-chaos)				fmt=elf ;;
@@ -314,6 +317,8 @@ case ${generic_target} in
 
   s390-*-linux-*)			fmt=elf em=linux ;;
   s390-*-tpf*)				fmt=elf ;;
+
+  score-*-elf)                          fmt=elf ;;
 
   sh*-*-linux*)				fmt=elf em=linux
     case ${cpu} in
