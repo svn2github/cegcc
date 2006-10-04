@@ -26,7 +26,7 @@ LIBDIR=${PREFIX}/${TARGET}/lib
 AS=${TARGET}-as
 AR=${TARGET}-ar
 
-FAKE_LIBS="libcoldname.a libmingwex.a libmoldname.a libmingw32.a libmingwthrd.a libmoldnamed.a"
+FAKE_LIBS="libceoldname.a libmingwex.a libmingw32.a libmingwthrd.a"
 
 ${AS} crt2.s -o ${MY_DIR}/crt2.o
 
