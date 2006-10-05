@@ -1,6 +1,6 @@
-/Makefile.in/1.9/Fri Apr  7 00:01:28 2006/-ko/
-/test-demangle.c/1.9/Sun Dec 11 02:16:09 2005//
-/test-expandargv.c/1.1/Sat Jan 21 04:28:49 2006//
-/test-pexecute.c/1.5/Wed Aug 17 03:46:41 2005//
-/demangle-expected/1.33/Mon Aug 28 10:02:08 2006/-ko/
+/Makefile.in/1.9/Sat Sep  2 19:29:16 2006/-ko/
+/demangle-expected/1.34/Wed Oct  4 20:09:01 2006/-ko/
+/test-demangle.c/1.9/Sat Sep  2 19:29:16 2006//
+/test-expandargv.c/1.1/Sat Sep  2 19:29:16 2006//
+/test-pexecute.c/1.5/Sat Sep  2 19:29:16 2006//
 D
