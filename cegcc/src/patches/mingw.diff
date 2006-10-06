@@ -1,0 +1,765 @@
+Index: include/ext/pool_allocator.h
+===================================================================
+--- include/ext/pool_allocator.h	(revisão 570)
++++ include/ext/pool_allocator.h	(cópia de trabalho)
+@@ -53,6 +53,7 @@
+ #include <bits/functexcept.h>
+ #include <bits/atomicity.h>
+ #include <bits/concurrence.h>
++#include <bits/runtimeopts.h>
+ 
+ namespace __gnu_cxx
+ {
+@@ -196,12 +197,13 @@
+ 	  if (__builtin_expect(__n > this->max_size(), false))
+ 	    std::__throw_bad_alloc();
+ 
+-	  // If there is a race through here, assume answer from getenv
+-	  // will resolve in same direction.  Inspired by techniques
+-	  // to efficiently support threading found in basic_string.h.
++	  // If there is a race through here, assume answer from 
++	  // runtime_opts::force_new_p will resolve in same direction.
++	  // Inspired by techniques to efficiently support threading
++	  // found in basic_string.h.
+ 	  if (_S_force_new == 0)
+ 	    {
+-	      if (getenv("GLIBCXX_FORCE_NEW"))
++	      if (runtime_opts::force_new_p())
+ 		__atomic_add(&_S_force_new, 1);
+ 	      else
+ 		__atomic_add(&_S_force_new, -1);
+Index: include/ext/stdio_filebuf.h
+===================================================================
+--- include/ext/stdio_filebuf.h	(revisão 570)
++++ include/ext/stdio_filebuf.h	(cópia de trabalho)
+@@ -66,6 +66,7 @@
+       */
+       stdio_filebuf() : std::basic_filebuf<_CharT, _Traits>() {}
+ 
++#ifdef HAVE_UNISTD_H
+       /**
+        *  @param  fd  An open file descriptor.
+        *  @param  mode  Same meaning as in a standard filebuf.
+@@ -77,6 +78,7 @@
+       */
+       stdio_filebuf(int __fd, std::ios_base::openmode __mode,
+ 		    size_t __size = static_cast<size_t>(BUFSIZ));
++#endif
+ 
+       /**
+        *  @param  f  An open @c FILE*.
+@@ -98,6 +100,7 @@
+       virtual
+       ~stdio_filebuf();
+ 
++#ifdef HAVE_UNISTD_H
+       /**
+        *  @return  The underlying file descriptor.
+        *
+@@ -108,6 +111,7 @@
+       */
+       int
+       fd() { return this->_M_file.fd(); }
++#endif
+ 
+       /**
+        *  @return  The underlying FILE*.
+@@ -124,6 +128,7 @@
+     stdio_filebuf<_CharT, _Traits>::~stdio_filebuf()
+     { }
+ 
++#ifdef HAVE_UNISTD_H
+   template<typename _CharT, typename _Traits>
+     stdio_filebuf<_CharT, _Traits>::
+     stdio_filebuf(int __fd, std::ios_base::openmode __mode, size_t __size)
+@@ -139,6 +144,7 @@
+ 	  this->_M_set_buffer(-1);
+ 	}
+     }
++#endif
+ 
+   template<typename _CharT, typename _Traits>
+     stdio_filebuf<_CharT, _Traits>::
+Index: include/ext/stdio_sync_filebuf.h
+===================================================================
+--- include/ext/stdio_sync_filebuf.h	(revisão 570)
++++ include/ext/stdio_sync_filebuf.h	(cópia de trabalho)
+@@ -37,7 +37,9 @@
+ #pragma GCC system_header
+ 
+ #include <streambuf>
++#ifdef HAVE_UNISTD_H
+ #include <unistd.h>
++#endif
+ #include <cstdio>
+ 
+ #ifdef _GLIBCXX_USE_WCHAR_T
+Index: include/ext/mt_allocator.h
+===================================================================
+--- include/ext/mt_allocator.h	(revisão 570)
++++ include/ext/mt_allocator.h	(cópia de trabalho)
+@@ -39,6 +39,7 @@
+ #include <bits/functexcept.h>
+ #include <bits/gthr.h>
+ #include <bits/atomicity.h>
++#include <bits/runtimeopts.h>
+ 
+ namespace __gnu_cxx
+ {
+@@ -108,7 +109,7 @@
+       : _M_align(_S_align), _M_max_bytes(_S_max_bytes), _M_min_bin(_S_min_bin),
+       _M_chunk_size(_S_chunk_size), _M_max_threads(_S_max_threads), 
+       _M_freelist_headroom(_S_freelist_headroom), 
+-      _M_force_new(getenv("GLIBCXX_FORCE_NEW") ? true : false)
++      _M_force_new(runtime_opts::force_new_p() ? true : false)
+       { }
+ 
+       explicit
+@@ -477,7 +478,7 @@
+ 			     sizeof(_Tp) * size_t(_Tune::_S_chunk_size),
+ 			     _Tune::_S_max_threads,
+ 			     _Tune::_S_freelist_headroom,
+-			     getenv("GLIBCXX_FORCE_NEW") ? true : false);
++				 runtime_opts::force_new_p() ? true : false);
+ 	static pool_type _S_pool(_S_tune);
+ 	return _S_pool;
+       }
+Index: include/Makefile.in
+===================================================================
+--- include/Makefile.in	(revisão 570)
++++ include/Makefile.in	(cópia de trabalho)
+@@ -827,6 +827,7 @@
+ 	${host_srcdir}/ctype_inline.h \
+ 	${host_srcdir}/ctype_noninline.h \
+ 	${host_srcdir}/os_defines.h \
++	${host_srcdir}/runtimeopts.h \
+ 	${glibcxx_srcdir}/$(ATOMIC_WORD_SRCDIR)/atomic_word.h \
+ 	${glibcxx_srcdir}/$(ABI_TWEAKS_SRCDIR)/cxxabi_tweaks.h \
+ 	${glibcxx_srcdir}/$(CPU_DEFINES_SRCDIR)/cpu_defines.h	
+Index: include/Makefile.am
+===================================================================
+--- include/Makefile.am	(revisão 570)
++++ include/Makefile.am	(cópia de trabalho)
+@@ -617,6 +617,7 @@
+ 	${host_srcdir}/ctype_inline.h \
+ 	${host_srcdir}/ctype_noninline.h \
+ 	${host_srcdir}/os_defines.h \
++	${host_srcdir}/runtimeopts.h \
+ 	${glibcxx_srcdir}/$(ATOMIC_WORD_SRCDIR)/atomic_word.h \
+ 	${glibcxx_srcdir}/$(ABI_TWEAKS_SRCDIR)/cxxabi_tweaks.h \
+ 	${glibcxx_srcdir}/$(CPU_DEFINES_SRCDIR)/cpu_defines.h	
+Index: include/stdc++.h
+===================================================================
+--- include/stdc++.h	(revisão 570)
++++ include/stdc++.h	(cópia de trabalho)
+@@ -32,14 +32,20 @@
+ // C
+ #include <cassert>
+ #include <cctype>
++#ifdef HAVE_ERRNO_H
+ #include <cerrno>
++#endif
+ #include <cfloat>
+ #include <ciso646>
+ #include <climits>
++#ifdef HAVE_LOCALE_H
+ #include <clocale>
++#endif
+ #include <cmath>
+ #include <csetjmp>
++#ifdef HAVE_SIGNAL_H
+ #include <csignal>
++#endif
+ #include <cstdarg>
+ #include <cstddef>
+ #include <cstdio>
+Index: include/c_std/std_cstdlib.h
+===================================================================
+--- include/c_std/std_cstdlib.h	(revisão 570)
++++ include/c_std/std_cstdlib.h	(cópia de trabalho)
+@@ -111,19 +111,25 @@
+   using ::atof;
+   using ::atoi;
+   using ::atol;
++#ifndef __MINGW32CE__
+   using ::bsearch;
+   using ::calloc;
++#endif
+   using ::div;
+   using ::exit;
+   using ::free;
++#ifndef __MINGW32CE__
+   using ::getenv;
++#endif
+   using ::labs;
+   using ::ldiv;
+   using ::malloc;
+ #ifdef _GLIBCXX_HAVE_MBSTATE_T
++#ifndef __MINGW32CE__
+   using ::mblen;
+   using ::mbstowcs;
+   using ::mbtowc;
++#endif
+ #endif // _GLIBCXX_HAVE_MBSTATE_T
+   using ::qsort;
+   using ::rand;
+@@ -132,7 +138,9 @@
+   using ::strtod;
+   using ::strtol;
+   using ::strtoul;
++#ifndef __MINGW32CE__
+   using ::system;
++#endif
+ #ifdef _GLIBCXX_USE_WCHAR_T
+   using ::wcstombs;
+   using ::wctomb;
+Index: include/c_std/std_cstdio.h
+===================================================================
+--- include/c_std/std_cstdio.h	(revisão 570)
++++ include/c_std/std_cstdio.h	(cópia de trabalho)
+@@ -113,7 +113,9 @@
+   using ::fputc;
+   using ::fputs;
+   using ::fread;
++#ifndef __MINGW32CE__
+   using ::freopen;
++#endif
+   using ::fscanf;
+   using ::fseek;
+   using ::fsetpos;
+@@ -122,21 +124,29 @@
+   using ::getc;
+   using ::getchar;
+   using ::gets;
++#ifndef __MINGW32CE__
+   using ::perror;
++#endif
+   using ::printf;
+   using ::putc;
+   using ::putchar;
+   using ::puts;
++#ifndef __MINGW32CE__
+   using ::remove;
+   using ::rename;
+   using ::rewind;
++#endif
+   using ::scanf;
++#ifndef __MINGW32CE__
+   using ::setbuf;
++#endif
+   using ::setvbuf;
+   using ::sprintf;
+   using ::sscanf;
++#ifndef __MINGW32CE__
+   using ::tmpfile;
+   using ::tmpnam;
++#endif
+   using ::ungetc;
+   using ::vfprintf;
+   using ::vprintf;
+Index: include/c_std/std_ctime.h
+===================================================================
+--- include/c_std/std_ctime.h	(revisão 570)
++++ include/c_std/std_ctime.h	(cópia de trabalho)
+@@ -68,8 +68,11 @@
+   using ::time_t;
+   using ::tm;
+ 
++#ifndef __MINGW32CE__
+   using ::clock;
++#endif
+   using ::difftime;
++#ifndef __MINGW32CE__
+   using ::mktime;
+   using ::time;
+   using ::asctime;
+@@ -77,6 +80,6 @@
+   using ::gmtime;
+   using ::localtime;
+   using ::strftime;
++#endif
+ }
+-
+ #endif
+Index: include/c_std/std_cstring.h
+===================================================================
+--- include/c_std/std_cstring.h	(revisão 570)
++++ include/c_std/std_cstring.h	(cópia de trabalho)
+@@ -85,14 +85,20 @@
+   using ::strncat;
+   using ::memcmp;
+   using ::strcmp;
++#ifndef __MINGW32CE__
+   using ::strcoll;
++#endif
+   using ::strncmp;
++#ifndef __MINGW32CE__
+   using ::strxfrm;
++#endif
+   using ::strcspn;
+   using ::strspn;
+   using ::strtok;
+   using ::memset;
++#ifndef __MINGW32CE__
+   using ::strerror;
++#endif
+   using ::strlen;
+ 
+   using ::memchr;
+Index: src/localename.cc
+===================================================================
+--- src/localename.cc	(revisão 570)
++++ src/localename.cc	(cópia de trabalho)
+@@ -26,7 +26,9 @@
+ // invalidate any other reasons why the executable file might be covered by
+ // the GNU General Public License.
+ 
++#ifdef HAVE_LOCALE_H
+ #include <clocale>
++#endif
+ #include <cstring>
+ #include <locale>
+ 
+@@ -45,6 +47,9 @@
+ 	  _M_impl = new _Impl(__s, 1);
+ 	else
+ 	  {
++#ifndef HAVE_LOCALE_H
++        (_M_impl = _S_classic)->_M_add_reference();
++#else
+ 	    // Get it from the environment.
+ 	    char* __env = std::getenv("LC_ALL");
+ 	    // If LC_ALL is set we are done.
+@@ -67,7 +72,6 @@
+ 		  __lang = "C";
+ 		else 
+ 		  __lang = __env;
+-		
+ 		// Scan the categories looking for the first one
+ 		// different from LANG.
+ 		size_t __i = 0;
+@@ -137,6 +141,7 @@
+ 		else
+ 		  _M_impl = new _Impl(__lang.c_str(), 1);
+ 	      }
++#endif
+ 	  }
+       }
+     else
+Index: src/locale_init.cc
+===================================================================
+--- src/locale_init.cc	(revisão 570)
++++ src/locale_init.cc	(cópia de trabalho)
+@@ -26,7 +26,9 @@
+ // invalidate any other reasons why the executable file might be covered by
+ // the GNU General Public License.
+ 
++#ifdef HAVE_LOCALE_H
+ #include <clocale>
++#endif
+ #include <cstring>
+ #include <cstdlib>     // For getenv, free.
+ #include <cctype>
+@@ -115,9 +117,11 @@
+       __old = _S_global;
+       __other._M_impl->_M_add_reference();
+       _S_global = __other._M_impl;
++#ifdef HAVE_LOCALE_H
+       const string __other_name = __other.name();
+       if (__other_name != "*")
+ 	setlocale(LC_ALL, __other_name.c_str());
++#endif
+     }
+ 
+     // Reference count sanity check: one reference removed for the
+Index: src/locale.cc
+===================================================================
+--- src/locale.cc	(revisão 570)
++++ src/locale.cc	(cópia de trabalho)
+@@ -26,7 +26,9 @@
+ // invalidate any other reasons why the executable file might be covered by
+ // the GNU General Public License.
+ 
++#ifdef HAVE_LOCALE_H
+ #include <clocale>
++#endif
+ #include <cstring>
+ #include <cstdlib>     // For getenv
+ #include <cctype>
+@@ -133,6 +135,9 @@
+   locale::category
+   locale::_S_normalize_category(category __cat) 
+   {
++#ifndef HAVE_LOCALE_H
++    return __cat;
++#else
+     int __ret = 0;
+     if (__cat == none || (__cat & all) && !(__cat & ~all))
+       __ret = __cat;
+@@ -170,6 +175,7 @@
+ 	  }
+       }
+     return __ret;
++#endif
+   }
+ 
+   // locale::facet
+Index: config/locale/generic/collate_members.cc
+===================================================================
+--- config/locale/generic/collate_members.cc	(revisão 570)
++++ config/locale/generic/collate_members.cc	(cópia de trabalho)
+@@ -43,7 +43,11 @@
+     int 
+     collate<char>::_M_compare(const char* __one, const char* __two) const
+     { 
++#ifndef __MINGW32CE__
+       int __cmp = strcoll(__one, __two);
++#else
++      int __cmp = strcmp(__one, __two);
++#endif
+       return (__cmp >> (8 * sizeof (int) - 2)) | (__cmp != 0);
+     }
+   
+@@ -51,7 +55,14 @@
+     size_t
+     collate<char>::_M_transform(char* __to, const char* __from, 
+ 				size_t __n) const
+-    { return strxfrm(__to, __from, __n); }
++    {
++#ifdef __MINGW32CE__
++      strncpy (__to, __from, __n);
++      return strlen (__to);
++#else
++      return strxfrm(__to, __from, __n); 
++#endif
++    }
+ 
+ #ifdef _GLIBCXX_USE_WCHAR_T
+   template<>
+Index: config/locale/generic/c_locale.cc
+===================================================================
+--- config/locale/generic/c_locale.cc	(revisão 570)
++++ config/locale/generic/c_locale.cc	(cópia de trabalho)
+@@ -34,7 +34,13 @@
+ 
+ // Written by Benjamin Kosnik <bkoz@redhat.com>
+ 
++#ifdef HAVE_ERRNO_H
+ #include <cerrno>  // For errno
++#else
++/* Provide a fake ERANGE to keep the
++   sources as clean as possible.  */
++#define ERANGE 1
++#endif
+ #include <cmath>  // For isinf, finite, finitef, fabs
+ #include <cstdlib>  // For strof, strtold
+ #include <locale>
+@@ -51,10 +57,15 @@
+     __convert_to_v(const char* __s, float& __v, ios_base::iostate& __err, 
+ 		   const __c_locale&) 	      
+     {
++#ifndef HAVE_ERRNO_H
++      int errno;
++#endif
+       // Assumes __s formatted for "C" locale.
+       errno = 0;
++#ifdef HAVE_LOCALE_H
+       char* __old = strdup(setlocale(LC_ALL, NULL));
+       setlocale(LC_ALL, "C");
++#endif
+       char* __sanity;
+ #if defined(_GLIBCXX_HAVE_STRTOF)
+       float __f = strtof(__s, &__sanity);
+@@ -79,8 +90,10 @@
+ 	__v = __f;
+       else
+ 	__err |= ios_base::failbit;
++#ifdef HAVE_LOCALE_H
+       setlocale(LC_ALL, __old);
+       free(__old);
++#endif
+     }
+ 
+   template<>
+@@ -88,18 +101,25 @@
+     __convert_to_v(const char* __s, double& __v, ios_base::iostate& __err, 
+ 		   const __c_locale&) 
+     {
++#ifndef HAVE_ERRNO_H
++      int errno;
++#endif
+       // Assumes __s formatted for "C" locale.
+       errno = 0;
++#ifdef HAVE_LOCALE_H
+       char* __old = strdup(setlocale(LC_ALL, NULL));
+       setlocale(LC_ALL, "C");
++#endif
+       char* __sanity;
+       double __d = strtod(__s, &__sanity);
+       if (__sanity != __s && errno != ERANGE)
+ 	__v = __d;
+       else
+ 	__err |= ios_base::failbit;
++#ifdef HAVE_LOCALE_H
+       setlocale(LC_ALL, __old);
+       free(__old);
++#endif
+     }
+ 
+   template<>
+@@ -107,10 +127,15 @@
+     __convert_to_v(const char* __s, long double& __v, 
+ 		   ios_base::iostate& __err, const __c_locale&) 
+     {
++#ifndef HAVE_ERRNO_H
++      int errno;
++#endif
+       // Assumes __s formatted for "C" locale.
+       errno = 0;
++#ifdef HAVE_LOCALE_H
+       char* __old = strdup(setlocale(LC_ALL, NULL));
+       setlocale(LC_ALL, "C");
++#endif
+ #if defined(_GLIBCXX_HAVE_STRTOLD)
+       char* __sanity;
+       long double __ld = strtold(__s, &__sanity);
+@@ -126,8 +151,10 @@
+ #endif
+       else
+ 	__err |= ios_base::failbit;
++#ifdef HAVE_LOCALE_H
+       setlocale(LC_ALL, __old);
+       free(__old);
++#endif
+     }
+ 
+   void
+Index: config/locale/generic/c_locale.h
+===================================================================
+--- config/locale/generic/c_locale.h	(revisão 570)
++++ config/locale/generic/c_locale.h	(cópia de trabalho)
+@@ -38,7 +38,9 @@
+ 
+ #pragma GCC system_header
+ 
++#ifdef HAVE_LOCALE_H
+ #include <clocale>
++#endif
+ #include <cstring>   // get std::strlen
+ #include <cstdio>    // get std::snprintf or std::sprintf
+ 
+@@ -59,6 +61,7 @@
+ 		     const char* __fmt,
+ 		     _Tv __v, const __c_locale&, int __prec)
+     {
++#ifdef HAVE_LOCALE_H
+       char* __old = std::setlocale(LC_NUMERIC, NULL);
+       char* __sav = NULL;
+       if (std::strcmp(__old, "C"))
+@@ -67,18 +70,21 @@
+ 	  std::strcpy(__sav, __old);
+ 	  std::setlocale(LC_NUMERIC, "C");
+ 	}
++#endif
+ 
+ #ifdef _GLIBCXX_USE_C99
+       const int __ret = std::snprintf(__out, __size, __fmt, __prec, __v);
+ #else
+       const int __ret = std::sprintf(__out, __fmt, __prec, __v);
+ #endif
+-      
++
++#ifdef HAVE_LOCALE_H
+       if (__sav)
+ 	{
+ 	  std::setlocale(LC_NUMERIC, __sav);
+ 	  delete [] __sav;
+ 	}
++#endif
+       return __ret;
+     }
+ }
+Index: config/locale/generic/time_members.cc
+===================================================================
+--- config/locale/generic/time_members.cc	(revisão 570)
++++ config/locale/generic/time_members.cc	(cópia de trabalho)
+@@ -44,14 +44,22 @@
+     _M_put(char* __s, size_t __maxlen, const char* __format, 
+ 	   const tm* __tm) const
+     {
++#ifdef HAVE_LOCALE_H
+       char* __old = strdup(setlocale(LC_ALL, NULL));
+       setlocale(LC_ALL, _M_name_timepunct);
++#endif
++#ifndef __MINGW32CE__
+       const size_t __len = strftime(__s, __maxlen, __format, __tm);
++#endif
++#ifdef HAVE_LOCALE_H
+       setlocale(LC_ALL, __old);
+       free(__old);
++#endif
++#ifndef __MINGW32CE__
+       // Make sure __s is null terminated.
+       if (__len == 0)
+ 	__s[0] = '\0';
++#endif
+     }
+ 
+   template<> 
+Index: config/io/basic_file_stdio.cc
+===================================================================
+--- config/io/basic_file_stdio.cc	(revisão 570)
++++ config/io/basic_file_stdio.cc	(cópia de trabalho)
+@@ -33,7 +33,9 @@
+ 
+ #include <bits/basic_file.h>
+ #include <fcntl.h>
++#ifdef HAVE_ERRNO_H
+ #include <errno.h>
++#endif
+ 
+ #ifdef _GLIBCXX_HAVE_POLL
+ #include <poll.h>
+@@ -108,15 +110,20 @@
+ 
+   // Wrapper handling partial write.
+   static std::streamsize
+-  xwrite(int __fd, const char* __s, std::streamsize __n)
++  xwrite(FILE* __f, const char* __s, std::streamsize __n)
+   {
+     std::streamsize __nleft = __n;
+ 
+     for (;;)
+       {
++#ifdef HAVE_UNISTD_H
+ 	const std::streamsize __ret = write(__fd, __s, __nleft);
+ 	if (__ret == -1L && errno == EINTR)
+ 	  continue;
++#else
++	const std::streamsize __ret = fwrite(__s, 1, __nleft, __f);
++        fflush(__f);
++#endif
+ 	if (__ret == -1L)
+ 	  break;
+ 
+@@ -149,8 +156,10 @@
+ 	__iov[0].iov_len = __n1_left;
+ 
+ 	const std::streamsize __ret = writev(__fd, __iov, 2);
++#ifdef HAVE_ERRNO_H
+ 	if (__ret == -1L && errno == EINTR)
+ 	  continue;
++#endif
+ 	if (__ret == -1L)
+ 	  break;
+ 
+@@ -190,10 +199,16 @@
+     if (!this->is_open() && __file)
+       {
+ 	int __err;
++#ifdef HAVE_ERRNO_H
+ 	errno = 0;	
++#endif
+ 	do
+ 	  __err = this->sync();
++#ifdef HAVE_ERRNO_H
+ 	while (__err && errno == EINTR);
++#else
++	while (0);
++#endif
+ 	if (!__err)
+ 	  {
+ 	    _M_cfile = __file;
+@@ -204,6 +219,7 @@
+     return __ret;
+   }
+   
++#ifdef HAVE_UNISTD_H
+   __basic_file<char>*
+   __basic_file<char>::sys_open(int __fd, ios_base::openmode __mode)
+   {
+@@ -219,6 +235,7 @@
+       }
+     return __ret;
+   }
++#endif
+   
+   __basic_file<char>* 
+   __basic_file<char>::open(const char* __name, ios_base::openmode __mode, 
+@@ -244,10 +261,12 @@
+   bool 
+   __basic_file<char>::is_open() const 
+   { return _M_cfile != 0; }
+-  
++
++#ifdef HAVE_UNISTD_H
+   int 
+   __basic_file<char>::fd() 
+   { return fileno(_M_cfile); }
++#endif
+   
+   __c_file*
+   __basic_file<char>::file() 
+@@ -266,10 +285,14 @@
+ 	    // for error first. However, C89/C99 (at variance with IEEE
+ 	    // 1003.1, f.i.) do not mandate that fclose must set errno
+ 	    // upon error.
++#ifdef HAVE_ERRNO_H
+ 	    errno = 0;
+ 	    do
++#endif
+ 	      __err = fclose(_M_cfile);
++#ifdef HAVE_ERRNO_H
+ 	    while (__err && errno == EINTR);
++#endif
+ 	  }
+ 	_M_cfile = 0;
+ 	if (!__err)
+@@ -282,15 +305,19 @@
+   __basic_file<char>::xsgetn(char* __s, streamsize __n)
+   {
+     streamsize __ret;
++#ifdef HAVE_UNISTD_H
+     do
+       __ret = read(this->fd(), __s, __n);
+     while (__ret == -1L && errno == EINTR);
++#else
++    __ret = fread(__s, 1, __n, _M_cfile);
++#endif
+     return __ret;
+   }
+ 
+   streamsize 
+   __basic_file<char>::xsputn(const char* __s, streamsize __n)
+-  { return __gnu_internal::xwrite(this->fd(), __s, __n); }
++  { return __gnu_internal::xwrite(_M_cfile, __s, __n); }
+ 
+   streamsize 
+   __basic_file<char>::xsputn_2(const char* __s1, streamsize __n1,
+@@ -301,10 +328,10 @@
+     __ret = __gnu_internal::xwritev(this->fd(), __s1, __n1, __s2, __n2);
+ #else
+     if (__n1)
+-      __ret = __gnu_internal::xwrite(this->fd(), __s1, __n1);
++      __ret = __gnu_internal::xwrite(_M_cfile, __s1, __n1);
+ 
+     if (__ret == __n1)
+-      __ret += __gnu_internal::xwrite(this->fd(), __s2, __n2);
++      __ret += __gnu_internal::xwrite(_M_cfile, __s2, __n2);
+ #endif
+     return __ret;
+   }
+@@ -318,8 +345,13 @@
+     if (__off > numeric_limits<off_t>::max()
+ 	|| __off < numeric_limits<off_t>::min())
+       return -1L;
++#ifdef HAVE_UNISTD_H
+     return lseek(this->fd(), __off, __way);
++#else
++    return fseek(_M_cfile, __off, __way);
+ #endif
++
++#endif
+   }
+ 
+   int 
