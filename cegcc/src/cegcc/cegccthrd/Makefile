@@ -4,7 +4,7 @@ PREFIX?=/usr/local
 
 OUTFILE = cegccthrd
 
-TARGET=arm-wince-pe
+TARGET?=arm-wince-pe
 
 BUILD_DIR?=.
 MY_DIR=${BUILD_DIR}/cegccthrd
