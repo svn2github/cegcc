@@ -35,12 +35,9 @@ export MY_HOST_ARCH
 if [ "x$TGT_ARCH" == "x" ]; then
 	#
 	# Choose the target environment here.
-	# "pe" is the old name, "cegcc" is the new name under development.
 	#
-	# TGT_ARCH=arm-wince-pe
 	TGT_ARCH=arm-wince-cegcc
 	#
-	PE_TGT_ARCH=arm-wince-pe
 	MINGW_TGT_ARCH=arm-wince-mingw32ce
 	MINGW_BUILD_DIR=$TOP_SRCDIR/build/$MY_HOST_ARCH/$MINGW_TGT_ARCH
 	#
