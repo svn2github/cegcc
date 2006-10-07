@@ -1,6 +1,6 @@
 .SUFFIXES:	.exe .c .h .rc .rsc .C
 
-ARCH=		arm-wince-pe
+ARCH=		arm-wince-cegcc
 CC=		${ARCH}-gcc ${CFLAGS}
 WINDRES=	${ARCH}-windres
 CFLAGS=		-g
@@ -30,13 +30,13 @@ clean:
 		-rm -f *.o *.exe *.rsc
 
 hello-small-g.exe:	hello-dialog.c
-	arm-wince-mingw32-gcc -g -o $@ $?
+	arm-wince-mingw32ce-gcc -g -o $@ $?
 
 hello-small-s.exe:	hello-dialog.c
-	arm-wince-mingw32-gcc -s -o $@ $?
+	arm-wince-mingw32ce-gcc -s -o $@ $?
 
 hello-small.exe:	hello-dialog.c
-	arm-wince-mingw32-gcc -o $@ $?
+	arm-wince-mingw32ce-gcc -o $@ $?
 
 menu-resource.tar.gz:	Makefile menu-resource.c menu-resource.rc \
 			menu-resource.h menu-resource.exe
