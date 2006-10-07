@@ -1,7 +1,11 @@
 #!/bin/bash
 
 if [ x${TARGET} = x ] ; then
-TARGET=arm-wince-pe
+	if [ x${TGT_ARCH} = x ]; then
+		TARGET=arm-wince-pe
+	else
+		TARGET=${TGT_ARCH}
+	fi
 fi
 
 DLLTOOL=${TARGET}-dlltool
