@@ -23,7 +23,7 @@ That script contains exported shell variables for
 <tr><td>BUILD_DIR</td><td>this points to a temporary directory in which all of the build happens</td></tr>
 <tr><td>PREFIX</td><td>By default, this is <i>/usr/ppc</i>. You should set it to suit your needs, this is where the tools get installed. (<i>GNU default would be /usr/local</i>).</td></tr>
 <tr><td>MY_HOST_ARCH</td><td>This is the architecture on which we're building</td></tr>
-<tr><td>TARGET_ARCH</td><td>This is the target architecture, for our project that's <i>arm-wince-pe</i>.</td></tr>
+<tr><td>TARGET_ARCH</td><td>This is the target architecture, for our project there are two such targets : <i>arm-wince-cegcc</i> and <i>arm-wince-mingw32ce</i>.</td></tr>
 <tr><td></td><td></td></tr>
 </table>
 <p>
@@ -45,12 +45,15 @@ One of the sequences that works (the one we use) is :
 <ul>
 	<li>binutils
 	<li>includes
-	<li>gcc
+	<li>gcc <font color="red">bootstrap</font>
 	<li>newlib
-	<li>libraries
+	<li>dll <font color="red">preliminary, not thread-capable</font>
+	<li>CE libraries
+	<li>gcc, g++ <font color="red">complete build</font>
+	<li>dll <font color="red">complete</font>
+	<li>additional libraries (threads support, C++ DLLs)
 	<li>gdb
 	<li>the debugging stub
-	<li>g++
 </ul>
 <P>
 In this sequence, we always (configure and) build the tools,
@@ -103,11 +106,11 @@ src/w32api/include <font color=red>The target system include files</font>
 src/w32api/lib <font color=red>an unused part of w32api</font>
 src/w32api
 build <font color=red>This directory is created from the source tree</font>
-build/i686-pc-linux-gnu/arm-wince-pe/gdb/gdb/testsuite/gdb.trace
-build/i686-pc-linux-gnu/arm-wince-pe/gdb/gdb/testsuite
-build/i686-pc-linux-gnu/arm-wince-pe/gdb/gdb
-build/i686-pc-linux-gnu/arm-wince-pe/gdb
-build/i686-pc-linux-gnu/arm-wince-pe
+build/i686-pc-linux-gnu/arm-wince-cegcc/gdb/gdb/testsuite/gdb.trace
+build/i686-pc-linux-gnu/arm-wince-cegcc/gdb/gdb/testsuite
+build/i686-pc-linux-gnu/arm-wince-cegcc/gdb/gdb
+build/i686-pc-linux-gnu/arm-wince-cegcc/gdb
+build/i686-pc-linux-gnu/arm-wince-cegcc
 build/i686-pc-linux-gnu
 website <font color=red>Our website contents are also managed via the source repository</font>
 website/images

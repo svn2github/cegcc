@@ -16,14 +16,14 @@ all the rest is output.
 <h1>A debugging session with 0.02 using RAPI</h1>
 <p>
 <pre>
-dannypc: {47} <font color="green"><i>arm-wince-pe-gdb fibo.exe</i></font> <font color="red"><b>Start the debugging session</b></font>
+dannypc: {47} <font color="green"><i>arm-wince-cegcc-gdb fibo.exe</i></font> <font color="red"><b>Start the debugging session</b></font>
 GNU gdb 6.4
 Copyright 2005 Free Software Foundation, Inc.
 GDB is free software, covered by the GNU General Public License, and you are
 welcome to change it and/or distribute copies of it under certain conditions.
 Type "show copying" to see the conditions.
 There is absolutely no warranty for GDB.  Type "show warranty" for details.
-This GDB was configured as "--host=i686-pc-linux-gnu --target=arm-wince-pe"...
+This GDB was configured as "--host=i686-pc-linux-gnu --target=arm-wince-cegcc"...
 (gdb) <font color="green"><i>l 35</i></font>
 30              wcstombs(s, ws, len+1);
 31              fprintf(f, "param [%s]\r\n", s);
@@ -53,7 +53,7 @@ Uploading to remote device: \gdb\wince-stub.exe <font color="red"><b>We're using
 Starting on device: "\gdb\wince-stub.exe \gdb\wince-stub.exe" <font color="red"><b>This appears wrong but trust me ...</b></font>
 [CeCreateProcess:39] last_error = 183 <font color="red"><b>Don't know what this means, might be from a previous session</b></font>
 [CeCreateProcess:41] result = 1 <font color="red"><b>Looks like this went well.</b></font>
-Waiting for connection... <font color="red"><b>The stub is trying to connect to arm-wince-pe-gdb on the linux system over a TCP/IP connection.</b></font>
+Waiting for connection... <font color="red"><b>The stub is trying to connect to arm-wince-cegcc-gdb on the linux system over a TCP/IP connection.</b></font>
 Connected <font color="red"><b>Ok, the connection was created.</b></font>
 [CeCreateFile:40] begin
 [CeCreateFile:40] begin
@@ -81,7 +81,7 @@ warning: S not found in registry
 warning: S not found in registry <font color="red"><b>Don't know what this means.</b></font>
 warning: 00014859:C5F7F486: inherit_parent: unattached
 warning: 00014AB7:C5F7F486: chdir: path "\gdb"
-warning: 00014D13:C5F7F486: chdir: success, cwd is "/gdb" <font color="red"><b>Fake notion of current directory. This directory is used between the arm-wince-pe-gdb and the debugging stub, its purpose is to store the stub and the program to debug.</b></font>
+warning: 00014D13:C5F7F486: chdir: success, cwd is "/gdb" <font color="red"><b>Fake notion of current directory. This directory is used between the arm-wince-cegcc-gdb and the debugging stub, its purpose is to store the stub and the program to debug.</b></font>
 warning: 00014F71:C5F7F486: ioctl(0, 0x5406 0x1e1afe78)
 warning: 000151CE:C5F7F486: Invalid file handle: 0
 warning: 0001546E:C5F7F486: _initstdfd: fd 0 hnd ffffffff
@@ -133,16 +133,16 @@ Here's a transcript of just about the first debugging session I
 did with the cross-debugger that's part of the binary pre-release 0.01 of cegcc.
 </p>
 <pre>
-dannypc: {26} <font color="green"><i>arm-wince-pe-gcc -g -o fg.exe fibo.c</i></font> <font color="red">Compile it</font>
+dannypc: {26} <font color="green"><i>arm-wince-cegcc-gcc -g -o fg.exe fibo.c</i></font> <font color="red">Compile it</font>
 fibo.c:16: warning: '__stdcall__' attribute directive ignored
-dannypc: {27} <font color="green"><i>arm-wince-pe-gdb fg.exe</i></font>
+dannypc: {27} <font color="green"><i>arm-wince-cegcc-gdb fg.exe</i></font>
 GNU gdb 6.4
 Copyright 2005 Free Software Foundation, Inc.
 GDB is free software, covered by the GNU General Public License, and you are
 welcome to change it and/or distribute copies of it under certain conditions.
 Type "show copying" to see the conditions.
 There is absolutely no warranty for GDB.  Type "show warranty" for details.
-This GDB was configured as "--host=i686-pc-linux-gnu --target=arm-wince-pe".
+This GDB was configured as "--host=i686-pc-linux-gnu --target=arm-wince-cegcc".
 (gdb) <font color="green"><i>l</i></font>
 1       #define _WINSOCKAPI_
 2       #include &lt;windows.h&gt;
@@ -176,14 +176,14 @@ Error creating process \Application Data\gdb\fg.exe, (error 2).<font color="red"
 (gdb) <font color="green"><i>q</i></font>
 dannypc: {28} <font color="green"><i>pcp fg.exe ":/application data/gdb/fg.exe"</i></font>
 File copy of 686455 bytes took 0 minutes and 6 seconds, that's 114409 bytes/s.
-dannypc: {29} <font color="green"><i>arm-wince-pe-gdb fg.exe</i></font>
+dannypc: {29} <font color="green"><i>arm-wince-cegcc-gdb fg.exe</i></font>
 GNU gdb 6.4
 Copyright 2005 Free Software Foundation, Inc.
 GDB is free software, covered by the GNU General Public License, and you are
 welcome to change it and/or distribute copies of it under certain conditions.
 Type "show copying" to see the conditions.
 There is absolutely no warranty for GDB.  Type "show warranty" for details.
-This GDB was configured as "--host=i686-pc-linux-gnu --target=arm-wince-pe".
+This GDB was configured as "--host=i686-pc-linux-gnu --target=arm-wince-cegcc".
 (gdb) <font color="green"><i>break WinMain</i></font>
 Breakpoint 1 at 0x110dc: file fibo.c, line 20.
 (gdb) <font color="green"><i>r</i></font>

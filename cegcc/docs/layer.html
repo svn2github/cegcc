@@ -13,8 +13,13 @@ WinCE specific
 code.
 Most of that is in the directory <i>src/newlib/newlib/libc/sys/wince</i>
 even though it is not a part of the standard newlib distributions.
+<p>
+The unix-like layer is only provided in the <i>arm-wince-cegcc</i> tools,
+the <i>arm-wince-mingw32ce</i> deliberately lack this as they attempt to provide
+a development environment that is as close to Windows CE as possible.
 <P>
-Part of this code is required to be able to create executables that start
+Part of the code in this directory
+is required to be able to create executables that start
 a program in a consistent way (e.g. crt0.o, the startup code in an executable),
 but another part of this code provides a unix like layer
 with functionalities absent in Windows CE.
@@ -31,7 +36,7 @@ According to the
 Microsoft website</a>,
 Windows CE doesn't support the current directory functionality.
 <p>
-However, some of the XCE functions in the newlib library that we provide
+However, some of the XCE functions in our newlib library
 do support such functionality.
 The startup code (see <i>src/newlib/newlib/libc/sys/wince/startup.c</i>)
 sets up an environment variable PWD which it presets
