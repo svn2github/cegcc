@@ -64,7 +64,7 @@ do
 	sh $SCRIPTDIR/build-gcc.sh || exit 1
 	sh $SCRIPTDIR/install-gcc.sh || exit 1
 	#
-	sh $SCRIPTDIR/install-mingw-crt.sh
+	sh $SCRIPTDIR/install-mingw-crt.sh || exit 1
 	#
 	sh $SCRIPTDIR/build-newlib.sh || exit 1
 	sh $SCRIPTDIR/install-newlib.sh || exit 1
