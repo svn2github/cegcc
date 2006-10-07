@@ -37,8 +37,6 @@ mkdir -p $BUILD_DIR
 # there's a permanent (e.g. by design) difference, such as we don't want to
 # distribute newlib in the mingw32ce case. All those differences are hidden
 # in the scripts called from this one.
-# The only exception here is the mingw-fake_crt because the script itself
-# is not in scripts/linux so the conditional processing is handled here instead.
 #
 # All scripts called below must accept the environment variables
 #	TGT_ARCH,
@@ -66,9 +64,7 @@ do
 	sh $SCRIPTDIR/build-gcc.sh || exit 1
 	sh $SCRIPTDIR/install-gcc.sh || exit 1
 	#
-	if [ $TGT_ARCH = arm-wince-mingw32ce ]; then
-		sh $TOP_SRCDIR/src/mingw-fake_crt/install.sh || exit 1
-	fi
+	sh $SCRIPTDIR/install-mingw-crt.sh
 	#
 	sh $SCRIPTDIR/build-newlib.sh || exit 1
 	sh $SCRIPTDIR/install-newlib.sh || exit 1

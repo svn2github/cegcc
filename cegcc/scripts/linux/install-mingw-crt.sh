@@ -7,7 +7,9 @@ if [ -r settings.sh ]; then
 else
 	. scripts/linux/settings.sh
 fi
-cd $TOP_SRCDIR/src/mingw-fake_crt
-sh install.sh || exit 1
+if [ $TGT_ARCH = arm-wince-mingw32ce ]; then
+	cd $TOP_SRCDIR/src/mingw-fake_crt || exit 1
+	sh install.sh || exit 1
+fi
 #
 exit 0
