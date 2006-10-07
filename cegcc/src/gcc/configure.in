@@ -449,7 +449,7 @@ case "${target}" in
   sh-*-linux*)
     noconfigdirs="$noconfigdirs ${libgcj} target-newlib target-libgloss"
     ;;    
-  sh*-*-pe|mips*-*-pe|*arm-wince-pe)
+  sh*-*-pe|mips*-*-pe|*arm-wince-pe|*arm-wince-cegcc)
     noconfigdirs="$noconfigdirs ${libgcj}"
     noconfigdirs="$noconfigdirs target-examples"
     noconfigdirs="$noconfigdirs target-libiberty texinfo send-pr"
@@ -1998,7 +1998,9 @@ case " $target_configdirs " in
    *-cygwin*)
      FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -L$$r/$(TARGET_SUBDIR)/winsup -L$$r/$(TARGET_SUBDIR)/winsup/cygwin -L$$r/$(TARGET_SUBDIR)/winsup/w32api/lib -isystem $$s/winsup/include -isystem $$s/winsup/cygwin/include -isystem $$s/winsup/w32api/include' ;;
    arm-wince-pe)
-     FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -mwin32 -static -idirafter ${prefix}/arm-wince-pe/include/w32api'
+     FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -mwin32 -static -idirafter ${prefix}/arm-wince-pe/include/w32api' ;;
+   arm-wince-cegcc)
+     FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -mwin32 -static -idirafter ${prefix}/arm-wince-cegcc/include/w32api' ;;
    esac
 
    # If we're not building GCC, don't discard standard headers.

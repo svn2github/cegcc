@@ -241,7 +241,7 @@ case "${host}" in
     GLIBCXX_CHECK_ICONV_SUPPORT
     GLIBCXX_CHECK_STDLIB_SUPPORT
     ;;
-  *arm-wince-pe)
+  *arm-wince-pe | *arm-wince-cegcc)
     AC_CHECK_HEADERS([sys/types.h locale.h float.h])
 #    AC_DEFINE(_GLIBCXX_HAVE_SYS_IOCTL_H)
 #   AC_DEFINE(HAVE_SYS_IOCTL_H)

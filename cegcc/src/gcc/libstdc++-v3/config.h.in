@@ -111,6 +111,9 @@
 /* Define to 1 if you have the <gconv.h> header file. */
 #undef HAVE_GCONV_H
 
+/* Define to 1 if you have the `getenv' function. */
+#undef HAVE_GETENV
+
 /* Define to 1 if you have the `getpagesize' function. */
 #undef HAVE_GETPAGESIZE
 
@@ -255,6 +258,9 @@
 
 /* Define to 1 if you have the `setenv' function. */
 #undef HAVE_SETENV
+
+/* Define to 1 if you have the <signal.h> header file. */
+#undef HAVE_SIGNAL_H
 
 /* Define if sigsetjmp is available. */
 #undef HAVE_SIGSETJMP
@@ -852,6 +858,11 @@
 #if defined (HAVE__FREXPL) && ! defined (HAVE_FREXPL)
 # define HAVE_FREXPL 1
 # define frexpl _frexpl
+#endif
+
+#if defined (HAVE__GETENV) && ! defined (HAVE_GETENV)
+# define HAVE_GETENV 1
+# define getenv _getenv
 #endif
 
 #if defined (HAVE__HYPOT) && ! defined (HAVE_HYPOT)
