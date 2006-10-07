@@ -11,7 +11,7 @@ MY_DIR=${BUILD_DIR}/cegccdll
 TOP_SRCDIR?=../../..
 SRCDIR=${TOP_SRCDIR}/src/cegcc/cegccdll
 
-TARGET=arm-wince-pe
+TARGET?=arm-wince-pe
 DLLNAME=cegcc.dll
 IMPLIB=lib$(DLLNAME).a
 
@@ -76,11 +76,10 @@ delfiles:
 
 extract:
 	@echo "extracting files for gcc $(GCCVERSION)"
-	$(AR) -x $(LIB_PATH)/libc.a
-#	$(AR) -x $(LIB_PATH)/libg.a
-	$(AR) -x $(LIB_PATH)/libm.a
-	$(AR) -x $(LIB_PATH)/../../lib/gcc/$(TARGET)/$(GCCVERSION)/libgcc.a
-	mv *.o ${MY_DIR}/_tmp
+	cd ${MY_DIR}/_tmp && $(AR) -x $(LIB_PATH)/libc.a
+#	cd ${MY_DIR}/_tmp && $(AR) -x $(LIB_PATH)/libg.a
+	cd ${MY_DIR}/_tmp && $(AR) -x $(LIB_PATH)/libm.a
+	cd ${MY_DIR}/_tmp && $(AR) -x $(LIB_PATH)/../../lib/gcc/$(TARGET)/$(GCCVERSION)/libgcc.a
 
 ${MY_DIR}/stripped/$(DLLNAME):
 	rm -f ${MY_DIR}/stripped/$(DLLNAME)
