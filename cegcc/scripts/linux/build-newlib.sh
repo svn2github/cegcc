@@ -15,7 +15,7 @@ if [ -d $BUILD_DIR/newlib ]; then
 fi
 #
 mkdir -p $BUILD_DIR/newlib || exit 1
-cd $BUILD_DIR/newlib
+cd $BUILD_DIR/newlib || exit 1
 #
 export CC=$PREFIX/bin/$TGT_ARCH-gcc
 export LD=$PREFIX/bin/$TGT_ARCH-ld

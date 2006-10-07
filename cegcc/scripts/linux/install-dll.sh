@@ -12,10 +12,16 @@ fi
 # 	rm -rf $BUILD_DIR/libs
 # fi
 #
+# Not in the MingW target
+#
+if [ $TGT_ARCH = arm-wince-mingw32ce ]; then
+	exit 0
+fi
+#
 # Non-standard build
 #
 cd $TOP_SRCDIR/src/cegcc/cegccdll || exit 1
-make PREFIX=$PREFIX install || exit 1
+make PREFIX=$PREFIX TARGET=$TGT_ARCH install || exit 1
 #
 # End
 #

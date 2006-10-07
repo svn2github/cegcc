@@ -8,7 +8,7 @@ else
 	. scripts/linux/settings.sh
 fi
 #
-cd $BUILD_DIR/newlib
+cd $BUILD_DIR/newlib || exit 1
 #
 make install || exit 1
 exit 0

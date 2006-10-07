@@ -15,7 +15,7 @@ cd $BUILD_DIR/libs
 #
 # Create directory
 #
-mkdir -p $PREFIX/$TGT_ARCH/lib $PREFIX/$MINGW_TGT_ARCH/lib || exit 1
+mkdir -p $PREFIX/$TGT_ARCH/lib || exit 1
 #
 # Loop over the list
 #
@@ -24,24 +24,11 @@ do
 	install -m 0755 lib$i.a $PREFIX/$TGT_ARCH/lib || exit 1
 	$TGT_ARCH-ranlib $PREFIX/$TGT_ARCH/lib/lib$i.a || exit 1
 done
-for i in $INSTALL_MINGW_TGT
-do
-	install -m 0755 lib$i.a $PREFIX/$MINGW_TGT_ARCH/lib || exit 1
-	$MINGW_TGT_ARCH-ranlib $PREFIX/$MINGW_TGT_ARCH/lib/lib$i.a || exit 1
-done
-# #
-# # Set up a libcegcc.a library.
-# #
-# mkdir /tmp/libs-$$
-# cd /tmp/libs-$$
-# for i in $LIBS_CEGCC_LIB
+# for i in $INSTALL_MINGW_TGT
 # do
-# 	$TGT_ARCH-ar x $PREFIX/$TGT_ARCH/lib/lib$i.a
+# 	install -m 0755 lib$i.a $PREFIX/$MINGW_TGT_ARCH/lib || exit 1
+# 	$MINGW_TGT_ARCH-ranlib $PREFIX/$MINGW_TGT_ARCH/lib/lib$i.a || exit 1
 # done
-# $TGT_ARCH-ar r $PREFIX/$TGT_ARCH/lib/libcegcc.a *.o
-# cd $BUILD_DIR/libs
-# rm /tmp/libs-$$/*.o
-# $TGT_ARCH-ranlib $PREFIX/$TGT_ARCH/lib/libcegcc.a
 #
 # End
 #

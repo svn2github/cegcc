@@ -8,6 +8,12 @@ else
 	. scripts/linux/settings.sh
 fi
 
+#
+# Not in the MingW target
+#
+if [ $TGT_ARCH = arm-wince-mingw32ce ]; then
+	exit 0
+fi
 CFLAGS="-mwin32 -D_WINSOCKAPI_"
 LDFLAGS="-e WinMainCRTStartup -lws2"
 

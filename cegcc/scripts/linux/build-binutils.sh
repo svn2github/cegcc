@@ -14,9 +14,8 @@ if [ -d $BUILD_DIR/binutils ]; then
 	rm -rf $BUILD_DIR/binutils
 fi
 #
-cd $BUILD_DIR
-mkdir binutils || exit 1
-cd binutils
+mkdir -p $BUILD_DIR/binutils || exit 1
+cd $BUILD_DIR/binutils || exit 1
 #
 export CFLAGS=""
 export LDFLAGS=""

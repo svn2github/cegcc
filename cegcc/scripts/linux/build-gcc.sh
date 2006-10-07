@@ -14,14 +14,8 @@ if [ -d $BUILD_DIR/gcc ]; then
 	rm -rf $BUILD_DIR/gcc
 fi
 #
-cd $BUILD_DIR
-mkdir gcc
-cd gcc
-#
-# This is currently a hack so we don't compile gcc/gcc/config/arm/gthr-win32.c .
-# Replaced by --disable-threads.
-#
-# export CFLAGS="-DCEGCC_LINUX"
+mkdir -p $BUILD_DIR/gcc || exit 1
+cd $BUILD_DIR/gcc || exit 1
 #
 $TOP_SRCDIR/src/gcc/configure \
 	--prefix=$PREFIX \

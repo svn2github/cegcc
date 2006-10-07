@@ -28,10 +28,24 @@ if [ "x$SCRIPT_DEBUG" != x ]; then
 fi
 #
 MY_HOST_ARCH=`$TOP_SRCDIR/src/gcc/config.guess`
-TGT_ARCH=arm-wince-pe
-PE_TGT_ARCH=arm-wince-pe
-MINGW_TGT_ARCH=arm-wince-mingw32
-export MY_HOST_ARCH TGT_ARCH
+export MY_HOST_ARCH
+#
+# Only set the target environment variable if it isn't already set.
+#
+if [ "x$TGT_ARCH" == "x" ]; then
+	#
+	# Choose the target environment here.
+	# "pe" is the old name, "cegcc" is the new name under development.
+	#
+	# TGT_ARCH=arm-wince-pe
+	TGT_ARCH=arm-wince-cegcc
+	#
+	PE_TGT_ARCH=arm-wince-pe
+	MINGW_TGT_ARCH=arm-wince-mingw32ce
+	MINGW_BUILD_DIR=$TOP_SRCDIR/build/$MY_HOST_ARCH/$MINGW_TGT_ARCH
+	#
+	export TGT_ARCH MINGW_BUILD_DIR MINGW_TGT_ARCH
+fi
 #
 BUILD_DIR=$TOP_SRCDIR/build/$MY_HOST_ARCH/$TGT_ARCH
 export BUILD_DIR
@@ -43,7 +57,7 @@ export PATH=${PREFIX}/bin:${PATH}
 #
 # The name of this release
 #
-CEGCC_RELEASE=0.08
+CEGCC_RELEASE=0.09
 export CEGCC_RELEASE
 #
 # The debugging stub

@@ -14,9 +14,15 @@ if [ -d $BUILD_DIR/gpp ]; then
 	rm -rf $BUILD_DIR/gpp
 fi
 #
-cd $BUILD_DIR
-mkdir gpp
-cd gpp
+# Temporary hack - not in the MingW target
+# FIX ME
+#
+if [ $TGT_ARCH = arm-wince-mingw32ce ]; then
+	exit 0
+fi
+#
+mkdir -p $BUILD_DIR/gpp || exit 1
+cd $BUILD_DIR/gpp || exit 1
 #
 export CFLAGS=""
 #
@@ -27,10 +33,17 @@ $TOP_SRCDIR/src/gcc/configure \
 	--disable-nls \
 	--enable-checking \
 	--disable-multilib \
-	--target=$TGT_ARCH $MY_HOST_ARCH || exit 1
+	--build=$MY_HOST_ARCH --target=$TGT_ARCH || exit 1
+#
+# Deliberately no error handling here.
 #
 make
 #
+# Because we need to delete this file
+#
 rm $BUILD_DIR/gpp/gcc/as || exit 1
+#
+# Now the build should continue smoothly
+#
 make || exit 1
 exit 0

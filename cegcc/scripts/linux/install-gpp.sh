@@ -7,7 +7,14 @@ if [ -r settings.sh ]; then
 else
 	. scripts/linux/settings.sh
 fi
-cd $BUILD_DIR/gpp
+#
+# Temporary hack - not in the MingW target
+# FIX ME
+#
+if [ $TGT_ARCH = arm-wince-mingw32ce ]; then
+	exit 0
+fi
+cd $BUILD_DIR/gpp || exit 1
 #
 make install || exit 1
 #

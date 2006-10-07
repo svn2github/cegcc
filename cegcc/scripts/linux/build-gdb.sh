@@ -15,6 +15,12 @@ if [ -d $BUILD_DIR/gdb ]; then
 	rm -rf $BUILD_DIR/gdb
 fi
 #
+#
+# Not in the MingW target
+#
+if [ $TGT_ARCH = arm-wince-mingw32ce ]; then
+	exit 0
+fi
 mkdir -p $BUILD_DIR/gdb || exit 1
 cd $BUILD_DIR/gdb
 #
