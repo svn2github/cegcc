@@ -76,11 +76,20 @@ Our project is based on a collection of (mostly GNU) software :
 <li><a href="http://www.gnu.org/software/gdb">GDB</a> - the GNU debugger
 </ul>
 <p>
-We're implementing all these tools for the <b>arm-wince-pe</b> target platform,
+We're implementing all these tools for the <b>arm-wince-cegcc</b> target platform,
 which means we're building for an <b>ARM</b> processor,
 running the <b>wince</b> operating system,
-and producing <b>pe</b> executable files.
+and producing <b>pe</b> executable files
+to be linked with the <b>CEGCC</b> library.
+This target implements a porting environment :
+the CEGCC library basically offers a layer of unix-like functionality on top of Windows CE.
 <p>
+We also offer a development environment that is closer to the WinCE platform,
+this is called <b>arm-wince-mingw32ce</b>.
+It is based on a subset of the <a href="http://www.mingw.org">MinGW</a> project,
+which offers a MINimalistic Gnu environment for Windows platforms.
+<p>
+We used to have <i>pe</i> in the target description.
 PE stands for Portable Executable file format,
 and it's 
 <a href="http://www.microsoft.com/whdc/system/platform/firmware/PECOFF.mspx">Microsoft's implementation of COFF</a>
