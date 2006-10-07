@@ -9,7 +9,7 @@ SRCDIR=${TOP_SRCDIR}/src/cegcc/libstdc++
 
 DLLNAME=libstdc++.dll
 IMPLIB=$(DLLNAME).a
-TARGET=arm-wince-pe
+TARGET?=arm-wince-pe
 
 AR=$(TARGET)-ar
 CC=$(TARGET)-gcc
@@ -44,9 +44,8 @@ delfiles:
 	done
 
 extract:
-	cd ${MY_DIR}/_tmp; $(AR) -x $(LIB_PATH)/libsupc++.a
-	cd ${MY_DIR}/_tmp; $(AR) -x $(LIB_PATH)/libstdc++.a
-#	mv ${MY_DIR}/*.o ${MY_DIR}/_tmp
+	cd ${MY_DIR}/_tmp; $(AR) -x $(PREFIX)/lib/libsupc++.a
+	cd ${MY_DIR}/_tmp; $(AR) -x $(PREFIX)/lib/libstdc++.a
 
 ${MY_DIR}/stripped/$(DLLNAME):
 	@mkdir -p ${MY_DIR}/stripped
