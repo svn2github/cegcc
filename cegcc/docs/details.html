@@ -29,15 +29,15 @@ By default, the arm-wince-cegcc-gcc C compiler is defining these macros :
 <table border=1>
 	<tr><td>__CEGCC__</td><td>Use this to identify our environment</td></tr>
 	<tr><td>__CEGCC32__</td><td>Identify our environment even more, we may have a 64-bit environment in the future.</td></tr>
-	<tr><td>unix</td><td>See below</td></tr>
-	<tr><td>__unix__</td><td>See below</td></tr>
-	<tr><td>__unix</td><td>See below</td></tr>
+	<tr><td>unix</td><td>This is a unix-like environment.</td></tr>
+	<tr><td>__unix__</td><td>This is a unix-like environment.</td></tr>
+	<tr><td>__unix</td><td>This is a unix-like environment.</td></tr>
 
-	<tr><td>UNICODE</td><td></td></tr>
-	<tr><td>_UNICODE</td><td></td></tr>
-	<tr><td>_M_ARM=1</td><td></td></tr>
-	<tr><td>ARM=1</td><td></td></tr>
-	<tr><td>UNDER_CE</td><td></td></tr>
+	<tr><td>UNICODE</td><td>Windows CE is a Unicode platform.</td></tr>
+	<tr><td>_UNICODE</td><td>Windows CE is a Unicode platform.</td></tr>
+	<tr><td>ARM=1</td><td>Identifies the processor in our target environment.</td></tr>
+	<tr><td>UNDER_CE</td><td>Deprecated, but removing this requires source changes.</td></tr>
+	<tr><td>_M_ARM=1</td><td>Deprecated, but removing this requires source changes.</td></tr>
 </table>
 <p>
 Many of those are defined in <i>src/gcc/gcc/config/arm/wince-pe.h</i> .
@@ -45,12 +45,12 @@ For the arm-wince-mingw32ce-gcc compiler, the source to watch is
 <i>src/gcc/gcc/config/arm/mingw32.h</i> .
 The list of predefined macros for that compiler is :
 <table border=1>
-	<tr><td>__MINGW32__</td><td></td></tr>
-	<tr><td>__MINGW32CE__</td><td></td></tr>
-	<tr><td>_WIN32</td><td></td></tr>
-	<tr><td>WIN32</td><td></td></tr>
+	<tr><td>__MINGW32__</td><td>Use this to identify our environment.</td></tr>
+	<tr><td>__MINGW32CE__</td><td>Use this to identify our environment.</td></tr>
+	<tr><td>_WIN32</td><td>This is a Windows-32 environment.</td></tr>
+	<tr><td>WIN32</td><td>This is a Windows-32 environment.</td></tr>
 	<tr><td>WINNT</td><td></td></tr>
-	<tr><td>__COREDLL__</td><td></td></tr>
+	<tr><td>__COREDLL__</td><td>Don't rely on this, it is for internal purposes.</td></tr>
 </table>
 <p>
 The <i>unix</i> macros defined by the compiler may appear strange.
@@ -116,9 +116,12 @@ The C compiler option <i>-mwin32</i>
 	<li>disables defining the macros <i>unix</i>, <i>__unix__</i>, <i>__unix</i>.
 </ul>
 <p>
-We probably should define some more by default (to be discussed) :
+In many cases, compiling sources requires some additional macros.
+We have chosen not to predefine these in the compiler,
+as they are target platform dependent.
+(Depends on the software version in your PDA or phone.)
+Here are some examples :
 <ul>
-	<li>UNDER_CE=420</li>
 	<li>__CE_VERSION__=420</li>
 	<li>_WIN32_WCE=420</li>
 	<li>_WIN32_IE=420</li>

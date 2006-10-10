@@ -2,61 +2,69 @@
    "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-<title>Binary pre-release of CeGCC for Linux</title>
+<title>Installation of CeGCC on Linux</title>
 <img src="images/banner1.png" alt="CeGCC cross compiler for PocketPC">
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 </head>
 <body>
-<H1>Binary pre-release of CeGCC for Linux</H1>
+<H1>Installation of a binary release of CeGCC for Linux</H1>
 <p>
-<font size="+1">
-	The latest binary pre-release for Linux is available for download at
-	<a href="http://prdownloads.sourceforge.net/cegcc/cegcc-linux-0.06.tar.gz?download">
-		http://prdownloads.sourceforge.net/cegcc/cegcc-linux-0.06.tar.gz?download</a>.
-	(<i>Previous versions, are also still available at 
-		<a href="http://sourceforge.net/project/showfiles.php?group_id=173455">
-		http://sourceforge.net/project/showfiles.php?group_id=173455</a></i>.)
-It contains a set of executables, include files, and libraries that can be
+The CeGCC Linux distributions are binary-only, and packaged as RPMs.
+<p>
+The sources of CeGCC are also available, but they're big.
+We believe that those who want to build from source are
+probably the same people who will want to keep up to date,
+so they will not mind accessing our SVN source repository.
+<p>
+Also, earlier (pre-)releases of CeGCC for Linux were packaged in another way.
+They're ancient, we recommend not using them any more.
+<h2>What's in the RPM ?</h2>
+<p>
+The bottom line : the RPM contains all the tools you need to cross-develop
+applications.
+<p>
+The detail :
+it contains a set of executables, include files, and libraries that can be
 used on a Linux PC (Intel architecture) to build applications that'll run
 on a Windows CE platform with an ARM (aka Intel Xscale) processor.
 In my case, the Linux platform is Mandriva 2006.0,
 the PC is a no brand Pentium IV (assembled it myself),
 and the PDA is a Mio 168 running Windows CE 4.20.0.
 The Mio's processor is an Intel PXA 255.
-<H2>Goal</H2>
-<p>
-The goal of this pre-release is timely distribution of the latest goodies,
-knowing full well that there are problems.
-Several testers have reported issues in building this release from the source
-(which is freely available in the 
-<a href="http://sourceforge.net/svn/?group_id=173455"> project's SVN Repository </a>).
-The binary distribution is a way to get past those issues for now.
+<h2>Feedback</h2>
 <p>
 Feedback about this software should be sent to the CeGCC mailing list at
 <a href="mailto:cegcc-devel@lists.SourceForge.net">cegcc-devel@lists.sourceforge.net</a>.
 Questions, bug reports, .. should be addressed to that same address.
 <p>
-<H2>How do you use the binary pre-release ?</H2>
-<br>
-The pre-release is the result of building the linux version of cegcc,
-using the scripts/linux/build.sh script as it is in the SVN.
-This means that the end result of the build should be in <i>/usr/ppc</i>.
-To use this software,
-become root (or another user which has write access to /usr on your system),
-and unpack the distribution, as indicated below :
+<h2>Installing the RPM</h2>
+<p>
+You can install the CeGCC RPM just like any other one,
+by using the
 <pre>
-% su
-<b>Password: </b> <i>enter the root password</i>
-# cd /usr
-# tar xfz /tmp/cegcc-linux-0.03.tar.gz
-# exit
-%
+	rpm -i cegcc-0.09-2.i586.rpm
+</pre>
+command.
+For unknown reasons, the RPM sometimes asks for the <i>libiconv</i> to be installed
+first. A workaround is to use the --nodeps option :
+<pre>
+	rpm -i --nodeps cegcc-0.09-2.i586.rpm
 </pre>
 <p>
-Then make sure that the directory <i>/usr/ppc/bin</i> is part of your path.
-(<i>Note that 0.02 was different in that it required you to unpack from / not /usr.</i>)
+After a successful installation, all of CeGCC can be found under the
+<i>/usr/ppc</i> directory tree.
+<h2>How do you use the release ?</h2>
 <p>
-You can test the compiler by trying to compile
+To start using CeGCC, you'll have to put
+the directory <i>/usr/ppc/bin</i> in your path, e.g. like this :
+<pre>
+	export PATH=$PATH:/usr/ppc/bin
+</pre>
+<p>
+To make this permanent, you'll want to apply such a change to your login environment,
+e.g. in the file <i>$HOME/.bashrc</i> .
+<p>
+Then, you can test the compiler by trying to compile
 <a href="docs/examples/fibo.c">fibo.c</a> :
 <pre>
 	#include &lt;windows.h&gt;
@@ -112,23 +120,7 @@ included in the file (consequence of using the -g option).
 </font>
 <H2>Known problems</H2>
 <P>
-<H3></H3>
-<P>
-<i>Compiling a new executable for the Crosswords application
-appears to work, but creates an executable file that doesn't execute:
-Windows CE tells that it is "not a valid Pocket PC application".
-</i>
-<p>
-<b>(Somewhat) solved :</b> this is due to an invalid aygshell.def file from which we
-were generating the libaygshell.a library,
-which in turn is some kind of a proxy for the Windows CE DLL <i>aygshell.dll</i>.
-(The library is used at link time, the DLL is a runtime component.
-They must match one another, but I haven't figured out the details yet.)
-<H3></H3>
-<P>
-When compiling the debugging stub (src/gdb/gdb/wince-stub.c) with the -mno-cegcc compiler option,
-the resulting executable doesn't work.
-<P>
+None that we care to mention here.
 <!--
   
      Button row at the top of the page.
@@ -156,8 +148,8 @@ the resulting executable doesn't work.
 		</a>
 	</font> </td>
 	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
-		<a href="prerelease.html">
-			Binary pre-release for Linux
+		<a href="docs/install-linux.html">
+		       Installation on Linux
 		</a>
 	</font> </td>
 </tr></table>
