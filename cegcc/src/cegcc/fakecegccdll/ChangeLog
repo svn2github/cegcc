@@ -1,0 +1,5 @@
+2006-10-10  Pedro Alves  <pedro_alves@portugalmail.pt>
+Initial import.
+	* cegcc.s  : New file.
+	* install.sh : New file.
+	* README.txt : New file.
