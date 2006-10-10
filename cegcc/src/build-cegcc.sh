@@ -1,17 +1,26 @@
 #!/bin/sh
 
-if [ $# -lt 4 ] ; then
-        echo "usage:"
-        echo "$0 [source dir] [build directory] [prefix dir] [build_opt]"
-        exit 1
+if [ $# -lt 2 ] ; then
+  echo "Using defaults:"
+  export BASE_DIRECTORY=`readlink -f .`
+  export BUILD_DIR=build-cegcc
+  export PREFIX=/opt/cegcc
+
+  if [ $# -lt 1 ] ; then
+    BUILD_OPT="all"
+  else
+    BUILD_OPT="$1"
+    shift
+  fi
+else
+  export BASE_DIRECTORY=`readlink -f $1`
+  export BUILD_DIR=`readlink -f $2`
+  export PREFIX=`readlink -f $3`
+  BUILD_OPT="$4"
+  shift 4
 fi
 
-export BASE_DIRECTORY=`readlink -f $1`
-export BUILD_DIR=`readlink -f $2`
-export PREFIX=`readlink -f $3`
-shift 3
-
-export TARGET="arm-wince-pe"
+export TARGET="arm-wince-cegcc"
 
 echo "Building cegcc:"
 echo "source: ${BASE_DIRECTORY}"
@@ -270,7 +279,11 @@ function buildall()
     build_gdbstub
 }
 
-case "$1" in
+case $BUILD_OPT in
+ --help)
+        echo "usage:"
+        echo "$0 [source dir] [build directory] [prefix dir] [build_opt]"
+		;;
  binutils) build_binutils ;;
  importlibs) build_import_libs ;;
  w32api) build_w32api_headers ;;
