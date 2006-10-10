@@ -450,6 +450,7 @@ case "${target}" in
     noconfigdirs="$noconfigdirs ${libgcj} target-newlib target-libgloss"
     ;;    
   sh*-*-pe|mips*-*-pe|*arm-wince-pe|*arm-wince-cegcc)
+    noconfigdirs="$noconfigdirs target-libgloss"
     noconfigdirs="$noconfigdirs ${libgcj}"
     noconfigdirs="$noconfigdirs target-examples"
     noconfigdirs="$noconfigdirs target-libiberty texinfo send-pr"
