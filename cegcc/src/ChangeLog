@@ -1,5 +1,11 @@
 2006-10-10  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+        * build-cegcc.sh : Fix w32api build option.
+	(build_gcc) : Pass --without-newlib, so when we have a combined
+	tree, newlib isn't built twice.
+	
+2006-10-10  Pedro Alves  <pedro_alves@portugalmail.pt>
+
         * build-cegcc.sh : Fix cegccthrd build option.
 	(build_dummy_cegccdll) : Call cegcc/fakecegccdll/install.sh.
 	This change, along with the previous commits,

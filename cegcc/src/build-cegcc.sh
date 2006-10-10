@@ -163,6 +163,7 @@ function build_gcc()
 	--disable-win32-registry       \
 	--disable-multilib             \
 	--disable-interwork            \
+	--without-newlib               \
 	--enable-checking              \
 	|| exit 1
 
@@ -286,7 +287,7 @@ case $BUILD_OPT in
 		;;
  binutils) build_binutils ;;
  importlibs) build_import_libs ;;
- w32api) build_w32api_headers ;;
+ w32api) copy_w32api_headers ;;
  dummy_cegccdll) build_dummy_cegccdll ;;
  bootstrapgcc) build_bootstrap_gcc ;;
  newlib) build_newlib ;;
