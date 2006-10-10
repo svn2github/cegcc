@@ -1,0 +1,12 @@
+2006-10-10  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config/arm/cegcc.c : Delete. We use the originals instead.
+	This code is generic PE code, and will hopefully get
+	pushed down to a more general place in GCC 4.3 stage1.
+	* cegcc-cxx.c : Likewise.
+	* cegcc-stubs.c : Likewise.
+	* config.gcc : Use the originals instead of the new copies for the 
+	arm*-wince-cegcc case.
+	* config/arm/t-wince-cegcc : Make it empty, we now inherit the generic
+	t-wince-pe.
+	* ChangeLog.ce : New file.
