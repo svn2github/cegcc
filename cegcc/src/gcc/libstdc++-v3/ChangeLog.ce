@@ -1,0 +1,5 @@
+2006-10-10  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config/os/generic/runtimeopts.h : New file.
+	* configure: Regenerate with autoconf 2.59.
+	* ChangeLog.ce : New file.
