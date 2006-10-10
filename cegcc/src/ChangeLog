@@ -1,5 +1,10 @@
 2006-10-10  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+        * build-cegcc.sh : Fix cegccthrd build option.
+	(build_dummy_cegccdll) : Call cegcc/fakecegccdll/install.sh.
+
+2006-10-10  Pedro Alves  <pedro_alves@portugalmail.pt>
+
         * build-cegcc.sh (build_newlib) : libgloss is now $noconfigdir'ed.
 	Build with simple 'make'/'make install'.
 

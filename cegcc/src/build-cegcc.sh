@@ -86,9 +86,9 @@ function build_dummy_cegccdll()
     echo ""
     echo ""
     
-    CEGCCLIB=${PREFIX}/${TARGET}/lib/libcegcc.dll.a
-    rm -fv ${CEGCCLIB}
-    ${TARGET}-ar q ${CEGCCLIB}
+    pushd ${BASE_DIRECTORY}/cegcc/fakecegccdll || exit 1
+    ./install.sh ${PREFIX} || exit 1
+    popd || exit 1
 }
 
 function build_bootstrap_gcc()
@@ -292,7 +292,7 @@ case $BUILD_OPT in
  newlib) build_newlib ;;
  gcc) build_gcc ;;
  cegccdll) build_cegccdll ;;
- cegccthrd) cegccthrddll ;;
+ cegccthrd) build_cegccthrddll ;;
  libstdc++) build_libstdcppdll ;; 
  gdb) build_gdb ;;
  gdbstub) build_gdbstub ;;
