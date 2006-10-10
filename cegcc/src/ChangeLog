@@ -1,3 +1,14 @@
+2006-10-10  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+        * build-cegcc.sh (build_newlib) : libgloss is now $noconfigdir'ed.
+	Build with simple 'make'/'make install'.
+
+2006-10-10  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+        * build-cegcc.sh : Implement script command line 
+	parameters defaults. Reflect the target name change
+	to arm-wince-cegcc.
+
 2006-10-05  Pedro Alves  <pedro_alves@portugalmail.pt>
 
         * binutils : Update to binutils mainline.

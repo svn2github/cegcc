@@ -136,8 +136,8 @@ function build_newlib()
 	--prefix=${PREFIX}                 \
 	|| exit 1
 
-    make all-target-newlib || exit 1
-    make install-target-newlib || exit 1
+    make || exit 1
+    make install || exit 1
     cd ${BASE_DIRECTORY} || exit 1
 }
 
