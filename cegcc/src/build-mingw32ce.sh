@@ -4,7 +4,7 @@ if [ $# -lt 2 ] ; then
 
 echo "Using defaults:"
 export BASE_DIRECTORY=`readlink -f .`
-export BUILD_DIR=build-mingw32ce
+export BUILD_DIR=${BASE_DIRECTORY}/build-mingw32ce
 export PREFIX=/opt/mingw32ce
 
 if [ $# -lt 1 ] ; then
@@ -26,7 +26,7 @@ fi
 export TARGET="arm-wince-mingw32ce"
 export BUILD=`sh ${BASE_DIRECTORY}/gcc/config.guess`
 
-echo "Building mingw32:"
+echo "Building mingw32ce:"
 echo "source: ${BASE_DIRECTORY}"
 echo "build: ${BUILD_DIR}"
 echo "prefix: ${PREFIX}"

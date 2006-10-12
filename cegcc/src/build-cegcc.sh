@@ -3,7 +3,7 @@
 if [ $# -lt 2 ] ; then
   echo "Using defaults:"
   export BASE_DIRECTORY=`readlink -f .`
-  export BUILD_DIR=build-cegcc
+  export BUILD_DIR=${BASE_DIRECTORY}/build-cegcc
   export PREFIX=/opt/cegcc
 
   if [ $# -lt 1 ] ; then
@@ -149,7 +149,7 @@ function build_gcc()
     echo ""
     
     mkdir -p ${BUILD_DIR}/gcc || exit 1
-    cd ${BUILD_DIR}/gcc || exit 1
+    pushd ${BUILD_DIR}/gcc || exit 1
     
     ${BASE_DIRECTORY}/gcc/configure    \
 	--with-gcc                     \
@@ -167,9 +167,10 @@ function build_gcc()
 	--enable-checking              \
 	|| exit 1
 
-    cd ${BUILD_DIR}/gcc || exit 1
     make || exit 1
     make install || exit 1
+
+    popd || exit 1
 }
 
 function build_cegccdll()
