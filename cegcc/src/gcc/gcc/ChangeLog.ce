@@ -1,5 +1,5 @@
 2006-10-12  Danny Backx <dannybackx@users.sourceforge.net>
-        * Tweak src/gcc/gcc/config/arm/wince-cegcc.h to remove the
+        * src/gcc/gcc/config/arm/wince-cegcc.h : remove the
 	-mno-cegcc option. We've replaced this functionality with
 	the arm-wince-mingw32ce target, so this is cleanup.
 
