@@ -28,11 +28,9 @@
 
 #undef CPP_SPEC
 #define CPP_SPEC "%(cpp_cpu) %{posix:-D_POSIX_SOURCE} \
-%{mno-win32:%{mno-cegcc: %emno-cegcc and mno-win32 are not compatible}} \
-%{mno-cegcc: %{!ansi:%{mthreads: -D_MT }}} \
-%{!mno-cegcc: -D__CEGCC32__ -D__CEGCC__ %{!ansi:-Dunix} -D__unix__ -D__unix } \
-%{mwin32|mno-cegcc: -DWIN32 -D_WIN32 -D__WIN32 -D__WIN32__ } \
-%{!nostdinc:%{!mno-win32|mno-cegcc: -idirafter ../include/w32api%s -idirafter ../../include/w32api%s }} \
+  -D__CEGCC32__ -D__CEGCC__ %{!ansi:-Dunix} -D__unix__ -D__unix \
+  %{mwin32: -DWIN32 -D_WIN32 -D__WIN32 -D__WIN32__ } \
+  %{!nostdinc:%{!mno-win32: -idirafter ../include/w32api%s -idirafter ../../include/w32api%s }} \
 "
 
 #undef SUBTARGET_EXTRA_SPECS
@@ -66,16 +64,15 @@
 /* Now we define the strings used to build the spec file.  */
 #undef STARTFILE_SPEC
 #define STARTFILE_SPEC "\
-  %{shared|mdll: %{!mno-cegcc:dllcrt1%O%s} %{mno-cegcc:dllcrt2%O%s} } \
-  %{!shared: %{!mdll: \
-      %{!mno-cegcc:crt0%O%s} %{mno-cegcc:crt2%O%s} \
+  %{shared|mdll:dllcrt1%O%s } \
+  %{!shared: %{!mdll: crt0%O%s \
       %{mthreads:crtmt%O%s} %{!mthreads:crtst%O%s} \
   } } \
   "
 
 #undef LIBGCC_SPEC
 #define LIBGCC_SPEC \
-  "%{mthreads:-lcegccthrd} %{!mno-cegcc: %{!static: -lcegcc } } -lgcc"
+  "%{mthreads:-lcegccthrd} %{!static: -lcegcc } -lgcc"
 
 /* We have to dynamic link to get to the system DLLs.  All of libc, libm,
 the Unix stuff is in cegcc.dll.  The import library is called
@@ -84,8 +81,7 @@ always include coredll.  We'd like to specify subsystem windows to
 ld, but that doesn't work just yet.  */
 
 #undef LIB_SPEC
-#define LIB_SPEC "\
-  %{!mno-cegcc: %{static: -lm -lc} } -lcoredll"
+#define LIB_SPEC "%{static: -lm -lc} -lcoredll"
 
 #undef LINK_SPEC
 #define LINK_SPEC "\
