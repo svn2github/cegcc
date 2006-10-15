@@ -1,8 +1,3 @@
-2006-10-12  Danny Backx <dannybackx@users.sourceforge.net>
-	* src/gcc/gcc/config/arm/wince-cegcc.h : remove the
-	-mno-cegcc option. We've replaced this functionality with
-	the arm-wince-mingw32ce target, so this is cleanup.
-
 2006-10-12  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* build-mingw32ce.sh : Make ${BUILD_DIR} absolute in default case.
