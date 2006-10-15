@@ -3,7 +3,7 @@
 #
 # Pedro Alves <pedro_alves@portugalmail.pt> (C) 2006
 
-PREFIX?=/usr/local
+PREFIX?=/opt/cegcc
 
 # BUILD_DIR=$TOP_SRCDIR/build/$MY_HOST_ARCH/$TGT_ARCH
 BUILD_DIR?=.
@@ -11,11 +11,11 @@ MY_DIR=${BUILD_DIR}/cegccdll
 TOP_SRCDIR?=../../..
 SRCDIR=${TOP_SRCDIR}/src/cegcc/cegccdll
 
-TARGET?=arm-wince-pe
+TARGET=arm-wince-cegcc
 DLLNAME=cegcc.dll
 IMPLIB=lib$(DLLNAME).a
 
-GCCVERSION=$(shell ${SRCDIR}/gccversion.sh)
+GCCVERSION=$(shell $(TARGET)-gcc -dumpversion)
 
 AR=$(TARGET)-ar
 CC=$(TARGET)-gcc

@@ -1,0 +1,8 @@
+2006-10-15  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* ChangeLog : New file.
+	* gcc-version.sh : Delete.
+	* Makefile (GCCVERSION): Use gcc -dumpversion.
+	(PREFIX) : Default to /opt/cegcc
+	(TARGET) : Set to arm-wince-cegcc
+	* README.txt : Default to /opt/cegcc
