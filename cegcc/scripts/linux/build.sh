@@ -66,6 +66,9 @@ do
 	#
 	sh $SCRIPTDIR/install-mingw-crt.sh || exit 1
 	#
+	sh $SCRIPTDIR/build-mingw.sh || exit 1
+	sh $SCRIPTDIR/install-mingw.sh || exit 1
+	#
 	sh $SCRIPTDIR/build-newlib.sh || exit 1
 	sh $SCRIPTDIR/install-newlib.sh || exit 1
 	#
