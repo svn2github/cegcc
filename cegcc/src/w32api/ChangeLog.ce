@@ -1,0 +1,4 @@
+2006-10-16  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* include/kfuncs.h (EventModify) : Declare.
+	(TlsCall) : Add WINBASEAPI and WINAPI to declaration.

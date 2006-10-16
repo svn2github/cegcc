@@ -27,8 +27,13 @@
 #define	GetCurrentProcessId()	((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURPROC]))
 
 
+/* EventModify signature hinted on:
+   http://msdn.microsoft.com/library/default.asp?url=/library/en-us/wcehardware5/html/wce50lrfCeLogImportTable.asp
 
-/* Stolen from sys/oldsys/wcethread.h */
+   Event Constants and EventModify signature in the c# example at:
+   http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnnetcomp/html/PISAPICF.asp  */
+WINBASEAPI BOOL WINAPI EventModify(HANDLE h, DWORD e);
+
 #define	EVENT_PULSE	1
 #define	EVENT_RESET	2
 #define	EVENT_SET	3
@@ -40,7 +45,7 @@
 #define TLS_FUNCALLOC   0
 #define TLS_FUNCFREE    1
 
-DWORD TlsCall(DWORD func, DWORD val);
+WINBASEAPI DWORD WINAPI TlsCall(DWORD func, DWORD val);
 #define TlsAlloc()  (TlsCall(TLS_FUNCALLOC, 0))
 #define TlsFree(x)  (TlsCall(TLS_FUNCFREE, x))
 
