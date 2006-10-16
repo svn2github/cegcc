@@ -68,7 +68,7 @@
   %{!shared: %{!mdll: crt0%O%s \
       %{mthreads:crtmt%O%s} %{!mthreads:crtst%O%s} \
   } } \
-  %{pg: gcrt2%O%s} \
+  %{pg: gcrt3%O%s} \
   "
 
 #undef LIBGCC_SPEC
