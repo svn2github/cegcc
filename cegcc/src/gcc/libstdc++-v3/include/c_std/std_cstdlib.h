@@ -111,19 +111,25 @@ namespace std
   using ::atof;
   using ::atoi;
   using ::atol;
+#ifndef __MINGW32CE__
   using ::bsearch;
   using ::calloc;
+#endif
   using ::div;
   using ::exit;
   using ::free;
+#ifndef __MINGW32CE__
   using ::getenv;
+#endif
   using ::labs;
   using ::ldiv;
   using ::malloc;
 #ifdef _GLIBCXX_HAVE_MBSTATE_T
+#ifndef __MINGW32CE__
   using ::mblen;
   using ::mbstowcs;
   using ::mbtowc;
+#endif
 #endif // _GLIBCXX_HAVE_MBSTATE_T
   using ::qsort;
   using ::rand;
@@ -132,7 +138,9 @@ namespace std
   using ::strtod;
   using ::strtol;
   using ::strtoul;
+#ifndef __MINGW32CE__
   using ::system;
+#endif
 #ifdef _GLIBCXX_USE_WCHAR_T
   using ::wcstombs;
   using ::wctomb;

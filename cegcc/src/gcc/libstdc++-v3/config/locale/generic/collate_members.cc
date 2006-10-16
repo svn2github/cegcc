@@ -43,7 +43,11 @@ namespace std
     int 
     collate<char>::_M_compare(const char* __one, const char* __two) const
     { 
+#ifndef __MINGW32CE__
       int __cmp = strcoll(__one, __two);
+#else
+      int __cmp = strcmp(__one, __two);
+#endif
       return (__cmp >> (8 * sizeof (int) - 2)) | (__cmp != 0);
     }
   
@@ -51,7 +55,14 @@ namespace std
     size_t
     collate<char>::_M_transform(char* __to, const char* __from, 
 				size_t __n) const
-    { return strxfrm(__to, __from, __n); }
+    {
+#ifdef __MINGW32CE__
+      strncpy (__to, __from, __n);
+      return strlen (__to);
+#else
+      return strxfrm(__to, __from, __n); 
+#endif
+    }
 
 #ifdef _GLIBCXX_USE_WCHAR_T
   template<>

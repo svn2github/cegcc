@@ -85,14 +85,20 @@ namespace std
   using ::strncat;
   using ::memcmp;
   using ::strcmp;
+#ifndef __MINGW32CE__
   using ::strcoll;
+#endif
   using ::strncmp;
+#ifndef __MINGW32CE__
   using ::strxfrm;
+#endif
   using ::strcspn;
   using ::strspn;
   using ::strtok;
   using ::memset;
+#ifndef __MINGW32CE__
   using ::strerror;
+#endif
   using ::strlen;
 
   using ::memchr;

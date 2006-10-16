@@ -38,7 +38,9 @@
 
 #pragma GCC system_header
 
+#ifdef _GLIBCXX_HAVE_LOCALE_H
 #include <clocale>
+#endif
 #include <cstring>   // get std::strlen
 #include <cstdio>    // get std::snprintf or std::sprintf
 
@@ -59,6 +61,7 @@ namespace std
 		     const char* __fmt,
 		     _Tv __v, const __c_locale&, int __prec)
     {
+#ifndef __MINGW32CE__
       char* __old = std::setlocale(LC_NUMERIC, NULL);
       char* __sav = NULL;
       if (std::strcmp(__old, "C"))
@@ -67,18 +70,21 @@ namespace std
 	  std::strcpy(__sav, __old);
 	  std::setlocale(LC_NUMERIC, "C");
 	}
+#endif
 
 #ifdef _GLIBCXX_USE_C99
       const int __ret = std::snprintf(__out, __size, __fmt, __prec, __v);
 #else
       const int __ret = std::sprintf(__out, __fmt, __prec, __v);
 #endif
-      
+
+#ifndef __MINGW32CE__
       if (__sav)
 	{
 	  std::setlocale(LC_NUMERIC, __sav);
 	  delete [] __sav;
 	}
+#endif
       return __ret;
     }
 }

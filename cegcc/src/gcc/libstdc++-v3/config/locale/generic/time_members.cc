@@ -38,21 +38,32 @@
 
 namespace std
 {
+
+#ifndef __MINGW32CE__
   template<>
     void
     __timepunct<char>::
     _M_put(char* __s, size_t __maxlen, const char* __format, 
 	   const tm* __tm) const
     {
+#ifndef __MINGW32CE__
       char* __old = strdup(setlocale(LC_ALL, NULL));
       setlocale(LC_ALL, _M_name_timepunct);
+#endif
+#ifndef __MINGW32CE__
       const size_t __len = strftime(__s, __maxlen, __format, __tm);
+#endif
+#ifndef __MINGW32CE__
       setlocale(LC_ALL, __old);
       free(__old);
+#endif
+#ifndef __MINGW32CE__
       // Make sure __s is null terminated.
       if (__len == 0)
 	__s[0] = '\0';
+#endif
     }
+#endif
 
   template<> 
     void
@@ -120,6 +131,7 @@ namespace std
     }
 
 #ifdef _GLIBCXX_USE_WCHAR_T
+#ifndef __MINGW32CE__
   template<>
     void
     __timepunct<wchar_t>::
@@ -135,6 +147,7 @@ namespace std
       if (__len == 0)
 	__s[0] = L'\0';      
     }
+#endif
 
   template<> 
     void

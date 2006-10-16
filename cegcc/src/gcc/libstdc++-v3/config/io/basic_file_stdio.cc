@@ -33,7 +33,9 @@
 
 #include <bits/basic_file.h>
 #include <fcntl.h>
+#ifdef _GLIBCXX_HAVE_ERRNO_H
 #include <errno.h>
+#endif
 
 #ifdef _GLIBCXX_HAVE_POLL
 #include <poll.h>
@@ -108,15 +110,24 @@ namespace __gnu_internal
 
   // Wrapper handling partial write.
   static std::streamsize
+#ifndef __MINGW32CE__
   xwrite(int __fd, const char* __s, std::streamsize __n)
+#else
+  xwrite(FILE* __f, const char* __s, std::streamsize __n)
+#endif
   {
     std::streamsize __nleft = __n;
 
     for (;;)
       {
+#ifndef __MINGW32CE__
 	const std::streamsize __ret = write(__fd, __s, __nleft);
 	if (__ret == -1L && errno == EINTR)
 	  continue;
+#else
+	const std::streamsize __ret = fwrite(__s, 1, __nleft, __f);
+        fflush(__f);
+#endif
 	if (__ret == -1L)
 	  break;
 
@@ -149,8 +160,10 @@ namespace __gnu_internal
 	__iov[0].iov_len = __n1_left;
 
 	const std::streamsize __ret = writev(__fd, __iov, 2);
+#ifndef __MINGW32CE__
 	if (__ret == -1L && errno == EINTR)
 	  continue;
+#endif
 	if (__ret == -1L)
 	  break;
 
@@ -190,10 +203,14 @@ namespace std
     if (!this->is_open() && __file)
       {
 	int __err;
+#ifndef __MINGW32CE__
 	errno = 0;	
 	do
 	  __err = this->sync();
 	while (__err && errno == EINTR);
+#else
+	__err = this->sync();
+#endif
 	if (!__err)
 	  {
 	    _M_cfile = __file;
@@ -204,6 +221,7 @@ namespace std
     return __ret;
   }
   
+#ifndef __MINGW32CE__
   __basic_file<char>*
   __basic_file<char>::sys_open(int __fd, ios_base::openmode __mode)
   {
@@ -219,6 +237,7 @@ namespace std
       }
     return __ret;
   }
+#endif
   
   __basic_file<char>* 
   __basic_file<char>::open(const char* __name, ios_base::openmode __mode, 
@@ -244,10 +263,12 @@ namespace std
   bool 
   __basic_file<char>::is_open() const 
   { return _M_cfile != 0; }
-  
+
+#ifndef __MINGW32CE__
   int 
   __basic_file<char>::fd() 
   { return fileno(_M_cfile); }
+#endif
   
   __c_file*
   __basic_file<char>::file() 
@@ -266,10 +287,14 @@ namespace std
 	    // for error first. However, C89/C99 (at variance with IEEE
 	    // 1003.1, f.i.) do not mandate that fclose must set errno
 	    // upon error.
+#ifndef __MINGW32CE__
 	    errno = 0;
 	    do
 	      __err = fclose(_M_cfile);
 	    while (__err && errno == EINTR);
+#else
+	    __err = fclose(_M_cfile);
+#endif
 	  }
 	_M_cfile = 0;
 	if (!__err)
@@ -282,15 +307,23 @@ namespace std
   __basic_file<char>::xsgetn(char* __s, streamsize __n)
   {
     streamsize __ret;
+#ifndef __MINGW32CE__
     do
       __ret = read(this->fd(), __s, __n);
     while (__ret == -1L && errno == EINTR);
+#else
+    __ret = fread(__s, 1, __n, _M_cfile);
+#endif
     return __ret;
   }
 
   streamsize 
   __basic_file<char>::xsputn(const char* __s, streamsize __n)
+#ifndef __MINGW32CE__
   { return __gnu_internal::xwrite(this->fd(), __s, __n); }
+#else
+  { return __gnu_internal::xwrite(_M_cfile, __s, __n); }
+#endif
 
   streamsize 
   __basic_file<char>::xsputn_2(const char* __s1, streamsize __n1,
@@ -301,10 +334,18 @@ namespace std
     __ret = __gnu_internal::xwritev(this->fd(), __s1, __n1, __s2, __n2);
 #else
     if (__n1)
+#ifndef __MINGW32CE__
       __ret = __gnu_internal::xwrite(this->fd(), __s1, __n1);
+#else
+      __ret = __gnu_internal::xwrite(_M_cfile, __s1, __n1);
+#endif
 
     if (__ret == __n1)
+#ifndef __MINGW32CE__
       __ret += __gnu_internal::xwrite(this->fd(), __s2, __n2);
+#else
+      __ret += __gnu_internal::xwrite(_M_cfile, __s2, __n2);
+#endif
 #endif
     return __ret;
   }
@@ -318,7 +359,12 @@ namespace std
     if (__off > numeric_limits<off_t>::max()
 	|| __off < numeric_limits<off_t>::min())
       return -1L;
+#ifndef __MINGW32CE__
     return lseek(this->fd(), __off, __way);
+#else
+    return fseek(_M_cfile, __off, __way);
+#endif
+
 #endif
   }
 

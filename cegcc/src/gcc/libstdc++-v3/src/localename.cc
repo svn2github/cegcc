@@ -26,7 +26,9 @@
 // invalidate any other reasons why the executable file might be covered by
 // the GNU General Public License.
 
+#ifdef _GLIBCXX_HAVE_LOCALE_H
 #include <clocale>
+#endif
 #include <cstring>
 #include <locale>
 
@@ -45,6 +47,9 @@ namespace std
 	  _M_impl = new _Impl(__s, 1);
 	else
 	  {
+#ifdef __MINGW32CE__
+        (_M_impl = _S_classic)->_M_add_reference();
+#else
 	    // Get it from the environment.
 	    char* __env = std::getenv("LC_ALL");
 	    // If LC_ALL is set we are done.
@@ -67,7 +72,7 @@ namespace std
 		  __lang = "C";
 		else 
 		  __lang = __env;
-		
+
 		// Scan the categories looking for the first one
 		// different from LANG.
 		size_t __i = 0;
@@ -137,6 +142,7 @@ namespace std
 		else
 		  _M_impl = new _Impl(__lang.c_str(), 1);
 	      }
+#endif
 	  }
       }
     else

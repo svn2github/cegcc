@@ -241,12 +241,13 @@ case "${host}" in
     GLIBCXX_CHECK_ICONV_SUPPORT
     GLIBCXX_CHECK_STDLIB_SUPPORT
     ;;
-  *arm-wince-pe | *arm-wince-cegcc)
-    AC_CHECK_HEADERS([sys/types.h locale.h float.h])
+  *arm-wince-pe | *-cegcc*)
+    AC_CHECK_HEADERS([sys/types.h locale.h float.h errno.h signal.h unistd.h])
 #    AC_DEFINE(_GLIBCXX_HAVE_SYS_IOCTL_H)
 #   AC_DEFINE(HAVE_SYS_IOCTL_H)
     GLIBCXX_CHECK_LINKER_FEATURES
     GLIBCXX_CHECK_COMPLEX_MATH_SUPPORT
+    GLIBCXX_CHECK_STDLIB_SUPPORT
     #GLIBCXX_CHECK_WCHAR_T_SUPPORT
     ;;
   *-netbsd*)

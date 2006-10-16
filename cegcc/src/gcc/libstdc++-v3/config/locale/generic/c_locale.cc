@@ -34,7 +34,20 @@
 
 // Written by Benjamin Kosnik <bkoz@redhat.com>
 
+#include <bits/c++config.h>
+
+#ifdef _GLIBCXX_HAVE_ERRNO_H
 #include <cerrno>  // For errno
+#endif
+
+#ifdef __MINGW32CE__
+/* Provide a fake ERANGE to keep the
+   sources as clean as possible.  */
+# ifndef ERANGE
+#  define ERANGE 1
+# endif
+#endif
+
 #include <cmath>  // For isinf, finite, finitef, fabs
 #include <cstdlib>  // For strof, strtold
 #include <locale>
@@ -51,10 +64,15 @@ namespace std
     __convert_to_v(const char* __s, float& __v, ios_base::iostate& __err, 
 		   const __c_locale&) 	      
     {
+#ifdef __MINGW32CE__
+      int errno;
+#endif
       // Assumes __s formatted for "C" locale.
       errno = 0;
+#ifndef __MINGW32CE__
       char* __old = strdup(setlocale(LC_ALL, NULL));
       setlocale(LC_ALL, "C");
+#endif
       char* __sanity;
 #if defined(_GLIBCXX_HAVE_STRTOF)
       float __f = strtof(__s, &__sanity);
@@ -79,8 +97,10 @@ namespace std
 	__v = __f;
       else
 	__err |= ios_base::failbit;
+#ifndef __MINGW32CE__
       setlocale(LC_ALL, __old);
       free(__old);
+#endif
     }
 
   template<>
@@ -88,18 +108,25 @@ namespace std
     __convert_to_v(const char* __s, double& __v, ios_base::iostate& __err, 
 		   const __c_locale&) 
     {
+#ifdef __MINGW32CE__
+      int errno;
+#endif
       // Assumes __s formatted for "C" locale.
       errno = 0;
+#ifndef __MINGW32CE__
       char* __old = strdup(setlocale(LC_ALL, NULL));
       setlocale(LC_ALL, "C");
+#endif
       char* __sanity;
       double __d = strtod(__s, &__sanity);
       if (__sanity != __s && errno != ERANGE)
 	__v = __d;
       else
 	__err |= ios_base::failbit;
+#ifndef __MINGW32CE__
       setlocale(LC_ALL, __old);
       free(__old);
+#endif
     }
 
   template<>
@@ -107,10 +134,15 @@ namespace std
     __convert_to_v(const char* __s, long double& __v, 
 		   ios_base::iostate& __err, const __c_locale&) 
     {
+#ifdef __MINGW32CE__
+      int errno;
+#endif
       // Assumes __s formatted for "C" locale.
       errno = 0;
+#ifndef __MINGW32CE__
       char* __old = strdup(setlocale(LC_ALL, NULL));
       setlocale(LC_ALL, "C");
+#endif
 #if defined(_GLIBCXX_HAVE_STRTOLD)
       char* __sanity;
       long double __ld = strtold(__s, &__sanity);
@@ -126,8 +158,10 @@ namespace std
 #endif
       else
 	__err |= ios_base::failbit;
+#ifndef __MINGW32CE__
       setlocale(LC_ALL, __old);
       free(__old);
+#endif
     }
 
   void

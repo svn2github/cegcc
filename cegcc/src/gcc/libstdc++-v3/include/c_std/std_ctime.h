@@ -68,8 +68,11 @@ namespace std
   using ::time_t;
   using ::tm;
 
+#ifndef __MINGW32CE__
   using ::clock;
+#endif
   using ::difftime;
+#ifndef __MINGW32CE__
   using ::mktime;
   using ::time;
   using ::asctime;
@@ -77,6 +80,6 @@ namespace std
   using ::gmtime;
   using ::localtime;
   using ::strftime;
+#endif
 }
-
 #endif

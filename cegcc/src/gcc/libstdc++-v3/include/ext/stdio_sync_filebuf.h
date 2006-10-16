@@ -37,7 +37,9 @@
 #pragma GCC system_header
 
 #include <streambuf>
+#ifdef _GLIBCXX_HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <cstdio>
 
 #ifdef _GLIBCXX_USE_WCHAR_T
