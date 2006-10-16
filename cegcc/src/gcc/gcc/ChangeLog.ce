@@ -1,3 +1,7 @@
+2006-10-16  Danny Backx  <dannybackx@users.sourceforge.net>
+	* config/arm/wince-cegcc.h : Link -lgmon when called with -pg,
+	and use the right crt file.
+
 2006-10-12  Danny Backx <dannybackx@users.sourceforge.net>
 	* config/arm/wince-cegcc.h (mno-cegcc): Remove option. 
 	Use the arm-wince-mingw32ce target instead.
