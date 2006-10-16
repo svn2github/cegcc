@@ -81,7 +81,9 @@ always include coredll.  We'd like to specify subsystem windows to
 ld, but that doesn't work just yet.  */
 
 #undef LIB_SPEC
-#define LIB_SPEC "%{static: -lm -lc} -lcoredll"
+#define LIB_SPEC "%{static: -lm -lc} \
+	%{pg: -lgmon} \
+	-lcoredll"
 
 #undef LINK_SPEC
 #define LINK_SPEC "\
