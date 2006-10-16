@@ -1,2 +1,3 @@
 2006-10-16  Danny Backx <dannybackx@users.sourceforge.net>
-	* gcc/config/arm/wince-cegcc.h : link -lgmon when called with -pg.
+	* gcc/config/arm/wince-cegcc.h : link -lgmon when called with -pg,
+	and use the right crt file.
