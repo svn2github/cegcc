@@ -324,6 +324,7 @@ static autofilter_entry_type autofilter_objlist[] =
   { STRING_COMMA_LEN ("gcrt0.o") },
   { STRING_COMMA_LEN ("gcrt1.o") },
   { STRING_COMMA_LEN ("gcrt2.o") },
+  { STRING_COMMA_LEN ("gcrt3.o") },
   { STRING_COMMA_LEN ("crtbegin.o") },
   { STRING_COMMA_LEN ("crtend.o") },
   { STRING_COMMA_LEN (NULL) }
