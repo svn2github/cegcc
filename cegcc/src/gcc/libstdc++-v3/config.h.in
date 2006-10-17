@@ -72,6 +72,9 @@
 /* Define to 1 if you have the `fabsl' function. */
 #undef HAVE_FABSL
 
+/* Define to 1 if you have the <fcntl.h> header file. */
+#undef HAVE_FCNTL_H
+
 /* Define to 1 if you have the `finite' function. */
 #undef HAVE_FINITE
 

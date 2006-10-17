@@ -32,11 +32,12 @@
 //
 
 #include <bits/basic_file.h>
+#ifdef _GLIBCXX_HAVE_FNCTL_H
 #include <fcntl.h>
+#endif
 #ifdef _GLIBCXX_HAVE_ERRNO_H
 #include <errno.h>
 #endif
-
 #ifdef _GLIBCXX_HAVE_POLL
 #include <poll.h>
 #endif

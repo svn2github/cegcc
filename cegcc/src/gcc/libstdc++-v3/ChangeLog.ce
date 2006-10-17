@@ -1,3 +1,11 @@
+2006-10-17  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* crossconfig.m4 (cegcc*, mingw32*): Add fnctl.h to AC_CHECK_HEADERS.
+	* configure : Regenerate.
+	* config.h.in : Regenerate.
+	* config/io/basic_file_stdio.cc : Wrap fnctl.h inclusion 
+	on _GLIBCXX_HAVE_FCNTL_H.
+
 2006-10-16  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* include/ext/pool_allocator.h : Include runtimeopts.h.
@@ -51,6 +59,7 @@
 	Use FILE* instead of file descriptors on mingw32ce throughout.
 	Adapt to lack of errno.
 	* configure: Regenerate.
+	* config.h.in : Regenerate.
 
 2006-10-10  Pedro Alves  <pedro_alves@portugalmail.pt>
 

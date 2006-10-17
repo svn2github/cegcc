@@ -80330,7 +80330,8 @@ _ACEOF
 
 
 
-for ac_header in sys/types.h errno.h unistd.h signal.h locale.h float.h
+
+for ac_header in sys/types.h errno.h unistd.h signal.h locale.h float.h fcntl.h
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
 if eval "test \"\${$as_ac_Header+set}\" = set"; then
@@ -82393,7 +82394,8 @@ done
 
 
 
-for ac_header in sys/types.h locale.h float.h errno.h signal.h unistd.h
+
+for ac_header in sys/types.h locale.h float.h errno.h signal.h unistd.h fcntl.h
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
 if eval "test \"\${$as_ac_Header+set}\" = set"; then

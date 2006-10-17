@@ -235,14 +235,14 @@ case "${host}" in
     fi
     ;;
   *-mingw32*)
-    AC_CHECK_HEADERS([sys/types.h errno.h unistd.h signal.h locale.h float.h])
+    AC_CHECK_HEADERS([sys/types.h errno.h unistd.h signal.h locale.h float.h fcntl.h])
     GLIBCXX_CHECK_LINKER_FEATURES
     GLIBCXX_CHECK_COMPLEX_MATH_SUPPORT
     GLIBCXX_CHECK_ICONV_SUPPORT
     GLIBCXX_CHECK_STDLIB_SUPPORT
     ;;
   *arm-wince-pe | *-cegcc*)
-    AC_CHECK_HEADERS([sys/types.h locale.h float.h errno.h signal.h unistd.h])
+    AC_CHECK_HEADERS([sys/types.h locale.h float.h errno.h signal.h unistd.h fcntl.h])
 #    AC_DEFINE(_GLIBCXX_HAVE_SYS_IOCTL_H)
 #   AC_DEFINE(HAVE_SYS_IOCTL_H)
     GLIBCXX_CHECK_LINKER_FEATURES
