@@ -1,3 +1,21 @@
+2006-10-18  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config/io/basic_file_stdio.cc : Include <windows.h> on mingw32ce.
+	(__gnu_internal::read) : New.
+	(__gnu_internal::write) : New.
+	(__gnu_internal::lseek) : New.
+	(__gnu_internal::fdopen) : New.
+	(__gnu_internal::xwrite): Revert to always using file 
+	descriptors (handles on CE).
+	(__basic_file<char>::sys_open) : Enable on mingw32ce too. Don't 
+	special case __fd == 0.
+	(__basic_file<char>::fd) : Enable on mingw32ce too.
+	(__basic_file<char>::xsgetn) : Use file descriptors on mingw32ce too.
+	(__basic_file<char>::xsputn) : Likewise.
+	(__basic_file<char>::xsputn_2) : Likewise.
+	(__basic_file<char>::seekoff) : Likewise, using __gnu_internal::lseek.
+ 	(__basic_file<char>::showmanyc) : Implement for mingw32ce using Win32 api.
+
 2006-10-17  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* crossconfig.m4 (cegcc*, mingw32*): Add fnctl.h to AC_CHECK_HEADERS.

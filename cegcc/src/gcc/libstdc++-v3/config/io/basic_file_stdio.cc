@@ -73,8 +73,56 @@
 
 #include <limits> // For <off_t>::max() and min() and <streamsize>::max()
 
+
+#ifdef __MINGW32CE__
+#include <windows.h>
+#endif
+
 namespace __gnu_internal
 {
+#ifdef __MINGW32CE__
+  static int read(int fildes, char* buf, size_t bufsize)
+  {
+    DWORD NumberOfBytesRead;
+    if (!::ReadFile((HANDLE)fildes, (LPVOID)buf, bufsize, &NumberOfBytesRead, NULL))
+      return -1;
+    return (int)NumberOfBytesRead;
+  }
+
+  static int write(int fildes, const char* buf, size_t bufsize)
+  {
+    DWORD NumberOfBytesWritten;
+    if (!::WriteFile((HANDLE)fildes, (LPVOID)buf, bufsize, &NumberOfBytesWritten, NULL))
+      return -1;
+    return (int)NumberOfBytesWritten;
+  }
+  
+  static off_t lseek(int fildes, off_t offset, int whence)
+  {
+    DWORD mode = 0;
+    switch (whence)
+      {
+      case SEEK_SET: mode = FILE_BEGIN; break;
+      case SEEK_CUR: mode = FILE_CURRENT; break;
+      case SEEK_END: mode = FILE_END; break;
+      }
+    return (off_t)SetFilePointer((HANDLE)fildes, offset, NULL, mode);
+  }
+  
+  FILE* fdopen(int fildes, const char* mode)
+  {
+    size_t size = strlen (mode) + 1;
+    /* Avoid exception using malloc.  */
+    wchar_t* wmode = (wchar_t*)malloc(size * sizeof (wchar_t));
+    if (!wmode)
+      return 0;
+    mbstowcs(wmode, mode, size);
+    FILE* f = _wfdopen(fildes, wmode);
+    free (wmode);
+    return f;
+  }
+#endif
+  
   // Map ios_base::openmode flags to a string for use in fopen().
   // Table of valid combinations as given in [lib.filebuf.members]/2.
   static const char*
@@ -111,23 +159,17 @@ namespace __gnu_internal
 
   // Wrapper handling partial write.
   static std::streamsize
-#ifndef __MINGW32CE__
   xwrite(int __fd, const char* __s, std::streamsize __n)
-#else
-  xwrite(FILE* __f, const char* __s, std::streamsize __n)
-#endif
+
   {
     std::streamsize __nleft = __n;
 
     for (;;)
       {
-#ifndef __MINGW32CE__
 	const std::streamsize __ret = write(__fd, __s, __nleft);
+#ifndef __MINGW32CE__
 	if (__ret == -1L && errno == EINTR)
 	  continue;
-#else
-	const std::streamsize __ret = fwrite(__s, 1, __nleft, __f);
-        fflush(__f);
 #endif
 	if (__ret == -1L)
 	  break;
@@ -188,6 +230,10 @@ namespace __gnu_internal
 #endif
 } // namespace __gnu_internal
 
+#ifdef __MINGW32CE__
+using namespace __gnu_internal;
+#endif
+
 namespace std 
 {
   // Definitions for __basic_file<char>.
@@ -222,7 +268,6 @@ namespace std
     return __ret;
   }
   
-#ifndef __MINGW32CE__
   __basic_file<char>*
   __basic_file<char>::sys_open(int __fd, ios_base::openmode __mode)
   {
@@ -230,15 +275,18 @@ namespace std
     const char* __c_mode = __gnu_internal::fopen_mode(__mode);
     if (__c_mode && !this->is_open() && (_M_cfile = fdopen(__fd, __c_mode)))
       {
-	char* __buf = NULL;
 	_M_cfile_created = true;
+#ifndef __MINGW32CE__
+	char* __buf = NULL;
+	/* Fildes on WinCE are handles, and HANDLE == 0 is not stdout.  */
 	if (__fd == 0)
 	  setvbuf(_M_cfile, __buf, _IONBF, 0);
+#endif
+
 	__ret = this;
       }
     return __ret;
   }
-#endif
   
   __basic_file<char>* 
   __basic_file<char>::open(const char* __name, ios_base::openmode __mode, 
@@ -265,9 +313,11 @@ namespace std
   __basic_file<char>::is_open() const 
   { return _M_cfile != 0; }
 
-#ifndef __MINGW32CE__
   int 
   __basic_file<char>::fd() 
+#ifdef __MINGW32CE__
+  { return (int)fileno(_M_cfile); }
+#else
   { return fileno(_M_cfile); }
 #endif
   
@@ -308,23 +358,19 @@ namespace std
   __basic_file<char>::xsgetn(char* __s, streamsize __n)
   {
     streamsize __ret;
-#ifndef __MINGW32CE__
     do
       __ret = read(this->fd(), __s, __n);
+#ifndef __MINGW32CE__
     while (__ret == -1L && errno == EINTR);
 #else
-    __ret = fread(__s, 1, __n, _M_cfile);
+    while (0);
 #endif
     return __ret;
   }
 
   streamsize 
   __basic_file<char>::xsputn(const char* __s, streamsize __n)
-#ifndef __MINGW32CE__
   { return __gnu_internal::xwrite(this->fd(), __s, __n); }
-#else
-  { return __gnu_internal::xwrite(_M_cfile, __s, __n); }
-#endif
 
   streamsize 
   __basic_file<char>::xsputn_2(const char* __s1, streamsize __n1,
@@ -335,18 +381,10 @@ namespace std
     __ret = __gnu_internal::xwritev(this->fd(), __s1, __n1, __s2, __n2);
 #else
     if (__n1)
-#ifndef __MINGW32CE__
       __ret = __gnu_internal::xwrite(this->fd(), __s1, __n1);
-#else
-      __ret = __gnu_internal::xwrite(_M_cfile, __s1, __n1);
-#endif
 
     if (__ret == __n1)
-#ifndef __MINGW32CE__
       __ret += __gnu_internal::xwrite(this->fd(), __s2, __n2);
-#else
-      __ret += __gnu_internal::xwrite(_M_cfile, __s2, __n2);
-#endif
 #endif
     return __ret;
   }
@@ -360,12 +398,7 @@ namespace std
     if (__off > numeric_limits<off_t>::max()
 	|| __off < numeric_limits<off_t>::min())
       return -1L;
-#ifndef __MINGW32CE__
     return lseek(this->fd(), __off, __way);
-#else
-    return fseek(_M_cfile, __off, __way);
-#endif
-
 #endif
   }
 
@@ -376,6 +409,11 @@ namespace std
   streamsize
   __basic_file<char>::showmanyc()
   {
+#ifdef __MINGW32CE__
+    BY_HANDLE_FILE_INFORMATION finfo;
+    if (GetFileInformationByHandle((HANDLE)this->fd(), &finfo))
+      return finfo.nFileSizeLow - SetFilePointer((HANDLE)this->fd(), 0, NULL, FILE_CURRENT);
+#else
 #ifdef FIONREAD
     // Pipes and sockets.    
 #ifdef _GLIBCXX_FIONREAD_TAKES_OFF_T
@@ -415,6 +453,7 @@ namespace std
       return __buffer.st_size - lseek(this->fd(), 0, ios_base::cur);
 #endif
 #endif
+#endif /* __MINGW32CE__ */
     return 0;
   }
 }  // namespace std
