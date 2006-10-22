@@ -1,3 +1,11 @@
+2006-10-22  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config/locale/generic/time_members.cc : 
+	(__timepunct<char>::_M_put): Enable on __MINGW32CE__.
+	(__timepunct<char>::_M_initialize_timepunct) : Likewise.
+	(__timepunct<wchar_t>::_M_put) : Likewise.
+	(__timepunct<wchar_t>::_M_initialize_timepunct) : Likewise.
+
 2006-10-18  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* config/io/basic_file_stdio.cc : Include <windows.h> on mingw32ce.
