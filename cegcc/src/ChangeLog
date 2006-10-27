@@ -1,3 +1,10 @@
+2006-10-27  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* build-mingw32ce.sh : Remove duplicated build_all function.
+	(copy_headers) : Add error handlers.
+	* build-cegcc.sh (copy_w32api_headers) : Add missing ${BASE_DIRECTORY}.
+	Add error handler.
+
 2006-10-12  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* build-mingw32ce.sh : Make ${BUILD_DIR} absolute in default case.

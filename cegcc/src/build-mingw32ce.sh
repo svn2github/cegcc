@@ -25,30 +25,16 @@ fi
 
 export TARGET="arm-wince-mingw32ce"
 export BUILD=`sh ${BASE_DIRECTORY}/gcc/config.guess`
+export PATH=${PREFIX}/bin:${PATH}
+#export CFLAGS="-g3 -O0"
 
 echo "Building mingw32ce:"
 echo "source: ${BASE_DIRECTORY}"
 echo "build: ${BUILD_DIR}"
 echo "prefix: ${PREFIX}"
 
-export PATH=${PREFIX}/bin:${PATH}
-
 mkdir -p ${BUILD_DIR} || exit 1
 mkdir -p ${PREFIX} || exit 1
-
-function build_all
-{
-    build_binutils
-    build_import_libs
-    build_mingw_fake_runtime
-    copy_headers
-    build_bootstrap_gcc
-    build_mingw_runtime
-    build_gcc
-#    build_gdb
-#    build_gdbstub
-}
-
 
 function build_binutils()
 {
@@ -98,8 +84,8 @@ function copy_headers()
     echo ""
 
     mkdir -p ${PREFIX}/${TARGET}/include/
-    cp -rfp ${BASE_DIRECTORY}/mingw/include/*.h ${PREFIX}/${TARGET}/include/
-    cp -rfp ${BASE_DIRECTORY}/w32api/include/*.h ${PREFIX}/${TARGET}/include/
+    cp -rfp ${BASE_DIRECTORY}/mingw/include/*.h ${PREFIX}/${TARGET}/include/ || exit 1
+    cp -rfp ${BASE_DIRECTORY}/w32api/include/*.h ${PREFIX}/${TARGET}/include/ || exit 1
 }
 
 function build_bootstrap_gcc()

@@ -21,13 +21,13 @@ else
 fi
 
 export TARGET="arm-wince-cegcc"
+export PATH=${PREFIX}/bin:${PATH}
+#export CFLAGS="-g3 -O0"
 
 echo "Building cegcc:"
 echo "source: ${BASE_DIRECTORY}"
 echo "build: ${BUILD_DIR}"
 echo "prefix: ${PREFIX}"
-
-export PATH=${PREFIX}/bin:${PATH}
 
 mkdir -p ${BUILD_DIR} || exit 1
 mkdir -p ${PREFIX} || exit 1
@@ -76,7 +76,7 @@ function copy_w32api_headers()
     echo ""
 
     mkdir -p ${PREFIX}/${TARGET}/include/w32api
-    cp -rf w32api/include/*.h ${PREFIX}/${TARGET}/include/w32api
+    cp -rf ${BASE_DIRECTORY}/w32api/include/*.h ${PREFIX}/${TARGET}/include/w32api || exit 1
 }
 
 function build_dummy_cegccdll()
