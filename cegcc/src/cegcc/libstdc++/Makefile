@@ -16,6 +16,8 @@ CC=$(TARGET)-gcc
 STRIP=$(TARGET)-strip
 WINDRES=$(TARGET)-windres
 
+THE_SYSTEM_LIBS?="-lcegcc -lcoredll"
+
 LIB_PATH=$(PREFIX)/$(TARGET)/lib
 
 LDFLAGS += -Wl,-Map,${MY_DIR}/$(DLLNAME).map
@@ -44,8 +46,8 @@ delfiles:
 	done
 
 extract:
-	cd ${MY_DIR}/_tmp; $(AR) -x $(PREFIX)/lib/libsupc++.a
-	cd ${MY_DIR}/_tmp; $(AR) -x $(PREFIX)/lib/libstdc++.a
+	cd ${MY_DIR}/_tmp; $(AR) -x $(PREFIX)/$(TARGET)/lib/libsupc++.a
+	cd ${MY_DIR}/_tmp; $(AR) -x $(PREFIX)/$(TARGET)/lib/libstdc++.a
 
 ${MY_DIR}/stripped/$(DLLNAME):
 	@mkdir -p ${MY_DIR}/stripped
@@ -53,6 +55,19 @@ ${MY_DIR}/stripped/$(DLLNAME):
 	@cp -vf ${MY_DIR}/$(DLLNAME) ${MY_DIR}/$(DLLNAME)-stripped.dll
 	$(STRIP) ${MY_DIR}/$(DLLNAME)-stripped.dll
 	@mv -vf ${MY_DIR}/$(DLLNAME)-stripped.dll ${MY_DIR}/stripped/$(DLLNAME)
+
+# ${MY_DIR}/$(DLLNAME).a \
+# ${MY_DIR}/$(DLLNAME).def \
+# ${MY_DIR}/$(DLLNAME):
+# 	$(CC) $(LDFLAGS) -shared \
+# 		-Wl,--enable-auto-import \
+# 		-Wl,--enable-runtime-pseudo-reloc \
+# 		-Wl,--export-all-symbols \
+# 		-o ${MY_DIR}/$(DLLNAME) \
+# 		-Wl,--out-implib,${MY_DIR}/$(DLLNAME).a \
+# 		-Wl,--output-def,${MY_DIR}/$(DLLNAME).def \
+# 		-Wl,--whole-archive ${MY_DIR}/_tmp/*.o \
+# 		-Wl,-no-whole-archive -lcegcc -lcoredll
 
 ${MY_DIR}/$(DLLNAME).a \
 ${MY_DIR}/$(DLLNAME).def \
@@ -65,7 +80,7 @@ ${MY_DIR}/$(DLLNAME):
 		-Wl,--out-implib,${MY_DIR}/$(DLLNAME).a \
 		-Wl,--output-def,${MY_DIR}/$(DLLNAME).def \
 		-Wl,--whole-archive ${MY_DIR}/_tmp/*.o \
-		-Wl,-no-whole-archive -lcegcc -lcoredll
+		-Wl,-no-whole-archive ${THE_SYSTEM_LIBS}
 
 
 installdll: ${MY_DIR}/stripped/$(DLLNAME)
