@@ -1,10 +1,11 @@
-TARGET=		arm-wince-pe
+TARGET=		arm-wince-cegcc
 CC=		${TARGET}-gcc
 CCC=		${TARGET}-g++
 WINDRES=	${TARGET}-windres
 OBJDUMP=	${TARGET}-objdump
 DEBUG=		-g
 CFLAGS=		-D_WIN32_IE=0x0420 -D_WIN32_WCE=0x0400 ${DEBUG} -D_WINSOCKAPI_
+CXXFLAGS=	-D_WIN32_IE=0x0420 -D_WIN32_WCE=0x0400 ${DEBUG} -D_WINSOCKAPI_
 LDFLAGS=	-lcommctrl ${CE_VERSION}
 
 CE_VERSION=	-Wl,--major-subsystem-version,2,--minor-subsystem-version,0
@@ -21,10 +22,10 @@ RSCS=		${RCS:.rc=.rsc}
 .SUFFIXES:	.cpp .C .exe .dllinfo .objdump .rsc .rc
 
 .cpp.o:
-	${CCC} -c -o $@ $?
+	${CCC} ${CXXFLAGS} -c -o $@ $?
 
 .cpp.exe:
-	${CCC} -o $@ $?
+	${CCC} ${CXXFLAGS} -o $@ $?
 
 .exe.objdump:
 	${OBJDUMP} -x $? >$@
