@@ -1,3 +1,7 @@
+2006-10-29  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/winuser.h (WS_EX_NODRAG) : Define.
+
 2006-10-16  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* include/kfuncs.h (EventModify) : Declare.
