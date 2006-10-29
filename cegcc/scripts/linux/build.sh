@@ -102,8 +102,9 @@ do
 	sh $SCRIPTDIR/build-stub.sh || exit 1
 	sh $SCRIPTDIR/install-stub.sh || exit 1
 	#
-	sh $SCRIPTDIR/build-mingw.sh || exit 1
-	sh $SCRIPTDIR/install-mingw.sh || exit 1
+	if [ $TGT_ARCH = arm-wince-cegcc ]; then
+		sh $SCRIPTDIR/build-mingw.sh && sh $SCRIPTDIR/install-mingw.sh
+	fi
 	#
 done
 #
