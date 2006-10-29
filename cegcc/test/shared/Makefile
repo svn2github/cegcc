@@ -1,4 +1,4 @@
-T=		arm-wince-pe
+T=		arm-wince-cegcc
 CC=		${T}-gcc -g
 DLLTOOL=	${T}-dlltool
 
