@@ -8,6 +8,12 @@ else
 	. scripts/linux/settings.sh
 fi
 #
+# Don't do this in MinGW
+#
+if [ $TGT_ARCH = arm-wince-mingw32ce ]; then
+	exit 0
+fi
+#
 # Put the cleanup here instead of in the calling script
 #
 if [ -d $BUILD_DIR/newlib ]; then

@@ -14,13 +14,6 @@ if [ -d $BUILD_DIR/gpp ]; then
 	rm -rf $BUILD_DIR/gpp
 fi
 #
-# Temporary hack - not in the MingW target
-# FIX ME
-#
-if [ $TGT_ARCH = arm-wince-mingw32ce ]; then
-	exit 0
-fi
-#
 mkdir -p $BUILD_DIR/gpp || exit 1
 cd $BUILD_DIR/gpp || exit 1
 #

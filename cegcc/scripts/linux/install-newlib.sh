@@ -8,6 +8,12 @@ else
 	. scripts/linux/settings.sh
 fi
 #
+# Don't do this in MinGW
+#
+if [ $TGT_ARCH = arm-wince-mingw32ce ]; then
+	exit 0
+fi
+#
 cd $BUILD_DIR/newlib || exit 1
 #
 make install || exit 1

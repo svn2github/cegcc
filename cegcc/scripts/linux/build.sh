@@ -21,7 +21,7 @@ fi
 #
 if [ x$PREFIX != x ]; then
 	if [ -d $PREFIX -a $PREFIX = /usr/ppc ]; then
-		for i in $TGT_ARCH bin info lib man include libexec share
+		for i in bin info lib man include libexec share arm-wince-pe arm-wince-cegcc arm-wince-mingw32ce
 		do
 			if [ -d $PREFIX/$i ]; then
 				echo "rm -rf $PREFIX/$i"
@@ -50,7 +50,8 @@ mkdir -p $BUILD_DIR
 for TGT_ARCH in arm-wince-cegcc arm-wince-mingw32ce # arm-wince-pe
 do
 	export TGT_ARCH
-#
+	echo "Running build-arch.sh with TGT_ARCH = " $TGT_ARCH
+	#
 	sh $SCRIPTDIR/build-binutils.sh || exit 1
 	sh $SCRIPTDIR/install-binutils.sh || exit 1
 	#
@@ -65,21 +66,23 @@ do
 	sh $SCRIPTDIR/install-gcc.sh || exit 1
 	#
 	sh $SCRIPTDIR/install-mingw-crt.sh || exit 1
+	sh $SCRIPTDIR/build-libs.sh || exit 1
+	sh $SCRIPTDIR/install-libs.sh || exit 1
 	#
-	sh $SCRIPTDIR/build-mingw.sh || exit 1
-	sh $SCRIPTDIR/install-mingw.sh || exit 1
-	#
-	sh $SCRIPTDIR/build-newlib.sh || exit 1
-	sh $SCRIPTDIR/install-newlib.sh || exit 1
+	if [ $TGT_ARCH = arm-wince-mingw32ce ]; then
+		sh $SCRIPTDIR/build-mingw.sh || exit 1
+		sh $SCRIPTDIR/install-mingw.sh || exit 1
+	else
+		sh $SCRIPTDIR/build-newlib.sh || exit 1
+		sh $SCRIPTDIR/install-newlib.sh || exit 1
+	fi
 	#
 	# Some of the stuff here applies to both targets
 	#
-	sh $SCRIPTDIR/build-libs.sh || exit 1
-	sh $SCRIPTDIR/install-libs.sh || exit 1
 	sh $SCRIPTDIR/build-dll.sh || exit 1
 	sh $SCRIPTDIR/install-dll.sh || exit 1
 	#
-	# Build the compiler better (not needed for mingw?).
+	# Build the compiler better.
 	#
 	sh $SCRIPTDIR/build-gpp.sh || exit 1
 	sh $SCRIPTDIR/install-gpp.sh || exit 1
@@ -98,7 +101,10 @@ do
 	sh $SCRIPTDIR/install-gdb.sh || exit 1
 	sh $SCRIPTDIR/build-stub.sh || exit 1
 	sh $SCRIPTDIR/install-stub.sh || exit 1
-#
+	#
+	sh $SCRIPTDIR/build-mingw.sh || exit 1
+	sh $SCRIPTDIR/install-mingw.sh || exit 1
+	#
 done
 #
 sh $SCRIPTDIR/install-docs.sh || exit 1

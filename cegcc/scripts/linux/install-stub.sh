@@ -8,12 +8,6 @@ else
 	. scripts/linux/settings.sh
 fi
 #
-# Not in the MingW target
-#
-if [ $TGT_ARCH = arm-wince-mingw32ce ]; then
-	exit 0
-fi
-
 LIBS=""
 INCLUDES=""
 CFLAGS="-mwin32 ${INCLUDES}"
