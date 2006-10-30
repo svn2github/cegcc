@@ -4,11 +4,11 @@
 2006-10-17  Pedro Alves  <pedro_alves@portugalmail.pt>
 	* config/arm/wince-cegcc.h (STARTFILE_SPEC) : Add gcrt3.o instead
 	of gcrt2.o.
-	* config/arm/mingw32.h : Likewise.
+	* config/arm/mingw32.h: Likewise.
 
 2006-10-16  Danny Backx  <dannybackx@users.sourceforge.net>
 	* config/arm/wince-cegcc.h (LIB_SPEC) : Link -lgmon when called with -pg.
-	(STARTFILE_SPEC) : Add gcrt2.o when called with -pg.
+	(STARTFILE_SPEC): Add gcrt2.o when called with -pg.
 
 2006-10-12  Danny Backx <dannybackx@users.sourceforge.net>
 	* config/arm/wince-cegcc.h (mno-cegcc): Remove option. 
@@ -16,13 +16,13 @@
 
 2006-10-10  Pedro Alves  <pedro_alves@portugalmail.pt>
 
-	* config/arm/cegcc.c : Delete. We use the originals instead.
+	* config/arm/cegcc.c: Delete. We use the originals instead.
 	This code is generic PE code, and will hopefully get
 	pushed down to a more general place in GCC 4.3 stage1.
-	* cegcc-cxx.c : Likewise.
-	* cegcc-stubs.c : Likewise.
-	* config.gcc : Use the originals instead of the new copies for the 
+	* cegcc-cxx.c: Likewise.
+	* cegcc-stubs.c: Likewise.
+	* config.gcc: Use the originals instead of the new copies for the 
 	arm*-wince-cegcc case.
-	* config/arm/t-wince-cegcc : Make it empty, we now inherit the generic
+	* config/arm/t-wince-cegcc: Make it empty, we now inherit the generic
 	t-wince-pe.
-	* ChangeLog.ce : New file.
+	* ChangeLog.ce: New file.
