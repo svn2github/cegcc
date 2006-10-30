@@ -1,6 +1,6 @@
 ; PE-specific options for the ARM port
 
-; Copyright (C) 2005 Free Software Foundation, Inc.
+; Copyright (C) 2005,2006 Free Software Foundation, Inc.
 ;
 ; This file is part of GCC.
 ;
@@ -22,3 +22,7 @@
 mnop-fun-dllimport
 Target Report Mask(NOP_FUN_DLLIMPORT)
 Ignore dllimport attribute for functions
+
+mms-bitfields
+Target Report Mask(MS_BITFIELD_LAYOUT)
+Use native (MS) bitfield layout

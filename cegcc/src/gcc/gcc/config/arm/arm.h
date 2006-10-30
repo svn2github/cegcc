@@ -2340,6 +2340,11 @@ extern int making_const_table;
     }								\
   while (0)
 
+#define TARGET_ASM_FILE_END arm_file_end
+#define TARGET_ATTRIBUTE_TABLE arm_attribute_table
+#define TARGET_ENCODE_SECTION_INFO  arm_encode_section_info
+#define TARGET_STRIP_NAME_ENCODING arm_strip_name_encoding
+
 #ifdef HAVE_GAS_MAX_SKIP_P2ALIGN
 /* To support -falign-* switches we need to use .p2align so
    that alignment directives in code sections will be padded

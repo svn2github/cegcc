@@ -36,13 +36,6 @@ Boston, MA 02110-1301, USA.  */
     }								\
   while (0)
 
-/* Override the standard choice of /usr/include as the default prefix
-   to try when searching for header files.  */
-#undef STANDARD_INCLUDE_DIR
-#define STANDARD_INCLUDE_DIR "/mingw/include"
-#undef STANDARD_INCLUDE_COMPONENT
-#define STANDARD_INCLUDE_COMPONENT "MINGW"
-
 #undef CPP_SPEC
 #define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{mthreads:-D_MT} \
 %{!nostdinc: -idirafter ../include/w32api%s -idirafter ../../include/w32api%s }"

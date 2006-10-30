@@ -152,8 +152,6 @@ static void arm_elf_asm_constructor (rtx, int);
 static void arm_encode_section_info (tree, rtx, int);
 #endif
 
-static void arm_file_end (void);
-
 #ifdef AOF_ASSEMBLER
 static void aof_globalize_label (FILE *, const char *);
 static void aof_dump_imports (FILE *);
@@ -190,6 +188,8 @@ static bool arm_handle_option (size_t, const char *, int);
 static unsigned HOST_WIDE_INT arm_shift_truncation_mask (enum machine_mode);
 static bool arm_cannot_copy_insn_p (rtx);
 static bool arm_tls_symbol_p (rtx x);
+static tree arm_handle_struct_attribute (tree *, tree, tree, int, bool *);
+static bool arm_ms_bitfield_layout_p (tree record_type);
 
 
 /* Initialize the GCC target structure.  */
@@ -197,12 +197,6 @@ static bool arm_tls_symbol_p (rtx x);
 #undef  TARGET_MERGE_DECL_ATTRIBUTES
 #define TARGET_MERGE_DECL_ATTRIBUTES merge_dllimport_decl_attributes
 #endif
-
-#undef  TARGET_ATTRIBUTE_TABLE
-#define TARGET_ATTRIBUTE_TABLE arm_attribute_table
-
-#undef TARGET_ASM_FILE_END
-#define TARGET_ASM_FILE_END arm_file_end
 
 #ifdef AOF_ASSEMBLER
 #undef  TARGET_ASM_BYTE_OP
@@ -243,6 +237,7 @@ static bool arm_tls_symbol_p (rtx x);
 
 #undef  TARGET_DEFAULT_TARGET_FLAGS
 #define TARGET_DEFAULT_TARGET_FLAGS (TARGET_DEFAULT | MASK_SCHED_PROLOG)
+
 #undef  TARGET_HANDLE_OPTION
 #define TARGET_HANDLE_OPTION arm_handle_option
 
@@ -254,16 +249,6 @@ static bool arm_tls_symbol_p (rtx x);
 
 #undef  TARGET_SCHED_ADJUST_COST
 #define TARGET_SCHED_ADJUST_COST arm_adjust_cost
-
-#undef TARGET_ENCODE_SECTION_INFO
-#ifdef ARM_PE
-#define TARGET_ENCODE_SECTION_INFO  arm_pe_encode_section_info
-#else
-#define TARGET_ENCODE_SECTION_INFO  arm_encode_section_info
-#endif
-
-#undef  TARGET_STRIP_NAME_ENCODING
-#define TARGET_STRIP_NAME_ENCODING arm_strip_name_encoding
 
 #undef  TARGET_ASM_INTERNAL_LABEL
 #define TARGET_ASM_INTERNAL_LABEL arm_internal_label
@@ -374,6 +359,9 @@ static bool arm_tls_symbol_p (rtx x);
 #undef TARGET_HAVE_TLS
 #define TARGET_HAVE_TLS true
 #endif
+
+#undef TARGET_MS_BITFIELD_LAYOUT_P
+#define TARGET_MS_BITFIELD_LAYOUT_P arm_ms_bitfield_layout_p
 
 #undef TARGET_CANNOT_FORCE_CONST_MEM
 #define TARGET_CANNOT_FORCE_CONST_MEM arm_tls_referenced_p
@@ -2544,9 +2532,11 @@ arm_return_in_memory (tree type)
   if (TREE_CODE (type) == VECTOR_TYPE)
     return (size < 0 || size > (4 * UNITS_PER_WORD));
 
-  /* For the arm-wince targets we choose to be compatible with Microsoft's
-     ARM and Thumb compilers, which always return aggregates in memory.  */
-#ifndef ARM_WINCE
+  if (TARGET_RETURN_AGGREGATES_IN_MEMORY
+	 && (TREE_CODE (type) == RECORD_TYPE
+		|| TREE_CODE (type) == UNION_TYPE)) 
+    return 1;
+
   /* All structures/unions bigger than one word are returned in memory.
      Also catch the case where int_size_in_bytes returns -1.  In this case
      the aggregate is either huge or of variable size, and in either case
@@ -2623,7 +2613,6 @@ arm_return_in_memory (tree type)
 
       return 0;
     }
-#endif /* not ARM_WINCE */
 
   /* Return all other types in memory.  */
   return 1;
@@ -2849,6 +2838,12 @@ const struct attribute_spec arm_attribute_table[] =
   { "dllimport",    0, 0, false, false, false, handle_dll_attribute },
   { "dllexport",    0, 0, false, false, false, handle_dll_attribute },
   { "notshared",    0, 0, false, true, false, arm_handle_notshared_attribute },
+  { "shared",       0, 0, true,  false, false, arm_pe_handle_shared_attribute },
+#endif
+  { "ms_struct", 0, 0, false, false,  false, arm_handle_struct_attribute },
+  { "gcc_struct", 0, 0, false, false,  false, arm_handle_struct_attribute },
+#ifdef SUBTARGET_ATTRIBUTE_TABLE
+  SUBTARGET_ATTRIBUTE_TABLE,
 #endif
   { NULL,           0, 0, false, false, false, NULL }
 };
@@ -11302,7 +11297,7 @@ arm_assemble_integer (rtx x, unsigned int size, int aligned_p)
   return default_assemble_integer (x, size, aligned_p);
 }
 
-
+#ifdef OBJECT_FORMAT_ELF
 /* Add a function to the list of static constructors.  */
 
 static void
@@ -11321,6 +11316,8 @@ arm_elf_asm_constructor (rtx symbol, int priority ATTRIBUTE_UNUSED)
   output_addr_const (asm_out_file, symbol);
   fputs ("(target1)\n", asm_out_file);
 }
+#endif
+
 #endif
 
 /* A finite state machine takes care of noticing whether or not instructions
@@ -13850,7 +13847,7 @@ thumb_output_function_prologue (FILE *f, HOST_WIDE_INT size ATTRIBUTE_UNUSED)
       fprintf (f, "\t.code\t16\n");
 #ifdef ARM_PE
       if (arm_pe_dllexport_name_p (name))
-        name = arm_strip_name_encoding (name);
+        name = arm_pe_strip_name_encoding (name);
 #endif
       asm_fprintf (f, "\t.globl %s%U%s\n", STUB_NAME, name);
       fprintf (f, "\t.thumb_func\n");
@@ -14358,7 +14355,7 @@ arm_asm_output_labelref (FILE *stream, const char *name)
     asm_fprintf (stream, "%U%s", name);
 }
 
-static void
+void
 arm_file_end (void)
 {
   int regno;
@@ -15485,6 +15482,51 @@ arm_output_addr_const_extra (FILE *fp, rtx x)
     return arm_emit_vector_const (fp, x);
 
   return FALSE;
+}
+
+/* Handle a "ms_struct" or "gcc_struct" attribute; arguments as in
+   struct attribute_spec.handler.  */
+static tree
+arm_handle_struct_attribute (tree *node, tree name,
+			      tree args ATTRIBUTE_UNUSED,
+			      int flags ATTRIBUTE_UNUSED, bool *no_add_attrs)
+{
+  tree *type = NULL;
+  if (DECL_P (*node))
+    {
+      if (TREE_CODE (*node) == TYPE_DECL)
+	type = &TREE_TYPE (*node);
+    }
+  else
+    type = node;
+
+  if (!(type && (TREE_CODE (*type) == RECORD_TYPE
+		 || TREE_CODE (*type) == UNION_TYPE)))
+    {
+      warning (OPT_Wattributes, "%qs attribute ignored",
+	       IDENTIFIER_POINTER (name));
+      *no_add_attrs = true;
+    }
+
+  else if ((is_attribute_p ("ms_struct", name)
+	    && lookup_attribute ("gcc_struct", TYPE_ATTRIBUTES (*type)))
+	   || ((is_attribute_p ("gcc_struct", name)
+		&& lookup_attribute ("ms_struct", TYPE_ATTRIBUTES (*type)))))
+    {
+      warning (OPT_Wattributes, "%qs incompatible attribute ignored",
+               IDENTIFIER_POINTER (name));
+      *no_add_attrs = true;
+    }
+
+  return NULL_TREE;
+}
+
+static bool
+arm_ms_bitfield_layout_p (tree record_type)
+{
+  return (TARGET_MS_BITFIELD_LAYOUT &&
+	  !lookup_attribute ("gcc_struct", TYPE_ATTRIBUTES (record_type)))
+    || lookup_attribute ("ms_struct", TYPE_ATTRIBUTES (record_type));
 }
 
 #include "gt-arm.h"

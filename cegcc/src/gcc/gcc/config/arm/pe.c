@@ -61,6 +61,23 @@ static void pe_mark_dllimport (tree);
 #define DLL_EXPORT_PREFIX "@e."
 #endif
 
+/* Handle a "shared" attribute;
+   arguments as in struct attribute_spec.handler.  */
+tree
+arm_pe_handle_shared_attribute (tree *node, tree name,
+			      tree args ATTRIBUTE_UNUSED,
+			      int flags ATTRIBUTE_UNUSED, bool *no_add_attrs)
+{
+  if (TREE_CODE (*node) != VAR_DECL)
+    {
+      warning (OPT_Wattributes, "%qs attribute only applies to variables",
+	       IDENTIFIER_POINTER (name));
+      *no_add_attrs = true;
+    }
+
+  return NULL_TREE;
+}
+
 /* Handle a "selectany" attribute;
    arguments as in struct attribute_spec.handler.  */
 tree
@@ -290,6 +307,19 @@ arm_pe_encode_section_info (tree decl, rtx rtl, int first)
 		  && arm_pe_dllimport_name_p (XSTR (XEXP (XEXP (rtl, 0), 0), 0))));
 }
 
+const char *
+arm_pe_strip_name_encoding (const char *str)
+{
+  if (strncmp (str, DLL_IMPORT_PREFIX, strlen (DLL_IMPORT_PREFIX))
+      == 0)
+    str += strlen (DLL_IMPORT_PREFIX);
+  else if (strncmp (str, DLL_EXPORT_PREFIX, strlen (DLL_EXPORT_PREFIX))
+	   == 0)
+    str += strlen (DLL_EXPORT_PREFIX);
+
+  return arm_strip_name_encoding (str);
+}
+
 /* Output a reference to a label. Symbols don't
    have a prefix (unless they are marked dllimport or dllexport).  */
 
@@ -299,12 +329,12 @@ void arm_pe_output_labelref (FILE *stream, const char *name)
       == 0)
     /* A dll import */
     {
-      asm_fprintf (stream, "__imp_%U%s", arm_strip_name_encoding (name));
+      asm_fprintf (stream, "__imp_%U%s", arm_pe_strip_name_encoding (name));
     }
   else
     /* Everything else.  */
     {
-      asm_fprintf (stream, "%U%s", arm_strip_name_encoding (name));
+      asm_fprintf (stream, "%U%s", arm_pe_strip_name_encoding (name));
     }
 }
 
@@ -316,7 +346,7 @@ arm_pe_unique_section (tree decl, int reloc)
   char *string;
 
   name = IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (decl));
-  name = arm_strip_name_encoding (name);
+  name = arm_pe_strip_name_encoding (name);
 
   /* The object is put in, for example, section .text$foo.
      The linker will then ultimately place them in .text
@@ -337,18 +367,122 @@ arm_pe_unique_section (tree decl, int reloc)
   DECL_SECTION_NAME (decl) = build_string (len, string);
 }
 
+/* Select a set of attributes for section NAME based on the properties
+   of DECL and whether or not RELOC indicates that DECL's initializer
+   might contain runtime relocations.
+
+   We make the section read-only and executable for a function decl,
+   read-only for a const data decl, and writable for a non-const data decl.
+
+   If the section has already been defined, to not allow it to have
+   different attributes, as (1) this is ambiguous since we're not seeing
+   all the declarations up front and (2) some assemblers (e.g. SVR4)
+   do not recognize section redefinitions.  */
+/* ??? This differs from the "standard" PE implementation in that we
+   handle the SHARED variable attribute.  Should this be done for all
+   PE targets?  */
+
+#define SECTION_PE_SHARED	SECTION_MACH_DEP
+
+unsigned int
+arm_pe_section_type_flags (tree decl, const char *name, int reloc)
+{
+  static htab_t htab;
+  unsigned int flags;
+  unsigned int **slot;
+
+  /* The names we put in the hashtable will always be the unique
+     versions given to us by the stringtable, so we can just use
+     their addresses as the keys.  */
+  if (!htab)
+    htab = htab_create (31, htab_hash_pointer, htab_eq_pointer, NULL);
+
+  if (decl && TREE_CODE (decl) == FUNCTION_DECL)
+    flags = SECTION_CODE;
+  else if (decl && decl_readonly_section (decl, reloc))
+    flags = 0;
+  else
+    {
+      flags = SECTION_WRITE;
+
+      if (decl && TREE_CODE (decl) == VAR_DECL
+	  && lookup_attribute ("shared", DECL_ATTRIBUTES (decl)))
+	flags |= SECTION_PE_SHARED;
+    }
+
+  if (decl && DECL_ONE_ONLY (decl))
+    flags |= SECTION_LINKONCE;
+
+  /* See if we already have an entry for this section.  */
+  slot = (unsigned int **) htab_find_slot (htab, name, INSERT);
+  if (!*slot)
+    {
+      *slot = (unsigned int *) xmalloc (sizeof (unsigned int));
+      **slot = flags;
+    }
+  else
+    {
+      if (decl && **slot != flags)
+	error ("%q+D causes a section type conflict", decl);
+    }
+
+  return flags;
+}
+
+void
+arm_pe_asm_named_section (const char *name, unsigned int flags, 
+			   tree decl)
+{
+  char flagchars[8], *f = flagchars;
+
+  if ((flags & (SECTION_CODE | SECTION_WRITE)) == 0)
+    /* readonly data */
+    {
+      *f++ ='d';  /* This is necessary for older versions of gas.  */
+      *f++ ='r';
+    }
+  else	
+    {
+      if (flags & SECTION_CODE)
+        *f++ = 'x';
+      if (flags & SECTION_WRITE)
+        *f++ = 'w';
+      if (flags & SECTION_PE_SHARED)
+        *f++ = 's';
+    }
+
+  *f = '\0';
+
+  fprintf (asm_out_file, "\t.section\t%s,\"%s\"\n", name, flagchars);
+
+  if (flags & SECTION_LINKONCE)
+    {
+      /* Functions may have been compiled at various levels of
+	 optimization so we can't use `same_size' here.
+	 Instead, have the linker pick one, without warning.
+	 If 'selectany' attribute has been specified,  MS compiler
+	 sets 'discard' characteristic, rather than telling linker
+	 to warn of size or content mismatch, so do the same.  */ 
+      bool discard = (flags & SECTION_CODE)
+		      || lookup_attribute ("selectany",
+					   DECL_ATTRIBUTES (decl));	 
+      fprintf (asm_out_file, "\t.linkonce %s\n",
+	       (discard  ? "discard" : "same_size"));
+    }
+}
+
 
 /* The Microsoft linker requires that every function be marked as
-DT_FCN.  When using gas on cygwin, we must emit appropriate .type
-directives.  */
+   DT_FCN.  When using gas on cygwin, we must emit appropriate .type
+   directives.  */
 
 #include "gsyms.h"
 
 /* Mark a function appropriately.  This should only be called for
-functions for which we are not emitting COFF debugging information.
-FILE is the assembler output file, NAME is the name of the
-function, and PUBLIC is nonzero if the function is globally
-visible.  */
+   functions for which we are not emitting COFF debugging information.
+   FILE is the assembler output file, NAME is the name of the
+   function, and PUBLIC is nonzero if the function is globally
+   visible.  */
 
 void
 arm_pe_declare_function_type (FILE *file, const char *name, int public)
@@ -372,10 +506,10 @@ struct extern_list GTY(())
 static GTY(()) struct extern_list *extern_head;
 
 /* Assemble an external function reference.  We need to keep a list of
-these, so that we can output the function types at the end of the
-assembly.  We can't output the types now, because we might see a
-definition of the function later on and emit debugging information
-for it then.  */
+   these, so that we can output the function types at the end of the
+   assembly.  We can't output the types now, because we might see a
+   definition of the function later on and emit debugging information
+   for it then.  */
 
 void
 arm_pe_record_external_function (tree decl, const char *name)
@@ -401,10 +535,10 @@ struct export_list GTY(())
 static GTY(()) struct export_list *export_head;
 
 /* Assemble an export symbol entry.  We need to keep a list of
-these, so that we can output the export list at the end of the
-assembly.  We used to output these export symbols in each function,
-but that causes problems with GNU ld when the sections are
-linkonce.  */
+   these, so that we can output the export list at the end of the
+   assembly.  We used to output these export symbols in each function,
+   but that causes problems with GNU ld when the sections are
+   linkonce.  */
 
 void
 arm_pe_record_exported_symbol (const char *name, int is_data)
@@ -419,43 +553,43 @@ arm_pe_record_exported_symbol (const char *name, int is_data)
 }
 
 /* This is called at the end of assembly.  For each external function
-which has not been defined, we output a declaration now.  We also
-output the .drectve section.  */
+   which has not been defined, we output a declaration now.  We also
+   output the .drectve section.  */
 
 void
 arm_pe_file_end (void)
 {
   struct extern_list *p;
 
-//  ix86_file_end ();
+  arm_file_end ();
 
   for (p = extern_head; p != NULL; p = p->next)
-  {
-    tree decl;
-
-    decl = p->decl;
-
-    /* Positively ensure only one declaration for any given symbol.  */
-    if (! TREE_ASM_WRITTEN (decl)
-      && TREE_SYMBOL_REFERENCED (DECL_ASSEMBLER_NAME (decl)))
     {
-      TREE_ASM_WRITTEN (decl) = 1;
-      arm_pe_declare_function_type (asm_out_file, p->name,
-        TREE_PUBLIC (decl));
+      tree decl;
+
+      decl = p->decl;
+
+      /* Positively ensure only one declaration for any given symbol.  */
+      if (! TREE_ASM_WRITTEN (decl)
+	  && TREE_SYMBOL_REFERENCED (DECL_ASSEMBLER_NAME (decl)))
+	{
+	  TREE_ASM_WRITTEN (decl) = 1;
+	  arm_pe_declare_function_type (asm_out_file, p->name,
+					 TREE_PUBLIC (decl));
+	}
     }
-  }
 
   if (export_head)
-  {
-    struct export_list *q;
-    drectve_section ();
-    for (q = export_head; q != NULL; q = q->next)
     {
-      fprintf (asm_out_file, "\t.ascii \" -export:%s%s\"\n",
-        arm_strip_name_encoding (q->name),
-        (q->is_data) ? ",data" : "");
+      struct export_list *q;
+      drectve_section ();
+      for (q = export_head; q != NULL; q = q->next)
+	{
+	  fprintf (asm_out_file, "\t.ascii \" -export:%s%s\"\n",
+		   arm_pe_strip_name_encoding (q->name),
+		   (q->is_data) ? ",data" : "");
+	}
     }
-  }
 }
 
 #include "gt-pe.h"

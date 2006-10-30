@@ -1,16 +1,132 @@
 2006-10-30  Pedro Alves  <pedro_alves@portugalmail.pt>
-	* config/arm/pe-cxx.c: Fix indenting to match the original config/i386/winnt-cxx.c.
+
+	* target-def.h (TARGET_ATTRIBUTE_TABLE): Only define if not
+	defined before.
+	* config/arm/arm.c (arm_file_end): Give it external linkage.
+	(arm_handle_struct_attribute): New.
+	(arm_ms_bitfield_layout_p): New.
+	(TARGET_ATTRIBUTE_TABLE, TARGET_ASM_FILE_END,
+	TARGET_ENCODE_SECTION_INFO, TARGET_STRIP_NAME_ENCODING): Move
+	declarations to config/arm/arm.h.
+	(TARGET_MS_BITFIELD_LAYOUT_P): Define to
+	arm_ms_bitfield_layout_p.
+	(arm_return_in_memory): Replace #ifdef'ing on ARM_WINCE with
+	TARGET_RETURN_AGGREGATES_IN_MEMORY.
+	(arm_attribute_table): Add shared, ms_struct, gcc_struct
+	attributes.
+	Allow subtarget to add attributes using
+	SUBTARGET_ATTRIBUTE_TABLE.
+	(arm_elf_asm_constructor): Only compile on OBJECT_FORMAT_ELF.
+	(thumb_output_function_prologue): Call arm_pe_strip_name_encoding
+	instead of arm_strip_name_encoding.
+	(arm_handle_struct_attribute): New function.
+	(arm_ms_bitfield_layout_p): New function.
+	* config/arm/arm.h (TARGET_ASM_FILE_END, TARGET_ATTRIBUTE_TABLE,
+	TARGET_ENCODE_SECTION_INFO, TARGET_STRIP_NAME_ENCODING): Define.
+	* config/arm/t-wince-cegcc: Add cegcc1.o rule.
+	(TARGET_LIBGCC2_CFLAGS): Add -mwin32.
+	* config/arm/t-mingw32 (SYSTEM_INCLUDE_DIR): Delete.
+	(NATIVE_SYSTEM_HEADER_DIR): Likewise.
+	* config/arm/arm-protos.h (arm_file_end,
+	arm_pe_asm_named_section, arm_pe_section_type_flags,
+	arm_pe_strip_name_encoding, arm_pe_output_labelref, 
+	arm_pe_handle_shared_attribute): Declare.
+	* config/arm/wince-pe.h:
+	(TARGET_VERSION): Set to "(arm Windows CE/Native SDK)".
+	(MULTILIB_DEFAULTS): Remove -mfpu=vfp.
+	(SUBTARGET_CPU_DEFAULT): Default to TARGET_CPU_arm8 (armv4).
+	(CPP_SPEC): Remove cegcc specifics.
+	(ASM_SPEC): Don't pass -cpu=iwmmxt to assembler when -mcpu=xscale
+	is used.
+	(SUBTARGET_EXTRA_SPECS, SUBTARGET_ASM_FLOAT_SPEC): Remove.
+	(TARGET_OS_CPP_BUILTINS): Add _stdcall, _fastcall and _cdecl.
+	(SUBTARGET_CPP_SPEC, HANDLE_SYSV_PRAGMA,
+	HANDLE_PRAGMA_PACK_PUSH_POP): Delete.
+	(STARTFILE_SPEC): Remove cegcc specifics.
+	(LIBGCC_SPEC): Likewise.
+	(LIB_SPEC): Likewise.
+	(COMMON_ASM_OP, ASM_OUTPUT_COMMON, ASM_DECLARE_OBJECT_NAME,
+	ASM_DECLARE_FUNCTION_NAME, ASM_OUTPUT_EXTERNAL,
+	ASM_OUTPUT_EXTERNAL_LIBCALL, ASM_OUTPUT_ALIGNED_BSS,
+	TARGET_ASM_FILE_END, SUPPORTS_ONE_ONLY, MULTIPLE_SYMBOL_SPACES):
+	Delete.
+	(ARM_MCOUNT_NAME): Define to _mcount to avoid conflicts.
+	(CHECK_STACK_LIMIT): Delete.
+	(TARGET_DEFAULT): Match Windows CE ABI with
+	MASK_MS_BITFIELD_LAYOUT and MASK_RETURN_AGGREGATES_IN_MEMORY.
+	(TARGET_SUBTARGET_DEFAULT): Delete.
+	(BIGGEST_FIELD_ALIGNMENT): Delete.
+	(SET_ASM_OP): Delete.
+	(DEFAULT_STRUCTURE_SIZE_BOUNDARY): Define to 8 as WinCE's ABI
+	requires.
+	(ASM_OUTPUT_DEF_FROM_DECLS, TARGET_USE_JCR_SECTION,
+	TARGET_USE_LOCAL_THUNK_ALIAS_P, SUBTARGET_ATTRIBUTE_TABLE):
+	Delete.
+	* config/arm/mingw32.h (STANDARD_INCLUDE_DIR,
+	STANDARD_INCLUDE_COMPONENT): Delete.
+	* config/arm/arm.opt: New option -mreturn-aggregates-in-memory.
+	* config/arm/pe.opt: New option -mms-bitfields.
+	* config/arm/pe.c (arm_pe_handle_shared_attribute): New.
+	(arm_pe_strip_name_encoding): New.
+	(arm_pe_output_labelref): Call arm_pe_strip_name_encoding instead 
+	of arm_strip_name_encoding.
+	(arm_pe_unique_section): Likewise.
+	(arm_pe_section_type_flags): New.
+	(arm_pe_asm_named_section ): New.
+	(arm_pe_file_end): Call arm_file_end.
+	* config/arm/pe.h (HANDLE_SYSV_PRAGMA): New.
+	(HANDLE_PRAGMA_PACK_PUSH_POP): New.
+	(SUBTARGET_OVERRIDE_OPTIONS): New.
+	(TARGET_ASM_NAMED_SECTION): Set to arm_pe_asm_named_section
+	specialized version.
+	(TARGET_SECTION_TYPE_FLAGS): New.
+	(ASM_DECLARE_FUNCTION_NAME): Don't output -export to .drectve
+	directly.
+	Use arm_pe_record_exported_symbol instead.
+	(TARGET_ASM_FILE_END): Set to arm_pe_file_end.
+	(TARGET_ENCODE_SECTION_INFO): Set to arm_pe_encode_section_info.
+	(TARGET_STRIP_NAME_ENCODING): Set to arm_pe_strip_name_encoding.
+	(COMMON_ASM_OP): New.
+	(ASM_OUTPUT_COMMON): Don't output -export to .drectve directly.
+	Use arm_pe_record_exported_symbol instead.
+	(ASM_DECLARE_OBJECT_NAME): Likewise.
+	(ASM_OUTPUT_EXTERNAL): New.
+	(ASM_OUTPUT_EXTERNAL_LIBCALL): New.
+	(PROFILE_HOOK): New.
+	(ASM_OUTPUT_DEF_FROM_DECLS): New.
+	(SUPPORTS_ONE_ONLY).
+	(SUBTARGET_ATTRIBUTE_TABLE): New.
+	(TARGET_USE_LOCAL_THUNK_ALIAS_P): New.
+	(TARGET_USE_JCR_SECTION): New.
+	(SUBTARGET_ENCODE_SECTION_INFO): New.
+	(TARGET_STRIP_NAME_ENCODING): New.
+	* config/arm/wince-cegcc.h (SUBTARGET_EXTRA_SPECS,
+	EXTRA_OS_CPP_BUILTINS, TARGET_OS_CPP_BUILTINS,
+	SUBTARGET_CPP_SPEC): Delete.
+	* config/arm/t-wince-pe (pe.o): Add expr.h to dependencies.
+	(cegcc1.o): Delete build rule.
+	(MULTILIB_OPTIONS): Remove -mfpu=vfp.
+	(TARGET_LIBGCC2_CFLAGS): Remove unneeded options.
+
+2006-10-30  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config/arm/pe-cxx.c: Fix indenting to match the original
+	config/i386/winnt-cxx.c.
 
 2006-10-17  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* config/arm/wince-cegcc.h (STARTFILE_SPEC) : Add gcrt3.o instead
 	of gcrt2.o.
 	* config/arm/mingw32.h: Likewise.
 
 2006-10-16  Danny Backx  <dannybackx@users.sourceforge.net>
-	* config/arm/wince-cegcc.h (LIB_SPEC) : Link -lgmon when called with -pg.
+
+	* config/arm/wince-cegcc.h (LIB_SPEC) : Link -lgmon when called
+	with -pg.
 	(STARTFILE_SPEC): Add gcrt2.o when called with -pg.
 
 2006-10-12  Danny Backx <dannybackx@users.sourceforge.net>
+
 	* config/arm/wince-cegcc.h (mno-cegcc): Remove option. 
 	Use the arm-wince-mingw32ce target instead.
 
@@ -23,6 +139,6 @@
 	* cegcc-stubs.c: Likewise.
 	* config.gcc: Use the originals instead of the new copies for the 
 	arm*-wince-cegcc case.
-	* config/arm/t-wince-cegcc: Make it empty, we now inherit the generic
-	t-wince-pe.
+	* config/arm/t-wince-cegcc: Make it empty, we now inherit the
+	generic t-wince-pe.
 	* ChangeLog.ce: New file.

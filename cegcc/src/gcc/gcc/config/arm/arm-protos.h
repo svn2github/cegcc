@@ -35,12 +35,12 @@ extern const char *arm_strip_name_encoding (const char *);
 extern void arm_asm_output_labelref (FILE *, const char *);
 extern unsigned long arm_current_func_type (void);
 extern HOST_WIDE_INT arm_compute_initial_elimination_offset (unsigned int,
-							     unsigned int);
+                                                             unsigned int);
 extern HOST_WIDE_INT thumb_compute_initial_elimination_offset (unsigned int,
 							       unsigned int);
 extern unsigned int arm_dbx_register_number (unsigned int);
 extern void arm_output_fn_unwind (FILE *, bool);
-  
+extern void arm_file_end (void);;
 
 #ifdef TREE_CODE
 extern int arm_return_in_memory (tree);
@@ -174,7 +174,10 @@ extern void thumb_set_return_address (rtx, rtx);
 #endif
 
 /* Defined in pe.c.  */
-extern void arm_pe_output_labelref (FILE *stream, const char *name);
+extern void arm_pe_asm_named_section (const char *, unsigned int, tree);
+extern unsigned int arm_pe_section_type_flags (tree, const char *, int);
+extern const char *arm_pe_strip_name_encoding (const char *);
+extern void arm_pe_output_labelref (FILE *, const char *);
 extern int arm_pe_dllexport_name_p (const char *);
 extern int arm_pe_dllimport_name_p (const char *);
 extern void arm_pe_record_external_function (tree, const char *);
@@ -184,10 +187,8 @@ extern void arm_pe_file_end (void);
 extern int arm_pe_dllexport_name_p (const char *);
 extern int arm_pe_dllimport_name_p (const char *);
 extern bool arm_pe_valid_dllimport_attribute_p (tree);
-extern tree arm_pe_handle_selectany_attribute (tree *node, tree name,
-			         tree args ATTRIBUTE_UNUSED,
-			         int flags ATTRIBUTE_UNUSED,
-				   bool *no_add_attrs);
+extern tree arm_pe_handle_selectany_attribute (tree *, tree, tree, int, bool *);
+extern tree arm_pe_handle_shared_attribute (tree *, tree, tree, int, bool *);
 
 /* In pe-cxx.c and pe-stubs.c  */
 extern void arm_pe_adjust_class_at_definition (tree);

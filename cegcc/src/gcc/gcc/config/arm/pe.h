@@ -60,11 +60,35 @@
 #undef  WCHAR_TYPE_SIZE
 #define WCHAR_TYPE_SIZE 16
 
+
+/* Handle #pragma weak and #pragma pack. */
+#define HANDLE_SYSV_PRAGMA 1
+#define HANDLE_PRAGMA_PACK_PUSH_POP 1
+
+union tree_node;
+#define TREE union tree_node *
+
+
 /* r11 is fixed.  */
 #undef  SUBTARGET_CONDITIONAL_REGISTER_USAGE
 #define SUBTARGET_CONDITIONAL_REGISTER_USAGE \
   fixed_regs [11] = 1; \
   call_used_regs [11] = 1;
+
+/* Don't allow flag_pic to propagate since gas may produce invalid code
+   otherwise.  */
+
+#undef  SUBTARGET_OVERRIDE_OPTIONS
+#define SUBTARGET_OVERRIDE_OPTIONS					\
+do {									\
+  if (flag_pic)								\
+    {									\
+      warning (0, "-f%s ignored for target (all code is position independent)",\
+	       (flag_pic > 1) ? "PIC" : "pic");				\
+      flag_pic = 0;							\
+    }									\
+} while (0)								\
+
 
 
 /* PE/COFF uses explicit import from shared libraries.  */
@@ -77,7 +101,12 @@
 
 /* Switch into a generic section.  */
 #undef  TARGET_ASM_NAMED_SECTION
-#define TARGET_ASM_NAMED_SECTION  default_pe_asm_named_section
+#define TARGET_ASM_NAMED_SECTION  arm_pe_asm_named_section
+
+/* Select attributes for named sections.  */
+#undef TARGET_SECTION_TYPE_FLAGS
+#define TARGET_SECTION_TYPE_FLAGS  arm_pe_section_type_flags
+
 
 #define TARGET_ASM_FILE_START_FILE_DIRECTIVE true
 
@@ -85,62 +114,120 @@
 #undef  ASM_OUTPUT_LABELREF
 #define ASM_OUTPUT_LABELREF arm_pe_output_labelref
 
-/* Output a function definition label.  */
-#undef  ASM_DECLARE_FUNCTION_NAME
-#define ASM_DECLARE_FUNCTION_NAME(STREAM, NAME, DECL)   	\
-  do								\
-    {								\
-      if (arm_pe_dllexport_name_p (NAME))				\
-	{							\
-	  drectve_section ();					\
-	  fprintf (STREAM, "\t.ascii \" -export:%s\"\n",	\
-		   arm_strip_name_encoding (NAME));		\
-	  function_section (DECL);				\
-	}							\
-      ARM_DECLARE_FUNCTION_NAME (STREAM, NAME, DECL);		\
-      if (TARGET_THUMB)						\
-	fprintf (STREAM, "\t.code 16\n");			\
-      ASM_OUTPUT_LABEL (STREAM, NAME);				\
-    }								\
-  while (0)
+/* Write the extra assembler code needed to declare a function
+   properly.  If we are generating SDB debugging information, this
+   will happen automatically, so we only need to handle other cases.  */
+#undef ASM_DECLARE_FUNCTION_NAME
+#define ASM_DECLARE_FUNCTION_NAME(STREAM, NAME, DECL)			\
+  do									\
+    {									\
+    if (arm_pe_dllexport_name_p (NAME))				\
+      arm_pe_record_exported_symbol (NAME, 0);			\
+    if (write_symbols != SDB_DEBUG)					\
+      arm_pe_declare_function_type (STREAM, NAME, TREE_PUBLIC (DECL));	\
+    ARM_DECLARE_FUNCTION_NAME (STREAM, NAME, DECL);		\
+    if (TARGET_THUMB)						\
+      fprintf (STREAM, "\t.code 16\n");			\
+    ASM_OUTPUT_LABEL (STREAM, NAME);					\
+    }									\
+    while (0)
+
+/* Output function declarations at the end of the file.  */
+#undef TARGET_ASM_FILE_END
+#define TARGET_ASM_FILE_END arm_pe_file_end
+
+#undef TARGET_ENCODE_SECTION_INFO
+#define TARGET_ENCODE_SECTION_INFO  arm_pe_encode_section_info
+
+#undef  TARGET_STRIP_NAME_ENCODING
+#define TARGET_STRIP_NAME_ENCODING arm_pe_strip_name_encoding
+
+#undef  COMMON_ASM_OP
+#define COMMON_ASM_OP	"\t.comm\t"
 
 /* Output a common block.  */
 #undef  ASM_OUTPUT_COMMON
 #define ASM_OUTPUT_COMMON(STREAM, NAME, SIZE, ROUNDED)	\
-  do							\
-    {							\
-      if (arm_pe_dllexport_name_p (NAME))			\
-	{						\
-	  drectve_section ();				\
-	  fprintf ((STREAM), "\t.ascii \" -export:%s\"\n",\
-		   arm_strip_name_encoding (NAME));	\
-	}						\
-      if (! arm_pe_dllimport_name_p (NAME))		\
-	{						\
-	  fprintf ((STREAM), "\t.comm\t"); 		\
-	  assemble_name ((STREAM), (NAME));		\
-	  asm_fprintf ((STREAM), ", %d\t%@ %d\n",	\
+do {							\
+  if (arm_pe_dllexport_name_p (NAME))			\
+    arm_pe_record_exported_symbol (NAME, 1);		\
+  if (! arm_pe_dllimport_name_p (NAME))		\
+    {						\
+	 fprintf ((STREAM), "\t.comm\t"); 		\
+	 assemble_name ((STREAM), (NAME));		\
+	 asm_fprintf ((STREAM), ", %d\t%@ %d\n",	\
  		   (int)(ROUNDED), (int)(SIZE));	\
-	}						\
-    }							\
-  while (0)
+    }						\
+} while (0)
 
 /* Output the label for an initialized variable.  */
-#undef  ASM_DECLARE_OBJECT_NAME
-#define ASM_DECLARE_OBJECT_NAME(STREAM, NAME, DECL) 	\
-  do							\
-    {							\
-      if (arm_pe_dllexport_name_p (NAME))			\
-	{						\
-	  enum in_section save_section = in_section;	\
-	  drectve_section ();				\
-	  fprintf (STREAM, "\t.ascii \" -export:%s\"\n",\
-		   arm_strip_name_encoding (NAME));	\
-	  switch_to_section (save_section, (DECL));	\
-	}						\
-      ASM_OUTPUT_LABEL ((STREAM), (NAME));		\
-    }							\
-  while (0)
+#undef ASM_DECLARE_OBJECT_NAME
+#define ASM_DECLARE_OBJECT_NAME(STREAM, NAME, DECL)	\
+  do {										\
+    if (arm_pe_dllexport_name_p (NAME))			\
+      arm_pe_record_exported_symbol (NAME, 1);		\
+    ASM_OUTPUT_LABEL ((STREAM), (NAME));			\
+  } while (0)
+
+/* Add an external function to the list of functions to be declared at
+the end of the file.  */
+#undef ASM_OUTPUT_EXTERNAL
+#define ASM_OUTPUT_EXTERNAL(FILE, DECL, NAME)				\
+  do									\
+    {									\
+      if (TREE_CODE (DECL) == FUNCTION_DECL)				\
+        arm_pe_record_external_function ((DECL), (NAME));		\
+    }									\
+    while (0)
+
+/* Declare the type properly for any external libcall.  */
+#undef ASM_OUTPUT_EXTERNAL_LIBCALL
+#define ASM_OUTPUT_EXTERNAL_LIBCALL(FILE, FUN) \
+  arm_pe_declare_function_type (FILE, XSTR (FUN, 0), 1)
+
+#undef PROFILE_HOOK
+#define PROFILE_HOOK(LABEL)						\
+  if (MAIN_NAME_P (DECL_NAME (current_function_decl)))			\
+    {									\
+      emit_call_insn (gen_rtx_CALL (VOIDmode,				\
+	gen_rtx_MEM (FUNCTION_MODE,					\
+		     gen_rtx_SYMBOL_REF (Pmode, "_monstartup")),	\
+	const0_rtx));							\
+    }
+
+/* This implements the `alias' attribute.  */
+#undef ASM_OUTPUT_DEF_FROM_DECLS
+#define ASM_OUTPUT_DEF_FROM_DECLS(STREAM, DECL, TARGET) 		\
+  do									\
+    {									\
+      const char *alias;						\
+      rtx rtlname = XEXP (DECL_RTL (DECL), 0);				\
+      if (GET_CODE (rtlname) == SYMBOL_REF)				\
+        alias = XSTR (rtlname, 0);					\
+      else								\
+        abort ();							\
+      if (TREE_CODE (DECL) == FUNCTION_DECL)				\
+        arm_pe_declare_function_type (STREAM, alias,			\
+                                      TREE_PUBLIC (DECL));		\
+      ASM_OUTPUT_DEF (STREAM, alias, IDENTIFIER_POINTER (TARGET));	\
+    } while (0)
+
+#define SUPPORTS_ONE_ONLY 1
+
+#define SUBTARGET_ATTRIBUTE_TABLE \
+  /* { name, min_len, max_len, decl_req, type_req, fn_type_req, handler } */ \
+  { "selectany", 0, 0, true, false, false, arm_pe_handle_selectany_attribute }
+
+/* Decide whether it is safe to use a local alias for a virtual function
+   when constructing thunks.  */
+#undef TARGET_USE_LOCAL_THUNK_ALIAS_P
+#define TARGET_USE_LOCAL_THUNK_ALIAS_P(DECL) (!DECL_ONE_ONLY (DECL))
+
+/* FIXME: SUPPORTS_WEAK && TARGET_HAVE_NAMED_SECTIONS is true,
+   but for .jcr section to work we also need crtbegin and crtend
+   objects.  */
+#define TARGET_USE_JCR_SECTION 0
+
 
 /* Support the ctors/dtors and other sections.  */
 
@@ -169,6 +256,24 @@ drectve_section (void)							\
       in_section = in_drectve;						\
     }									\
 }
+
+/* Define this macro if references to a symbol must be treated
+   differently depending on something about the variable or
+   function named by the symbol (such as what section it is in).
+
+   We must mark dll symbols specially. Definitions of
+   dllexport'd objects install some info in the .drectve section.
+   References to dllimport'd objects are fetched indirectly via
+   __imp_.  If both are declared, dllexport overrides.  This is also
+   needed to implement one-only vtables: they go into their own
+   section and we need to set DECL_SECTION_NAME so we do that here.
+   Note that we can be called twice on the same decl.  */
+
+#undef SUBTARGET_ENCODE_SECTION_INFO
+#define SUBTARGET_ENCODE_SECTION_INFO  arm_pe_encode_section_info
+
+#undef  TARGET_STRIP_NAME_ENCODING
+#define TARGET_STRIP_NAME_ENCODING  arm_pe_strip_name_encoding
 
 /* Switch to SECTION (an `enum in_section').
 

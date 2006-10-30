@@ -1,0 +1,7 @@
+cegcc1.o: $(srcdir)/config/arm/cegcc1.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
+  $(TM_H) $(TM_P_H)
+	$(CC) -c $(ALL_CFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) \
+	$(srcdir)/config/arm/cegcc1.c
+
+#Needed because we include <windows.h>
+TARGET_LIBGCC2_CFLAGS += -mwin32
