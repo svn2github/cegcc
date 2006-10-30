@@ -1,3 +1,6 @@
+2006-10-30  Pedro Alves  <pedro_alves@portugalmail.pt>
+	* config/arm/pe-cxx.c: Fix indenting to match the original config/i386/winnt-cxx.c.
+
 2006-10-17  Pedro Alves  <pedro_alves@portugalmail.pt>
 	* config/arm/wince-cegcc.h (STARTFILE_SPEC) : Add gcrt3.o instead
 	of gcrt2.o.

@@ -38,7 +38,8 @@ Boston, MA 02110-1301, USA.  */
 bool
 arm_pe_type_dllimport_p (tree decl)
 {
-   gcc_assert (TREE_CODE (decl) == VAR_DECL || TREE_CODE (decl) == FUNCTION_DECL);
+   gcc_assert (TREE_CODE (decl) == VAR_DECL
+               || TREE_CODE (decl) == FUNCTION_DECL);
 
    if (TARGET_NOP_FUN_DLLIMPORT && TREE_CODE (decl) == FUNCTION_DECL)
      return false;
@@ -152,7 +153,7 @@ arm_pe_adjust_class_at_definition (tree t)
     
   /* Check FUNCTION_DECL's.  */
   for (member = TYPE_METHODS (t); member;  member = TREE_CHAIN (member))
-	if (TREE_CODE (member) == FUNCTION_DECL)      
+    if (TREE_CODE (member) == FUNCTION_DECL)      
       maybe_add_dllimport (member);
  
   /* Check vtables  */
