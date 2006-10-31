@@ -1,0 +1,4 @@
+2006-10-31  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config/te-wince-pe-h (CPU_DEFAULT): Define to ARM_ARCH_V4.
+	(FPU_DEFAULT) Default to FPU_ARCH_VFP.
