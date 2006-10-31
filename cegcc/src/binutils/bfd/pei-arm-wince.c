@@ -25,4 +25,6 @@ Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA. 
 #define TARGET_BIG_SYM       arm_wince_pei_big_vec
 #define TARGET_BIG_NAME      "pei-arm-wince-big"
 
+#define LOCAL_LABEL_PREFIX "."
+
 #include "pei-arm.c"

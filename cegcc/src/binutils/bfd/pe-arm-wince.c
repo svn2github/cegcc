@@ -32,4 +32,6 @@ Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA. 
 #define bfd_arm_process_before_allocation \
   bfd_arm_wince_pe_process_before_allocation
 
+#define LOCAL_LABEL_PREFIX "."
+
 #include "pe-arm.c"
