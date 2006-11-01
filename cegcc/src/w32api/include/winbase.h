@@ -2442,6 +2442,11 @@ typedef PCACTCTXA PCACTCTX;
 
 #ifdef _WIN32_WCE
 #include <kfuncs.h>
+
+#define	lstrcpyW	wscpy
+#define lstrcatW	wcscat
+#define lstrlenW	wcslen
+
 #endif
 
 #ifdef __cplusplus
