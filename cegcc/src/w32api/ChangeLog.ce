@@ -1,3 +1,12 @@
+2006-11-01  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/todaycmn.h : Add file.
+
+2006-11-01  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/winbase.h (lstrcpy, lstrcat, lstrlen) : Add includes
+	to define these.
+
 2006-10-29  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/winuser.h (WS_EX_NODRAG) : Define.
