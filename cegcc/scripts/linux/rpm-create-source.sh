@@ -27,7 +27,8 @@ cd $TOP_SRCDIR
 ln -s . cegcc-$CEGCC_RELEASE
 tar --exclude-from=/tmp/exclude-$$ \
 	-cz -f /tmp/cegcc-src-$CEGCC_RELEASE.tar.gz \
-	cegcc-$CEGCC_RELEASE/NEWS cegcc-$CEGCC_RELEASE/scripts cegcc-$CEGCC_RELEASE/docs \
+	cegcc-$CEGCC_RELEASE/NEWS cegcc-$CEGCC_RELEASE/README \
+	cegcc-$CEGCC_RELEASE/scripts cegcc-$CEGCC_RELEASE/docs \
 	cegcc-$CEGCC_RELEASE/website cegcc-$CEGCC_RELEASE/test cegcc-$CEGCC_RELEASE/src
 rm cegcc-$CEGCC_RELEASE
 #

@@ -17,6 +17,7 @@ cp docs/examples/*.{c,exe,h,rc,tar.gz} ${DOCDIR}/docs/examples || exit 1
 cp website/*.html ${DOCDIR} || exit 1
 cp website/images/*.png ${DOCDIR}/images || exit 1
 cp src/gcc/COPYING ${PREFIX} || exit 1
+cp src/gcc/COPYING.LIB ${PREFIX} || exit 1
 cp NEWS README ${PREFIX} || exit 1
 #
 exit 0

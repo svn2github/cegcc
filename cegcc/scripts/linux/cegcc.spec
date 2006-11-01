@@ -1,13 +1,13 @@
 Summary:	CeGCC offers cross-development to create Windows CE apps for ARM processors
 Name:		cegcc
-Version:	0.09
-Release:	2
+Version:	0.10
+Release:	1
 License:	open
 Packager:	Danny Backx <dannybackx@users.sourceforge.net>
 Group:		Development/Tools
 Prefixes:	/usr/ppc
 # Source:		http://sourceforge.net/project/showfiles.php?group_id=173455
-Source:		/tmp/cegcc-src-0.09.tar.gz
+Source:		/tmp/cegcc-src-0.10.tar.gz
 # BuildRoot:	/tmp/cegcc
 
 %description
@@ -27,7 +27,7 @@ CeGCC
 #	RPM_ARCH=i386
 #	
 %prep
-%setup -n cegcc-0.09
+%setup -n cegcc-0.10
 
 echo script
 
@@ -50,8 +50,15 @@ sh scripts/linux/rpm-install.sh
 /usr/ppc/lib
 /usr/ppc/libexec
 /usr/ppc/share
+/usr/ppc/COPYING
+/usr/ppc/COPYING.LIB
+/usr/ppc/NEWS
+/usr/ppc/README
 
 %changelog
+* Wed Oct 11 2006 Danny Backx <dannybackx@users.sf.net>
+- Add a couple of text files.
+
 * Sat Oct 7 2006 Danny Backx <dannybackx@users.sf.net>
 - Change to implement arm-wince-cegcc and arm-wince-mingw32ce targets.
 
