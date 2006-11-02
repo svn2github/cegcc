@@ -3472,8 +3472,12 @@ WINUSERAPI BOOL WINAPI DestroyWindow(HWND);
 #define DialogBoxIndirectW(i,t,p,f) DialogBoxIndirectParamW(i,t,p,f,0)
 WINUSERAPI int WINAPI DialogBoxIndirectParamA(HINSTANCE,LPCDLGTEMPLATE,HWND,DLGPROC,LPARAM);
 WINUSERAPI int WINAPI DialogBoxIndirectParamW(HINSTANCE,LPCDLGTEMPLATE,HWND,DLGPROC,LPARAM);
+#ifdef _WIN32_WCE
+#define DialogBoxParamW(i,t,p,f,o) DialogBoxIndirectParamW(i, (LPCDLGTEMPLATE)LoadResource(i, FindResource(i, t, RT_DIALOG)), p, f, o)
+#else
 WINUSERAPI int WINAPI DialogBoxParamA(HINSTANCE,LPCSTR,HWND,DLGPROC,LPARAM);
 WINUSERAPI int WINAPI DialogBoxParamW(HINSTANCE,LPCWSTR,HWND,DLGPROC,LPARAM);
+#endif
 WINUSERAPI LONG WINAPI DispatchMessageA(const MSG*);
 WINUSERAPI LONG WINAPI DispatchMessageW(const MSG*);
 WINUSERAPI int WINAPI DlgDirListA(HWND,LPSTR,int,int,UINT);

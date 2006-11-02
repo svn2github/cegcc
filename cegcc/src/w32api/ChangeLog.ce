@@ -1,3 +1,8 @@
+2006-11-02  Kevin O'Connor  <kevin@koconnor.net>
+
+	* include/winuser.h (DialogBoxParamW) : Implement on terms of
+	DialogBoxIndirectParamW.
+
 2006-11-01  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/todaycmn.h : Add file.
