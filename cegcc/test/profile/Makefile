@@ -2,36 +2,73 @@ MCC=	arm-wince-mingw32ce-gcc ${CFLAGS}
 CEGCC=	arm-wince-cegcc-gcc ${CFLAGS}
 CFLAGS= -pg
 
-all:	m1.gmon.out m1.exe m1.explain
+.SUFFIXES:	.c .mexe .cexe .co .mo
 
-m1.exe:	m1.c a.c b.c
-	${MCC} -o m1.exe m1.c a.c b.c
+.c.mexe:
+	${MCC} -o $@ $?
 
-m1.gmon.out:	m1.exe
-	pcp m1.exe ":/storage card/devel/m1.exe"
-	prun "/storage card/devel/m1.exe"
-	sleep 10
-	pcp ":/gmon.out" m1.gmon.out
-	prm ":/gmon.out"
+.c.cexe:
+	${CEGCC} -o $@ $?
 
-m1.explain:	m1.gmon.out
-	arm-wince-mingw32ce-gprof m1.exe m1.gmon.out >m1.explain
+.c.mo:
+	${MCC} -c $? -o $@
+
+.c.co:
+	${CEGCC} -c $? -o $@
+
+all::	execs explains
+
+execs::	m1.cexe m1.mexe m2.cexe m2.mexe
+
+m1.cexe:	m1.c a.co b.co
+
+m1.mexe:	m1.c a.mo b.mo
+
+m2.cexe:	m2.c a.co b.co
+
+m2.mexe:	m2.c a.mo b.mo
 
 clean:
-	-rm -f m1.exe m1.gmon.out m1.explain
-	-rm -f m2.exe m2.gmon.out m2.explain
+	-rm -f *.co *.mo *.mexe *.cexe *.explain *.gmon.out
 
-all:	m2.gmon.out m2.exe m2.explain
+m1c.explain:	m1c.gmon.out
+	arm-wince-cegcc-gprof m1.cexe m1c.gmon.out >m1c.explain
 
-m2.exe:	m2.c a.c b.c
-	${CEGCC} -o m2.exe m2.c a.c b.c
+m2c.explain:	m2c.gmon.out
+	arm-wince-cegcc-gprof m2.cexe m2c.gmon.out >m2c.explain
 
-m2.gmon.out:	m2.exe
-	pcp m2.exe ":/storage card/devel/m2.exe"
-	prun "/storage card/devel/m2.exe"
+m1m.explain:	m1m.gmon.out
+	arm-wince-mingw32ce-gprof m1.mexe m1m.gmon.out >m1m.explain
+
+m2m.explain:	m2m.gmon.out
+	arm-wince-mingw32ce-gprof m2.mexe m2m.gmon.out >m2m.explain
+
+explains::	m1c.explain m2c.explain m1m.explain m2m.explain
+
+m1c.gmon.out:	m1.cexe
+	pcp m1.cexe ":/storage card/devel/m1c.exe"
+	prun "/storage card/devel/m1c.exe"
 	sleep 10
-	pcp ":/gmon.out" m2.gmon.out
-	prm ":/gmon.out"
+	pcp ":/storage card/devel/m1c.gmo" m1c.gmon.out
+	prm ":/storage card/devel/m1c.gmo"
 
-m2.explain:	m2.gmon.out
-	arm-wince-cegcc-gprof m2.exe m2.gmon.out >m2.explain
+m1m.gmon.out:	m1.mexe
+	pcp m1.mexe ":/storage card/devel/m1m.exe"
+	prun "/storage card/devel/m1m.exe"
+	sleep 10
+	pcp ":/storage card/devel/m1m.gmo" m1m.gmon.out
+	prm ":/storage card/devel/m1m.gmo"
+
+m2c.gmon.out:	m2.cexe
+	pcp m2.cexe ":/storage card/devel/m2c.exe"
+	prun "/storage card/devel/m2c.exe"
+	sleep 10
+	pcp ":/storage card/devel/m2c.gmo" m2c.gmon.out
+	prm ":/storage card/devel/m2c.gmo"
+
+m2m.gmon.out:	m2.mexe
+	pcp m2.mexe ":/storage card/devel/m2m.exe"
+	prun "/storage card/devel/m2m.exe"
+	sleep 10
+	pcp ":/storage card/devel/m2m.gmo" m2m.gmon.out
+	prm ":/storage card/devel/m2m.gmo"
