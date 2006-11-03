@@ -185,6 +185,10 @@ the end of the file.  */
 #define ASM_OUTPUT_EXTERNAL_LIBCALL(FILE, FUN) \
   arm_pe_declare_function_type (FILE, XSTR (FUN, 0), 1)
 
+#if 0
+/*
+ * We don't appear to need this to get monitoring to work.
+ */
 #undef PROFILE_HOOK
 #define PROFILE_HOOK(LABEL)						\
   if (MAIN_NAME_P (DECL_NAME (current_function_decl)))			\
@@ -194,6 +198,7 @@ the end of the file.  */
 		     gen_rtx_SYMBOL_REF (Pmode, "_monstartup")),	\
 	const0_rtx));							\
     }
+#endif
 
 /* This implements the `alias' attribute.  */
 #undef ASM_OUTPUT_DEF_FROM_DECLS
