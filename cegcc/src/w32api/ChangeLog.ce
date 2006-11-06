@@ -1,4 +1,4 @@
-2006-11-16  Pedro Alves  <pedro_alves@portugalmail.pt>
+2006-11-06  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* include/commctrl.h (LVCF_IMAGE, LVCF_ORDER) : Also declare on
 	Windows CE >= 2.
