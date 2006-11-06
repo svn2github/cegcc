@@ -1147,7 +1147,7 @@ extern "C" {
 #define LVCF_WIDTH	2
 #define LVCF_TEXT	4
 #define LVCF_SUBITEM	8
-#if (_WIN32_IE >= 0x0300)
+#if (_WIN32_IE >= 0x0300) || (_WIN32_WCE >= 0x200)
 #define LVCF_IMAGE 16
 #define LVCF_ORDER 32
 #endif
@@ -2504,7 +2504,7 @@ typedef struct _LVCOLUMNW {
 	LPWSTR pszText;
 	int cchTextMax;
 	int iSubItem;
-#if (_WIN32_IE >= 0x0300)
+#if (_WIN32_IE >= 0x0300) || (_WIN32_WCE >= 0x200)
 	int iImage;
 	int iOrder;
 #endif

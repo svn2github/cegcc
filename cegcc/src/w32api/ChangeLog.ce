@@ -1,3 +1,10 @@
+2006-11-16  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* include/commctrl.h (LVCF_IMAGE, LVCF_ORDER) : Also declare on
+	Windows CE >= 2.
+	(LVCOLUMNW) : Use the version with iImage and iOrder
+	on Windows CE >= 2.
+
 2006-11-02  Kevin O'Connor  <kevin@koconnor.net>
 
 	* include/winuser.h (DialogBoxParamW) : Implement on terms of
