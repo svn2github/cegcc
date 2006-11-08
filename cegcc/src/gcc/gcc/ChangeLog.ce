@@ -1,6 +1,10 @@
-2006-11-04  Danny Backx <dannybackx@users.sourceforge.net>
+2006-11-08  Pedro Alves  <pedro_alves@portugalmail.pt>
 
-	* config/arm/pe.h (PROFILE_HOOK) : Remove, it looks like we don't need
+	* config/arm/wince-pe.h (DEFAULT_SIGNED_CHAR): Define to 1.
+
+2006-11-04  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* config/arm/pe.h (PROFILE_HOOK): Remove, it looks like we don't need
 	it to get profiling to work.
 
 2006-10-30  Pedro Alves  <pedro_alves@portugalmail.pt>

@@ -125,6 +125,9 @@
 
 /* Define types for compatibility with MS runtime.  */
 
+#undef DEFAULT_SIGNED_CHAR
+#define DEFAULT_SIGNED_CHAR 1
+
 #undef SIZE_TYPE
 #define SIZE_TYPE "unsigned int"
 
