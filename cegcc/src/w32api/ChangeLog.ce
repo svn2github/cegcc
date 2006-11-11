@@ -1,6 +1,9 @@
 2006-11-11  Danny Backx <dannybackx@users.sourceforge.net>
 
 	* include/aygshell.h (WC_SIPPREF): Define.
+	* include/todaycmn.h : Clear the contents of this file,
+	it was tainted. We must do clean work to create a file
+	such as this one, so I'm leaving the (empty) file as a placeholder.
 
 2006-11-06  Pedro Alves  <pedro_alves@portugalmail.pt>
 
