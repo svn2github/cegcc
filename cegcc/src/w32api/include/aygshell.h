@@ -151,6 +151,14 @@ extern BOOL SHFullScreen(HWND, DWORD);
 #define	SHFS_SHOWSTARTICON	16
 #define	SHFS_HIDESTARTICON	32
 
+/*
+ * SIPPREF appears to be some magic control to automatically display the SIP.
+ * Use with
+ *	CONTROL  "",-1,WC_SIPPREF, NOT WS_VISIBLE,-10,-10,5,5
+ * See http://msdn.microsoft.com/library/default.asp?url=/library/en-us/wceui40/html/_cerefwc_sippref.asp
+ */
+#define	WC_SIPPREF	L"SIPPREF"
+
 #ifdef	__cplusplus
 }
 #endif
