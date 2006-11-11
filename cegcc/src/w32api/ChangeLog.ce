@@ -1,6 +1,6 @@
 2006-11-11  Danny Backx <dannybackx@users.sourceforge.net>
 
-	* include/aygshell.h : Define WC_SIPPREF.
+	* include/aygshell.h (WC_SIPPREF): Define.
 
 2006-11-06  Pedro Alves  <pedro_alves@portugalmail.pt>
 
