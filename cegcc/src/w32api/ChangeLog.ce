@@ -5,8 +5,9 @@
 
 2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
 
-	* include/shellapi.h (SHGetSpecialFolderPath,
-	SHGetShortcutTarget, SHCreateShortcut): Declare.
+	* include/shlobj.h (SHGetSpecialFolderPath): In Windows CE it is declared ...
+	* include/shellapi.h (SHGetSpecialFolderPath): ... here.
+	(SHGetShortcutTarget, SHCreateShortcut): Declare.
 
 2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
 
