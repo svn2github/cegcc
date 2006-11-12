@@ -27,6 +27,30 @@
 #elif defined(__i386__) && !defined(_M_IX86)
 #define _M_IX86 300
 #endif
+
+#if !defined(_M_ARM)
+#if defined (__ARM_ARCH_4__) || defined (__ARM_ARCH_4T__)
+#define _M_ARM 4
+#elif defined (__ARM_ARCH_5__) || defined (__ARM_ARCH_5T__) \
+   || defined (__ARM_ARCH_5TE__) || defined (__ARM_ARCH_5TEJ__)
+#define _M_ARM 5
+#elif defined (__ARM_ARCH_6J__) || defined (__ARM_ARCH_6ZK__) \
+   || defined (__ARM_ARCH_6K__)
+#define _M_ARM 6
+#endif
+#endif /* !defined(_M_ARM) */
+
+#if !defined(_M_ARMT)
+#if defined (__ARM_ARCH_4T__)
+#define _M_ARMT 4
+#elif defined (__ARM_ARCH_5T__) || defined (__ARM_ARCH_5TE__) || defined (__ARM_ARCH_5TEJ__)
+#define _M_ARMT 5
+#elif defined (__ARM_ARCH_6J__) || defined (__ARM_ARCH_6ZK__) \
+   || defined (__ARM_ARCH_6K__)
+#define _M_ARMT 6
+#endif
+#endif /* !defined(_M_ARMT) */
+
 #if defined(_M_IX86) && !defined(_X86_)
 #define _X86_
 #elif defined(_M_ALPHA) && !defined(_ALPHA_)
@@ -37,6 +61,8 @@
 #define _MIPS_
 #elif defined(_M_M68K) && !defined(_68K_)
 #define _68K_
+#elif defined(_M_ARM) && !defined(ARM)
+#define ARM
 #endif
 
 #ifdef RC_INVOKED
