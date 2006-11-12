@@ -2854,7 +2854,7 @@ typedef REBARBANDINFOA const *LPCREBARBANDINFOA;
 typedef REBARBANDINFOW const *LPCREBARBANDINFOW;
 #define REBARBANDINFOA_V3_SIZE CCSIZEOF_STRUCT(REBARBANDINFOA,wID)
 #define REBARBANDINFOW_V3_SIZE CCSIZEOF_STRUCT(REBARBANDINFOW, wID)
-#if (_WIN32_IE >= 0x0300)
+#if (_WIN32_IE >= 0x0300) || (_WIN32_WCE >= 0x0200)
 typedef struct tagIMAGELISTDRAWPARAMS {
 	DWORD cbSize;
 	HIMAGELIST himl;
@@ -2870,13 +2870,13 @@ typedef struct tagIMAGELISTDRAWPARAMS {
 	COLORREF rgbFg;
 	UINT fStyle;
 	DWORD dwRop;
-#if (_WIN32_WINNT >= 0x0501)
+#if (_WIN32_WINNT >= 0x0501) && !defined (_WIN32_WCE)
 	DWORD fState;
 	DWORD Frame;
 	COLORREF crEffect;
 #endif
 } IMAGELISTDRAWPARAMS,*LPIMAGELISTDRAWPARAMS;
-#endif /* (_WIN32_IE >= 0x0300) */
+#endif /* (_WIN32_IE >= 0x0300) || (_WIN32_WCE >= 0x0200) */
 #if (_WIN32_IE >= 0x0400)
 typedef struct tagNMREBARCHILDSIZE {
 	NMHDR hdr;
@@ -3076,7 +3076,7 @@ BOOL WINAPI ImageList_SetOverlayImage(HIMAGELIST,int,int);
 HIMAGELIST WINAPI ImageList_Read(LPSTREAM);
 BOOL WINAPI ImageList_Write(HIMAGELIST,LPSTREAM);
 #endif
-#if (_WIN32_IE >= 0x0400)
+#if (_WIN32_IE >= 0x0400) || (_WIN32_WCE >= 0x0200)
 HIMAGELIST WINAPI ImageList_Duplicate(HIMAGELIST himl);
 #endif
 void WINAPI InitCommonControls(void);
@@ -3303,9 +3303,13 @@ BOOL WINAPI _TrackMouseEvent(LPTRACKMOUSEEVENT);
 #define ListView_SetIconSpacing(w,x,y) (DWORD)SNDMSG((w),LVM_SETICONSPACING,0,MAKELONG(x,y))
 #define ListView_SubItemHitTest(w,p) (INT)SNDMSG((w),LVM_SUBITEMHITTEST,0,(LPARAM)(LPLVHITTESTINFO)(p))
 #define ListView_SetItemCountEx(w,i,f) (void)SNDMSG((w),LVM_SETITEMCOUNT,(WPARAM)(i),(LPARAM)(f))
+#endif
+#if (_WIN32_IE >= 0x0300) || (_WIN32_WCE >= 0x200)
 WINBOOL WINAPI ImageList_SetImageCount(HIMAGELIST,UINT);
 WINBOOL WINAPI ImageList_Copy(HIMAGELIST,int,HIMAGELIST,int,UINT);
 WINBOOL WINAPI ImageList_DrawIndirect(IMAGELISTDRAWPARAMS*);
+#endif
+#if (_WIN32_IE >= 0x0300)
 #define TabCtrl_SetMinTabWidth(hwnd,x) SNDMSG((hwnd),TCM_SETMINTABWIDTH,0,x)
 #define TabCtrl_DeselectAll(hwnd,fExcludeFocus) SNDMSG((hwnd),TCM_DESELECTALL,fExcludeFocus,0)
 #define TreeView_GetToolTips(w) (HWND)SNDMSG((w),TVM_GETTOOLTIPS,0,0)
