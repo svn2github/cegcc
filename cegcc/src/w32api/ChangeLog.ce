@@ -1,5 +1,10 @@
 2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* include/shellapi.h (SHGetSpecialFolderPath,
+	SHGetShortcutTarget, SHCreateShortcut): Declare.
+
+2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* include/winnt.h (GetCurrentFiber, GetFiberData,
 	GetCurrentFiber, GetFiberData, NtCurrentTeb): There is no Fiber
 	support in Windows CE. Hide the functions.
