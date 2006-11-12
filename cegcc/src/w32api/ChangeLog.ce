@@ -1,5 +1,10 @@
 2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* include/wingdi.h (GetTextExtentPoint32, GetTextExtentPointW):
+	Implement in terms of GetTextExtentExPointW.
+
+2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* include/shellapi.h (SHGetSpecialFolderPath,
 	SHGetShortcutTarget, SHCreateShortcut): Declare.
 

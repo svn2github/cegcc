@@ -2877,14 +2877,16 @@ WINGDIAPI int WINAPI GetTextCharsetInfo(HDC,LPFONTSIGNATURE,DWORD);
 WINGDIAPI COLORREF WINAPI GetTextColor(HDC);
 WINGDIAPI BOOL WINAPI GetTextExtentExPointA(HDC,LPCSTR,int,int,LPINT,LPINT,LPSIZE);
 WINGDIAPI BOOL WINAPI GetTextExtentExPointW( HDC,LPCWSTR,int,int,LPINT,LPINT,LPSIZE );
+#ifndef _WIN32_WCE
 WINGDIAPI BOOL WINAPI GetTextExtentPointA(HDC,LPCSTR,int,LPSIZE);
 WINGDIAPI BOOL WINAPI GetTextExtentPointW(HDC,LPCWSTR,int,LPSIZE);
-#ifdef _WIN32_WCE
-extern BOOL GetTextExtentPoint32A(HDC,LPCSTR,int,LPSIZE);
-extern BOOL GetTextExtentPoint32W( HDC,LPCWSTR,int,LPSIZE);
-#else
 WINGDIAPI BOOL WINAPI GetTextExtentPoint32A(HDC,LPCSTR,int,LPSIZE);
 WINGDIAPI BOOL WINAPI GetTextExtentPoint32W( HDC,LPCWSTR,int,LPSIZE);
+#else
+#if (_WIN32_WCE >= 0x200)
+#define GetTextExtentPointW(hdc,cstr,len,size) GetTextExtentExPointW(hdc,cstr,len,0,NULL,NULL,size)
+#define GetTextExtentPoint32W GetTextExtentPointW
+#endif
 #endif
 WINGDIAPI int WINAPI GetTextFaceA(HDC,int,LPSTR);
 WINGDIAPI int WINAPI GetTextFaceW(HDC,int,LPWSTR);
