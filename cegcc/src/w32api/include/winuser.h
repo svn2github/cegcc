@@ -1396,6 +1396,9 @@ extern "C" {
 #define WM_HANDHELDFIRST 856
 #define WM_HANDHELDLAST 863
 #define WM_HELP 83
+#ifdef _WIN32_WCE
+#define WM_HIBERNATE 1023
+#endif
 #define WM_HOTKEY 786
 #define WM_HSCROLL 276
 #define WM_HSCROLLCLIPBOARD 782
@@ -4391,11 +4394,6 @@ typedef NONCLIENTMETRICSA NONCLIENTMETRICS,*LPNONCLIENTMETRICS;
 #endif /* NOGDI */
 #endif /* UNICODE */
 #endif /* RC_INVOKED */
-
-/*
- * This appears to be an addition for Win CE
- */
-#define       WM_HIBERNATE                    0x03FF
 
 #ifdef __cplusplus
 }
