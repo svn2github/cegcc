@@ -3675,7 +3675,11 @@ WINUSERAPI HMENU WINAPI GetSubMenu(HMENU,int);
 WINUSERAPI DWORD WINAPI GetSysColor(int);
 WINUSERAPI HBRUSH WINAPI GetSysColorBrush(int);
 #define GetSysModalWindow() (NULL)
+#ifndef _WIN32_WCE
 WINUSERAPI HMENU WINAPI GetSystemMenu(HWND,BOOL);
+#else
+# define GetSystemMenu(hwnd, revert) ((revert)?NULL:(HMENU)(hwnd))
+#endif
 WINUSERAPI int WINAPI GetSystemMetrics(int);
 WINUSERAPI DWORD WINAPI GetTabbedTextExtentA(HDC,LPCSTR,int,int,LPINT);
 WINUSERAPI DWORD WINAPI GetTabbedTextExtentW(HDC,LPCWSTR,int,int,LPINT);

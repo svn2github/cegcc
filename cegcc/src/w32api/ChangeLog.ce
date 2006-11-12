@@ -1,5 +1,9 @@
 2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* include/winuser.h (GetSystemMenu): Implement as macro.
+
+2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* include/winuser.h (DrawIcon): Implement in terms of DrawIconEx.
 
 2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
