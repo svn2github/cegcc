@@ -73,9 +73,7 @@
 #define TARGET_OS_CPP_BUILTINS()				\
   do								\
   {								\
-      builtin_define ("_M_ARM=1");				\
-      builtin_define ("ARM=1");					\
-      /* We currently defined UNDER_CE to a non-value, and it seems \
+      /* We currently define UNDER_CE to a non-value, as it seems \
          MSVC2005 does the same.  */ \
       builtin_define_std ("UNDER_CE");				\
       builtin_define ("_UNICODE");				\

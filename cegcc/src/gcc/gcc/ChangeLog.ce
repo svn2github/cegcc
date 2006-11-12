@@ -1,3 +1,8 @@
+2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config/arm/wince-pe.h (TARGET_OS_CPP_BUILTINS): Delete _M_ARM
+	and ARM.
+
 2006-11-08  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* config/arm/wince-pe.h (DEFAULT_SIGNED_CHAR): Define to 1.
