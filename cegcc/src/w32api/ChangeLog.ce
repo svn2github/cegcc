@@ -1,3 +1,7 @@
+2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* include/winnt.h (_M_ARM, ARM): Translate from gcc target defines.
+
 2006-11-11  Danny Backx <dannybackx@users.sourceforge.net>
 
 	* include/aygshell.h (WC_SIPPREF): Define.
