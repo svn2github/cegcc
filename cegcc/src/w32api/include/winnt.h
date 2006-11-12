@@ -3833,6 +3833,7 @@ ULONGLONG WINAPI VerSetConditionMask(ULONGLONG,DWORD,BYTE);
 	(TypeBitMask), (ComparisonType)))
 #endif
 
+#ifndef _WIN32_WCE
 PVOID GetCurrentFiber(void);
 PVOID GetFiberData(void);
 
@@ -3924,6 +3925,7 @@ static __inline__ struct _TEB * NtCurrentTeb(void)
         
 #endif /* __GNUC__ */
 #endif /* _X86_ */
+#endif /* _WIN32_WCE */
 
 #ifdef _WIN32_WCE
 typedef unsigned int size_t;
