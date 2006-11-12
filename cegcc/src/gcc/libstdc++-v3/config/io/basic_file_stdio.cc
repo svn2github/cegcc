@@ -73,56 +73,12 @@
 
 #include <limits> // For <off_t>::max() and min() and <streamsize>::max()
 
-
 #ifdef __MINGW32CE__
 #include <windows.h>
 #endif
 
 namespace __gnu_internal
-{
-#ifdef __MINGW32CE__
-  static int read(int fildes, char* buf, size_t bufsize)
-  {
-    DWORD NumberOfBytesRead;
-    if (!::ReadFile((HANDLE)fildes, (LPVOID)buf, bufsize, &NumberOfBytesRead, NULL))
-      return -1;
-    return (int)NumberOfBytesRead;
-  }
-
-  static int write(int fildes, const char* buf, size_t bufsize)
-  {
-    DWORD NumberOfBytesWritten;
-    if (!::WriteFile((HANDLE)fildes, (LPVOID)buf, bufsize, &NumberOfBytesWritten, NULL))
-      return -1;
-    return (int)NumberOfBytesWritten;
-  }
-  
-  static off_t lseek(int fildes, off_t offset, int whence)
-  {
-    DWORD mode = 0;
-    switch (whence)
-      {
-      case SEEK_SET: mode = FILE_BEGIN; break;
-      case SEEK_CUR: mode = FILE_CURRENT; break;
-      case SEEK_END: mode = FILE_END; break;
-      }
-    return (off_t)SetFilePointer((HANDLE)fildes, offset, NULL, mode);
-  }
-  
-  FILE* fdopen(int fildes, const char* mode)
-  {
-    size_t size = strlen (mode) + 1;
-    /* Avoid exception using malloc.  */
-    wchar_t* wmode = (wchar_t*)malloc(size * sizeof (wchar_t));
-    if (!wmode)
-      return 0;
-    mbstowcs(wmode, mode, size);
-    FILE* f = _wfdopen(fildes, wmode);
-    free (wmode);
-    return f;
-  }
-#endif
-  
+{  
   // Map ios_base::openmode flags to a string for use in fopen().
   // Table of valid combinations as given in [lib.filebuf.members]/2.
   static const char*
@@ -278,7 +234,7 @@ namespace std
 	_M_cfile_created = true;
 #ifndef __MINGW32CE__
 	char* __buf = NULL;
-	/* Fildes on WinCE are handles, and HANDLE == 0 is not stdout.  */
+	/* Fildes on WinCE are handles, and HANDLE == 0 is not stdin.  */
 	if (__fd == 0)
 	  setvbuf(_M_cfile, __buf, _IONBF, 0);
 #endif

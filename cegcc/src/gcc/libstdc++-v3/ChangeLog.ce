@@ -1,3 +1,10 @@
+2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config/io/basic_file_stdio.cc (__gnu_internal::read,
+	__gnu_internal::write, __gnu_internal::lseek,
+	__gnu_internal::fdopen): Delete.
+	(__basic_file<char>::sys_open): Fix typo.
+
 2006-10-22  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* config/locale/generic/time_members.cc : 
