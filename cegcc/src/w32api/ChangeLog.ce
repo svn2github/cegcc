@@ -1,3 +1,14 @@
+2006-11-12  Kevin O'Connor  <kevin@koconnor.net>
+	* include/tlhelp32.h (CloseToolhelp32Snapshot): Define.
+	CE's Toolhelp functions/structures although wide, don't take the
+	W suffix. Adapt.
+	* include/winnt.h (PAGE_PHYSICAL): Define.
+	* include/winbase.h (GetStoreInformation, CeSetThreadQuantum,
+	LockResource): Define.
+	* include/winuser.h (CheckDlgButton): Define in terms of
+	SendDlgItemMessage.
+	(CreateDialogParamW): Define using CreateDialogIndirectParamW.
+
 2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* include/winnt.h (_M_ARM, ARM): Translate from gcc target defines.
