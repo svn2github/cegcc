@@ -2463,10 +2463,6 @@ typedef PCACTCTXA PCACTCTX;
 #define lstrcatW	wcscat
 #define lstrlenW	wcslen
 
-wchar_t *wcscpy(wchar_t *dest, const wchar_t *src);
-wchar_t *wcscat(wchar_t *dest, const wchar_t *src);
-size_t wcslen(const wchar_t *string);
-
 #endif
 
 #ifdef __cplusplus

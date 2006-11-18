@@ -1,7 +1,5 @@
 2006-11-18  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* include/winbase.h (lstrcpy, lstrcat, lstrlen) : Add prototypes
-	for the functions pointed to.
 	* include/winbase.h (lstrcpy) : Fix typo.
 
 2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
