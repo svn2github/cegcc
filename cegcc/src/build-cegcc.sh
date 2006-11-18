@@ -167,7 +167,19 @@ function build_gcc()
 	--enable-checking              \
 	|| exit 1
 
+
+    #
+    # Below, the first "make" followed by a file removal, are a workaround
+    # for a gcc build bug. The existence of the script causes the first
+    # make to fail, the second one should succeed. Therefore, not checking
+    # the error code of the first make is intentional.
+    #
+    make
+    rm -f gcc/as
     make || exit 1
+    #
+    # End workaround
+    #
     make install || exit 1
 
     popd || exit 1

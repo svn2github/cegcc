@@ -1,3 +1,8 @@
+2006-11-18  Danny Backx <dannybackx@users.sourceforge.net>
+
+	* build-mingw32ce.sh, build-cegcc.sh (build_gcc) : Work around
+	gcc build system bug.
+
 2006-10-27  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* build-mingw32ce.sh : Remove duplicated build_all function.
@@ -12,6 +17,7 @@
 	(build_gcc) : Switch to pushd/popd.
 
 2006-10-10  Danny Backx <dannybackx@users.sourceforge.net>
+
 	* w32api-3.7 : Remove. It is still possible to recover
 	it from SVN by using the svn versioning mechanisms,
 	e.g. by referring to version 708.
