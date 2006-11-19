@@ -72,6 +72,8 @@ typedef struct tagPROCESSENTRY32 {
 	DWORD dwFlags;
 #ifdef _WIN32_WCE
 	WCHAR szExeFile[MAX_PATH];
+	DWORD th32MemoryBase;
+	DWORD th32AccessKey;
 #else
 	CHAR szExeFile[MAX_PATH];
 #endif
@@ -84,6 +86,10 @@ typedef struct tagTHREADENTRY32 {
 	LONG tpBasePri;
 	LONG tpDeltaPri;
 	DWORD dwFlags;
+#ifdef _WIN32_WCE
+	DWORD th32AccessKey;
+	DWORD th32CurrentProcessID;
+#endif
 } THREADENTRY32,*PTHREADENTRY32,*LPTHREADENTRY32;
 typedef struct tagMODULEENTRY32W {
 	DWORD dwSize;
@@ -109,6 +115,7 @@ typedef struct tagMODULEENTRY32 {
 #ifdef _WIN32_WCE
 	WCHAR szModule[MAX_MODULE_NAME32 + 1];
 	WCHAR szExePath[MAX_PATH];
+	DWORD dwFlags;
 #else
 	CHAR szModule[MAX_MODULE_NAME32 + 1];
 	CHAR szExePath[MAX_PATH];
