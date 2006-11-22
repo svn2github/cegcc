@@ -1,3 +1,10 @@
+2006-11-22  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/commdlg.h (CHOOSECOLOR) : Fix type of hInstance field as
+	described in http://msdn2.microsoft.com/en-us/library/ms959872.aspx .
+	This field appears to have an inconsistent type definition in other
+	versions of Windows.
+
 2006-11-19  Kevin O'Connor  <kevin@koconnor.net>
 
 	* include/tlhelp32.h (PROCESSENTRY32, THREADENTRY32,
