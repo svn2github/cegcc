@@ -1,0 +1,101 @@
+<HTML>
+<HEAD>
+<TITLE>CeGCC directory and module structure</TITLE>
+<img src="../images/banner1.png" alt="CeGCC cross compiler for PocketPC">
+</HEAD>
+<BODY>
+<P>
+<FONT COLOR="red"><b>Work in progress</b></font>
+<P>
+This document describes the structure of the CeGCC directory tree
+and of the CeGCC modules.
+By <i>modules</i> we mean the different softwares or their components,
+which we assemble to create CeGCC.
+<P>
+<H1>Directory structure - src/</H1>
+<H2>src/mingw</H2>
+This directory's primary purpose is to hold the necessary startup code 
+and needed static code
+to be able to use coredll.dll as only runtime.
+You can consider src/mingw a gcc replacement for corelibc.lib
+in other development tools.
+Added to that, there are some other goodies.
+<H3>src/mingw/mingwex</H3>
+Mingwex are the MinGW added extensions to add support for C99 and some POSIX functionality not found in MSVCRT.
+See <A HREF="http://www.mingw.org/MinGWiki/index.php/mingwex">http://www.mingw.org/MinGWiki/index.php/mingwex</A>
+Please don't just add stubs there.
+Those are more harmful that good,
+because if you do, an app using autoconf's AC_CHECK_FUNC will find it,
+and instead of providing a proper replacement, will call the stubbed 
+one, which won't work obviously.
+<H3>src/mingw/profile</H3>
+<H3>src/mingw/wince</H3>
+Then there is the new mingw/wince dir, where one place wince code that 
+doesn't fit in the other dirs, because
+the desktop versions of mingw doesn't need it. Keep in mind, that the 
+less we diverge from the upstream versions,
+the easiest we can pull from updates they have.
+<H3>src/mingw/include</H3>
+The headers in mingw/include correspond to the std c part of coredll.dll
+(stdio.h, stdlib.h, etc, etc.).
+This contrasts with src/w32api/include which holds headers corresponding to
+win32 api definitions, there is no std c runtime stuff there.
+The arm-wince-mingw32ce toolset uses only the Windows CE DLLs,
+the arm-wince-cegcc uses newlib, so it uses the corresponding newlib headers.
+You can't (shouldn't) mix headers from newlib, and from mingw/include.
+<P>
+Take a look, there are headers with the same name, 
+for instance, there is a stdio.h in newlib,
+and a stdio.h too in mingw/include, but they are incompatible. Usually 
+the headers from newlib are more complete, but
+so is the c runtime support in newlib. The danger in mixing the two sets 
+is in that some (many/most) constants
+and structures are completely different in the two.
+<P>
+Take for instance the stdio functions. The FILE struct (think fprintf, 
+fwrite, etc) is totally incompatible in the two. Sure, struct FILE
+is (mostly) an opaque structure, but there are cases where an inline 
+function accesses its members directly. Take stdout for instance,
+in newlib, it maps to something like '_impure_ptr->_stdout' (from heart, 
+so the names may be wrong), while in
+mingw/include (mingw32ce), it maps to '_getstdfilex(1)'.
+<P>
+Now imagine a cegcc app, calling newlib's version of fprintf like so:
+<PRE>
+fprintf (stdout, "Look ma, I can crash!\n");
+</PRE>
+which after preprocessing, maps to:
+<PRE>
+fprintf (_getstdfilex(1), "Look ma, I can crash!\n");
+</PRE>
+If that doesn't crash, it will be pure luck.
+<H3>src/w32api/include</H3>
+This holds headers corresponding to
+win32 api definitions, there is no std c runtime stuff there.
+<H2>src/newlib</H2>
+Newlib is a portable C library implementation.
+We're using it to augment the arm-wince-cegcc toolset with a UNIX-like environment.
+<H3>src/newlib/newlib/libc/sys/wince</H3>
+Our implementation of newlib is itself augmented with some Windows CE specific stuff.
+The idea is to document this stuff in
+<A HREF="layer.html">the unix-like layer provided by CeGCC</A>.
+<H1>Comparison to other libraries and modules</H1>
+<H2>MSVCRT</H2>
+<P>
+This might be the Microsoft Visual C RunTime library.
+MSDN describes msvcrt.dll
+<A HREF="http://search.msdn.microsoft.com/search/Redirect.aspx?title=C+Run-Time+Libraries+(CRT)+&url=http://msdn2.microsoft.com/en-us/library/abx4dbyh(VS.80).aspx">here</A>
+as a multi-threaded dynamic link library (aka DLL).
+In <A HREF="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/vclib/html/_crt_c_run.2d.time_libraries.asp">this page</A>
+it is further described as a system library that is intended for use by Windows itself,
+but that you're allowed to use in applications.
+<P>
+This is not something we have on Windows CE.
+<P>
+A source of confusion might be that there are MSVCRT replacement libraries in MingW,
+which you might be tempted to port.
+These are incompatible with the two other sets of libraries that we do use,
+COREDLL (Windows CE's standard library),
+and newlib (a more unix-like library).
+</BODY>
+</HTML>
