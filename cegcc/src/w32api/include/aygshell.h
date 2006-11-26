@@ -159,6 +159,25 @@ extern BOOL SHFullScreen(HWND, DWORD);
  */
 #define	WC_SIPPREF	L"SIPPREF"
 
+/*
+ * Stuff for SHRecognizeGesture
+ *
+ * See
+ * http://msdn.microsoft.com/library/default.asp?url=/library/en-us/wceui40/html/_cerefshrginfo.asp
+ * and
+ * http://msdn.microsoft.com/library/default.asp?url=/library/en-us/wceui40/html/_cerefshrecognizegesture.asp
+ */
+#if (_WIN32_WCE >= 0x0420)
+typedef struct tagSHRGI {
+	DWORD	cbSize;
+	HWND	hwndClient;
+	POINT	ptDown;
+	DWORD	dwFlags;
+} SHRGINFO, *PSHRGINFO;
+
+WINSHELLAPI DWORD SHRecognizeGesture(SHRGINFO *shrg);
+#endif
+
 #ifdef	__cplusplus
 }
 #endif
