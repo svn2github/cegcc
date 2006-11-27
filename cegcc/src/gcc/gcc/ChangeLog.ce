@@ -1,3 +1,8 @@
+2006-11-27  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config/arm/mingw32.h (STARTFILE_SPEC): Add crt3.o and dllcrt3.o
+	instead of crt2.o and dllcrt2.o.
+
 2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* config/arm/wince-pe.h (TARGET_OS_CPP_BUILTINS): Delete _M_ARM
