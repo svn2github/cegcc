@@ -992,6 +992,30 @@ typedef struct _WIN_CERTIFICATE {
       WORD wCertificateType;
       BYTE bCertificate[1];
 } WIN_CERTIFICATE, *LPWIN_CERTIFICATE;
+#ifdef _WIN32_WCE
+typedef struct _SYSTEM_POWER_STATUS_EX2 {
+  BYTE ACLineStatus;
+  BYTE BatteryFlag;
+  BYTE BatteryLifePercent;
+  BYTE Reserved1;
+  DWORD BatteryLifeTime;
+  DWORD BatteryFullLifeTime;
+  BYTE Reserved2;
+  BYTE BackupBatteryFlag;
+  BYTE BackupBatteryLifePercent;
+  BYTE Reserved3;
+  DWORD BackupBatteryLifeTime;
+  DWORD BackupBatteryFullLifeTime;
+  DWORD BatteryVoltage;
+  DWORD BatteryCurrent;
+  DWORD BatteryAverageCurrent;
+  DWORD BatteryAverageInterval;
+  DWORD BatterymAHourConsumed;
+  DWORD BatteryTemperature;
+  DWORD BackupBatteryVoltage;
+  BYTE BatteryChemistry;
+} SYSTEM_POWER_STATUS_EX2, *PSYSTEM_POWER_STATUS_EX2, *LPSYSTEM_POWER_STATUS_EX2;
+#endif
 #if (_WIN32_WINNT >= 0x0501)
 typedef struct tagACTCTXA {
 	ULONG cbSize;
@@ -1547,6 +1571,9 @@ WINBASEAPI UINT WINAPI GetSystemDirectoryA(LPSTR,UINT);
 WINBASEAPI UINT WINAPI GetSystemDirectoryW(LPWSTR,UINT);
 WINBASEAPI VOID WINAPI GetSystemInfo(LPSYSTEM_INFO);
 WINBASEAPI BOOL WINAPI GetSystemPowerStatus(LPSYSTEM_POWER_STATUS);
+#ifdef _WIN32_WCE
+WINBASEAPI DWORD GetSystemPowerStatusEx2(PSYSTEM_POWER_STATUS_EX2,DWORD,BOOL);
+#endif
 #if (_WIN32_WINNT >= 0x0502)
 WINBASEAPI BOOL WINAPI GetSystemRegistryQuota(PDWORD,PDWORD);
 #endif

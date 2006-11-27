@@ -1,5 +1,10 @@
 2006-11-26  Kevin O'Connor  <kevin@koconnor.net>
 
+        * include/winbase.h: Add SYSTEM_POWER_STATUS_EX2 structure.
+	Add GetSystemPowerStatusEx2 function definition.
+
+2006-11-26  Kevin O'Connor  <kevin@koconnor.net>
+
         * include/tlhelp32.h (MODULEENTRY32): szModule is of MAX_PATH
 	size on CE.
 
