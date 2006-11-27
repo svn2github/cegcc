@@ -1,3 +1,7 @@
+2006-11-27  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* pe-dll.c (autofilter_objlist) : Add crt3.o and dllcrt3.o.
+
 2006-10-17  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* pe-dll.c (autofilter_objlist) : Add gcrt3.o.
