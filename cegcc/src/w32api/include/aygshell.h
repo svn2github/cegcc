@@ -104,6 +104,38 @@ typedef struct NMNEWMENU {
 
 #define	IDM_NEWMENUMAX		3000
 
+/*
+ * The Shared New menu
+ *
+ * See http://msdn.microsoft.com/library/default.asp?url=/library/en-us/wceui40/html/_ceconnewbutton.asp
+ *
+ * Values from several sources are identical
+ * 	ftp://ftp.berlios.de/pub/pocketsipmsg/PocketSM-0.7.5-src.tar.gz
+ * 	http://www.huihoo.com/doxygen/vlc/html/newres_8h-source.html
+ * 	http://www.ee.umd.edu/courses/enee408g.S2002/report/group4/Final/Video/PocketPC/NEWRES.H
+ */
+#define	IDM_SHAREDNEW		10
+#define	IDM_SHAREDNEWDEFAULT	11
+
+/*
+ * http://msdn2.microsoft.com/en-us/library/aa457781.aspx
+ * http://www.ee.umd.edu/courses/enee408g.S2002/report/group4/Final/Video/PocketPC/NEWRES.H
+ *
+ */
+#define	NOMENU			0xFFFF
+
+/*
+ * These are in the Boling book
+ */
+#define	IDS_SHNEW	1
+#define	IDS_SHEDIT	2
+#define	IDS_SHTOOLS	3
+#define	IDS_SHVIEW	4
+#define	IDS_SHFILE	5
+#define	IDS_SHGO	6
+#define	IDS_SHFAVORITES	7
+#define	IDS_SHOPEN	8
+
 /* Values for npPriority */
 typedef enum {
 	SHNP_INFORM = 0x1b1,

@@ -1,3 +1,11 @@
+2006-11-28  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/aygshell.h (IDM_SHAREDNEW, IDM_SHAREDNEWDEFAULT) : Define.
+
+	* include/aygshell.h (NOMENU) : Define.
+
+	* include/aygshell.h (IDS_SH*) : Define, values from the Boling book.
+
 2006-11-26  Kevin O'Connor  <kevin@koconnor.net>
 
         * include/winbase.h: Add SYSTEM_POWER_STATUS_EX2 structure.
