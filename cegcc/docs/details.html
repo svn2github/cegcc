@@ -1,140 +1,202 @@
-<HTML>
-<HEAD>
-<TITLE>Details - macros, libraries, ..</TITLE>
-<img src="../images/banner1.png" alt="CeGCC cross compiler for PocketPC">
-</HEAD>
-<BODY>
-<h2>Linker arguments to define</h2>
-<p>
-The linker allows for a number of parameters that influence the behaviour of
-Windows CE when the application runs,
-it looks like they describe versions of CE :
-<ul>
-	<li> -Wl,--major-subsystem-version,4
-	<li> -Wl,--minor-subsystem-version,20
-</ul>
-<p>
-The numbers above are just examples.
-<font color=red>we should have a table describing the meaning of these</font>
-<p>
-<table border=1>
-	<tr><td>Major</td><td>Minor</td><td width=500>Meaning</td></tr>
-	<tr><td>4</td><td>20</td><td>?</td></tr>
-	<tr><td>2</td><td>0</td><td>?</td></tr>
-</table>
-<H1>CeGCC specifics</H1>
-<H2>Predefined macros</H2>
-<p>
-By default, the arm-wince-cegcc-gcc C compiler is defining these macros :
-<table border=1>
-	<tr><td>__CEGCC__</td><td>Use this to identify our environment</td></tr>
-	<tr><td>__CEGCC32__</td><td>Identify our environment even more, we may have a 64-bit environment in the future.</td></tr>
-	<tr><td>unix</td><td>This is a unix-like environment.</td></tr>
-	<tr><td>__unix__</td><td>This is a unix-like environment.</td></tr>
-	<tr><td>__unix</td><td>This is a unix-like environment.</td></tr>
-
-	<tr><td>UNICODE</td><td>Windows CE is a Unicode platform.</td></tr>
-	<tr><td>_UNICODE</td><td>Windows CE is a Unicode platform.</td></tr>
-	<tr><td>ARM=1</td><td>Identifies the processor in our target environment.</td></tr>
-	<tr><td>UNDER_CE</td><td>Deprecated, but removing this requires source changes.</td></tr>
-	<tr><td>_M_ARM=1</td><td>Deprecated, but removing this requires source changes.</td></tr>
-</table>
-<p>
-Many of those are defined in <i>src/gcc/gcc/config/arm/wince-pe.h</i> .
-For the arm-wince-mingw32ce-gcc compiler, the source to watch is
-<i>src/gcc/gcc/config/arm/mingw32.h</i> .
-The list of predefined macros for that compiler is :
-<table border=1>
-	<tr><td>__MINGW32__</td><td>Use this to identify our environment.</td></tr>
-	<tr><td>__MINGW32CE__</td><td>Use this to identify our environment.</td></tr>
-	<tr><td>_WIN32</td><td>This is a Windows-32 environment.</td></tr>
-	<tr><td>WIN32</td><td>This is a Windows-32 environment.</td></tr>
-	<tr><td>WINNT</td><td></td></tr>
-	<tr><td>__COREDLL__</td><td>Don't rely on this, it is for internal purposes.</td></tr>
-</table>
-<p>
-The <i>unix</i> macros defined by the compiler may appear strange.
-The arm-wince-cegcc-gcc compiler defines them to state
-that we're providing a unix-like layer on top of Windows,
-and that applications that run against a UNIX API might compile
-without change.
-<H2>Compiler command line options</H2>
-<P>
-<P>
-<table border=1>
-<tr><td>Option</td><td>Macros defined</td><td>Libs linked</td><td>When to use</td></tr>
-<tr><td>-mno-cegcc</td><td></td><td></td><td>Don't link standard libraries, also don't predefine unix macros.</td></tr>
-<tr><td>-mwin32</td><td></td><td>winsock, coredll, cegcc, gcc</td><td>Normal linking but macros indicate Windows environment, not Unix.</td></tr>
-<tr><td>-mthreads</td><td></td><td>crtmt.o</td><td>multi-thread support</td></tr>
-<tr><td></td><td></td><td></td><td></td></tr>
-</table>
-<H2>Macros that you may need to predefine</H2>
-<p>
-You may need to define these macros :
-<table border=1>
-	<tr><td>_WIN32_IE=0x0400</td><td>required for CE version dependencies in the target include files </td></tr>
-	<tr><td>_WINSOCKAPI_</td><td>We needed this in earlier distributions, this is probably no longer true.</td></tr>
-</table>
-<p>
-A target include file is an include file,
-in our case borrowed from the MinGW project's w32api module,
-which our compiler uses to know things about the target environment.
-<p>
-The <i>_WIN32_IE</i> macro is used in several of the target include files
-to selectively enable some definitions based on the version of Windows CE
-that we're building for.
-My own device runs a version of CE that identifies itself as <i>4.20.0</i>,
-this matches with a value of 0x0420.
-Here's an example of how the w32api include files require this symbol to be correctly set
-for some macros to be defined :
-<pre>
-#if (_WIN32_IE >= 0x0400)
-#define TB_ISBUTTONHIGHLIGHTED  (WM_USER+14)
-#endif
-</pre>
-<p>
-The _WINSOCKAPI_ symbol was required in early distributions of CeGCC.
-It deals with making a choice between two sets of include files,
-both of which define some socket API symbols.
-<H2>Libraries</H2>
-<p>
-The CeGCC compilers automatically link in a library called <i>libcegcc.a</i>
-which contains the merged versions of some of the other libraries.
-This is the default behaviour.
-<p>
-<font color=red>The text below is work in progress</font>
-There's a C compiler option called <i>-no-cegcc</i> which
-<ul>
-	<li>disables linking the standard set of libraries.
-	<li>disables defining the macros <i>unix</i>, <i>__unix__</i>, <i>__unix</i>.
-	<li>defines the macros <i>WIN32</i>, <i>__WIN32__</i>, <i>_WIN32</i>.
-</ul>
-<p>
-The C compiler option <i>-mwin32</i>
-<ul>
-	<li>defines the macros <i>WIN32</i>, <i>__WIN32__</i>, <i>_WIN32</i>.
-	<li>disables defining the macros <i>unix</i>, <i>__unix__</i>, <i>__unix</i>.
-</ul>
-<p>
-In many cases, compiling sources requires some additional macros.
-We have chosen not to predefine these in the compiler,
-as they are target platform dependent.
-(Depends on the software version in your PDA or phone.)
-Here are some examples :
-<ul>
-	<li>__CE_VERSION__=420</li>
-	<li>_WIN32_WCE=420</li>
-	<li>_WIN32_IE=420</li>
-</ul>
-<font color=red>End work in progress</font>
-<H2>Linux specific</H2>
-<p>
-<H2>Cygwin specific<H2>
-<p>
-<H1>For the detail-hungry : what does it do and define</H1>
-This output of a compiler run with the "-v" option shows exactly what it does, and which preprocessor symbols get defined.
-<P>
-<PRE>
+<html>
+  <head>
+    <title>Details - macros, libraries, ..</title>
+    <meta name="vs_showGrid" content="True">
+  </head>
+  <body>
+    <img src="../images/banner1.png" alt="CeGCC cross compiler for PocketPC">
+    <h2>Linker arguments to define</h2>
+    <p/>
+      The linker allows for a number of parameters that influence the behaviour of 
+      Windows CE when the application runs. For example, the following record a field 
+      in the image header that tell the OS which version of CE the executable was 
+      targetted for:
+      <ul>
+        <li>
+        -Wl,--major-subsystem-version,4
+        <li>
+          -Wl,--minor-subsystem-version,20</li></ul>
+    <p/>The above reads as Windows CE 4.20.</p>
+    <h1>CeGCC specifics</h1>
+    <h2>Predefined macros</h2>
+    <p/>
+      By default, the arm-wince-cegcc-gcc C compiler is defining these macros :
+      <table border="1">
+        <tr>
+          <td>__CEGCC__</td>
+          <td>Use this to identify our environment</td>
+        </tr>
+        <tr>
+          <td>__CEGCC32__</td>
+          <td>Identify our environment even more, we may have a 64-bit environment in the 
+            future.</td>
+        </tr>
+        <tr>
+          <td>unix</td>
+          <td>This is a unix-like environment.</td>
+        </tr>
+        <tr>
+          <td>__unix__</td>
+          <td>This is a unix-like environment.</td>
+        </tr>
+        <tr>
+          <td>__unix</td>
+          <td>This is a unix-like environment.</td>
+        </tr>
+        <tr>
+          <td>UNICODE</td>
+          <td>Windows CE is a Unicode platform.</td>
+        </tr>
+        <tr>
+          <td>_UNICODE</td>
+          <td>Windows CE is a Unicode platform.</td>
+        </tr>
+        <tr>
+          <td>ARM</td>
+          <td>Identifies the processor in our target environment.</td>
+        </tr>
+        <tr>
+          <td>UNDER_CE</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>_M_ARM</td>
+          <td></td>
+        </tr>
+      </table>
+    <p/>
+      Many of those are defined in <i>src/gcc/gcc/config/arm/wince-pe.h</i> . For the 
+      arm-wince-mingw32ce-gcc compiler, the source to watch is <i>src/gcc/gcc/config/arm/mingw32.h</i>
+      . The list of predefined macros for that compiler is :
+      <table border="1">
+        <tr>
+          <td>__MINGW32__</td>
+          <td>Use this to identify our environment.</td>
+        </tr>
+        <tr>
+          <td>__MINGW32CE__</td>
+          <td>Use this to identify our environment.</td>
+        </tr>
+        <tr>
+          <td>_WIN32</td>
+          <td>This is a Windows-32 environment.</td>
+        </tr>
+        <tr>
+          <td>WIN32</td>
+          <td>This is a Windows-32 environment.</td>
+        </tr>
+        <tr>
+          <td>WINNT</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>__COREDLL__</td>
+          <td>Used to signal we are linking against the coredll.dll runtime. Used mainly in 
+            the mingw sources and headers.</td>
+        </tr>
+      </table>
+    <p/>
+      The <i>unix</i> macros defined by the compiler may appear strange. The 
+      arm-wince-cegcc-gcc compiler defines them to state that we're providing a 
+      unix-like layer on top of Windows, and that applications that run against a 
+      UNIX API might compile without change.
+      <h2>Compiler command line options</h2>
+    <p/>
+    <p/>
+      <table border="1">
+        <tr>
+          <td>Option</td>
+          <td>Macros defined</td>
+          <td>Extra Libs/objects linked</td>
+          <td>When to use</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>-mwin32</td>
+          <td>WIN32</td>
+          <td></td>
+          <td>Normal linking but macros indicate Windows environment, not Unix.</td>
+        </tr>
+        <tr>
+          <td>-mthreads</td>
+          <td></td>
+          <td>crtmt.o instead of crtst.o</td>
+          <td>multi-thread support, only needed for c++ apps using exceptions.</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </table>
+      <h2>Macros that you may need to predefine</h2>
+    <p/>
+      You may need to define these macros :
+      <table border="1">
+        <tr>
+          <td>_WIN32_IE=0x0400</td>
+          <td>Required for CE version dependencies in the target include files. If you come 
+            to the conclusion you need this to expose some structure, define or 
+            function in the headers, and you are sure they are available in Windows CE, 
+            then the real fix is to fix the headers to not need the _WIN32_IE 
+            setting. Please report it to us.
+          </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>_WIN32_WCE</td>
+          <td>The <I>_WIN32_WCE</I> macro is used in several of the target include files to 
+            selectively enable some definitions based on the version of Windows CE that 
+            we're building for. For example, a device that runs a version of CE that 
+            identifies itself as <I>4.20.0</I>, would match with a value of 0x0420 or 
+            lower.</td>
+        </tr>
+      </table>
+    <p/>
+      A target include file is an include file, in our case borrowed from the MinGW 
+      project's w32api module, which our compiler uses to know things about the 
+      target environment.
+      <h2>Libraries</h2>
+    <p/>
+      The CeGCC compilers automatically link in a library called <i>libcegcc.a</i>
+    which has the dual job of being the import lib for cegcc.dll, and also works as 
+    a standard static lib that constains the startup code (WinMainCRTStartup, etc.)
+    <p/>
+      The C compiler option <i>-mwin32</i>
+      <ul>
+        <li>
+          defines the macros <i>WIN32</i>, <i>__WIN32__</i>, <i>_WIN32</i>.
+        <li>
+          disables defining the macros <i>unix</i>, <i>__unix__</i>, <i>__unix</i>.</li>
+      </ul>
+    <p/>
+      In many cases, compiling sources requires some additional macros. We have 
+      chosen not to predefine these in the compiler, as they are target platform 
+      dependent. (Depends on the software version in your PDA or phone.) Here are 
+      some examples :
+      <ul>
+        <li>
+        __CE_VERSION__=0x420
+        <li>
+          _WIN32_IE=0x420</li>
+      </ul>
+    <p/>
+          <p/>
+            <h1>For the detail-hungry : what does it do and define</h1>
+          This output of a compiler run with the "-v" option shows exactly what it does, 
+          and which preprocessor symbols get defined. (Note: the below information is 
+          probably outdated, so be sure to run it yourself.)
+          <p/>
+            <pre>
 dannypc: {73} arm-wince-cegcc-gcc -g -o fibo.exe fibo.c -v
 Using built-in specs.
 Target: arm-wince-cegcc
@@ -145,7 +207,7 @@ gcc version 4.1.0
 ignoring nonexistent directory "/usr/ppc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/sys-include"
 ignoring nonexistent directory "../../include/w32api"
 #include "..." search starts here:
-#include <...> search starts here:
+#include &lt;...&gt; search starts here:
  /usr/ppc/lib/gcc/arm-wince-cegcc/4.1.0/include
  /usr/ppc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/include
  /usr/ppc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib/../include/w32api
@@ -158,6 +220,6 @@ Compiler executable checksum: cb5f549cfc80659543b9610e7bd1a54f
  /usr/ppc/libexec/gcc/arm-wince-cegcc/4.1.0/collect2 -Bdynamic -o fibo.exe /usr/ppc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib/crt0.o /usr/ppc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib/crtst.o -L/usr/ppc/lib/gcc/arm-wince-cegcc/4.1.0 -L/usr/ppc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib /home/danny/tmp/ccxaYCCS.o -lcegcc -lgcc -lcoredll -lcegcc -lgcc
 Info: resolving _CRT_MT by linking to __imp__CRT_MT (auto-import)
 dannypc: {74} 
-</PRE>
-</BODY>
-</HTML>
+</pre>
+  </body>
+</html>
