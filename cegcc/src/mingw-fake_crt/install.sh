@@ -28,10 +28,10 @@ AR=${TARGET}-ar
 
 FAKE_LIBS="libceoldname.a libmingwex.a libmingw32.a libmingwthrd.a"
 
-${AS} crt2.s -o ${MY_DIR}/crt2.o
+${AS} crt3.s -o ${MY_DIR}/crt3.o
 
 mkdir -p ${LIBDIR}
-cp -fv ${MY_DIR}/crt2.o ${LIBDIR}/crt2.o
+cp -fv ${MY_DIR}/crt3.o ${LIBDIR}/crt3.o
 
 for lib in $FAKE_LIBS; do
    rm -f ${LIBDIR}/$lib
