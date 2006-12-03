@@ -993,6 +993,20 @@ typedef struct _WIN_CERTIFICATE {
       BYTE bCertificate[1];
 } WIN_CERTIFICATE, *LPWIN_CERTIFICATE;
 #ifdef _WIN32_WCE
+typedef struct _SYSTEM_POWER_STATUS_EX {
+  BYTE ACLineStatus;
+  BYTE BatteryFlag;
+  BYTE BatteryLifePercent;
+  BYTE Reserved1;
+  DWORD BatteryLifeTime;
+  DWORD BatteryFullLifeTime;
+  BYTE Reserved2;
+  BYTE BackupBatteryFlag;
+  BYTE BackupBatteryLifePercent;
+  BYTE Reserved3;
+  DWORD BackupBatteryLifeTime;
+  DWORD BackupBatteryFullLifeTime;
+} SYSTEM_POWER_STATUS_EX, *PSYSTEM_POWER_STATUS_EX, *LPSYSTEM_POWER_STATUS_EX;
 typedef struct _SYSTEM_POWER_STATUS_EX2 {
   BYTE ACLineStatus;
   BYTE BatteryFlag;
@@ -1573,6 +1587,7 @@ WINBASEAPI VOID WINAPI GetSystemInfo(LPSYSTEM_INFO);
 WINBASEAPI BOOL WINAPI GetSystemPowerStatus(LPSYSTEM_POWER_STATUS);
 #ifdef _WIN32_WCE
 WINBASEAPI DWORD GetSystemPowerStatusEx2(PSYSTEM_POWER_STATUS_EX2,DWORD,BOOL);
+WINBASEAPI BOOL GetSystemPowerStatusEx(PSYSTEM_POWER_STATUS_EX,BOOL);
 #endif
 #if (_WIN32_WINNT >= 0x0502)
 WINBASEAPI BOOL WINAPI GetSystemRegistryQuota(PDWORD,PDWORD);
