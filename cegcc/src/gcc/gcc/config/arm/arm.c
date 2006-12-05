@@ -15529,4 +15529,28 @@ arm_ms_bitfield_layout_p (tree record_type)
     || lookup_attribute ("ms_struct", TYPE_ATTRIBUTES (record_type));
 }
 
+int
+arm_major_arch (void)
+{
+  if ((insn_flags & FL_FOR_ARCH6) == FL_FOR_ARCH6)
+    return 6;
+  else if ((insn_flags & FL_FOR_ARCH5) == FL_FOR_ARCH5)
+    return 5;
+  else if ((insn_flags & FL_FOR_ARCH4) == FL_FOR_ARCH4)
+    return 4;
+  else if ((insn_flags & FL_FOR_ARCH3) == FL_FOR_ARCH3)
+    return 3;
+  else if ((insn_flags & FL_FOR_ARCH2) == FL_FOR_ARCH2)
+    return 2;
+
+  /* This should gives us a nice ICE somewhere.  */
+  return -1;
+}
+
+bool
+arm_thumb_arch_p (void)
+{
+  return (insn_flags & FL_THUMB) == FL_THUMB;
+}
+
 #include "gt-arm.h"

@@ -1,5 +1,6 @@
-/* Prototypes for exported functions defined in arm.c and pe.c
-   Copyright (C) 1999, 2000, 2001, 2002, 2003, 2004, 2005
+/* Prototypes for exported functions defined in arm.c, pe.c,
+   pe-cxx.c and pe-stubs.c.
+   Copyright (C) 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
    Free Software Foundation, Inc.
    Contributed by Richard Earnshaw (rearnsha@arm.com)
    Minor hacks by Nick Clifton (nickc@cygnus.com)
@@ -41,6 +42,9 @@ extern HOST_WIDE_INT thumb_compute_initial_elimination_offset (unsigned int,
 extern unsigned int arm_dbx_register_number (unsigned int);
 extern void arm_output_fn_unwind (FILE *, bool);
 extern void arm_file_end (void);
+
+int arm_major_arch (void);
+bool arm_thumb_arch_p (void);
 
 #ifdef TREE_CODE
 extern int arm_return_in_memory (tree);

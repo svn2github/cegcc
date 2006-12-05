@@ -92,7 +92,21 @@
           to compare typeinfo symbols across dll boundaries.  */	\
       builtin_define ("__GXX_MERGED_TYPEINFO_NAMES=0");		\
       EXTRA_OS_CPP_BUILTINS ();					\
-  }								\
+      {                                                       \
+        /* Define these to be compatible MSFT's tools.  */    \
+        char buf[64];                                         \
+        int arch = arm_major_arch ();                         \
+        sprintf (buf, "_M_ARM=%d", arch);                     \
+        builtin_define (buf);                                 \
+        if (arm_thumb_arch_p ())                              \
+          {                                                   \
+            sprintf (buf, "_M_ARMT=%d", arch);                \
+            builtin_define (buf);                             \
+          }                                                   \
+        /* Always defined as empty.  */                       \
+        builtin_define ("ARM=");                              \
+      }                                                       \
+  }                                                           \
   while (0)
 
 /* Now we define the strings used to build the spec file.  */

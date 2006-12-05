@@ -1,3 +1,12 @@
+2006-12-03  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config/arm/arm.c (arm_major_arch, arm_thumb_arch_p): New
+	functions.
+	* config/arm/arm-protos.h (arm_major_arch, arm_thumb_arch_p):
+	Declare.
+	* config/arm/wince-pe.h (TARGET_OS_CPP_BUILTINS): Add _M_ARM,
+	_M_ARMT and ARM.
+
 2006-11-27  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* config/arm/mingw32.h (STARTFILE_SPEC): Add crt3.o and dllcrt3.o
