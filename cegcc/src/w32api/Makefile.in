@@ -29,18 +29,28 @@ datadir = @datadir@
 infodir = @infodir@
 includedir = @includedir@
 
-CC = @CC@
+CC := @CC@
+override CC := ${filter-out -L% -B%,${shell echo $(CC) | sed -e 's%\(-isystem\|-iwithprefixbefore\)  *[^ ]*\( \|$$\)% %g'}}
+# FIXME: Which is it, CC or CC_FOR_TARGET?
 CC_FOR_TARGET = $(CC)
+AS_FOR_TARGET = $(AS)
 CFLAGS = @CFLAGS@
+CXXFLAGS = @CXXFLAGS@
 
-DLLTOOL = @DLLTOOL@
 AS = @AS@
-AS_FOR_TARGET = $(AS_FOR_TARGET)
-WINDRES = @WINDRES@
-
-RANLIB = @RANLIB@
 AR = @AR@
 LD = @LD@
+AR_FLAGS = rcv
+RANLIB = @RANLIB@
+DLLTOOL = @DLLTOOL@
+DLLTOOLFLAGS =
+DLLTOOL_FOR_TARGET = $(DLLTOOL)
+DLLTOOL_FLAGS = --as $(AS_FOR_TARGET)
+DLLWRAP = @DLLWRAP@
+DLLWRAP_FOR_TARGET = $(DLLWRAP)
+DLLWRAP_FLAGS = --dlltool $(DLLTOOL) --as $(AS) --driver-name $(CC)
+WINDRES = @WINDRES@
+WINDRES_FOR_TARGET = @WINDRES@
 
 TAR = tar
 TARFLAGS = z
@@ -49,13 +59,26 @@ TARFILEEXT = .tar.gz
 FLAGS_TO_PASS = \
 	AS="$(AS)" \
 	CC="$(CC)" \
-	CPPFLAGS="$(CPPFLAGS)" \
-	CFLAGS="$(CFLAGS)" \
-	CXXFLAGS="$(CXXFLAGS)" \
+	CFLAGS="$(CFLAGS) $(CFLAGS_COMMON) $(CFLAGS_CONFIG)" \
+	CXXFLAGS="$(CXXFLAGS) $(CFLAGS_COMMON) $(CFLAGS_CONFIG)" \
+	CPPFLAGS="$(CPPFLAGS) $(CFLAGS_COMMON) $(CFLAGS_CONFIG)" \
 	AR="$(AR)" \
 	RANLIB="$(RANLIB)" \
 	LD="$(LD)" \
 	DLLTOOL="$(DLLTOOL)" \
+	exec_prefix="$(exec_prefix)" \
+	bindir="$(bindir)" \
+	libdir="$(libdir)" \
+	tooldir="$(tooldir)" \
+	datadir="$(datadir)" \
+	infodir="$(infodir)" \
+	includedir="$(includedir)" \
+	inst_bindir="$(inst_bindir)" \
+	inst_includedir="$(inst_includedir)" \
+	inst_libdir="$(inst_libdir)" \
+	inst_docdir="$(inst_docdir)" \
+	prefix="$(prefix)" \
+	target_alias="$(target_alias)" \
 	TAR="$(TAR)" \
 	TARFLAGS="$(TARFLAGS)" \
 	TARFILEEXT="$(TARFILEEXT)" \
@@ -63,7 +86,11 @@ FLAGS_TO_PASS = \
 
 # end config section
 
-SUBDIRS = lib
+ifneq (,$(findstring wince,$(target_alias)))
+  SUBDIRS = libce
+else
+  SUBDIRS = lib
+endif
 
 PACKAGE = w32api
 VERSION = 3.7
@@ -72,7 +99,7 @@ CYGRELEASE = 1
 DIST_FILES = Makefile.in configure.in configure config.guess config.sub \
 install-sh README.w32api ChangeLog TODO CONTRIBUTIONS
 
-all: lib
+all: $(SUBDIRS)
 
 %-subdirs:
 	for i in $(SUBDIRS); do \

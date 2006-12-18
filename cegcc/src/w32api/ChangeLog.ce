@@ -1,3 +1,42 @@
+2006-12-18  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* libce: New subdir.
+	(libce/CellCore.def, libce/Makefile.in, libce/VBarCall.def,
+	libce/VoiceCtl.def, libce/WAP.def, libce/ativscp-uuid.c,
+	libce/authhlp.def, libce/aygshell.def, libce/btd.def,
+	libce/bthguid.def, libce/bthlink.def, libce/bthutil.def,
+	libce/cecap.def, libce/cemapi.def, libce/ceosutil.def,
+	libce/ceshell.def, libce/cguid-uuid.c, libce/comcat-uuid.c,
+	libce/commctrl.def, libce/commdlg.def, libce/conncfg.def,
+	libce/coredll.def, libce/crypt32.def, libce/cxport.def,
+	libce/devguid.c, libce/dmoguids.def, libce/doclist.def,
+	libce/docobj-uuid.c, libce/exdisp-uuid.c, libce/extras-uuid.c,
+	libce/grognard.def, libce/gx.def, libce/hlguids-uuid.c,
+	libce/hlink-uuid.c, libce/htmlview.def, libce/httpd.def,
+	libce/icmplib.def, libce/imaging.def, libce/imgdecmp.def,
+	libce/inkx.def, libce/iphlpapi.def, libce/largeint.c,
+	libce/mlang-uuid.c, libce/mmtimer.def, libce/mqoa.def,
+	libce/msdmo.def, libce/mshtml-uuid.c, libce/msmqrt.def,
+	libce/msscript.def, libce/msxml-uuid.c, libce/msxml.def,
+	libce/msxmlguid.def, libce/ndis.def, libce/note_prj.def,
+	libce/ntcompat.def, libce/oaidl-uuid.c, libce/objidl-uuid.c,
+	libce/objsafe-uuid.c, libce/ocidl-uuid.c, libce/ole32.def,
+	libce/oleacc-uuid.c, libce/oleaut32.def, libce/olectlid-uuid.c,
+	libce/oleidl-uuid.c, libce/phone.def, libce/pimstore.def,
+	libce/pndtapi.def, libce/pushprxy.def, libce/res.rc,
+	libce/richink.def, libce/secur32.def, libce/servprov-uuid.c,
+	libce/shell32.c, libce/sms.def, libce/strmiids.def, libce/test.c,
+	libce/toolhelp.def, libce/unknwn-uuid.c, libce/urlmon-uuid.c,
+	libce/urlmon.def, libce/webview.def, libce/wininet.def,
+	libce/winsock.def, libce/wmlview.def, libce/ws2.def,
+	libce/ws2_32.c, libce/wsp.def, libce/wvuuid.def): New files.
+	* Makefile.in: Get/Pass some more vars. Build libce/ on wince.
+	* aclocal.m4 (LIB_AC_PROG_CC_GNU, LIB_AC_PROG_CC,
+	LIB_AC_PROG_CXX): Define.
+	* configure.in: Use LIB_AC_PROG_CC instead of AC_CHECK_TOOL.
+	Output libce/Makefile. 
+	* configure: Regenerate.
+
 2006-12-02  Kevin O'Connor  <kevin@koconnor.net>
 
 	* include/winbase.h: Add SYSTEM_POWER_STATUS_EX structure.
