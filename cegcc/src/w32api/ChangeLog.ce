@@ -1,5 +1,10 @@
 2006-12-18  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* include/winnt.h (_M_ARM, ARM): Remove.
+	* include/windows.h (_M_ARM, ARM): Likewise.
+
+2006-12-18  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* libce: New subdir.
 	(libce/CellCore.def, libce/Makefile.in, libce/VBarCall.def,
 	libce/VoiceCtl.def, libce/WAP.def, libce/ativscp-uuid.c,
