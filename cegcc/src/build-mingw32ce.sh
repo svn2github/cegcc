@@ -233,6 +233,22 @@ function build_gdbstub()
     cd ${BASE_DIRECTORY} || exit 1
 }
 
+function build_docs()
+{
+    echo ""
+    echo "INSTALLING documentation --------------------------"
+    echo ""
+    echo ""
+
+    mkdir -p ${PREFIX}/share/docs || exit 1
+    mkdir -p ${PREFIX}/share/images || exit 1
+
+    cd ${BASE_DIRECTORY}/../docs || exit 1
+    tar cf - . | (cd ${PREFIX}/share/docs; tar xf -) || exit 1
+    cd ${BASE_DIRECTORY}/../website || exit 1
+    tar cf - images | (cd ${PREFIX}/share; tar xf -) || exit 1
+}
+
 function build_all
 {
     build_binutils
@@ -244,6 +260,7 @@ function build_all
     build_gcc
     build_gdb
     build_gdbstub
+    build_docs
 }
 
 case $BUILD_OPT in
@@ -260,6 +277,7 @@ case $BUILD_OPT in
  gcc) build_gcc ;;
  gdb) build_gdb ;;
  gdbstub) build_gdbstub ;;
+ docs) build_docs ;;
  all) build_all ;;
  *) echo "Please enter a valid build option." ;;
 esac
