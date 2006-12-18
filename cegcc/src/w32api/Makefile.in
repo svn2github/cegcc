@@ -109,6 +109,9 @@ all: $(SUBDIRS)
 lib:
 	$(MAKE) $(FLAGS_TO_PASS) -C $@
 
+libce:
+	$(MAKE) $(FLAGS_TO_PASS) -C $@
+
 test:
 	$(MAKE) -C lib test $(FLAGS_TO_PASS)
 
@@ -181,4 +184,4 @@ distclean: clean-top
 	$(MAKE) -C lib distclean
 maintainer-clean: maintainer-clean-subdirs
 
-.PHONY: lib test 
+.PHONY: lib libce test 
