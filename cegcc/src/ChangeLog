@@ -1,3 +1,8 @@
+2006-12-19  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* build-mingw32ce.sh (build-w32api): New function.
+        Add w32api command line options that calls build-w32api.
+
 2006-12-18  Danny Backx <dannybackx@users.sourceforge.net>
 
 	* build-mingw32ce.sh, build-cegcc.sh (build_docs) : Add.

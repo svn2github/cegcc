@@ -115,6 +115,28 @@ function build_bootstrap_gcc()
     cd ${BASE_DIRECTORY} || exit 1
 }
 
+function build_w32api()
+{
+#I have this normally set by ccache.
+#Must unset them, because mingw being a lib,
+#uses $host==$target, and CC instead of CC_FOR_TARGET.
+    PREV_CC=${CC}
+    unset CC
+
+    mkdir -p ${BUILD_DIR}/w32api || exit 1
+    pushd ${BUILD_DIR}/w32api || exit 1
+    ${BASE_DIRECTORY}/w32api/configure \
+	--host=${TARGET}               \
+	--prefix=${PREFIX}             \
+	|| exit 1
+
+    make || exit 1
+    make install || exit 1
+
+    export CC=${PREV_CC}
+    popd
+}
+
 function build_mingw_runtime()
 {
 #I have this normally set by ccache.
@@ -273,6 +295,7 @@ case $BUILD_OPT in
  headers) copy_headers ;;
  fakecrt) build_mingw_fake_runtime ;;
  bootstrapgcc) build_bootstrap_gcc ;;
+ w32api) build_w32api ;;
  crt) build_mingw_runtime ;;
  gcc) build_gcc ;;
  gdb) build_gdb ;;
