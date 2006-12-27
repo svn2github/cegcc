@@ -270,5 +270,45 @@ More information about this is in
 The functions supporting the <i>long double</i> type aren't supported by Windows.
 strtold is an example of that, replace it by strtod if you can.
 <a href="http://msdn2.microsoft.com/en-us/library/9cx8xs15.aspx">more info ..</a>
+<h2>Apparently broken include files</h2>
+<p>
+In the MinGW environment (our arm-wince-mingw32ce target),
+some include files are meant to be missing.
+That's because the environment mimics the Windows CE platform as closely as possible.
+This can lead to unexpected situations,
+because standard C include files (some that are part of the ISO C Standard)
+will appear not to work.
+<p>
+An example of this is <i>&lt;errno.h&gt</i> :
+this include file is part of several well document standards,
+see e.g. <A HREF="http://www.opengroup.org/onlinepubs/009695399/basedefs/errno.h.html">
+	this description by the Open Group</A>.
+This functionality is not part of Windows CE,
+so a development environment that closely mimics the platform API should not
+contain this include file or implement its contents.
+<p>
+One way to implement this is to leave &lt;errno.h&gt; out of our mingw implementation.
+This is not what we did.
+We do have this file, but it contains a construction which will make its use always fail.
+This is because the &lt;errno.h&gt; contains this
+<pre>
+#ifdef __COREDLL__
+#include_next &lt;errno.h&gt;
+#else /* __COREDLL__ */
+..
+</pre>
+<p>
+When you try to compile a source which includes this file,
+it'll fail.
+<p>
+Pedro says he has <i>virtually deleted</i> these files :
+they're there but you can't use them any more.
+The reason for this approach is that this type of approach might allow us to
+keep our sources in sync with the maintainers (of MinGW, in this case).
+<p>
+Note that the <i>arm-wince-cegcc</i> target has different characteristics than
+<i>arm-wince-mingw32ce</i> target.
+The &lt;errno.h&gt; file is an example of such a difference :
+it does exist, and works, in <i>arm-wince-cegcc<i/>.
 </BODY>
 </HTML>
