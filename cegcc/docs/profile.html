@@ -1,19 +1,321 @@
 <HTML>
-<TITLE>Technical overview : CeGCC (gcc) profiling and coverage support</TITLE>
+<TITLE>Using profiling and test coverage tools with CeGCC</TITLE>
 <BODY>
-<H1>Technical overview : CeGCC (gcc) profiling and coverage support</H1>
 <P>
-This document describes the way in which CeGCC
-(and basically any gcc)
-implements two sets of functionality :
+This document provides an introduction and examples showing how to
+do profiling and test coverage analysis,
+and it also provides some of the technical details on how all this works.
+We're covering two sets of related functionalities here :
 <ul>
 	<li>profiling
 	<li>test coverage
 </ul>
 <P>
-These are two related but different functionalities.
-See the man pages of gprof and gcov for their description.
-<H1>1. Overview</H1>
+This document doesn't duplicate their documentation, so please consult
+the man pages of
+<A HREF="http://www.delorie.com/gnu/docs/binutils/gprof_toc.html">gprof</A>
+and
+<A HREF="http://korea.gnu.org/manual/release/gcov/gcov_1.html">gcov</A>
+for their description.
+</P>
+<H1>1. Getting started</H1>
+The examples are also in the CeGCC source tree in
+directories
+<A HREF="http://cegcc.svn.sourceforge.net/viewvc/cegcc/trunk/cegcc/docs/examples/coverage">docs/examples/coverage</A>
+and <A HREF="http://cegcc.svn.sourceforge.net/viewvc/cegcc/trunk/cegcc/docs/examples/profile">docs/examples/profile</A>.
+<P>
+<H2>1.1 Profiling</H2>
+<H3>1.1.1 Summary</H3>
+<P>
+Profiling is triggered by using the compiler with the <i>-pg</i> command line option,
+a program compiled with it will generate a single file calles <i>gmon.out</i>.
+You can decode the <i>gmon.out</i> file by using the <i>gprof</i> tool.
+<H3>1.1.2 Sample Makefile</H3>
+<P>
+This <i>Makefile</i> has pieces that can be copied in your own project's Makefile.
+It uses the <i>pcp</i>, <i>prm</i>, and <i>prun</i> commands from the
+<a href="www.synce.org">Synce</a> project.
+<P>
+<PRE>
+.SUFFIXES:      .exe .c .h .rc .rsc .C
+
+ARCH=           arm-wince-cegcc
+CC=             ${ARCH}-gcc ${CFLAGS}
+
+CFLAGS=         -g -D_WIN32_IE=0x0400 -pg
+
+.o.exe:
+        ${ARCH}-gcc ${CFLAGS} -o $@ $?
+
+.c.exe:
+        ${ARCH}-gcc ${CFLAGS} -o $@ $?
+
+.C.exe:
+        ${ARCH}-g++ ${CFLAGS} -o $@ $?
+
+all::   fibo.exe fibo.explain
+
+clean:
+        -rm -f *.o *.exe *.rsc gmon.out *.explain *.gmon
+
+dist:
+        pcp fibo.exe ":/storage card/devel/fibo.exe"
+
+fibo.explain:   fibo.gmon fibo.exe
+	${ARCH}-gprof -q -x -l fibo.exe fibo.gmon > fibo.explain
+
+fibo.gmon:       fibo.exe
+        pcp fibo.exe ":/storage card/devel/fibo.exe"
+        prun "/storage card/devel/fibo.exe"
+        sleep 5
+        pcp ":/storage card/devel/gmon.out" fibo.gmon
+        prm "/storage card/devel/gmon.out"
+</PRE>
+<H3>1.1.3 Execution sample</H3>
+<P>
+When you run <i>make</i>, this happens :
+<P>
+<PRE>
+<i>dannypc: {10}</i> <b>make</b>
+arm-wince-cegcc-gcc -g -D_WIN32_IE=0x0400 -pg -o fibo.exe fibo.c
+<i>Info: resolving _CRT_MT by linking to __imp__CRT_MT (auto-import)</i>
+pcp fibo.exe ":/storage card/devel/fibo.exe"
+<i>File copy of 31491 bytes took 0 minutes and 1 seconds, that's 31491 bytes/s.</i>
+prun "/storage card/devel/fibo.exe"
+sleep 5
+pcp ":/storage card/devel/gmon.out" fibo.gmon
+<i>File copy took less than one second!</i>
+prm "/storage card/devel/gmon.out"
+arm-wince-cegcc-gprof -q -x -l fibo.exe fibo.gmon > fibo.explain
+<i>dannypc: {11}</i>
+</PRE>
+<P>
+The top of the <i>fibo.explain</i> file looks like this :
+<PRE>
+                     Call graph (explanation follows)
+
+
+granularity: each sample hit covers 4 byte(s) no time propagated
+
+index % time    self  children    called     name
+                0.00    0.00      19/21871       main (fibo.c:34 @ 11238) [45]
+                0.00    0.00   21852/21871       fibo (fibo.c:12 @ 110e8) [28]
+[1]      0.0    0.00    0.00   21871         fibo (fibo.c:9 @ 110b0) [1]
+</PRE>
+<P>
+Run the commands for yourself and read the complete explanation in the output file.
+<H2>1.2 Test coverage</H2>
+<H3>1.2.1 Summary</H3>
+<P>
+Test coverage generates far more interesting results.
+It is triggered by several options to the compiler.
+An easy way to get started is to use <i>--coverage</i>.
+<P>
+An application built with this option will create a <i>.gcda</i> file for each source
+for compiled in the application.
+You can use the <i>gcov</i> tool to decode the contents of these files.
+<H3>1.2.2 Sample Makefile</H3>
+<P>
+<PRE>
+.SUFFIXES:      .exe .c .h .rc .rsc .C
+
+ARCH=           arm-wince-cegcc
+ARCH2=          arm-wince-mingw32ce
+
+SE=             GCOV_CROSS_PREFIX="\\storage card\\devel"
+CC=             ${SE} ${ARCH}-gcc ${CFLAGS}
+WINDRES=        ${ARCH}-windres
+
+EXECS=          fibo.exe m1.exe
+CFLAGS=         -g -D_WIN32_IE=0x0400 --coverage
+
+.rc.rsc:
+                ${ARCH}-windres $? $@
+
+.o.exe:
+        ${SE} ${ARCH}-gcc ${CFLAGS} -o $@ $?
+
+.c.exe:
+        ${SE} ${ARCH}-gcc ${CFLAGS} -o $@ $?
+
+.C.exe:
+        ${SE} ${ARCH}-g++ ${CFLAGS} -o $@ $?
+
+all::   ${EXECS}
+
+clean:
+                -rm -f *.o *.exe *.rsc *.gcno *.gcda *.gcov
+
+dist:
+        for i in $(EXECS) ; \
+        do \
+                pcp $$i ":/storage card/devel/"$$i ; \
+        done
+
+fibo.gcda:      fibo.exe
+        pcp fibo.exe ":/storage card/devel/fibo.exe"
+        -prm "/storage card/devel/fibo.gcda"
+        prun "/storage card/devel/fibo.exe"
+        sleep 5
+        pcp ":/storage card/devel/fibo.gcda" fibo.gcda
+        -prm "/storage card/devel/fibo.gcda"
+
+fibo.c.gcov: fibo.gcda
+        arm-wince-cegcc-gcov -a fibo.c
+
+all::   fibo.c.gcov
+
+#
+# The m1.exe example uses the mingw32ce target,
+# and demonstrates multiple source files.
+#
+m1.exe: m1.o a.o b.o
+        ${SE} ${ARCH2}-gcc ${CFLAGS} -o m1.exe a.o b.o m1.o
+
+m1.o:   m1.c
+        ${SE} ${ARCH2}-gcc ${CFLAGS} -c m1.c
+
+a.o:    a.c
+        ${SE} ${ARCH2}-gcc ${CFLAGS} -c a.c
+
+b.o:    b.c
+        ${SE} ${ARCH2}-gcc ${CFLAGS} -c b.c
+
+a.gcda b.gcda m1.gcda:  m1.exe
+        pcp m1.exe ":/storage card/devel/m1.exe"
+        -prm "/storage card/devel/m1.gcda"
+        -prm "/storage card/devel/a.gcda"
+        -prm "/storage card/devel/b.gcda"
+        prun "/storage card/devel/m1.exe"
+        sleep 5
+        pcp ":/storage card/devel/m1.gcda" m1.gcda
+        pcp ":/storage card/devel/a.gcda" a.gcda
+        pcp ":/storage card/devel/b.gcda" b.gcda
+        -prm "/storage card/devel/m1.gcda"
+        -prm "/storage card/devel/a.gcda"
+        -prm "/storage card/devel/b.gcda"
+
+m1.c.gcov: m1.gcda
+        arm-wince-cegcc-gcov -a m1.c
+
+a.c.gcov: a.gcda
+        arm-wince-cegcc-gcov -a a.c
+
+b.c.gcov: b.gcda
+        arm-wince-cegcc-gcov -a b.c
+
+all::   m1.c.gcov a.c.gcov b.c.gcov
+</PRE>
+<H3>1.2.3 Execution sample</H3>
+<PRE>
+<i>dannypc: {33} </i><b>make</b>
+GCOV_CROSS_PREFIX="\\storage card\\devel" arm-wince-cegcc-gcc -g -D_WIN32_IE=0x0400 --coverage -o fibo.exe fibo.c
+<i>Info: resolving _CRT_MT by linking to __imp__CRT_MT (auto-import)</i>
+GCOV_CROSS_PREFIX="\\storage card\\devel" arm-wince-mingw32ce-gcc -g -D_WIN32_IE=0x0400 --coverage -c m1.c
+GCOV_CROSS_PREFIX="\\storage card\\devel" arm-wince-mingw32ce-gcc -g -D_WIN32_IE=0x0400 --coverage -c a.c
+GCOV_CROSS_PREFIX="\\storage card\\devel" arm-wince-mingw32ce-gcc -g -D_WIN32_IE=0x0400 --coverage -c b.c
+GCOV_CROSS_PREFIX="\\storage card\\devel" arm-wince-mingw32ce-gcc -g -D_WIN32_IE=0x0400 --coverage -o m1.exe a.o b.o m1.o
+pcp fibo.exe ":/storage card/devel/fibo.exe"
+<i>File copy took less than one second!</i>
+prm "/storage card/devel/fibo.gcda"
+<i>prm: Failed to remove '\storage card\devel\fibo.gcda': File not found</i>
+<i>gmake: [fibo.gcda] Error 1 (ignored)</i>
+prun "/storage card/devel/fibo.exe"
+sleep 5
+pcp ":/storage card/devel/fibo.gcda" fibo.gcda
+<i>File copy took less than one second!</i>
+prm "/storage card/devel/fibo.gcda"
+arm-wince-cegcc-gcov -a fibo.c
+<i>File 'fibo.c'</i>
+<i>Lines executed:100.00% of 20</i>
+<i>fibo.c:creating 'fibo.c.gcov'</i>
+<i></i>
+pcp m1.exe ":/storage card/devel/m1.exe"
+<i>File copy of 39012 bytes took 0 minutes and 1 seconds, that's 39012 bytes/s.</i>
+prm "/storage card/devel/m1.gcda"
+<i>prm: Failed to remove '\storage card\devel\m1.gcda': File not found</i>
+<i>gmake: [m1.gcda] Error 1 (ignored)</i>
+prm "/storage card/devel/a.gcda"
+<i>prm: Failed to remove '\storage card\devel\a.gcda': File not found</i>
+<i>gmake: [m1.gcda] Error 1 (ignored)</i>
+prm "/storage card/devel/b.gcda"
+<i>prm: Failed to remove '\storage card\devel\b.gcda': File not found</i>
+<i>gmake: [m1.gcda] Error 1 (ignored)</i>
+prun "/storage card/devel/m1.exe"
+sleep 5
+pcp ":/storage card/devel/m1.gcda" m1.gcda
+<i>File copy took less than one second!</i>
+pcp ":/storage card/devel/a.gcda" a.gcda
+<i>File copy took less than one second!</i>
+pcp ":/storage card/devel/b.gcda" b.gcda
+<i>File copy took less than one second!</i>
+prm "/storage card/devel/m1.gcda"
+prm "/storage card/devel/a.gcda"
+prm "/storage card/devel/b.gcda"
+arm-wince-cegcc-gcov -a m1.c
+<i>File '/opt/mingw32ce/lib/gcc/arm-wince-mingw32ce/4.1.0/../../../../arm-wince-mingw32ce/include/string.h'</i>
+<i>Lines executed:0.00% of 3</i>
+<i>/opt/mingw32ce/lib/gcc/arm-wince-mingw32ce/4.1.0/../../../../arm-wince-mingw32ce/include/string.h:creating 'string.h.gcov'</i>
+<i></i>
+<i>File '/opt/mingw32ce/lib/gcc/arm-wince-mingw32ce/4.1.0/../../../../arm-wince-mingw32ce/include/stdlib.h'</i>
+<i>Lines executed:0.00% of 5</i>
+<i>/opt/mingw32ce/lib/gcc/arm-wince-mingw32ce/4.1.0/../../../../arm-wince-mingw32ce/include/stdlib.h:creating 'stdlib.h.gcov'</i>
+<i></i>
+<i>File 'm1.c'</i>
+<i>Lines executed:100.00% of 10</i>
+<i>m1.c:creating 'm1.c.gcov'</i>
+<i></i>
+arm-wince-cegcc-gcov -a a.c
+<i>File 'a.c'</i>
+<i>Lines executed:100.00% of 3</i>
+<i>a.c:creating 'a.c.gcov'</i>
+<i></i>
+arm-wince-cegcc-gcov -a b.c
+<i>File 'b.c'</i>
+<i>Lines executed:100.00% of 6</i>
+<i>b.c:creating 'b.c.gcov'</i>
+<i></i>
+<i>dannypc: {34} </i>
+</PRE>
+<P>
+The output above includes some interesting results already :
+it mentions the amount of source code executed per source file.
+The contents of the <i>.gcov</i> files are even more interesting.
+This is the contents of <i>b.c.gcov</i> :
+<PRE>
+        -:    0:Source:b.c
+        -:    0:Graph:b.gcno
+        -:    0:Data:b.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:/*
+        -:    2: * Profiling test
+        -:    3: */
+        -:    4:int fibo(int x)
+  2692507:    5:{
+  2692507:    6:        if (x < 3)
+  2692507:    6-block  0
+  1346268:    7:                return 1;
+  1346268:    7-block  0
+  2692507:    8:        return fibo(x-1) + fibo(x-2);
+  1346239:    8-block  0
+  2692507:    8-block  1
+        -:    9:}
+        -:   10:
+        -:   11:int func_b(int i)
+       29:   12:{
+       29:   13:        return fibo(i);
+       29:   13-block  0
+        -:   14:}
+</PRE>
+<P>
+The seven digit numbers in the first column are the number of times these source lines
+were executed.
+Modify <i>m1.c</i> so fibo() is called fewer times,
+and you'll see more modest numbers.
+<H1>2 Technical overview : CeGCC (gcc) profiling and coverage support</H1>
+<P>
+<H2>2.1 Overview</H2>
 <P>
 The tables below present an overview of how this all works,
 the details are described further in this document.
@@ -89,56 +391,11 @@ The behaviour of the <b>arm-wince-mingw32ce-gcc</b> compiler :
 	<TD>gcov_exit</TD>
 </TR>
 </TABLE>
-<H1>2. Profiling</H1>
-<H2>2.1 Trigger by</H2>
-gcc -pg
-<H2>2.2 Tool options</H2>
-<pre>
-<b>dannypc: {94}</b> <i>arm-wince-cegcc-gcc -v -g -pg -o m1.cexe m1.co a.co b.co</i>
-Using built-in specs.
-Target: arm-wince-cegcc
-Configured with: /home/danny/src/cegcc/svn.sf.net/cegcc/trunk/cegcc/src/gcc/configure \
- --with-gcc --with-gnu-ld --with-gnu-as --target=arm-wince-cegcc --prefix=/opt/cegcc \
- --enable-threads=win32 --disable-nls --enable-languages=c,c++ --disable-win32-registry \
- --disable-multilib --disable-interwork --without-newlib --enable-checking --with-headers
-Thread model: win32
-gcc version 4.1.0
- /opt/cegcc/libexec/gcc/arm-wince-cegcc/4.1.0/collect2 -Bdynamic -o m1.cexe \
- /opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib/crt0.o \
- /opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib/crtst.o \
- /opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib/gcrt3.o \
- -L/opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0 -L/opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib \
- m1.co a.co b.co -lcegcc -lgcc -lgmon -lcoredll -lcegcc -lgcc
- Info: resolving _CRT_MT by linking to __imp__CRT_MT (auto-import)
-</pre>
-<H2>2.3 What's where</H2>
-<H3>2.3.1 crt0.o</H3>
-<pre>
-00000000 b .bss
-00000000 d .data
-00000000 p .pdata
-00000000 t .text
-00000008 T WinMainCRTStartup
-00000034 t _PMyMain
-00000030 t _PStartup
-0000002c t _P__set_runtime_thread_mode
-00000008 T __EH_CODE_START__
-00000000 T __EH_HANDLER__
-         U __set_runtime_thread_mode
-	 U _eh_handler
-00000008 T _mainCRTStartup
-	 U _startup
-         U main
-</pre>
-<H3>2.3.2 crtst.o</H3>
-<pre>
-00000000 b .bss
-00000000 d .data
-00000000 t .text
-         U _CRT_MT
-00000000 T __set_runtime_thread_mode
-</pre>
-<H3>2.3.3 gcrt3.o</H3>
+<H2>2.2 Profiling</H2>
+<P>
+Profiling support depends on special startup code (in <i>gcrt3.o</i>)
+and an exit handler (<i>mcleanup</i>) installed by it.
+<H4>2.2.1 gcrt3.o</H4>
 <P>
 The source of <i>gcrt3.o</i> is in <i>src/mingw/profile/gcrt0.c</i>.
 It provides for the function <b>_monstartup</b> whose purpose is
@@ -147,349 +404,20 @@ as an exit handler via <b>atexit</b>.
 <P>
 Both <b>_mcleanup</b> and <b>monstartup</b> are in <b>libgmon.a</b>,
 their source is <i>src/mingw/profile/gmon.c</i>.
+<H2>2.3 Coverage</H2>
 <P>
-<pre>
-00000000 b .bss
-00000000 t .ctors
-00000000 d .data
-00000000 t .text
-00000064 t __eprol
-         U _mcleanup
-00000000 T _monstartup
-         U atexit
-00000000 b called.1802
-         U etext
-         U monstartup
-</pre>
-<H3>2.3.4 -lgmon</H3>
-<pre>
-gmon.o:
-00000000 b .bss
-00000000 d .data
-00000000 r .rdata
-00000000 t .text
-         U FormatMessageW
-         U GetLastError
-         U GetModuleFileNameW
-         U MessageBoxW
-         U __addsf3
-         U __divsf3
-         U __fixsfsi
-         U __floatsisf
-         U __mulsf3
-         U __udivsi3
-00000000 D _gmonparam
-00000354 T _mcleanup
-         U bzero
-00000000 t fake_sbrk
-         U fclose
-         U fopen
-         U fwrite
-         U malloc
-000006bc T moncontrol
-0000002c T monstartup
-         U profil
-00000000 b s_scale
-         U wcstombs
-
-mcount.o:
-00000000 b .bss
-00000000 d .data
-00000000 t .text
-         U __udivsi3
-         U _gmonparam
-00000334 T _mcount
-00000000 T mcount_internal
-
-profil.o:
-00000000 b .bss
-00000000 d .data
-00000000 t .text
-         U CloseHandle
-         U CreateThread
-         U DuplicateHandle
-         U GetThreadContext
-         U ResumeThread
-         U SetThreadPriority
-         U Sleep
-         U SuspendThread
-         U TerminateThread
-         U __udivdi3
-00000000 t get_thrpc
-         U memset
-00000000 b prof
-00000418 T profil
-000002f4 T profile_ctl
-0000018c t profile_off
-00000200 t profile_on
-00000090 t profthr_func
-</pre>
-<H1>3. Coverage support</H1>
-<H2>3.1 </H2>
-<pre>
-dannypc: {55} arm-wince-cegcc-gcc -g -fprofile-arcs -ftest-coverage -o m1.cexe m1.co a.co b.co -v
-Using built-in specs.
-Target: arm-wince-cegcc
-Configured with: /home/danny/src/cegcc/svn.sf.net/cegcc/trunk/cegcc/src/gcc/configure --with-gcc --with-gnu-ld --with-gnu-as --target=arm-wince-cegcc --prefix=/opt/cegcc --enable-threads=win32 --disable-nls --enable-languages=c,c++ --disable-win32-registry --disable-multilib --disable-interwork --without-newlib --enable-checking --with-headers
-Thread model: win32
-gcc version 4.1.0
- /opt/cegcc/libexec/gcc/arm-wince-cegcc/4.1.0/collect2 -Bdynamic -o m1.cexe /opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib/crt0.o /opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib/crtst.o -L/opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0 -L/opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib m1.co a.co b.co -lgcov -lcegcc -lgcc -lcoredll -lcegcc -lgcc
-Info: resolving _CRT_MT by linking to __imp__CRT_MT (auto-import)
-
-</pre>
-<H2>3.2 </H2>
-<pre>
-dannypc: {56} arm-wince-cegcc-nm m1.co
-00000000 b .bss
-00000000 t .ctors
-00000000 d .data
-00000000 N .debug_abbrev
-00000000 N .debug_aranges
-00000000 N .debug_frame
-00000000 N .debug_info
-00000000 N .debug_line
-00000000 N .debug_loc
-00000000 N .debug_pubnames
-00000000 N .debug_str
-00000000 r .rdata
-00000000 t .text
-00000140 t _GLOBAL__I_0_main
-         U __gccmain
-         U __gcov_init
-         U __gcov_merge_add
-         U func_a
-         U func_b
-00000000 T main
-</pre>
-<H2>3.3 libgcov.a</H2>
-<pre>
-dannypc: {71} arm-wince-cegcc-nm  /opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/libgcov.a
-
-_gcov.o:
-00000000 b .bss
-00000000 d .data
-00000000 N .debug_abbrev
-00000000 N .debug_aranges
-00000000 N .debug_frame
-00000000 N .debug_info
-00000000 N .debug_line
-00000000 N .debug_loc
-00000000 N .debug_pubnames
-00000000 N .debug_ranges
-00000000 N .debug_str
-00000000 r .rdata
-00000000 t .text
-         U MessageBoxW
-00000428 T __gcov_close
-000011fc T __gcov_flush
-0000009c T __gcov_init
-00000484 T __gcov_open
-0000053c T __gcov_read_counter
-00000580 T __gcov_read_summary
-0000051c T __gcov_read_unsigned
-000001dc T __gcov_seek
-00001020 C __gcov_var
-000002d0 T __gcov_write_counter
-00000304 T __gcov_write_summary
-000002b0 T __gcov_write_tag_length
-000002ec T __gcov_write_unsigned
-         U __getreent
-         U abort
-         U atexit
-         U atoi
-         U fclose
-         U fopen
-         U fprintf
-         U fread
-         U fseek
-         U ftell
-         U fwrite
-00000008 b gcov_crc32
-000005cc t gcov_exit
-00000004 b gcov_list
-00000000 b gcov_max_filename
-00000358 t gcov_read_words
-00000000 t gcov_version
-00000190 t gcov_write_block
-0000022c t gcov_write_words
-         U getenv
-         U memcmp
-         U memcpy
-         U memset
-         U setbuf
-         U strcpy
-         U strlen
-
-_gcov_merge_add.o:
-00000000 b .bss
-00000000 d .data
-00000000 N .debug_abbrev
-00000000 N .debug_aranges
-00000000 N .debug_frame
-00000000 N .debug_info
-00000000 N .debug_line
-00000000 N .debug_pubnames
-00000000 N .debug_str
-00000000 t .text
-00000000 T __gcov_merge_add
-
-_gcov_merge_single.o:
-00000000 b .bss
-00000000 d .data
-00000000 N .debug_abbrev
-00000000 N .debug_aranges
-00000000 N .debug_frame
-00000000 N .debug_info
-00000000 N .debug_line
-00000000 N .debug_pubnames
-00000000 N .debug_str
-00000000 t .text
-00000000 T __gcov_merge_single
-
-_gcov_merge_delta.o:
-00000000 b .bss
-00000000 d .data
-00000000 N .debug_abbrev
-00000000 N .debug_aranges
-00000000 N .debug_frame
-00000000 N .debug_info
-00000000 N .debug_line
-00000000 N .debug_pubnames
-00000000 N .debug_str
-00000000 t .text
-00000000 T __gcov_merge_delta
-
-_gcov_fork.o:
-00000000 b .bss
-00000000 d .data
-00000000 N .debug_abbrev
-00000000 N .debug_info
-00000000 N .debug_line
-00000000 N .debug_str
-00000000 t .text
-
-_gcov_execl.o:
-00000000 b .bss
-00000000 d .data
-00000000 N .debug_abbrev
-00000000 N .debug_info
-00000000 N .debug_line
-00000000 N .debug_str
-00000000 t .text
-
-_gcov_execlp.o:
-00000000 b .bss
-00000000 d .data
-00000000 N .debug_abbrev
-00000000 N .debug_info
-00000000 N .debug_line
-00000000 N .debug_str
-00000000 t .text
-
-_gcov_execle.o:
-00000000 b .bss
-00000000 d .data
-00000000 N .debug_abbrev
-00000000 N .debug_info
-00000000 N .debug_line
-00000000 N .debug_str
-00000000 t .text
-
-_gcov_execv.o:
-00000000 b .bss
-00000000 d .data
-00000000 N .debug_abbrev
-00000000 N .debug_info
-00000000 N .debug_line
-00000000 N .debug_str
-00000000 t .text
-
-_gcov_execvp.o:
-00000000 b .bss
-00000000 d .data
-00000000 N .debug_abbrev
-00000000 N .debug_info
-00000000 N .debug_line
-00000000 N .debug_str
-00000000 t .text
-
-_gcov_execve.o:
-00000000 b .bss
-00000000 d .data
-00000000 N .debug_abbrev
-00000000 N .debug_info
-00000000 N .debug_line
-00000000 N .debug_str
-00000000 t .text
-
-_gcov_interval_profiler.o:
-00000000 b .bss
-00000000 d .data
-00000000 N .debug_abbrev
-00000000 N .debug_info
-00000000 N .debug_line
-00000000 N .debug_str
-00000000 t .text
-
-_gcov_pow2_profiler.o:
-00000000 b .bss
-00000000 d .data
-00000000 N .debug_abbrev
-00000000 N .debug_info
-00000000 N .debug_line
-00000000 N .debug_str
-00000000 t .text
-
-_gcov_one_value_profiler.o:
-00000000 b .bss
-00000000 d .data
-00000000 N .debug_abbrev
-00000000 N .debug_info
-00000000 N .debug_line
-00000000 N .debug_str
-00000000 t .text
-dannypc: {72} 
-</pre>
-<H1>4. Normal linkage</H1>
-<pre>
-dannypc: {15} arm-wince-cegcc-gcc -v -c d.c
-Using built-in specs.
-Target: arm-wince-cegcc
-Configured with: /home/danny/src/cegcc/svn.sf.net/cegcc/trunk/cegcc/src/gcc/configure --with-gcc --with-gnu-ld --with-gnu-as --target=arm-wince-cegcc --prefix=/opt/cegcc --enable-threads=win32 --disable-nls --enable-languages=c,c++ --disable-win32-registry --disable-multilib --disable-interwork --without-newlib --enable-checking --with-headers
-Thread model: win32
-gcc version 4.1.0
- /opt/cegcc/libexec/gcc/arm-wince-cegcc/4.1.0/cc1 -quiet -v -D__CEGCC32__ -D__CEGCC__ -Dunix -D__unix__ -D__unix -idirafter /opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib/../include/w32api -idirafter ../../include/w32api d.c -quiet -dumpbase d.c -auxbase d -version -o /home/danny/tmp/cctFcZE7.s
-ignoring nonexistent directory "/opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/sys-include"
-ignoring nonexistent directory "../../include/w32api"
-#include "..." search starts here:
-#include <...> search starts here:
- /opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/include
- /opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/include
- /opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib/../include/w32api
-End of search list.
-GNU C version 4.1.0 (arm-wince-cegcc)
-        compiled by GNU C version 4.0.1 (4.0.1-5mdk for Mandriva Linux release 2006.0).
-GGC heuristics: --param ggc-min-expand=30 --param ggc-min-heapsize=4096
-Compiler executable checksum: 17d7394c32aee3aebff6a808e8a7d8ad
- /opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/bin/as -o d.o /home/danny/tmp/cctFcZE7.s
-dannypc: {16} arm-wince-cegcc-gcc -v -o d.exe d.o
-Using built-in specs.
-Target: arm-wince-cegcc
-Configured with: /home/danny/src/cegcc/svn.sf.net/cegcc/trunk/cegcc/src/gcc/configure --with-gcc --with-gnu-ld --with-gnu-as --target=arm-wince-cegcc --prefix=/opt/cegcc --enable-threads=win32 --disable-nls --enable-languages=c,c++ --disable-win32-registry --disable-multilib --disable-interwork --without-newlib --enable-checking --with-headers
-Thread model: win32
-gcc version 4.1.0
- /opt/cegcc/libexec/gcc/arm-wince-cegcc/4.1.0/collect2 -Bdynamic -o d.exe /opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib/crt0.o /opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib/crtst.o -L/opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0 -L/opt/cegcc/lib/gcc/arm-wince-cegcc/4.1.0/../../../../arm-wince-cegcc/lib d.o -lcegcc -lgcc -lcoredll -lcegcc -lgcc
-Info: resolving _CRT_MT by linking to __imp__CRT_MT (auto-import)
-</pre>
-<H2>
-<H1>5. Ways in which WinCE applications start and terminate</H1>
-<H2>5.1 Startup</H2>
-<H3>5.1.1 main</H3>
+For gcov support, there is no special startup function,
+rather the compiler generates a call to _gcov_init from all compiled source files.
+The support functions are in <i>src/gcc/gcc/libgcov.c</i>
+and <i>src/gcc/gcc/gcov-io.c</i>.
+<H2>2.4 Ways in which WinCE applications start and terminate</H2>
+<H3>2.4.1 Startup</H3>
+<H4>2.4.1.1 main</H4>
 <P>
 <b>main</b> is the entry point for C language programs in college textbooks,
 it's also the default entry point generated by cegcc.
 <i>crt0.o</i> will call <b>main</b>.
-<H3>5.1.2 WinMain</H3>
+<H4>2.4.1.2 WinMain</H4>
 <P>
 The normal startup for an application with a GUI (graphical user interface)
 on a Windows platform is <b>WinMain</b>.
@@ -501,11 +429,11 @@ it calls a number of WinCE functions such as <i>GetCommandLineW</i>.
 When you compile a program that has a <i>main</i> function of its own
 (see the previous paragraph), the main.o is simply not used.
 The source for <i>main.o</i> is in <b>src/newlib/newlib/libc/sys/wince/main.c</b>.
-<H2>5.2 Termination</H2>
-<H3>5.2.1 WinMain PostQuitMessage</H3>
-<H3>5.2.2 WinMain fall through</H3>
-<H3>5.2.3 WinMain WM_DESTROY</H3>
-<H3>5.2.4 exit</H3>
-<H3>5.2.5 main fall through</H3>
+<H3>2.4.2 Termination</H3>
+<H4>2.4.2.1 WinMain PostQuitMessage</H4>
+<H4>2.4.2.2 WinMain fall through</H4>
+<H4>2.4.2.3 WinMain WM_DESTROY</H4>
+<H4>2.4.2.4 exit</H4>
+<H4>2.4.2.5 main fall through</H4>
 </BODY>
 </HTML>
