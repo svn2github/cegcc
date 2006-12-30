@@ -18,6 +18,7 @@ tooldir = $(exec_prefix)/$(target_alias)
 datadir = @datadir@
 infodir = @infodir@
 includedir = @includedir@
+UNDERSCORES = @UNDERSCORES@
 
 SHELL = /bin/sh
 
@@ -49,12 +50,8 @@ THREAD_DLL_NAME = $(THREAD_DLL)$(THREAD_DLL_VERSION).dll
 
 INCLUDES=	-I$(srcdir)
 
-# W32API_INCLUDE = @W32API_INCLUDE@
-# INCLUDES = -I$(srcdir) -I$(srcdir)/../include \
-#   -nostdinc \
-#   -iwithprefixbefore include
-ALL_CFLAGS = $(CFLAGS) $(W32API_INCLUDE) $(INCLUDES) $(MNO_CYGWIN)
-ALL_CXXFLAGS = $(CXXFLAGS) $(W32API_INCLUDE) $(INCLUDES) -nostdinc++ $(MNO_CYGWIN)
+ALL_CFLAGS = $(CFLAGS) $(UNDERSCORES) $(W32API_INCLUDE) $(INCLUDES) $(MNO_CYGWIN)
+ALL_CXXFLAGS = $(CXXFLAGS) $(UNDERSCORES) $(W32API_INCLUDE) $(INCLUDES) -nostdinc++ $(MNO_CYGWIN)
 
 AS = @AS@
 AR = @AR@

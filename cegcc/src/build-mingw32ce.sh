@@ -282,15 +282,10 @@ function build_profile()
     mkdir -p ${BUILD_DIR}/profile || exit 1
     cd ${BUILD_DIR}/profile || exit 1
 
-    PREV_CFLAGS=${CFLAGS}
-    export CFLAGS="-DNO_UNDERSCORES" 
-
     ${BASE_DIRECTORY}/profile/configure  \
 	--host=${TARGET}             \
 	--prefix=${PREFIX}             \
 	|| exit
-
-    export CFLAGS=${PREV_CFLAGS}
 
     make         || exit 1
     make install || exit 1

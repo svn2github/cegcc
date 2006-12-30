@@ -272,7 +272,7 @@ PACKAGE_STRING=
 PACKAGE_BUGREPORT=
 
 ac_unique_file="gcrt0.c"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC AS AR LD RANLIB DLLTOOL DLLWRAP build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os CRT_ID RUNTIME MNO_CYGWIN LIBGMON_A CRT0S W32API_INCLUDE INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC AS AR LD RANLIB DLLTOOL DLLWRAP build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os CRT_ID RUNTIME MNO_CYGWIN LIBGMON_A CRT0S W32API_INCLUDE UNDERSCORES INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1351,12 +1351,14 @@ case "$target_os" in
   MNO_CYGWIN=
   RUNTIME=crtdll
   CRT0S="gcrt1.o gcrt2.o"
+  UNDERSCORES=""
   ;;
 *cygwin*)
   CRT_ID=2
   MNO_CYGWIN=-mno-cygwin
   RUNTIME=msvcrt
   CRT0S=gcrt0.o
+  UNDERSCORES=""
   # Do not build libm.a when building under Cygwin winsup. Otherwise, it'll
   # overwrite Cygwin's one. Likewise for libgmon.a.
   ;;
@@ -1365,6 +1367,7 @@ case "$target_os" in
   MNO_CYGWIN=
   RUNTIME=coredll
   CRT0S="gcrt3.o"
+  UNDERSCORES=-DNO_UNDERSCORES
   ;;
 *)
   # Build it for MSVCRT by default.
@@ -1372,10 +1375,12 @@ case "$target_os" in
   MNO_CYGWIN=
   RUNTIME=msvcrt
   CRT0S="gcrt1.o gcrt2.o"
+  UNDERSCORES=""
   ;;
 esac
 
 W32API_INCLUDE='-I $(srcdir)/../../w32api/include'
+
 
 
 
@@ -2124,6 +2129,7 @@ s,@MNO_CYGWIN@,$MNO_CYGWIN,;t t
 s,@LIBGMON_A@,$LIBGMON_A,;t t
 s,@CRT0S@,$CRT0S,;t t
 s,@W32API_INCLUDE@,$W32API_INCLUDE,;t t
+s,@UNDERSCORES@,$UNDERSCORES,;t t
 s,@INSTALL_PROGRAM@,$INSTALL_PROGRAM,;t t
 s,@INSTALL_SCRIPT@,$INSTALL_SCRIPT,;t t
 s,@INSTALL_DATA@,$INSTALL_DATA,;t t

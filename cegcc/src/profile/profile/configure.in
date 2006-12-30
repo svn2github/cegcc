@@ -43,12 +43,14 @@ case "$target_os" in
   MNO_CYGWIN=
   RUNTIME=crtdll
   CRT0S="gcrt1.o gcrt2.o"
+  UNDERSCORES=""
   ;;
 *cygwin*)
   CRT_ID=2
   MNO_CYGWIN=-mno-cygwin
   RUNTIME=msvcrt
   CRT0S=gcrt0.o
+  UNDERSCORES=""
   # Do not build libm.a when building under Cygwin winsup. Otherwise, it'll
   # overwrite Cygwin's one. Likewise for libgmon.a.
   ;;
@@ -57,6 +59,7 @@ case "$target_os" in
   MNO_CYGWIN=
   RUNTIME=coredll
   CRT0S="gcrt3.o"
+  UNDERSCORES=-DNO_UNDERSCORES
   ;;
 *)
   # Build it for MSVCRT by default.
@@ -64,6 +67,7 @@ case "$target_os" in
   MNO_CYGWIN=
   RUNTIME=msvcrt
   CRT0S="gcrt1.o gcrt2.o"
+  UNDERSCORES=""
   ;;
 esac
 
@@ -75,6 +79,7 @@ AC_SUBST(MNO_CYGWIN)
 AC_SUBST(LIBGMON_A)
 AC_SUBST(CRT0S)
 AC_SUBST(W32API_INCLUDE)
+AC_SUBST(UNDERSCORES)
 
 AC_PROG_INSTALL
 AC_OUTPUT(Makefile)

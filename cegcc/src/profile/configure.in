@@ -25,6 +25,7 @@ case "$with_cross_host" in
   ""|*cygwin*) all_dlls_host='all_dlls_host'
 	       install_dlls_host='install_dlls_host';;
 esac
+
 AC_SUBST(all_dlls_host)
 AC_SUBST(install_dlls_host)
 

@@ -1,5 +1,10 @@
 2006-12-30  Danny Backx  <dannybackx@users.sourceforge.net>
 
+	* configure.in profile/Makefile.in profile/configure.in : Avoid use of
+	CFLAGS to pass -DNO_UNDERSCORES.
+
+2006-12-30  Danny Backx  <dannybackx@users.sourceforge.net>
+
 	* profile : Create a profile/profile tree as a copy of the
 	mingw/profile tree.
 	* profile/gmon.c : Rewrite to avoid stdio, use native WinCE I/O
