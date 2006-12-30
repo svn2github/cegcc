@@ -532,7 +532,7 @@ _startup_(fnmain *_main)
   WCETRACE(WCE_IO, "_startup: going to terminate with exitcode: %d", exitcode);
   WCETRACECLOSE();
 
-  TerminateProcess(GetCurrentProcess(), exitcode);
+  ExitProcess(exitcode);
   return exitcode;
 }
 
