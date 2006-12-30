@@ -92,11 +92,13 @@ extern void *memset (void *, int, size_t);
 /* All systems have this header.  */
 #include <sys/types.h>
 
-/* All systems have this header.  */
+#ifndef	__MINGW32CE__
+/* All systems except Windows CE have this header.  */
 #include <errno.h>
 
 #ifndef errno
 extern int errno;
+#endif
 #endif
 
 /* GCC (fixproto) guarantees these system headers exist.  */

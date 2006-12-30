@@ -134,7 +134,11 @@ gcov_open (const char *name, int mode)
     return 0;
 #endif
 
+#ifdef	__MINGW32CE__
+  setvbuf (gcov_var.file, (char *)0, _IONBF, (size_t)0);
+#else
   setbuf (gcov_var.file, (char *)0);
+#endif
   
   return 1;
 }

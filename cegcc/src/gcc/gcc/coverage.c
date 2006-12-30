@@ -776,6 +776,7 @@ build_gcov_info (void)
   unsigned n_fns;
   const struct function_list *fn;
   tree string_type;
+  char *gcov_cross_prefix;
 
   /* Count the number of active counters.  */
   for (n_ctr_types = 0, ix = 0; ix != GCOV_COUNTERS; ix++)
@@ -811,12 +812,26 @@ build_gcov_info (void)
   field = build_decl (FIELD_DECL, NULL_TREE, string_type);
   TREE_CHAIN (field) = fields;
   fields = field;
-  filename = getpwd ();
-  filename = (filename && da_file_name[0] != '/'
+
+  /*
+   * Additional environment variable for cross-development.
+   */
+  if (gcov_cross_prefix = getenv ("GCOV_CROSS_PREFIX"))
+    {
+      filename = concat (gcov_cross_prefix, "/", da_file_name, NULL);
+      filename_len = strlen (filename);
+      filename_string = build_string (filename_len + 1, filename);
+    }
+  else
+    {
+      filename = getpwd ();
+      filename = (filename && da_file_name[0] != '/'
 	      ? concat (filename, "/", da_file_name, NULL)
 	      : da_file_name);
-  filename_len = strlen (filename);
-  filename_string = build_string (filename_len + 1, filename);
+      filename_len = strlen (filename);
+      filename_string = build_string (filename_len + 1, filename);
+    }
+
   if (filename != da_file_name)
     free (filename);
   TREE_TYPE (filename_string) = build_array_type

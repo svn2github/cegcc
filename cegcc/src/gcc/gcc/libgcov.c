@@ -194,6 +194,12 @@ gcov_exit (void)
 	}
     }
 
+#ifdef	__MINGW32CE__
+  /* No getenv support, so disable this. */
+  gcov_prefix = (char *)0;
+  gcov_prefix_strip = 0;
+  prefix_length = 0;
+#else
   /* Get file name relocation prefix.  Non-absolute values are ignored. */
   gcov_prefix = getenv("GCOV_PREFIX");
   if (gcov_prefix && IS_ABSOLUTE_PATH (gcov_prefix))
@@ -216,6 +222,7 @@ gcov_exit (void)
     }
   else
     prefix_length = 0;
+#endif
   
   /* Allocate and initialize the filename scratch space.  */
   gi_filename = alloca (prefix_length + gcov_max_filename + 1);
@@ -309,6 +316,15 @@ gcov_exit (void)
 	      fprintf (stderr, "profiling:%s:Skip\n", gi_filename);
 	      continue;
 	    }
+#endif
+#ifdef	UNDER_CE
+	  {
+            wchar_t	x[256];
+	    int		l = strlen(gi_filename);
+	    l = (l < 256) ? l : 255;
+	    wcstombs(x, gi_filename, l);
+	    MessageBoxW(0, L"gcov_open", x, 0);
+	  }
 #endif
 	  if (!gcov_open (gi_filename))
 	    {
