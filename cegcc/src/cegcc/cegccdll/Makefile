@@ -96,6 +96,7 @@ ${MY_DIR}/$(DLLNAME):
 	rm -f ${MY_DIR}/$(IMPLIB)
 	rm -f ${MY_DIR}/$(IMPLIB).tmp
 	$(AR) q ${MY_DIR}/$(IMPLIB) ${MY_DIR}/_tmp_static/*.o
+	rm -f ${MY_DIR}/_tmp/_eprintf.o
 	$(CC) -o $@ $(LDFLAGS) -shared -nostdlib \
 	-Wl,--whole-archive ${MY_DIR}/_tmp/*.o ${LIB_PATH}/dllcrt1.o \
 	-Wl,--no-whole-archive -lcegcc -lcoredll -liphlpapi \
