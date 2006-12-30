@@ -18,7 +18,9 @@ and
 <A HREF="http://korea.gnu.org/manual/release/gcov/gcov_1.html">gcov</A>
 for their description.
 </P>
+<A NAME="getting started">
 <H1>1. Getting started</H1>
+</A>
 The examples are also in the CeGCC source tree in
 directories
 <A HREF="http://cegcc.svn.sourceforge.net/viewvc/cegcc/trunk/cegcc/docs/examples/coverage">docs/examples/coverage</A>
@@ -313,8 +315,12 @@ The seven digit numbers in the first column are the number of times these source
 were executed.
 Modify <i>m1.c</i> so fibo() is called fewer times,
 and you'll see more modest numbers.
+<A NAME="technical overview">
 <H1>2 Technical overview : CeGCC (gcc) profiling and coverage support</H1>
+</A>
 <P>
+This piece of documentation is not strictly related to profiling and test coverage support,
+the normal operation is also described.
 <H2>2.1 Overview</H2>
 <P>
 The tables below present an overview of how this all works,
@@ -410,7 +416,9 @@ For gcov support, there is no special startup function,
 rather the compiler generates a call to _gcov_init from all compiled source files.
 The support functions are in <i>src/gcc/gcc/libgcov.c</i>
 and <i>src/gcc/gcc/gcov-io.c</i>.
+<A NAME="start and terminate">
 <H2>2.4 Ways in which WinCE applications start and terminate</H2>
+</A>
 <H3>2.4.1 Startup</H3>
 <H4>2.4.1.1 main</H4>
 <P>
@@ -430,10 +438,57 @@ When you compile a program that has a <i>main</i> function of its own
 (see the previous paragraph), the main.o is simply not used.
 The source for <i>main.o</i> is in <b>src/newlib/newlib/libc/sys/wince/main.c</b>.
 <H3>2.4.2 Termination</H3>
-<H4>2.4.2.1 WinMain PostQuitMessage</H4>
-<H4>2.4.2.2 WinMain fall through</H4>
-<H4>2.4.2.3 WinMain WM_DESTROY</H4>
-<H4>2.4.2.4 exit</H4>
-<H4>2.4.2.5 main fall through</H4>
+<P>
+This chapter describes the various ways in which a Windows CE application can terminate.
+<H4>2.4.2.1 WinMain WM_DESTROY</H4>
+<P>
+The <i>WM_DESTROY</i> message is sent to an application by the system
+e.g. when the user hits the button to close that window.
+The typical response of an application is to call <i>PostQuitMessage</i>.
+<H4>2.4.2.2 WinMain PostQuitMessage</H4>
+<P>
+The <i>PostQuitMessage</i> function posts a request to terminate this thread or application.
+It does so by sending a <i>WM_QUIT</i> message to the thread or application.
+<P>
+In response to <i>WM_QUIT</i>, the normal message loop will terminate.
+<PRE>
+	BOOL r;
+
+	while ((r = GetMessageW(&msg, wnd, 0, 0)) != 0) {
+		if (r != -1) {
+			TranslateMessage(&msg);
+			DispatchMessageW(&msg);
+		} else {
+			// Handle the error
+		}
+	}
+</PRE>
+<P>
+This is implemented in the <i>GetMessageW</i> function :
+when the function receives the WM_QUIT message, its return value is 0.
+<H4>2.4.2.3 exit</H4>
+<H5>2.4.2.3.1 arm-wince-cegcc exit</H5>
+<P>
+In our <i>arm-wince-cegcc</i> target, this is implemented in the system layer of newlib.
+Startup and termination are both coded in <i>src/newlib/newlib/libc/sys/wince/startup.c</i>.
+<P>
+The <i>exit</i> function
+(part of the stdlib part of newlib, in <i>src/newlib/newlib/libc/stdlib/</i>)
+does little more than calling <i>_exit</i>.
+The latter function jumps back into the <i>_startup_</i> function by using <i>longjmp</i>
+and performs newlib cleanup,
+and finally calls <i>ExitProcess</i> which is a Windows CE System Call.
+<H5>2.4.2.3.2 arm-wince-mingw32ce exit</H5>
+<P>
+In our <i>arm-wince-mingw32ce</i> target,
+exit is implemented in <i>src/mingw/atexit.c</i>.
+It calls a cleanup function and <i>ExitProcess</i>.
+<H4>2.4.2.4 WinMain / main fall through</H4>
+<P>
+On <i>arm-wince-cegcc</i>, falling through the end of <i>main</i>
+gets us to the same place where calling <i>exit</i> leads to.
+On <i>arm-wince-mingw32ce</i>, this is not true,
+but the startup function (<i>WinMainCRTStartup</i>,
+e.g. in <i>src/mingw/crt3.c</i>) calls the same functions as <i>exit</i>.
 </BODY>
 </HTML>
