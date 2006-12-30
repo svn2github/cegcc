@@ -180,6 +180,7 @@ function build_gcc()
 	--disable-interwork            \
 	--without-newlib               \
 	--enable-checking              \
+	--with-headers                 \
 	|| exit
 
 # we build libstdc++ as dll, so we don't need this.    
@@ -271,6 +272,30 @@ function build_docs()
     tar cf - images | (cd ${PREFIX}/share; tar xf -) || exit 1
 }
 
+function build_profile()
+{
+    echo ""
+    echo "BUILDING profiling libraries --------------------------"
+    echo ""
+    echo ""
+
+    mkdir -p ${BUILD_DIR}/profile || exit 1
+    cd ${BUILD_DIR}/profile || exit 1
+
+    PREV_CFLAGS=${CFLAGS}
+    export CFLAGS="-DNO_UNDERSCORES" 
+
+    ${BASE_DIRECTORY}/profile/configure  \
+	--host=${TARGET}             \
+	--prefix=${PREFIX}             \
+	|| exit
+
+    export CFLAGS=${PREV_CFLAGS}
+
+    make         || exit 1
+    make install || exit 1
+}
+
 function build_all
 {
     build_binutils
@@ -280,9 +305,10 @@ function build_all
     build_bootstrap_gcc
     build_mingw_runtime
     build_gcc
+    build_docs
+    build_profile
     build_gdb
     build_gdbstub
-    build_docs
 }
 
 case $BUILD_OPT in
@@ -301,6 +327,7 @@ case $BUILD_OPT in
  gdb) build_gdb ;;
  gdbstub) build_gdbstub ;;
  docs) build_docs ;;
+ profile) build_profile ;;
  all) build_all ;;
  *) echo "Please enter a valid build option." ;;
 esac
