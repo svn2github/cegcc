@@ -289,8 +289,10 @@ function build_profile()
     cd ${BUILD_DIR}/profile || exit 1
 
     ${BASE_DIRECTORY}/profile/configure  \
-	--host=${TARGET}             \
-	--prefix=${PREFIX}             \
+	--build=${BUILD}              \
+	--host=${TARGET}              \
+	--target=${TARGET}            \
+	--prefix=${PREFIX}            \
 	|| exit
 
     make         || exit 1
