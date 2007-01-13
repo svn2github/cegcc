@@ -904,15 +904,15 @@ qprintf(str, s)
 {
 	Char *p;
 
-	(void)printf("%s:\n", str);
+	WCETRACE(WCE_IO, "%s:\n", str);
 	for (p = s; *p; p++)
-		(void)printf("%c", CHAR(*p));
-	(void)printf("\n");
+		WCETRACE(WCE_IO, "%c", CHAR(*p));
+	WCETRACE(WCE_IO, "\n");
 	for (p = s; *p; p++)
-		(void)printf("%c", *p & M_PROTECT ? '"' : ' ');
-	(void)printf("\n");
+		WCETRACE(WCE_IO, "%c", *p & M_PROTECT ? '"' : ' ');
+	WCETRACE(WCE_IO, "\n");
 	for (p = s; *p; p++)
-		(void)printf("%c", ismeta(*p) ? '_' : ' ');
-	(void)printf("\n");
+		WCETRACE(WCE_IO, "%c", ismeta(*p) ? '_' : ' ');
+	WCETRACE(WCE_IO, "\n");
 }
 #endif

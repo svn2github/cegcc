@@ -5046,7 +5046,7 @@ static void *sbrk (ptrdiff_t size) {
     static region_list_entry *g_last;
     void *result = (void *) MORECORE_FAILURE;
 #ifdef TRACE
-    printf ("sbrk %d\n", size);
+    WCETRACE(WCE_MEM, "sbrk %d\n", size);
 #endif
 #if defined (USE_MALLOC_LOCK) && defined (NEEDED)
     /* Wait for spin lock */
@@ -5103,7 +5103,7 @@ static void *sbrk (ptrdiff_t size) {
                         /* Assert postconditions */
                         assert ((unsigned) base_committed % g_pagesize == 0);
 #ifdef TRACE
-                        printf ("Commit %p %d\n", base_committed, remaining_commit_size);
+                        WCETRACE(WCE_MEM, "Commit %p %d\n", base_committed, remaining_commit_size);
 #endif
                         /* Adjust the regions commit top */
                         g_last->top_committed = (char *) base_committed + remaining_commit_size;
@@ -5129,7 +5129,7 @@ static void *sbrk (ptrdiff_t size) {
                             /* Assert postconditions */
                             assert ((unsigned) memory_info.BaseAddress % g_pagesize == 0);
 #ifdef TRACE
-                            printf ("Query %p %d %s\n", memory_info.BaseAddress, memory_info.RegionSize, 
+                            WCETRACE(WCE_MEM, "Query %p %d %s\n", memory_info.BaseAddress, memory_info.RegionSize, 
                                     memory_info.State == MEM_FREE ? "FREE": 
                                     (memory_info.State == MEM_RESERVE ? "RESERVED":
                                      (memory_info.State == MEM_COMMIT ? "COMMITTED": "?")));
@@ -5173,7 +5173,7 @@ static void *sbrk (ptrdiff_t size) {
                     /* Assert postconditions */
                     assert ((unsigned) base_reserved % g_regionsize == 0);
 #ifdef TRACE
-                    printf ("Reserve %p %d\n", base_reserved, reserve_size);
+                    WCETRACE(WCE_MEM, "Reserve %p %d\n", base_reserved, reserve_size);
 #endif
                     /* Did we get contiguous memory? */
                     if (contiguous) {
@@ -5211,7 +5211,7 @@ static void *sbrk (ptrdiff_t size) {
                 /* Assert postconditions */
                 assert ((unsigned) base_committed % g_pagesize == 0);
 #ifdef TRACE
-                printf ("Commit %p %d\n", base_committed, commit_size);
+                WCETRACE(WCE_MEM, "Commit %p %d\n", base_committed, commit_size);
 #endif
                 /* Adjust the regions commit top */
                 g_last->top_committed = (char *) base_committed + commit_size;
@@ -5239,7 +5239,7 @@ static void *sbrk (ptrdiff_t size) {
                 if (! rc)
                     goto sbrk_exit;
 #ifdef TRACE
-                printf ("Release %p %d\n", base_reserved, release_size);
+                WCETRACE(WCE_MEM, "Release %p %d\n", base_reserved, release_size);
 #endif
             }
             /* Adjust deallocation size */
@@ -5265,7 +5265,7 @@ static void *sbrk (ptrdiff_t size) {
                     if (! rc)
                         goto sbrk_exit;
 #ifdef TRACE
-                    printf ("Decommit %p %d\n", base_committed, decommit_size);
+                    WCETRACE(WCE_MEM, "Decommit %p %d\n", base_committed, decommit_size);
 #endif
                 }
                 /* Adjust deallocation size and regions commit and allocate top */
@@ -5308,7 +5308,7 @@ static void *mmap (void *ptr, long size, long prot, long type, long handle, long
     static long g_pagesize;
     static long g_regionsize;
 #ifdef TRACE
-    printf ("mmap %d\n", size);
+    WCETRACE(WCE_MEM, "mmap %d\n", size);
 #endif
 #if defined (USE_MALLOC_LOCK) && defined (NEEDED)
     /* Wait for spin lock */
@@ -5340,7 +5340,7 @@ static void *mmap (void *ptr, long size, long prot, long type, long handle, long
     /* Assert postconditions */
     assert ((unsigned) ptr % g_regionsize == 0);
 #ifdef TRACE
-    printf ("Commit %p %d\n", ptr, size);
+    WCETRACE(WCE_MEM, "Commit %p %d\n", ptr, size);
 #endif
 mmap_exit:
 #if defined (USE_MALLOC_LOCK) && defined (NEEDED)
@@ -5356,7 +5356,7 @@ static long munmap (void *ptr, long size) {
     static long g_regionsize;
     int rc = MUNMAP_FAILURE;
 #ifdef TRACE
-    printf ("munmap %p %d\n", ptr, size);
+    WCETRACE(WCE_MEM, "munmap %p %d\n", ptr, size);
 #endif
 #if defined (USE_MALLOC_LOCK) && defined (NEEDED)
     /* Wait for spin lock */
@@ -5376,7 +5376,7 @@ static long munmap (void *ptr, long size) {
         goto munmap_exit;
     rc = 0;
 #ifdef TRACE
-    printf ("Release %p %d\n", ptr, size);
+    WCETRACE(WCE_MEM, "Release %p %d\n", ptr, size);
 #endif
 munmap_exit:
 #if defined (USE_MALLOC_LOCK) && defined (NEEDED)
