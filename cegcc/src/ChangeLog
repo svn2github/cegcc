@@ -1,8 +1,14 @@
+2007-01-18  Danny Backx <dannybackx@users.sourceforge.net>
+
+	* cegcc/importlibs/build.sh : add definition for mmtimer DLL.
+
 2006-12-31  Danny Backx <dannybackx@users.sourceforge.net>
 
 	* build-mingw32ce.sh, build-cegcc.sh (build_profile) : Copy the
 	options from the mingw_runtime build, so src/profile/Makefile.in gets
 	the right parameters and install stuff in the right place.
+	* build-mingw32ce.sh, build-cegcc.sh (build_docs) : Copy
+	some additional files that need to make it into an RPM.
 
 2006-12-30  Danny Backx <dannybackx@users.sourceforge.net>
 
