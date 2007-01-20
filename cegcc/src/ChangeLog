@@ -1,3 +1,13 @@
+2007-01-20  Danny Backx <dannybackx@users.sourceforge.net>
+
+	* build-mingw32ce.sh, build-cegcc.sh (build_docs) : Copy
+	some additional files that need to make it into an RPM.
+	* scripts/linux/rpm-create-source.sh : create two different source tar
+	files, each containing one SPEC file. For the cegcc and mingw32ce
+	distributions.
+	* scripts/linux/cegcc.spec, scripts/linux/mingw32ce.spec : these
+	versions work.
+
 2007-01-18  Danny Backx <dannybackx@users.sourceforge.net>
 
 	* cegcc/importlibs/build.sh : add definition for mmtimer DLL.
@@ -7,8 +17,6 @@
 	* build-mingw32ce.sh, build-cegcc.sh (build_profile) : Copy the
 	options from the mingw_runtime build, so src/profile/Makefile.in gets
 	the right parameters and install stuff in the right place.
-	* build-mingw32ce.sh, build-cegcc.sh (build_docs) : Copy
-	some additional files that need to make it into an RPM.
 
 2006-12-30  Danny Backx <dannybackx@users.sourceforge.net>
 

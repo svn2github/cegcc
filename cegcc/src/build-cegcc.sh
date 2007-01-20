@@ -313,6 +313,12 @@ function build_docs()
     tar cf - . | (cd ${PREFIX}/share/docs; tar xf -) || exit 1
     cd ${BASE_DIRECTORY}/../website || exit 1
     tar cf - images | (cd ${PREFIX}/share; tar xf -) || exit 1
+
+    cd ${BASE_DIRECTORY}/.. || exit 1
+    cp NEWS README ${PREFIX} || exit 1
+    cp src/binutils/COPYING ${PREFIX} || exit 1
+    cp src/binutils/COPYING.LIB ${PREFIX} || exit 1
+    cp src/binutils/COPYING.NEWLIB ${PREFIX} || exit 1
 }
 
 function build_all()
