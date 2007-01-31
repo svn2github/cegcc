@@ -3834,8 +3834,13 @@ WINUSERAPI HMONITOR WINAPI MonitorFromWindow(HWND,DWORD);
 #endif
 WINUSERAPI void WINAPI mouse_event(DWORD,DWORD,DWORD,DWORD,ULONG_PTR);
 WINUSERAPI BOOL WINAPI MoveWindow(HWND,int,int,int,int,BOOL);
-WINUSERAPI DWORD WINAPI MsgWaitForMultipleObjects(DWORD,CONST HANDLE*,BOOL,DWORD,DWORD);
 WINUSERAPI DWORD WINAPI MsgWaitForMultipleObjectsEx(DWORD,CONST HANDLE*,DWORD,DWORD,DWORD);
+#ifdef _WIN32_WCE
+#define MsgWaitForMultipleObjects(c,h,wa,ms,m) \
+	MsgWaitForMultipleObjectsEx(c,h,ms,m,0)
+#else
+WINUSERAPI DWORD WINAPI MsgWaitForMultipleObjects(DWORD,CONST HANDLE*,BOOL,DWORD,DWORD);
+#endif
 #if (WINVER >= 0x0500)
 WINUSERAPI void WINAPI NotifyWinEvent(DWORD,HWND,LONG,LONG);
 #endif

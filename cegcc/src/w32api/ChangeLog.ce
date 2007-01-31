@@ -1,3 +1,9 @@
+2007-01-31  Nuno Lucas  <ntlucas@gmail.com>
+
+	* include/winuser.h : Define MsgWaitForMultipleObjects as a macro that
+	calls MsgWaitForMultipleObjectsEx as described on MSDN.
+
+
 2006-12-18  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* include/winnt.h (_M_ARM, ARM): Remove.
