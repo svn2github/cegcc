@@ -2,7 +2,8 @@
 
 	* include/winuser.h : Define MsgWaitForMultipleObjects as a macro that
 	calls MsgWaitForMultipleObjectsEx as described on MSDN.
-
+	* include/wingdi.h : Define only the right function GetCharWidth32
+	for Windows CE, not its similarly named friends.
 
 2006-12-18  Pedro Alves  <pedro_alves@portugalmail.pt>
 
