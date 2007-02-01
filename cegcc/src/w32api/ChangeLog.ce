@@ -1,3 +1,8 @@
+2007-02-01  Nuno Lucas  <ntlucas@gmail.com>
+
+	* include/todaycmn.h : Create this file based on MSDN documentation
+	http://msdn2.microsoft.com/en-us/library/aa454291.aspx
+
 2007-01-31  Nuno Lucas  <ntlucas@gmail.com>
 
 	* include/winuser.h : Define MsgWaitForMultipleObjects as a macro that
