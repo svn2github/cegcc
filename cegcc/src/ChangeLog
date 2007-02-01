@@ -1,3 +1,8 @@
+2007-02-01  Danny Backx <dannybackx@users.sourceforge.net>
+
+	* build-mingw32ce.sh, build-cegcc.sh : Add help text to explain
+	command line build options.
+
 2007-01-20  Danny Backx <dannybackx@users.sourceforge.net>
 
 	* build-mingw32ce.sh, build-cegcc.sh (build_docs) : Copy

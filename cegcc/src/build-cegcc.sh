@@ -343,6 +343,10 @@ case $BUILD_OPT in
  --help)
         echo "usage:"
         echo "$0 [source dir] [build directory] [prefix dir] [build_opt]"
+	echo " "
+	echo "Valid build options : binutils importlibs w32api dummy_cegccdll"
+	echo "  bootstrapgcc newlib gcc cegccdll cegccthrd libstdc++ gdb"
+	echo "  gdbstub docs profile all"
 		;;
  binutils) build_binutils ;;
  importlibs) build_import_libs ;;

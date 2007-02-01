@@ -318,6 +318,9 @@ case $BUILD_OPT in
  --help)
         echo "usage:"
         echo "$0 [source dir] [build directory] [prefix dir] [build_opt]"
+	echo " "
+	echo "Valid build options : binutils importlibs headers fakecrt bootstrapgcc"
+	echo "  w32api crt gcc gdb gdbstub docs profile all"
 		;;
  binutils) build_binutils ;;
  importlibs) build_import_libs ;;
