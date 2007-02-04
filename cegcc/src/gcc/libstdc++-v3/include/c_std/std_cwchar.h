@@ -177,7 +177,9 @@ namespace std
   using ::wcrtomb;
   using ::wcscat;
   using ::wcscmp;
+#if _GLIBCXX_HAVE_WCSCOLL
   using ::wcscoll;
+#endif
   using ::wcscpy;
   using ::wcscspn;
   using ::wcsftime;
@@ -194,7 +196,9 @@ namespace std
   using ::wcstok;
   using ::wcstol;
   using ::wcstoul;
+#if _GLIBCXX_HAVE_WCSXFRM
   using ::wcsxfrm;
+#endif
   using ::wctob;
   using ::wmemcmp;
   using ::wmemcpy;

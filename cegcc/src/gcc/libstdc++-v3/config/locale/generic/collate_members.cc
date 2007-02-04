@@ -43,7 +43,7 @@ namespace std
     int 
     collate<char>::_M_compare(const char* __one, const char* __two) const
     { 
-#ifndef __MINGW32CE__
+#if _GLIBCXX_HAVE_STRCOLL
       int __cmp = strcoll(__one, __two);
 #else
       int __cmp = strcmp(__one, __two);
@@ -56,11 +56,14 @@ namespace std
     collate<char>::_M_transform(char* __to, const char* __from, 
 				size_t __n) const
     {
-#ifdef __MINGW32CE__
-      strncpy (__to, __from, __n);
-      return strlen (__to);
-#else
+#if _GLIBCXX_HAVE_STRXFRM
       return strxfrm(__to, __from, __n); 
+#else
+      if (__n == 0)
+        return strlen (__from);
+      strncpy(__to, __from, __n - 1);
+      __to[__n - 1] = '\0';
+      return strlen (__to);
 #endif
     }
 
@@ -70,7 +73,11 @@ namespace std
     collate<wchar_t>::_M_compare(const wchar_t* __one, 
 				 const wchar_t* __two) const
     {
+#if _GLIBCXX_HAVE_WCSCOLL
       int __cmp = wcscoll(__one, __two);
+#else
+      int __cmp = wcscmp(__one, __two);
+#endif
       return (__cmp >> (8 * sizeof (int) - 2)) | (__cmp != 0);
     }
   
@@ -78,6 +85,16 @@ namespace std
     size_t
     collate<wchar_t>::_M_transform(wchar_t* __to, const wchar_t* __from,
 				   size_t __n) const
+#if _GLIBCXX_HAVE_WCSXFRM
     { return wcsxfrm(__to, __from, __n); }
+#else    
+    {
+      if (__n == 0)
+        return wcslen (__from);
+      wcsncpy(__to, __from, __n - 1);
+      __to[__n - 1] = L'\0';
+      return wcslen (__to);
+    }
 #endif
+#endif /* _GLIBCXX_USE_WCHAR_T */
 }

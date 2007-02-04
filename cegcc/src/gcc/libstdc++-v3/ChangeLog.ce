@@ -1,3 +1,20 @@
+2007-02-04  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* acinclude.m4 (GLIBCXX_ENABLE_C99]): Remove wcscoll and wcsxfrm.
+	Check for wcscoll, wcsxfrm, strcoll and strxfrm.
+	* configure: Regenerate.
+	* include/c_std/std_cwchar.h: Use _GLIBCXX_HAVE_WCSCOLL, and 
+	_GLIBCXX_HAVE_WCSXFRM.
+	* config/locale/generic/collate_members.cc
+	(collate<char>::_M_compare): Use _GLIBCXX_HAVE_STRCOLL.
+	Use strcmp as alternative.
+	(collate<char>::_M_transform): Use _GLIBCXX_HAVE_STRXFRM.
+	Use strncpy as alternative.
+	(collate<wchar_t>::_M_compare): Use _GLIBCXX_HAVE_WCSCOLL.
+	Use wcscmp as alternative.
+	(collate<wchar_t>::_M_transform): Use _GLIBCXX_HAVE_WCSXFRM.
+	Use wcsncpy as alternative.
+	
 2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* config/io/basic_file_stdio.cc (__gnu_internal::read,
