@@ -1,3 +1,8 @@
+2007-02-04  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* libce/Makefile.in (inst_includedir, inst_libdir): Set them
+	correctly for *wince* cases.
+
 2007-02-01  Nuno Lucas  <ntlucas@gmail.com>
 
 	* include/todaycmn.h : Create this file based on MSDN documentation
