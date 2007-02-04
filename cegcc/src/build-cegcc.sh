@@ -75,8 +75,11 @@ function copy_w32api_headers()
     echo ""
     echo ""
 
-    mkdir -p ${PREFIX}/${TARGET}/include/w32api
-    cp -rf ${BASE_DIRECTORY}/w32api/include/*.h ${PREFIX}/${TARGET}/include/w32api || exit 1
+    mkdir -p ${PREFIX}/${TARGET}/include/w32api/{GL,directx,ddk}
+    cp -fp ${BASE_DIRECTORY}/w32api/include/*.h ${PREFIX}/${TARGET}/include/w32api || exit 1
+    cp -fp ${BASE_DIRECTORY}/w32api/include/GL/*.h ${PREFIX}/${TARGET}/include/w32api/GL || exit 1
+    cp -fp ${BASE_DIRECTORY}/w32api/include/directx/*.h ${PREFIX}/${TARGET}/include/w32api/directx || exit 1
+    cp -fp ${BASE_DIRECTORY}/w32api/include/ddk/*.h ${PREFIX}/${TARGET}/include/w32api/ddk || exit 1
 }
 
 function build_dummy_cegccdll()

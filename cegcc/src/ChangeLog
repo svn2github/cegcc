@@ -1,3 +1,10 @@
+2007-02-04  Danny Backx <dannybackx@users.sourceforge.net>
+
+	* build-mingw32ce.sh (copy_headers) : Copy includes from the sys
+	subdirectory too.
+	* build-cegcc.sh (copy_w32api_headers) : Copy includes from the GL,
+	directx, ddk subdirectories too.
+
 2007-02-01  Danny Backx <dannybackx@users.sourceforge.net>
 
 	* build-mingw32ce.sh, build-cegcc.sh : Add help text to explain

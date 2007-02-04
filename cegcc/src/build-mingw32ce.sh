@@ -83,9 +83,10 @@ function copy_headers()
     echo ""
     echo ""
 
-    mkdir -p ${PREFIX}/${TARGET}/include/
-    cp -rfp ${BASE_DIRECTORY}/mingw/include/*.h ${PREFIX}/${TARGET}/include/ || exit 1
-    cp -rfp ${BASE_DIRECTORY}/w32api/include/*.h ${PREFIX}/${TARGET}/include/ || exit 1
+    mkdir -p ${PREFIX}/${TARGET}/include/sys
+    cp -fp ${BASE_DIRECTORY}/mingw/include/*.h ${PREFIX}/${TARGET}/include/ || exit 1
+    cp -fp ${BASE_DIRECTORY}/mingw/include/sys/*.h ${PREFIX}/${TARGET}/include/sys || exit 1
+    cp -fp ${BASE_DIRECTORY}/w32api/include/*.h ${PREFIX}/${TARGET}/include/ || exit 1
 }
 
 function build_bootstrap_gcc()
