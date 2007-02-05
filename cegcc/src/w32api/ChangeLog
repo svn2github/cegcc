@@ -1,3 +1,151 @@
+2007-01-11  Gisle Vanem  <giva@users.sourceforge.net>
+
+	* include/winbase.h (struct _OVERLAPPED): Change type of
+	Internal, InternalHigh members to ULONG_PTR.
+	(PAPCFUNC): Change DWORD parameter to ULONG_PTR.
+	(CreateIoCompletionPort): Likewise.
+	(PostQueuedCompletionStatus): Likewise.
+	(QueueUserAPC): Likewise.
+
+2007-01-06  Pierre A. Humblet  <Pierre.Humblet@ieee.org>
+
+	* include/windns.h (DNS_TYPE_RP, DNS_TYPE_AFSDB, DNS_TYPE_X25,
+	DNS_TYPE_ISDN, DNS_TYPE_RT, DNS_TYPE_NSAP, DNS_TYPE_NSAPPTR,
+	DNS_TYPE_SIG, DNS_TYPE_KEY, DNS_TYPE_PX, DNS_TYPE_GPOS,
+	DNS_TYPE_AAAA, DNS_TYPE_LOC, DNS_TYPE_NXT, DNS_TYPE_EID,
+	DNS_TYPE_NIMLOC, DNS_TYPE_SRV, DNS_TYPE_ATMA, DNS_TYPE_NAPTR,
+	DNS_TYPE_KX, DNS_TYPE_CERT, DNS_TYPE_A6, DNS_TYPE_DNAME,
+	DNS_TYPE_SINK, DNS_TYPE_OPT, DNS_TYPE_UINFO, DNS_TYPE_UID,
+	DNS_TYPE_GID, DNS_TYPE_UNSPEC, DNS_TYPE_ADDRS, DNS_TYPE_TKEY,
+	DNS_TYPE_TSIG, DNS_TYPE_IXFR, DNS_TYPE_AXFR, DNS_TYPE_MAILB,
+	DNS_TYPE_MAILA, DNS_TYPE_ALL, DNS_TYPE_ANY): Add enum values.
+
+2006-11-21  Danny Smith  <dannysmith@users.sourceforge.net>
+
+	* Makefile.in: Add aclocal.m4 to source release.
+
+2006-11-18  Chris Sutcliffe  <ir0nh34d@users.sf.net>
+
+	* include/w32api.h: Increment version to 3.8.
+	* Makefile.in: Ditto.
+
+2006-11-13  Daniel Schlyder  <thrug@users.sourceforge.net>
+
+	* include/winnt.h (VER_SUITE_EMBEDDEDNT, VER_SUITE_SINGLEUSERTS,
+	VER_SUITE_STORAGE_SERVER, VER_SUITE_COMPUTE_SERVER): Define.
+
+	* include/winuser.h (SM_STARTER, SM_SERVERR2): Define.
+
+2006-11-02  Danny Smith  <dannysmith@users.sourceforge.net>
+
+	* include/winuser.h (LR_DEFAULTSIZE): Remove duplicate.
+
+	* include/winnt.h (GetCurrentFiber): Remove extern declaration.  Make
+	inline static.
+	(GetFiberData): Likewise.  
+	* lib/kernel32.c: Remove.
+	* lib/Makefile.in: Remove reference to kernel32.[co].
+
+2006-10-31  Corinna Vinschen  <corinna@vinschen.de>
+
+	* include/winnt.h (SE_RELABEL_NAME): Define.
+	(SE_INCREASE_WORKING_SET_NAME): Define.
+	(SE_TIME_ZONE_NAME): Define.
+	(SE_CREATE_SYMBOLIC_LINK_NAME): Define.
+
+2006-10-31  Corinna Vinschen  <corinna@vinschen.de>
+
+	* include/winnt.h (IO_REPARSE_TAG_SYMLINK): Define.
+	(struct _REPARSE_DATA_BUFFER): Add missing Flags field to
+	SymbolicLinkReparseBuffer substructure.
+
+2006-10-29  Daniel Atallah  <datallah@users.sourceforge.net>
+
+	* lib/ws2_32.def (WSANSPIoctl): Add to lib.
+
+2006-10-26  Chris Sutcliffe  <ir0nh34d@users.sourceforge.net>
+
+	* lib/Makefile.in: Fix order for 'all' rule.
+
+2006-10-12  Danny Smith  <dannysmith@users.sourceforge.net>
+
+	* include/winuser.h (LR_DEFAULTSIZE, LR_VGACOLOR): Define.
+
+2006-10-05  Danny Smith  <dannysmith@users.sourceforge.net>
+
+	* include/winreg.h (RegDeleteKeyEx{A|W}): Add prototype and UNICODE
+	mappings.
+	(KEY_WOW64_32KEY, KEY_WOW64_64KEY): Define. 
+	* lib/advapi.def (RegDeleteKeyEx{A|W}): Export.
+
+2006-10-04  Danny Smith  <dannysmith@users.sourceforge.net>
+
+	* include/rpc.h: Add whitespace.
+	* include/winnt.h (C_ASSERT): Define.
+
+2006-10-04  Danny Smith  <dannysmith@users.sourceforge.net>
+
+	[mingw-Bugs-1568067]
+	* include/winuser.h: (DISP_CHANGE_BADDUALVIEW): Define.
+	* include/wingdi.h: (DM_POSITION): Define.
+
+2006-10-03  Danny Smith  <dannysmith@users.sourceforge.net>
+
+	* lib/rpcrt4.def: Remove "_imp__"-prefixed export symbols.
+	* lib/user32.def: Likewise.
+
+2006-09-11  Chris Sutcliffe  <ir0n3h4d@users.sourceforge.net>
+
+	* lib/Makefile.in: fix typo.
+	* lib/ddk/Makefile.in: fix typo.
+	* lib/directx/Makefile.in: fix typo.
+
+	Thanks to Keith Marshall (keithmarshall at users dot sourceforge dot net)
+	for pointing it out.
+
+2006-09-10  Chris Sutcliffe  <ir0nh34d@users.sourceforge.net>
+
+	* Makefile.in: Remove files from lib directory with distclean target
+
+2006-09-10  Chris Sutcliffe  <ir0nh34d@users.sourceforge.net>
+
+	* include/winuser.h (CS_DROPSHADOW): Define.
+
+2006-09-08  Michael Gerdau  <mgdde@users.sourceforge.net>
+
+	* include/uxtheme.h: (TMT_GRADIENTCOLOR4, TMT_GRADIENTCOLOR5,
+	TMT_SHADOWCOLOR, TMT_GLOWCOLOR, TMT_TEXTBORDERCOLOR,
+	TMT_TEXTSHADOWCOLOR, TMT_GLYPHTEXTCOLOR, TMT_GLYPHTRANSPARENTCOLOR,
+	TMT_FILLCOLORHINT, TMT_BORDERCOLORHINT, TMT_ACCENTCOLORHINT):
+
+	Increase each constant by 1.
+
+2006-09-07  Danny Smith  <dannysmith@users.sourceforge.net>
+
+	[mingw-Bugs-1553275]
+	* include/wingdi.h (SetLayout): Add prototype.
+	(GetLayout): Likewise.
+
+2006-09-02  Danny Smith  <dannysmith@users.sourceforge.net>
+
+	[mingw-Bugs-1550139]
+	* include/oleauto.h (GetRecordInfoFromTypeInfo): Add prototype.
+	Tanks to:  Samit Basu <samitbasu at sf dot net>
+	(GetRecordInfoFromGuids): Add prototype.
+
+2006-09-01  Danny Smith  <dannysmith@users.sourceforge.net>
+
+	* include/winbase.h: Add comment about 'missing' SEM flag.
+
+2006-08-30  Corinna Vinschen  <corinna@vinschen.de>
+
+	* configure.in: Substitute with_cross_host in depending files.
+	* configure: Regenerate.
+	* lib/Makefile.in: Add with_cross_host to allow more granular checks.
+	Set installation directories accordingly.
+	* lib/ddk/Makefile.in: Ditto.
+	* lib/directx/Makefile.in: Ditto.
+
 2006-08-10  Danny Smith  <dannysmith@users.sourceforge.net>
 
 	* lib/wtsapi32.def (WTSGetActiveConsoleSessionId). Move from here...
@@ -117,64 +265,64 @@
  
 2006-07-22  ipsoner  <ipsoner@users.sourceforge.net>
 
-    * include/wincrypt.h (szOID_RSA, szOID_PKCS, szOID_RSA_HASH,
-    szOID_RSA_ENCRYPT, szOID_PKCS_1, szOID_PKCS_2, szOID_PKCS_3,
-    szOID_PKCS_4, szOID_PKCS_5, szOID_PKCS_6, szOID_PKCS_7,
-    szOID_PKCS_8, szOID_PKCS_9, szOID_PKCS_10, szOID_PKCS_12,
-    szOID_RSA_MD2, szOID_RSA_MD4, szOID_RSA_MD5, szOID_RSA_RSA,
-    szOID_RSA_MD2RSA, szOID_RSA_MD4RSA, szOID_RSA_MD5RSA,
-    szOID_RSA_SHA1RSA, szOID_RSA_SETOAEP_RSA, szOID_RSA_DH,
-    szOID_RSA_data, szOID_RSA_signedData, szOID_RSA_envelopedData,
-    szOID_RSA_signEnvData, szOID_RSA_digestedData, szOID_RSA_hashedData,
-    szOID_RSA_encryptedData, szOID_RSA_emailAddr, szOID_RSA_unstructName,
-    szOID_RSA_contentType, szOID_RSA_messageDigest, szOID_RSA_signingTime,
-    szOID_RSA_counterSign, szOID_RSA_challengePwd, szOID_RSA_unstructAddr,
-    szOID_RSA_extCertAttrs, szOID_RSA_SMIMECapabilities,
-    szOID_RSA_preferSignedData, szOID_RSA_RC2CBC, szOID_RSA_RC4,
-    szOID_RSA_DES_EDE3_CBC, szOID_RSA_RC5_CBCPad, szOID_ANSI_x942,
-    szOID_ANSI_x942_DH, szOID_X957, szOID_X957_DSA, szOID_DATA STRUCTURE,
-    szOID_DS, szOID_DSALG, szOID_DSALG_CRPT, szOID_DSALG_HASH,
-    szOID_DSALG_SIGN, szOID_DSALG_RSA, szOID_OIW, szOID_OIWSEC,
-    szOID_OIWSEC_md4RSA, szOID_OIWSEC_md5RSA, szOID_OIWSEC_md4RSA2,
-    szOID_OIWSEC_desECB, szOID_OIWSEC_desCBC, szOID_OIWSEC_desOFB,
-    szOID_OIWSEC_desCFB, szOID_OIWSEC_desMAC, szOID_OIWSEC_rsaSign,
-    szOID_OIWSEC_dsa, szOID_OIWSEC_shaDSA, szOID_OIWSEC_mdc2RSA,
-    szOID_OIWSEC_shaRSA, szOID_OIWSEC_dhCommMod, szOID_OIWSEC_desEDE,
-    szOID_OIWSEC_sha, szOID_OIWSEC_mdc2, szOID_OIWSEC_dsaComm,
-    szOID_OIWSEC_dsaCommSHA, szOID_OIWSEC_rsaXchg, szOID_OIWSEC_keyHashSeal,
-    szOID_OIWSEC_md2RSASign, szOID_OIWSEC_md5RSASign, szOID_OIWSEC_sha1,
-    szOID_OIWSEC_dsaSHA1, szOID_OIWSEC_dsaCommSHA1, szOID_OIWSEC_sha1RSASign,
-    szOID_OIWDIR, szOID_OIWDIR_CRPT, szOID_OIWDIR_HASH, szOID_OIWDIR_SIGN,
-    szOID_OIWDIR_md2, szOID_OIWDIR_md2RSA, szOID_INFOSEC,
-    szOID_INFOSEC_sdnsSignature, szOID_INFOSEC_mosaicSignature,
-    szOID_INFOSEC_sdnsConfidentiality, szOID_INFOSEC_mosaicConfidentiality,
-    szOID_INFOSEC_sdnsIntegrity, szOID_INFOSEC_mosaicIntegrity,
-    szOID_INFOSEC_sdnsTokenProtection, szOID_INFOSEC_mosaicTokenProtection,
-    szOID_INFOSEC_sdnsKeyManagement, szOID_INFOSEC_mosaicKeyManagement,
-    szOID_INFOSEC_sdnsKMandSig, szOID_INFOSEC_mosaicKMandSig,
-    szOID_INFOSEC_SuiteASignature, szOID_INFOSEC_SuiteAConfidentiality,
-    szOID_INFOSEC_SuiteAIntegrity, szOID_INFOSEC_SuiteATokenProtection,
-    szOID_INFOSEC_SuiteAKeyManagement, szOID_INFOSEC_SuiteAKMandSig,
-    szOID_INFOSEC_mosaicUpdatedSig, szOID_INFOSEC_mosaicKMandUpdSig,
-    szOID_INFOSEC_mosaicUpdatedInteg, szOID_PKIX_NO_SIGNATURE,
-    szOID_COMMON_NAME, szOID_COUNTRY_NAME, szOID_DEVICE_SERIAL_NUMBER,
-    szOID_DOMAIN_COMPONENT, szOID_RSA_emailAddr, szOID_GIVEN_NAME,
-    szOID_INITIALS, szOID_LOCALITY_NAME, szOID_ORGANIZATION_NAME,
-    szOID_ORGANIZATIONAL_UNIT_NAME, szOID_STATE_OR_PROVINCE_NAME,
-    szOID_STREET_ADDRESS, szOID_SUR_NAME, szOID_TITLE, szOID_RSA_unstructAddr,
-    szOID_RSA_unstructName, szOID_BASIC_CONSTRAINTS2,
-    CERT_BASIC_CONSTRAINTS2_INFO, CRYPT_ENCODE_PARA,CertDuplicateStore,
-    CertEnumCertificatesInStore, CertDuplicateCertificateContext,
-    CertGetNameStringA, CertGetNameStringW, CertGetNameString, PFXIsPFXBlob,
-    CertFindExtension, CryptDecodeObject, CertAddCertificateContextToStore,
-    CertCompareCertificate, PFXVerifyPassword, PFXImportCertStore,
-    CertDeleteCertificateFromStore): Define.
-    * lib/crypt32.def (CertDuplicateStore, CertEnumCertificatesInStore,
-    CertDuplicateCertificateContext, CertGetNameStringA, CertGetNameStringW,
-    CertGetNameString, PFXIsPFXBlob, CertFindExtension, CryptDecodeObject,
-    CertAddCertificateContextToStore, CertCompareCertificate,
-    PFXVerifyPassword, PFXImportCertStore, CertDeleteCertificateFromStore):
-    Define.
+	* include/wincrypt.h (szOID_RSA, szOID_PKCS, szOID_RSA_HASH,
+	szOID_RSA_ENCRYPT, szOID_PKCS_1, szOID_PKCS_2, szOID_PKCS_3,
+	szOID_PKCS_4, szOID_PKCS_5, szOID_PKCS_6, szOID_PKCS_7,
+	szOID_PKCS_8, szOID_PKCS_9, szOID_PKCS_10, szOID_PKCS_12,
+	szOID_RSA_MD2, szOID_RSA_MD4, szOID_RSA_MD5, szOID_RSA_RSA,
+	szOID_RSA_MD2RSA, szOID_RSA_MD4RSA, szOID_RSA_MD5RSA,
+	szOID_RSA_SHA1RSA, szOID_RSA_SETOAEP_RSA, szOID_RSA_DH,
+	szOID_RSA_data, szOID_RSA_signedData, szOID_RSA_envelopedData,
+	szOID_RSA_signEnvData, szOID_RSA_digestedData, szOID_RSA_hashedData,
+	szOID_RSA_encryptedData, szOID_RSA_emailAddr, szOID_RSA_unstructName,
+	szOID_RSA_contentType, szOID_RSA_messageDigest, szOID_RSA_signingTime,
+	szOID_RSA_counterSign, szOID_RSA_challengePwd, szOID_RSA_unstructAddr,
+	szOID_RSA_extCertAttrs, szOID_RSA_SMIMECapabilities,
+	szOID_RSA_preferSignedData, szOID_RSA_RC2CBC, szOID_RSA_RC4,
+	szOID_RSA_DES_EDE3_CBC, szOID_RSA_RC5_CBCPad, szOID_ANSI_x942,
+	szOID_ANSI_x942_DH, szOID_X957, szOID_X957_DSA, szOID_DATA STRUCTURE,
+	szOID_DS, szOID_DSALG, szOID_DSALG_CRPT, szOID_DSALG_HASH,
+	szOID_DSALG_SIGN, szOID_DSALG_RSA, szOID_OIW, szOID_OIWSEC,
+	szOID_OIWSEC_md4RSA, szOID_OIWSEC_md5RSA, szOID_OIWSEC_md4RSA2,
+	szOID_OIWSEC_desECB, szOID_OIWSEC_desCBC, szOID_OIWSEC_desOFB,
+	szOID_OIWSEC_desCFB, szOID_OIWSEC_desMAC, szOID_OIWSEC_rsaSign,
+	szOID_OIWSEC_dsa, szOID_OIWSEC_shaDSA, szOID_OIWSEC_mdc2RSA,
+	szOID_OIWSEC_shaRSA, szOID_OIWSEC_dhCommMod, szOID_OIWSEC_desEDE,
+	szOID_OIWSEC_sha, szOID_OIWSEC_mdc2, szOID_OIWSEC_dsaComm,
+	szOID_OIWSEC_dsaCommSHA, szOID_OIWSEC_rsaXchg, szOID_OIWSEC_keyHashSeal,
+	szOID_OIWSEC_md2RSASign, szOID_OIWSEC_md5RSASign, szOID_OIWSEC_sha1,
+	szOID_OIWSEC_dsaSHA1, szOID_OIWSEC_dsaCommSHA1, szOID_OIWSEC_sha1RSASign,
+	szOID_OIWDIR, szOID_OIWDIR_CRPT, szOID_OIWDIR_HASH, szOID_OIWDIR_SIGN,
+	szOID_OIWDIR_md2, szOID_OIWDIR_md2RSA, szOID_INFOSEC,
+	szOID_INFOSEC_sdnsSignature, szOID_INFOSEC_mosaicSignature,
+	szOID_INFOSEC_sdnsConfidentiality, szOID_INFOSEC_mosaicConfidentiality,
+	szOID_INFOSEC_sdnsIntegrity, szOID_INFOSEC_mosaicIntegrity,
+	szOID_INFOSEC_sdnsTokenProtection, szOID_INFOSEC_mosaicTokenProtection,
+	szOID_INFOSEC_sdnsKeyManagement, szOID_INFOSEC_mosaicKeyManagement,
+	szOID_INFOSEC_sdnsKMandSig, szOID_INFOSEC_mosaicKMandSig,
+	szOID_INFOSEC_SuiteASignature, szOID_INFOSEC_SuiteAConfidentiality,
+	szOID_INFOSEC_SuiteAIntegrity, szOID_INFOSEC_SuiteATokenProtection,
+	szOID_INFOSEC_SuiteAKeyManagement, szOID_INFOSEC_SuiteAKMandSig,
+	szOID_INFOSEC_mosaicUpdatedSig, szOID_INFOSEC_mosaicKMandUpdSig,
+	szOID_INFOSEC_mosaicUpdatedInteg, szOID_PKIX_NO_SIGNATURE,
+	szOID_COMMON_NAME, szOID_COUNTRY_NAME, szOID_DEVICE_SERIAL_NUMBER,
+	szOID_DOMAIN_COMPONENT, szOID_RSA_emailAddr, szOID_GIVEN_NAME,
+	szOID_INITIALS, szOID_LOCALITY_NAME, szOID_ORGANIZATION_NAME,
+	szOID_ORGANIZATIONAL_UNIT_NAME, szOID_STATE_OR_PROVINCE_NAME,
+	szOID_STREET_ADDRESS, szOID_SUR_NAME, szOID_TITLE, szOID_RSA_unstructAddr,
+	szOID_RSA_unstructName, szOID_BASIC_CONSTRAINTS2,
+	CERT_BASIC_CONSTRAINTS2_INFO, CRYPT_ENCODE_PARA,CertDuplicateStore,
+	CertEnumCertificatesInStore, CertDuplicateCertificateContext,
+	CertGetNameStringA, CertGetNameStringW, CertGetNameString, PFXIsPFXBlob,
+	CertFindExtension, CryptDecodeObject, CertAddCertificateContextToStore,
+	CertCompareCertificate, PFXVerifyPassword, PFXImportCertStore,
+	CertDeleteCertificateFromStore): Define.
+	* lib/crypt32.def (CertDuplicateStore, CertEnumCertificatesInStore,
+	CertDuplicateCertificateContext, CertGetNameStringA, CertGetNameStringW,
+	CertGetNameString, PFXIsPFXBlob, CertFindExtension, CryptDecodeObject,
+	CertAddCertificateContextToStore, CertCompareCertificate,
+	PFXVerifyPassword, PFXImportCertStore, CertDeleteCertificateFromStore):
+	Define.
 
 2006-07-22  Chris Sutcliffe  <ir0nh34d@users.sourceforge.net>
 
@@ -425,7 +573,7 @@
 
 	* include/winnt.h (SUBLANG_ARABIC_SAUDI_ARABIA): Revert accidental
 	removal.
-        (SUBLANG_MARATHI_INDIA): Remove duplicate define.
+	(SUBLANG_MARATHI_INDIA): Remove duplicate define.
 
 2006-05-24  Christopher Faylor  <cgf@timesys.com>
 

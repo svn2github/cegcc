@@ -12,10 +12,17 @@ AC_INIT(lib/scrnsave.c)
 
 AC_CANONICAL_SYSTEM
 
-LIB_AC_PROG_CC
+#LIB_AC_PROG_CC
 
 dnl Find install command
 AC_PROG_INSTALL
+
+dnl check for cc and CFLAGS
+CFLAGS=${CFLAGS-"-O2 -g"}
+AC_CHECK_TOOL(CC, gcc, gcc)
+AC_SUBST(CC)
+AC_SUBST(CFLAGS)
+AC_SUBST(with_cross_host)
 
 dnl check for various tools
 AC_CHECK_TOOL(AR, ar, ar)

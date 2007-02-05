@@ -98,7 +98,6 @@
 /mmsystem.h/1.8/Wed May 10 08:57:46 2006/-ko/
 /mpegtype.h/1.1/Wed May 10 08:57:46 2006//
 /mprapi.h/1.10/Fri May 12 17:12:32 2006//
-/mq.h/1.1/Wed Apr  5 10:01:56 2006//
 /msacm.h/1.2/Fri Apr 30 17:05:28 2004//
 /mshtml.h/1.6/Tue Jul 25 00:22:20 2006//
 /mswsock.h/1.5/Wed Mar 12 23:36:54 2003//
@@ -124,7 +123,6 @@
 /ole2.h/1.2/Sat Mar  9 09:04:10 2002/-ko/
 /ole2ver.h/1.2/Sat Mar  9 09:04:10 2002/-ko/
 /oleacc.h/1.5/Tue Apr 11 22:56:08 2006//
-/oleauto.h/1.12/Wed Mar  3 19:19:36 2004/-ko/
 /olectl.h/1.10/Tue Jul 25 00:22:20 2006/-ko/
 /olectlid.h/1.3/Fri Jul 26 04:26:26 2002/-ko/
 /oledlg.h/1.6/Tue Apr 11 22:56:08 2006/-ko/
@@ -149,7 +147,6 @@
 /richedit.h/1.15/Wed Jul 20 11:21:50 2005/-ko/
 /richole.h/1.3/Tue Apr 11 22:56:08 2006/-ko/
 /routprot.h/1.2/Thu May 11 15:57:12 2006//
-/rpc.h/1.5/Sun Apr 18 07:07:56 2004/-ko/
 /rpcdce.h/1.9/Mon Jun 12 00:55:06 2006/-ko/
 /rpcdce2.h/1.2/Sat Mar  9 09:04:10 2002/-ko/
 /rpcdcep.h/1.6/Sun Apr 18 07:07:56 2004/-ko/
@@ -187,38 +184,30 @@
 /unknwn.h/1.7/Tue Apr 11 22:56:08 2006/-ko/
 /userenv.h/1.2/Sat Mar  9 09:04:10 2002//
 /usp10.h/1.1/Sat Mar 25 21:43:56 2006//
-/uxtheme.h/1.5/Tue Jan  3 09:04:08 2006//
 /vfw.h/1.4/Tue Jul 25 00:22:20 2006//
 /vidcap.h/1.1/Wed May 10 08:57:46 2006//
 /vmr9.h/1.1/Wed May 10 08:57:46 2006//
 /vptype.h/1.1/Wed May 10 08:57:46 2006//
-/w32api.h/1.30/Fri Apr 14 12:52:50 2006//
 /winable.h/1.9/Fri Sep 26 14:46:34 2003//
-/winbase.h/1.86/Fri Apr 28 17:34:02 2006/-ko/
 /winber.h/1.1/Fri Aug  1 09:11:38 2003//
 /wincon.h/1.13/Mon Mar 27 05:34:24 2006/-ko/
 /wincrypt.h/1.19/Sat Jul 22 13:31:18 2006/-ko/
 /windef.h/1.18/Mon Jun 12 00:55:06 2006/-ko/
-/windns.h/1.2/Fri Apr 23 17:31:32 2004//
 /windows.h/1.17/Tue Jul 25 00:22:20 2006/-ko/
 /windowsx.h/1.3/Sat Mar  9 09:04:10 2002/-ko/
 /winerror.h/1.14/Wed Apr  5 07:06:06 2006/-ko/
-/wingdi.h/1.54/Wed May 10 08:04:50 2006/-ko/
 /wininet.h/1.15/Sun Mar  5 08:31:58 2006/-ko/
 /winioctl.h/1.15/Mon Feb  7 20:40:32 2005/-ko/
 /winldap.h/1.3/Sun Jun 19 07:25:12 2005//
 /winnetwk.h/1.7/Fri Mar 31 09:08:48 2006/-ko/
 /winnls.h/1.9/Wed May 10 08:36:06 2006/-ko/
-/winnt.h/1.109/Sat Jul 29 09:25:46 2006/-ko/
 /winperf.h/1.2/Sat Mar  9 09:04:10 2002/-ko/
-/winreg.h/1.5/Wed Jan 11 22:49:06 2006/-ko/
 /winresrc.h/1.2/Sat Mar  9 09:04:10 2002/-ko/
 /winsnmp.h/1.1/Mon Aug 25 09:33:14 2003//
 /winsock.h/1.16/Thu Apr  6 12:16:50 2006/-ko/
 /winsock2.h/1.29/Sun Jan 29 00:52:36 2006/-ko/
 /winspool.h/1.13/Thu Mar 30 04:01:44 2006/-ko/
 /winsvc.h/1.7/Wed Jan 11 22:49:06 2006/-ko/
-/winuser.h/1.116/Wed Jul 19 21:45:26 2006/-ko/
 /winver.h/1.4/Sat Mar 25 21:43:56 2006/-ko/
 /ws2spi.h/1.7/Tue Jul 25 00:22:20 2006//
 /ws2tcpip.h/1.10/Mon Apr 24 11:53:16 2006//
@@ -231,3 +220,14 @@
 D/GL////
 D/ddk////
 D/directx////
+/mq.h/1.1/Wed Apr  5 11:01:56 2006//
+/oleauto.h/1.13/Result of merge+Sun Feb  4 23:45:14 2007/-ko/
+/rpc.h/1.6/Result of merge+Sun Feb  4 23:45:14 2007/-ko/
+/uxtheme.h/1.6/Result of merge+Sun Feb  4 23:45:14 2007//
+/w32api.h/1.31/Result of merge+Sun Feb  4 23:45:14 2007//
+/winbase.h/1.88/Result of merge/-ko/
+/windns.h/1.3/Result of merge+Sun Feb  4 23:45:16 2007//
+/wingdi.h/1.56/Result of merge/-ko/
+/winnt.h/1.114/Result of merge+Sun Feb  4 23:45:16 2007/-ko/
+/winreg.h/1.6/Result of merge+Sun Feb  4 23:45:16 2007/-ko/
+/winuser.h/1.121/Result of merge/-ko/

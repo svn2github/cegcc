@@ -15,7 +15,6 @@
 #elif defined(__i386__) && !defined(_M_IX86)
 #define _M_IX86 300
 #endif
-
 #if defined(_M_IX86) && !defined(_X86_)
 #define _X86_
 #elif defined(_M_ALPHA) && !defined(_ALPHA_)
@@ -70,6 +69,9 @@ extern "C" {
 #endif
 #endif
 
+#ifndef C_ASSERT
+#define C_ASSERT(expr) typedef char __C_ASSERT__[(expr)?1:-1]
+#endif
 
 #ifndef VOID
 #define VOID void
@@ -503,6 +505,10 @@ typedef DWORD FLONG;
 #define SE_IMPERSONATE_NAME TEXT("SeImpersonatePrivilege")
 #define SE_ENABLE_DELEGATION_NAME TEXT("SeEnableDelegationPrivilege")
 #define SE_SYNC_AGENT_NAME TEXT("SeSyncAgentPrivilege")
+#define SE_RELABEL_NAME TEXT("SeRelabelPrivilege")
+#define SE_INCREASE_WORKING_SET_NAME TEXT("SeIncreaseWorkingSetPrivilege")
+#define SE_TIME_ZONE_NAME TEXT("SeTimeZonePrivilege")
+#define SE_CREATE_SYMBOLIC_LINK_NAME TEXT("SeCreateSymbolicLinkPrivilege")
 #define SE_GROUP_MANDATORY 1
 #define SE_GROUP_ENABLED_BY_DEFAULT 2
 #define SE_GROUP_ENABLED 4
@@ -1666,9 +1672,13 @@ typedef DWORD FLONG;
 #define VER_SUITE_BACKOFFICE 4
 #define VER_SUITE_TERMINAL 16
 #define VER_SUITE_SMALLBUSINESS_RESTRICTED 32
+#define VER_SUITE_EMBEDDEDNT 64
 #define VER_SUITE_DATACENTER 128
+#define VER_SUITE_SINGLEUSERTS 256
 #define VER_SUITE_PERSONAL 512
 #define VER_SUITE_BLADE 1024
+#define VER_SUITE_STORAGE_SERVER 8192
+#define VER_SUITE_COMPUTE_SERVER 16384
 #define WT_EXECUTEDEFAULT 0x00000000                           
 #define WT_EXECUTEINIOTHREAD 0x00000001                           
 #define WT_EXECUTEINWAITTHREAD 0x00000004                           
@@ -1708,6 +1718,7 @@ typedef DWORD FLONG;
 #define IsReparseTagValid(x) (!((x)&~IO_REPARSE_TAG_VALID_VALUES)&&((x)>IO_REPARSE_TAG_RESERVED_RANGE))
 #define IO_REPARSE_TAG_SYMBOLIC_LINK IO_REPARSE_TAG_RESERVED_ZERO
 #define IO_REPARSE_TAG_MOUNT_POINT 0xA0000003
+#define IO_REPARSE_TAG_SYMLINK 0xA000000C
 #define WT_SET_MAX_THREADPOOL_THREADS(Flags,Limit) ((Flags)|=(Limit)<<16)
 #ifndef RC_INVOKED
 typedef DWORD ACCESS_MASK, *PACCESS_MASK;
@@ -3344,6 +3355,7 @@ typedef struct _REPARSE_DATA_BUFFER {
 			WORD   SubstituteNameLength;
 			WORD   PrintNameOffset;
 			WORD   PrintNameLength;
+			ULONG  Flags;
 			WCHAR PathBuffer[1];
 		} SymbolicLinkReparseBuffer;
 		struct {
@@ -3811,14 +3823,12 @@ ULONGLONG WINAPI VerSetConditionMask(ULONGLONG,DWORD,BYTE);
 #endif
 
 #ifndef _WIN32_WCE
-PVOID GetCurrentFiber(void);
-PVOID GetFiberData(void);
 
 #ifdef _X86_
 #if defined(__GNUC__)
 #if (__GNUC__ >= 3)
 /* Support -masm=intel.  */
-extern __inline__ PVOID GetCurrentFiber(void)
+static __inline__ PVOID GetCurrentFiber(void)
 {
     void* ret;
     __asm__ __volatile__ (
@@ -3828,7 +3838,7 @@ extern __inline__ PVOID GetCurrentFiber(void)
     return ret;
 }
 
-extern __inline__ PVOID GetFiberData(void)
+static __inline__ PVOID GetFiberData(void)
 {
     void* ret;
     __asm__ __volatile__ (
@@ -3853,7 +3863,7 @@ static __inline__ struct _TEB * NtCurrentTeb(void)
 }
 
 #else /* __GNUC__ >= 3 */
-extern __inline__ PVOID GetCurrentFiber(void)
+static __inline__ PVOID GetCurrentFiber(void)
 {
     void* ret;
     __asm__ __volatile__ (
@@ -3863,7 +3873,7 @@ extern __inline__ PVOID GetCurrentFiber(void)
     return ret;
 }
 
-extern __inline__ PVOID GetFiberData(void)
+static __inline__ PVOID GetFiberData(void)
 {
     void* ret;
     __asm__ __volatile__ (

@@ -17,6 +17,7 @@ VPATH = @srcdir@
 build_alias = @build@
 host_alias = @host@
 target_alias = @target@
+with_cross_host = @with_cross_host@
 prefix = @prefix@
 conf_prefix = @prefix@
 
@@ -93,11 +94,11 @@ else
 endif
 
 PACKAGE = w32api
-VERSION = 3.7
+VERSION = 3.8
 CYGRELEASE = 1
 
 DIST_FILES = Makefile.in configure.in configure config.guess config.sub \
-install-sh README.w32api ChangeLog TODO CONTRIBUTIONS
+aclocal.m4 install-sh README.w32api ChangeLog TODO CONTRIBUTIONS
 
 all: $(SUBDIRS)
 
@@ -180,8 +181,10 @@ maintainer-clean-top:
 mostlyclean: mostlyclean-top mostlyclean-subdirs
 clean: mostlyclean-top clean-subdirs
 distclean: clean-top
-	rm -f Makefile config.status config.log config.cache TAGS *~
+	$(MAKE) -C lib/directx distclean
+	$(MAKE) -C lib/ddk distclean
 	$(MAKE) -C lib distclean
+	rm -f Makefile config.status config.log config.cache TAGS *~
 maintainer-clean: maintainer-clean-subdirs
 
 .PHONY: lib libce test 
