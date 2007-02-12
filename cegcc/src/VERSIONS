@@ -17,8 +17,8 @@ Versions of the subdirectories below are :
 	binutils that works for arm-wince-pe target.
 	cvs -d :pserver:anoncvs@sourceware.org:/cvs/src ...
 	
-- w32api from cvs, 10 August 2006
+- w32api from cvs, 5 February 2007
     cvs -d :pserver:anoncvs@cygwin.com:/cvs/src/winsup/w32api ...
 
-- mingw from cvs, 3 August 2006
+- mingw from cvs, 5 February 2007
     cvs -d :pserver:anoncvs@cygwin.com:/cvs/src/winsup/mingw ...
