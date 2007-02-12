@@ -6,47 +6,115 @@
 <img src="../images/banner1.png" alt="CeGCC cross compiler for PocketPC">
 <P>
 This document describes how to build <A HREF="http://cegcc.sourceforge.net">CeGCC</A>.
-One chapter deals with building the software on Linux,
-another focuses on <A HREF="http://cygwin.com">Cygwin</A> (Windows + the Cygnus layer).
+We have a set of scripts that can be used to build the toolchain on
+<A HREF="http://www.linux.org">GNU/Linux</A> as well as on 
+<A HREF="http://cygwin.com">Cygwin</A> (Windows + the Cygnus layer).
+These scripts are in the <I>src/</I> directory, they're called
+<I>src/build-cegcc.sh</I> and
+<I>src/build-mingw32ce.sh</I>.
+They can be used to build the toolchain for the <I>arm-wince-cegcc</I>
+and <I>arm-wince-mingw32ce</I> target platforms, respectively.
+<P>
+We used to have a separate set of scripts in the <I>scripts/linux</I> directory.
+These have been removed.
+The only thing still left there is support for building <A HREF="http://www.rpm.org">RPM</A> files,
+these are distribution packages that can be used on many Linux platforms.
+<P>
+We offer two similar implementations of our product.
+They're called after the target platforms they represent :
+<ul>
+	<li><i>arm-wince-cegcc</i> is meant for building apps that rely on a UNIX-style operating system, system calls, etc.
+	<li><i>arm-wince-mingw32ce</i> is much closer to Windows CE, for apps using the native API.
+</ul>
+<P>
+The examples below all mention the <i>arm-wince-cegcc</i> target.
+When building for the <I>arm-wince-mingw32ce</I> target,
+replace <i>cegcc</i> by <i>mingw32ce</i> everywhere, e.g. :
+<PRE>
+	sh build-mingw32ce.sh
+</PRE>
 <H1>1. Building on Linux</H1>
 <P>
-There are two different sets of build scripts for Linux.
-The scripts in src/*.sh are being maintained (by Pedro), they can be used unchanged both on 
-Linux and Cygwin. The scripts in scripts/linux are maintained to build an RPM file,
-they are Linux-only.
-<H2>1.1. Background information</H2>
+This chapter describes building the toolchain on Linux.
+I would guess that this is similar on Cygwin,
+but the details on that are in the next chapter.
+<A HREF="#common">A third chapter</A> in this document describes some common elements,
+you probably want to look into that.
 <P>
-<H3>1.1.1 Things to modify</H3>
+The basic steps are very simple :
+<ul>
+	<li>Put yourself in the right directory</li>
+	<li>Clean up old installations</li>
+	<li>Build it</li>
+</ul>
+<H2>1.1 The right directory</H2>
 <P>
-Theoretically you should be able to use the scripts
-and have to modify only the <i>settings.sh</i> script.
-That script contains exported shell variables for
-<table>
-<tr><td>SCRIPTDIR</td><td>should automatically point to the scripts/linux directory</td></tr>
-<tr><td>TOP_SRCDIR</td><td>should automatically point to the top directory containing CeGCC</td></tr>
-<tr><td>BUILD_DIR</td><td>this points to a temporary directory in which all of the build happens</td></tr>
-<tr><td>PREFIX</td><td>By default, this is <i>/usr/ppc</i>. You should set it to suit your needs, this is where the tools get installed. (<i>GNU default would be /usr/local</i>).</td></tr>
-<tr><td>MY_HOST_ARCH</td><td>This is the architecture on which we're building</td></tr>
-<tr><td>TARGET_ARCH</td><td>This is the target architecture, for our project there are two such targets : <i>arm-wince-cegcc</i> and <i>arm-wince-mingw32ce</i>.</td></tr>
-<tr><td></td><td></td></tr>
-</table>
-<p>
-The scripts also includes $PREFIX/bin in the path
-to make sure that the newly built executables can be used
-by the other scripts in the build process.
-<H3>1.1.2 Script concepts</H3>
+All of the commands and context below rely on the fact that you're in the
+<I>src</I> directory of the <A HREF="http://cegcc.sourceforge.net">CeGCC</A>
+distribution.
+<H2>1.2 Clean up old installations</H2>
 <P>
-All scripts reside in $SCRIPTDIR, that's scripts/linux in your distribution.
-The build.sh script is the master build script.
+Cleanup is recommended :
+<PRE>
+	rm -rf /opt/cegcc/*
+	rm -rf build-cegcc
+</PRE>
+<H2>1.3 Build cegcc completely</H2>
 <P>
-<font color=red>Beware: build.sh will initially clean up</font>
-the complete $BUILD_DIR
-but also the contents of most of the $PREFIX.
-There's a small protection : it'll only clean up in $PREFIX if that's equal to /usr/ppc .
+<PRE>
+	sh build-cegcc.sh
+</PRE>
+<P>
+This command will rebuild and install all of cegcc.
+The directory in which everything is installed is <I>/opt/cegcc</I>,
+which means that you'll need to put <I>/opt/cegcc/bin</I> in your PATH
+to make use of the new tools.
+<H2>1.4 More complicated stuff : partial builds, etc</H2>
+<P>
+The build scripts have a couple of paramters.
+In this chapter, we'll explain how to use them.
+<P>
+When you pass the <i>--help</i> parameter to the build script,
+it'll display a summary of its usage :
+<PRE>
+	dannypc: {55} sh build-cegcc.sh --help
+	Using defaults:
+	Building cegcc:
+	source: /home/danny/src/cegcc/svn.sf.net/cegcc/trunk/cegcc/src
+	build: /home/danny/src/cegcc/svn.sf.net/cegcc/trunk/cegcc/src/build-cegcc
+	prefix: /opt/cegcc
+	usage:
+	build-cegcc.sh [source dir] [build directory] [prefix dir] [build_opt]
+	 
+	Valid build options : binutils importlibs w32api dummy_cegccdll
+	  bootstrapgcc newlib gcc cegccdll cegccthrd libstdc++ gdb
+	  gdbstub docs profile all
+
+	Done. --------------------------
+</PRE>
+<H3>1.4.1 Partial builds</H3>
+<P>
+You can rebuild part of CeGCC by saying e.g.
+<PRE>
+	sh build-cegcc.sh gcc
+</PRE>
+The script will then only build and install the requested module.
+<H3>1.4.2 Non-standard prefix</H3>
+<P>
+<B>Warning</B> : don't install CeGCC in a generic installation directory
+such as /usr/local . 
+<H3>1.4.3 </H3>
+<H1>2. Building on Cygwin</H1>
+<P>
+To be written by someone who knows about Cygwin...
+<A NAME="#common"><H1>3 Platform independent information</H1></A>
+<H2>3.1 How the scripts interact</H2>
+<H2>3.2 Installation directory</H2>
+<H2>3.3 The quick overview : how to build a cross compiler</H2>
 <P>
 The tools need to be built in a sequence because they rely on each other.
 The text below is an overview to make you understand the issues involved,
-the real script (scripts/linux/build.sh) is the most
+the real scripts (src/build-*.sh) are the most
 <I>(the only?)</I> reliable source of information on this topic.
 <ul>
 	<li>binutils
@@ -65,58 +133,7 @@ the real script (scripts/linux/build.sh) is the most
 In this sequence, we always (configure and) build the tools,
 then immediately install them in $PREFIX.
 This is uncommon, but is the easiest way for us to deal with this sequence.
-Sadly, this conflicts with the concept of e.g.
-<A HREF="http://www.rpm.org">rpm</A>
-so it is not possible to create a source RPM for this project in a simple way.
-<H3>1.1.3 Hacks to work around problems</H3>
-<H4>1.1.3.1 C++ compiler won't build</H4>
-<P>
-For some reason, the build process for the C++ compiler chokes.
-The only explanation - and workaround - that we know of is the one found in
-<A HREF="http://www.cygwin.com/ml/cygwin/1997-06/msg00457.html">this old message</A>
-saying
-<font color=blue><pre>
-Configure creates a softlink in gcc object directory to the new
-version of the cross assembler. Problem is that the native compiler
-get confused and use the cross assembler instead of the native one.
-</pre></font>
-<P>
-We adapted the build-gpp.sh script for this : it'll configure, and then build everything.
-But the build is expected to fail (so the script won't terminate on this occasion),
-then $BUILD_DIR/gpp/gcc/as is removed (that's the file bothering us),
-then the build is restarted.
-<H2>1.2 Building CeGCC for private use</H2>
-<P>
-This part is very simple : move to the scripts/linux directory and run build.sh .
-The software will turn up in /usr/ppc (add /usr/ppc/bin to your PATH) after a while.
-<H2>1.3 Building a CeGCC RPM</H2>
-<P>
-To build an RPM for distribution, you'll need to do two things :
-<ul>
-	<li> package the sources in a .tar.gz file
-	<li> build the RPMs from this
-</ul>
-<P>
-You should run scripts/linux/rpm-create-source.sh (from the scripts/linux directory).
-This will create a file called <i>/usr/src/RPM/SOURCES/cegcc-src-0.11.tar.gz</i>,
-in which the 0.11 part depends on variables sets in <i>settings.sh</i>.
-<P>
-For this to work, you'll need write permission in <i>/usr/src/RPM/*</i>,
-but the next steps also require this.
-<P>
-To build the RPM, you must run
-<i>rpmbuild -ba cegcc.spec</i>
-which is another file in the scripts/linux directory.
-<P>
-You'll need two prerequisites for this to work :
-write permissions in /usr/src/RPM,
-and you'll have to make sure that the version numbers in
-<i>scripts/linux/settings.sh</i> and <i>scripts/linux/cegcc.spec</i>
-match.
-<H1>2. The portable build - Building on Cygwin and Linux</H1>
-<P>
-Pedro will probably write documentation on this.
-<H1>3. Requirements</H1>
+<H1>4. Requirements</H1>
 <P>
 There is nothing out of the ordinary in the tools you need to build cegcc,
 most free software packages require the same :
@@ -131,14 +148,12 @@ even the ones in SVN,
 already contain the files generated by these tools.
 Note that we need to do this as some of the software that is part of cegcc
 requires different revisions of the auto tools than other parts of cegcc.
-<H1>4. A tour of the directory structure</H1>
+<H1>5. A tour of the directory structure</H1>
 <P>
 how to download
 <P>
 <pre>
-scripts
-scripts/linux <font color=red>The directory containing the linux build scripts</font>
-src <font color=red>The master source directory</font>
+src <font color=red>The master source directory, contains the master build scripts</font>
 src/newlib
 src/cegcc/cegccdll
 src/cegcc/importlibs/defs <font color=red>Definition files to create libraries to match WinCE DLL's</font>
@@ -153,16 +168,35 @@ src/binutils <font color=red>The binutils sources (gas, ld, ..) </font>
 src/w32api/include <font color=red>The target system include files</font>
 src/w32api/lib <font color=red>an unused part of w32api</font>
 src/w32api
-build <font color=red>This directory is created from the source tree</font>
-build/i686-pc-linux-gnu/arm-wince-cegcc/gdb/gdb/testsuite/gdb.trace
-build/i686-pc-linux-gnu/arm-wince-cegcc/gdb/gdb/testsuite
-build/i686-pc-linux-gnu/arm-wince-cegcc/gdb/gdb
-build/i686-pc-linux-gnu/arm-wince-cegcc/gdb
-build/i686-pc-linux-gnu/arm-wince-cegcc
-build/i686-pc-linux-gnu
+src/build-cegcc <font color=red>This directory is created from the source tree</font>
+src/build-mingw32ce <font color=red>This directory is created from the source tree</font>
 website <font color=red>Our website contents are also managed via the source repository</font>
 website/images
 docs <font color=red>The CeGCC project's documentation</font>
 </pre>
+<H1>6 Known problems</H1>
+<H2>6.1 C++ compiler won't build</H2>
+<P>
+For some reason, the build process for the C++ compiler chokes.
+The only explanation - and workaround - that we know of is the one found in
+<A HREF="http://www.cygwin.com/ml/cygwin/1997-06/msg00457.html">this old message</A>
+saying
+<font color=blue><pre>
+Configure creates a softlink in gcc object directory to the new
+version of the cross assembler. Problem is that the native compiler
+get confused and use the cross assembler instead of the native one.
+</pre></font>
+<P>
+We found that this only happens if you have the current directory in your PATH,
+usually in the beginning of the list (before /bin and such).
+A workaround is to remove . from your path, or to put it at the end.
+<P>
+We've adapted the build scripts so they can cope with this,
+but this is really a gcc bug.
+<H2>6.2 Build sometimes fails</H2>
+I recommend cleaning up the installation directory and all of the build
+directories prior to using the build scripts.
+The build tends to be less reliable if part of an old build is still present.
+<H2>6.3 </H2>
 </BODY>
 </HTML>
