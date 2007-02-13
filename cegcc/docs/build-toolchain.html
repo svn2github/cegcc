@@ -21,6 +21,7 @@ The only thing still left there is support for building <A HREF="http://www.rpm.
 these are distribution packages that can be used on many Linux platforms.
 <P>
 We offer two similar implementations of our product.
+<b>It is recommended to build and install both of them.</b>
 They're called after the target platforms they represent :
 <ul>
 	<li><i>arm-wince-cegcc</i> is meant for building apps that rely on a UNIX-style operating system, system calls, etc.
@@ -33,6 +34,23 @@ replace <i>cegcc</i> by <i>mingw32ce</i> everywhere, e.g. :
 <PRE>
 	sh build-mingw32ce.sh
 </PRE>
+<P>
+Both toolsets are meant to build applications that run on
+devices with Windows CE.
+You may ask "<i>which toolset should I use?</i>"
+That depends on the application you're trying to build,
+and because of that, your choice tomorrow may be different from today.
+If today you're porting a Linux- or Unix-based application to Windows CE,
+then your best choice is probably the <i>arm-wince-cegcc-gcc</i> compiler.
+Tomorrow you may be writing a native Windows CE application, and your
+best choice would then be the <i>arm-wince-mingw32ce-gcc</i> compiler.
+<P>
+Do not confuse your host platform (Linux or Cygwin)
+with the toolset to use. Both the <i>arm-wince-cegcc</i>
+and the <i>arm-wince-mingw32ce</i> sets are available on
+Cygwin (your PC running some version of desktop Windows,
+with the Cygwin layer installed),
+as well as on Linux.
 <H1>1. Building on Linux</H1>
 <P>
 This chapter describes building the toolchain on Linux.
@@ -40,6 +58,8 @@ I would guess that this is similar on Cygwin,
 but the details on that are in the next chapter.
 <A HREF="#common">A third chapter</A> in this document describes some common elements,
 you probably want to look into that.
+We also assume you've been able to download CeGCC,
+that's also <A HREF="#download">described below</A>.
 <P>
 The basic steps are very simple :
 <ul>
@@ -69,6 +89,11 @@ This command will rebuild and install all of cegcc.
 The directory in which everything is installed is <I>/opt/cegcc</I>,
 which means that you'll need to put <I>/opt/cegcc/bin</I> in your PATH
 to make use of the new tools.
+<P>
+Be warned that the build takes a while - you may want to go drink some coffee.
+An example : my Pentium 4 system (single CPU at 2.4 GHz)
+needs 27 minutes to build CeGCC.
+Drinking that much coffee can be hazardous :-)
 <H2>1.4 More complicated stuff : partial builds, etc</H2>
 <P>
 The build scripts have a couple of paramters.
@@ -133,6 +158,43 @@ the real scripts (src/build-*.sh) are the most
 In this sequence, we always (configure and) build the tools,
 then immediately install them in $PREFIX.
 This is uncommon, but is the easiest way for us to deal with this sequence.
+<A NAME="#download"><H2>3.4 Downloading CeGCC</H2></A>
+<P>
+There are several ways to get CeGCC.
+<H3>3.4.1 Get the SVN sources from our source repository</H3>
+<P>
+You can access our source repository directly using this command :
+<PRE>
+svn co https://cegcc.svn.sourceforge.net/svnroot/cegcc/trunk/cegcc cegcc
+</PRE>
+<P>
+The result will be a large directory tree on your system;
+currently the size is between 800 and 900 megabytes.
+After compile, this becomes slightly more than 1.3 GB.
+<P>
+These are such large numbers for two reasons :
+<ul>
+	<li> CeGCC is composed of a number of tools which are large already (e.g. binutils, gcc, gdb)
+	<li> subversion adds a lot of overhead on disk to avoid network traffic
+</ul>
+<P>
+If you want to renew your download after a while,
+then all you need to do is position yourself inside the cegcc
+directory (inside <i>cegcc/trunk/cegcc</i> !)
+and run
+<PRE>
+svn update
+</PRE>
+<H3>3.4.2 Download a source distribution</H3>
+<P>
+Currently we don't offer a packaged source distribution of CeGCC.
+It is recommended to use subversion (SVN) to download the CeGCC sources.
+<P>
+The downside of distributing such a large quantity of sources would be
+that every version has to be downloaded completely.
+Use of subversion cuts a major part of the network traffic away :
+you can keep up to date with only a fraction of the network traffic
+(and the download time obviously also decreases).
 <H1>4. Requirements</H1>
 <P>
 There is nothing out of the ordinary in the tools you need to build cegcc,
