@@ -1,6 +1,12 @@
 2007-03-26  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* include/winuser.h (WS_EX_CAPTIONOKBTN): Define.
+	* include/winbase.h (GlobalAlloc, GlobalFree
+	GlobalReAlloc, GlobalHandle, GlobalLock
+	GlobalUnlock, GlobalSize, GlobalFlags): Map to
+	LocalAlloc, LocalFree, LocalReAlloc,
+	LocalHandle, LocalLock, LocalUnlock,
+	LocalSize and LocalFlags respectivelly.
 
 2007-02-26  Pedro Alves  <pedro_alves@portugalmail.pt>
 

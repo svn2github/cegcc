@@ -1652,27 +1652,38 @@ WINBASEAPI DWORD WINAPI GetWindowThreadProcessId(HWND,PDWORD);
 WINBASEAPI UINT WINAPI GetWriteWatch(DWORD,PVOID,SIZE_T,PVOID*,PULONG_PTR,PULONG);
 WINBASEAPI ATOM WINAPI GlobalAddAtomA(LPCSTR);
 WINBASEAPI ATOM WINAPI GlobalAddAtomW( LPCWSTR);
-WINBASEAPI HGLOBAL WINAPI GlobalAlloc(UINT,DWORD);
 WINBASEAPI SIZE_T WINAPI GlobalCompact(DWORD); /* Obsolete: Has no effect. */
 WINBASEAPI ATOM WINAPI GlobalDeleteAtom(ATOM);
 #define GlobalDiscard(hMem) GlobalReAlloc((hMem), 0, GMEM_MOVEABLE)
 WINBASEAPI ATOM WINAPI GlobalFindAtomA(LPCSTR);
 WINBASEAPI ATOM WINAPI GlobalFindAtomW(LPCWSTR);
 WINBASEAPI VOID WINAPI GlobalFix(HGLOBAL); /* Obsolete: Has no effect. */
-WINBASEAPI UINT WINAPI GlobalFlags(HGLOBAL); /* Obsolete: Has no effect. */
-WINBASEAPI HGLOBAL WINAPI GlobalFree(HGLOBAL);
 WINBASEAPI UINT WINAPI GlobalGetAtomNameA(ATOM,LPSTR,int);
 WINBASEAPI UINT WINAPI GlobalGetAtomNameW(ATOM,LPWSTR,int);
+#ifndef _WIN32_WCE
+WINBASEAPI HGLOBAL WINAPI GlobalAlloc(UINT,DWORD);
+WINBASEAPI HGLOBAL WINAPI GlobalFree(HGLOBAL);
+WINBASEAPI HGLOBAL WINAPI GlobalReAlloc(HGLOBAL,DWORD,UINT);
 WINBASEAPI HGLOBAL WINAPI GlobalHandle(PCVOID);
 WINBASEAPI LPVOID WINAPI GlobalLock(HGLOBAL);
+WINBASEAPI BOOL WINAPI GlobalUnlock(HGLOBAL); 
+WINBASEAPI DWORD WINAPI GlobalSize(HGLOBAL);
+WINBASEAPI UINT WINAPI GlobalFlags(HGLOBAL); /* Obsolete: Has no effect. */
+#else
+# define GlobalAlloc(flags, cb) LocalAlloc(flags, cb)
+# define GlobalFree(h) LocalFree(h)
+# define GlobalReAlloc(h, cb, flags) LocalReAlloc(h, cb, flags)
+# define GlobalHandle(lp) LocalHandle(lp)
+# define GlobalLock(lp) LocalLock(lp)
+# define GlobalUnlock(lp) LocalUnlock(lp)
+# define GlobalSize(lp) LocalSize(lp)
+# define GlobalFlags(lp) LocalFlags(lp)
+#endif
 WINBASEAPI VOID WINAPI GlobalMemoryStatus(LPMEMORYSTATUS);
 #if (_WIN32_WINNT >= 0x0500)
 WINBASEAPI BOOL WINAPI GlobalMemoryStatusEx(LPMEMORYSTATUSEX);
 #endif
-WINBASEAPI HGLOBAL WINAPI GlobalReAlloc(HGLOBAL,DWORD,UINT);
-WINBASEAPI DWORD WINAPI GlobalSize(HGLOBAL);
 WINBASEAPI VOID WINAPI GlobalUnfix(HGLOBAL); /* Obsolete: Has no effect. */
-WINBASEAPI BOOL WINAPI GlobalUnlock(HGLOBAL); 
 WINBASEAPI BOOL WINAPI GlobalUnWire(HGLOBAL); /* Obsolete: Has no effect. */
 WINBASEAPI PVOID WINAPI GlobalWire(HGLOBAL); /* Obsolete: Has no effect. */
 #define HasOverlappedIoCompleted(lpOverlapped)  ((lpOverlapped)->Internal != STATUS_PENDING)
