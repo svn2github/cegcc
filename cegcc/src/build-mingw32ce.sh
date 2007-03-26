@@ -55,40 +55,6 @@ function build_binutils()
     cd ${BASE_DIRECTORY} || exit 1
 }    
 
-function build_import_libs()
-{
-    echo ""
-    echo "Building import libs. --------------------------"
-    echo ""
-    echo ""
-
-    mkdir -p ${PREFIX}/${TARGET}/lib || exit 1
-    cd ${BASE_DIRECTORY}/cegcc/importlibs || exit 1
-    ./build.sh ./defs ${PREFIX}/${TARGET}/lib || exit 1
-    
-    cd ${BASE_DIRECTORY} || exit 1
-}
-    
-function build_mingw_fake_runtime()
-{
-    cd ${BASE_DIRECTORY}/mingw-fake_crt || exit 1
-    ./install.sh ${PREFIX} || exit 1
-    cd ${BASE_DIRECTORY} || exit 1
-}
-
-function copy_headers()
-{
-    echo ""
-    echo "Copying headers... "
-    echo ""
-    echo ""
-
-    mkdir -p ${PREFIX}/${TARGET}/include/sys
-    cp -fp ${BASE_DIRECTORY}/mingw/include/*.h ${PREFIX}/${TARGET}/include/ || exit 1
-    cp -fp ${BASE_DIRECTORY}/mingw/include/sys/*.h ${PREFIX}/${TARGET}/include/sys || exit 1
-    cp -fp ${BASE_DIRECTORY}/w32api/include/*.h ${PREFIX}/${TARGET}/include/ || exit 1
-}
-
 function build_bootstrap_gcc()
 {
     mkdir -p ${BUILD_DIR}/gcc-bootstrap || exit 1
@@ -303,11 +269,9 @@ function build_profile()
 function build_all
 {
     build_binutils
-    build_import_libs
-    build_mingw_fake_runtime
-    copy_headers
     build_bootstrap_gcc
     build_mingw_runtime
+    build_w32api
     build_gcc
     build_docs
     build_profile
@@ -319,17 +283,14 @@ case $BUILD_OPT in
  --help)
         echo "usage:"
         echo "$0 [source dir] [build directory] [prefix dir] [build_opt]"
-	echo " "
-	echo "Valid build options : binutils importlibs headers fakecrt bootstrapgcc"
-	echo "  w32api crt gcc gdb gdbstub docs profile all"
-		;;
+        echo " "
+        echo "Valid build options : binutils bootstrapgcc"
+        echo "  w32api mingw gcc gdb gdbstub docs profile all"
+        ;;
  binutils) build_binutils ;;
- importlibs) build_import_libs ;;
- headers) copy_headers ;;
- fakecrt) build_mingw_fake_runtime ;;
  bootstrapgcc) build_bootstrap_gcc ;;
  w32api) build_w32api ;;
- crt) build_mingw_runtime ;;
+ mingw) build_mingw_runtime ;;
  gcc) build_gcc ;;
  gdb) build_gdb ;;
  gdbstub) build_gdbstub ;;

@@ -1,3 +1,14 @@
+2007-03-27  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* build-mingw32ce.sh (build_import_libs): Delete.
+	(build_mingw_fake_runtime): Delete.
+	(copy_headers): Delete.
+	(build_all): Remove calls to build_import_libs,
+	build_mingw_fake_runtime, and copy headers.  Add
+	call to build_w32api.
+	Remove importlibs,headers and fakecrt command line
+	options.  Rename crt option to mingw.
+
 2007-02-12  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* VERSIONS : Update w32api and mingw versions.
