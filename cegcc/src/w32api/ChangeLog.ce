@@ -1,4 +1,8 @@
 2007-03-26  Pedro Alves  <pedro_alves@portugalmail.pt>
+	
+	* libce/coredll.def: Add 'keep in sync' warning.
+
+2007-03-26  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* include/winuser.h (WS_EX_CAPTIONOKBTN): Define.
 	* include/winbase.h (GlobalAlloc, GlobalFree
