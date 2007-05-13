@@ -1,37 +1,136 @@
 #!/bin/sh
 
-if [ $# -lt 2 ] ; then
+BASE_DIRECTORY=`dirname $0`
+BASE_DIRECTORY=`(cd ${BASE_DIRECTORY}; pwd)`
+ME=`basename $0`
 
-echo "Using defaults:"
-export BASE_DIRECTORY=`readlink -f .`
-export BUILD_DIR=${BASE_DIRECTORY}/build-mingw32ce
-export PREFIX=/opt/mingw32ce
+#
+# Initializations.
+#
+ac_default_prefix="/opt/mingw32ce"
+export BUILD_DIR=`pwd`
 
-if [ $# -lt 1 ] ; then
-BUILD_OPT="all"
-else
-BUILD_OPT="$1"
-shift
+function usage
+{
+    cat << _ACEOF
+
+$ME builds the mingw32ce toolchain.
+
+Usage: $0 [OPTIONS] ...
+
+  -h, --help              print this help, then exit
+  --prefix=PREFIX         install toolchain in PREFIX
+			  [$ac_default_prefix]
+  --components=LIST       specify which components to build
+                          valid components are: all,binutils,gcc,w32api,mingw,
+                          gdb,gdbstub,docs and profile
+			  [all]
+
+Report bugs to <cegcc-devel@lists.sourceforge.net>.
+_ACEOF
+
+}
+
+ac_prev=
+for ac_option
+do
+  # If the previous option needs an argument, assign it.
+  if test -n "$ac_prev"; then
+    eval "$ac_prev=\$ac_option"
+    ac_prev=
+    continue
+  fi
+
+  ac_optarg=`expr "x$ac_option" : 'x[^=]*=\(.*\)'`
+
+  case $ac_option in
+
+  -help | --help | --hel | --he | -h)
+    usage; exit 0 ;;
+
+  -prefix | --prefix | --prefi | --pref | --pre | --pr | --p)
+    ac_prev=prefix ;;
+  -prefix=* | --prefix=* | --prefi=* | --pref=* | --pre=* | --pr=* | --p=*)
+    prefix=$ac_optarg ;;
+
+  -components | --components | --component | --componen | \
+      --compone | --compon | --compo | --comp | --com \
+      | --co | --c)
+    ac_prev=components ;;
+  -components=* | --components=* | --component=* | --componen=* \
+      | --compone=* | --compon=* | --compo=* | --comp=* | --com=* \
+      | --co=* | --c=*)
+    components=$ac_optarg ;;
+
+  -*) { echo "$as_me: error: unrecognized option: $ac_option
+Try \`$0 --help' for more information." >&2
+   { (exit 1); exit 1; }; }
+    ;;
+
+  *=*)
+    ac_envvar=`expr "x$ac_option" : 'x\([^=]*\)='`
+    # Reject names that are not valid shell variable names.
+    expr "x$ac_envvar" : ".*[^_$as_cr_alnum]" >/dev/null &&
+      { echo "$as_me: error: invalid variable name: $ac_envvar" >&2
+   { (exit 1); exit 1; }; }
+    ac_optarg=`echo "$ac_optarg" | sed "s/'/'\\\\\\\\''/g"`
+    eval "$ac_envvar='$ac_optarg'"
+    export $ac_envvar ;;
+
+  *)
+    ;;
+  esac
+done
+
+if test -n "$ac_prev"; then
+  ac_option=--`echo $ac_prev | sed 's/_/-/g'`
+  { echo "$as_me: error: missing argument to $ac_option" >&2
+   { (exit 1); exit 1; }; }
 fi
 
-else
+# Be sure to have absolute paths.
+for ac_var in prefix
+do
+  eval ac_val=$`echo $ac_var`
+  case $ac_val in
+    [\\/$]* | ?:[\\/]* | NONE | '' ) ;;
+    *)  { echo "$as_me: error: expected an absolute directory name for --$ac_var: $ac_val" >&2
+   { (exit 1); exit 1; }; };;
+  esac
+done
 
-export BASE_DIRECTORY=`readlink -f $1`
-export BUILD_DIR=`readlink -f $2`
-export PREFIX=`readlink -f $3`
-BUILD_OPT="$1"
-shift 4
+if [ "x${prefix}" != "x" ]; then
+    export PREFIX="${prefix}"
+else
+    export PREFIX=${ac_default_prefix}
 fi
+
+# Figure out what components where requested to be built.
+if test x"${components+set}" != xset; then
+    components=all
+else
+    if test x"${components}" = x ||
+	test x"${components}" = xyes;
+	then
+	echo --components needs at least one argument 1>&2
+	exit 1
+    fi
+fi
+
+# embedded tabs in the sed below -- do not untabify
+components=`echo "${components}" | sed -e 's/[ 	,][ 	,]*/,/g' -e 's/,$//'`
+
+echo The following components will be built: ${components}
 
 export TARGET="arm-wince-mingw32ce"
 export BUILD=`sh ${BASE_DIRECTORY}/gcc/config.guess`
 export PATH=${PREFIX}/bin:${PATH}
-#export CFLAGS="-g3 -O0"
 
 echo "Building mingw32ce:"
 echo "source: ${BASE_DIRECTORY}"
-echo "build: ${BUILD_DIR}"
+echo "building in: ${BUILD_DIR}"
 echo "prefix: ${PREFIX}"
+echo "components: ${components}"
 
 mkdir -p ${BUILD_DIR} || exit 1
 mkdir -p ${PREFIX} || exit 1
@@ -42,8 +141,8 @@ function build_binutils()
     echo "BUILDING BINUTILS --------------------------"
     echo ""
     echo ""
-    mkdir -p ${BUILD_DIR}/binutils || exit 1
-    cd ${BUILD_DIR}/binutils || exit 1
+    mkdir -p binutils || exit 1
+    cd binutils
     ${BASE_DIRECTORY}/binutils/configure \
 	--prefix=${PREFIX}      \
 	--target=${TARGET}      \
@@ -52,13 +151,13 @@ function build_binutils()
     make         || exit 1
     make install || exit 1
     
-    cd ${BASE_DIRECTORY} || exit 1
+    cd ${BUILD_DIR}
 }    
 
 function build_bootstrap_gcc()
 {
-    mkdir -p ${BUILD_DIR}/gcc-bootstrap || exit 1
-    cd ${BUILD_DIR}/gcc-bootstrap
+    mkdir -p gcc-bootstrap || exit 1
+    cd gcc-bootstrap
 
     ${BASE_DIRECTORY}/gcc/configure	       \
 	--with-gcc                     \
@@ -79,7 +178,7 @@ function build_bootstrap_gcc()
     make all-gcc || exit 1
     make install-gcc || exit 1
 
-    cd ${BASE_DIRECTORY} || exit 1
+    cd ${BUILD_DIR}
 }
 
 function build_w32api()
@@ -90,8 +189,9 @@ function build_w32api()
     PREV_CC=${CC}
     unset CC
 
-    mkdir -p ${BUILD_DIR}/w32api || exit 1
-    pushd ${BUILD_DIR}/w32api || exit 1
+    mkdir -p w32api || exit 1
+    cd w32api
+
     ${BASE_DIRECTORY}/w32api/configure \
 	--host=${TARGET}               \
 	--prefix=${PREFIX}             \
@@ -101,7 +201,7 @@ function build_w32api()
     make install || exit 1
 
     export CC=${PREV_CC}
-    popd
+    cd ${BUILD_DIR}
 }
 
 function build_mingw_runtime()
@@ -112,8 +212,8 @@ function build_mingw_runtime()
     PREV_CC=${CC}
     unset CC
 
-    mkdir -p ${BUILD_DIR}/mingw || exit 1
-    cd ${BUILD_DIR}/mingw || exit 1
+    mkdir -p mingw || exit 1
+    cd mingw
     ${BASE_DIRECTORY}/mingw/configure \
 	--build=${BUILD}              \
 	--host=${TARGET}              \
@@ -125,13 +225,13 @@ function build_mingw_runtime()
     make install || exit 1
 
     export CC=${PREV_CC}
-    cd ${BASE_DIRECTORY} || exit 1
+    cd ${BUILD_DIR}
 }
 
 function build_gcc()
 {
-    mkdir -p ${BUILD_DIR}/gcc || exit 1
-    cd ${BUILD_DIR}/gcc || exit
+    mkdir -p gcc || exit 1
+    cd gcc
 
     ${BASE_DIRECTORY}/gcc/configure	\
 	--with-gcc                     \
@@ -169,7 +269,7 @@ function build_gcc()
     #
     make install || exit 1
 
-    cd ${BASE_DIRECTORY} || exit 1
+    cd ${BUILD_DIR}
 }
 
 function build_gdb()
@@ -179,8 +279,8 @@ function build_gdb()
     echo ""
     echo ""
 
-    mkdir -p ${BUILD_DIR}/gdb || exit 1
-    cd ${BUILD_DIR}/gdb || exit 1
+    mkdir -p gdb || exit 1
+    cd gdb || exit 1
 
     PREV_CFLAGS=${CFLAGS}
     export CFLAGS="-I${BASE_DIRECTORY}/w32api/include"
@@ -202,6 +302,8 @@ function build_gdb()
 
     make         || exit 1
     make install || exit 1
+
+    cd ${BUILD_DIR}
 }
 
 function build_gdbstub()
@@ -220,7 +322,7 @@ function build_gdbstub()
            -lwinsock || exit 1
     ${TARGET}-strip ${STUB_EXE} || exit 1
 
-    cd ${BASE_DIRECTORY} || exit 1
+    cd ${BUILD_DIR}
 }
 
 function build_docs()
@@ -243,6 +345,8 @@ function build_docs()
     cp src/binutils/COPYING ${PREFIX} || exit 1
     cp src/binutils/COPYING.LIB ${PREFIX} || exit 1
     cp src/binutils/COPYING.NEWLIB ${PREFIX} || exit 1
+
+    cd ${BUILD_DIR}
 }
 
 function build_profile()
@@ -252,8 +356,8 @@ function build_profile()
     echo ""
     echo ""
 
-    mkdir -p ${BUILD_DIR}/profile || exit 1
-    cd ${BUILD_DIR}/profile || exit 1
+    mkdir -p profile || exit 1
+    cd profile
 
     ${BASE_DIRECTORY}/profile/configure  \
 	--build=${BUILD}              \
@@ -264,6 +368,8 @@ function build_profile()
 
     make         || exit 1
     make install || exit 1
+
+    cd ${BUILD_DIR}
 }
 
 function build_all
@@ -279,26 +385,36 @@ function build_all
     build_gdbstub
 }
 
-case $BUILD_OPT in
- --help)
-        echo "usage:"
-        echo "$0 [source dir] [build directory] [prefix dir] [build_opt]"
-        echo " "
-        echo "Valid build options : binutils bootstrapgcc"
-        echo "  w32api mingw gcc gdb gdbstub docs profile all"
-        ;;
- binutils) build_binutils ;;
- bootstrapgcc) build_bootstrap_gcc ;;
- w32api) build_w32api ;;
- mingw) build_mingw_runtime ;;
- gcc) build_gcc ;;
- gdb) build_gdb ;;
- gdbstub) build_gdbstub ;;
- docs) build_docs ;;
- profile) build_profile ;;
- all) build_all ;;
- *) echo "Please enter a valid build option." ;;
-esac
+# check for valid options before trying to build them all.
+eval "set -- $components"
+while [ -n "$1" ]; do
+    case $1 in
+	binutils | bootstrapgcc | w32api | \
+	    mingw | gcc | gdb | gdbstub | \
+	    docs | profile | all) 
+	    ;;
+	*) echo "Please enter a valid build option." ;;
+    esac
+    shift
+done
+
+# now actually try to build them.
+eval "set -- $components"
+while [ -n "$1" ]; do
+    case $1 in
+	binutils) build_binutils ;;
+	bootstrapgcc) build_bootstrap_gcc ;;
+	w32api) build_w32api ;;
+	mingw) build_mingw_runtime ;;
+	gcc) build_gcc ;;
+	gdb) build_gdb ;;
+	gdbstub) build_gdbstub ;;
+	docs) build_docs ;;
+	profile) build_profile ;;
+	all) build_all ;;
+    esac
+    shift
+done
 
 echo ""
 echo "DONE --------------------------"
