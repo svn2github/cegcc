@@ -1,3 +1,7 @@
+2007-05-28  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* build-cegcc.sh (build_libstdcppdll) : Add error handling.
+
 2007-05-13  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* build-mingw32ce.sh: Rewrite command line parameters logic.

@@ -221,8 +221,8 @@ function build_libstdcppdll()
     echo ""
 
     cd ${BASE_DIRECTORY}/cegcc/libstdc++ || exit 1
-    make 
-    make install
+    make || exit 1
+    make install || exit 1
 }
 
 function build_gdb()
