@@ -1,3 +1,18 @@
+2007-05-30  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* include/mmsystem.h (waveOutGetDevCapsW, waveOutGetErrorTextW)
+	(waveInGetDevCapsW, waveInGetErrorTextW, mixerGetDevCapsW)
+	(mixerGetLineInfoW, mixerGetLineControlsW)
+	(mixerGetControlDetailsW) [_WIN32_WCE]: Define as waveOutGetDevCaps,
+	waveOutGetErrorText, waveInGetDevCaps, waveInGetErrorText,
+	mixerGetDevCaps, mixerGetLineInfo, mixerGetLineControls and
+	mixerGetControlDetails.
+
+	(waveOutGetDevCaps, waveOutGetErrorText, waveInGetDevCaps)
+	(waveInGetErrorText, mixerGetDevCaps, mixerGetLineInfo)
+	(mixerGetLineControls, mixerGetControlDetails) [_WIN32_WCE]: Don't
+	map to the W counterparts.
+
 2007-03-26  Pedro Alves  <pedro_alves@portugalmail.pt>
 	
 	* libce/coredll.def: Add 'keep in sync' warning.
