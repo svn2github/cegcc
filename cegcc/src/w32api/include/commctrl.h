@@ -2823,7 +2823,9 @@ typedef struct tagREBARBANDINFOA {
 	UINT cyIntegral;
 	UINT cxIdeal;
 	LPARAM lParam;
+#if !defined(_WIN32_WCE)
 	UINT cxHeader;
+#endif
 #endif
 } REBARBANDINFOA,*LPREBARBANDINFOA;
 typedef struct tagREBARBANDINFOW {
@@ -2847,7 +2849,9 @@ typedef struct tagREBARBANDINFOW {
 	UINT cyIntegral;
 	UINT cxIdeal;
 	LPARAM lParam;
+#if !defined(_WIN32_WCE)
 	UINT cxHeader;
+#endif
 #endif
 } REBARBANDINFOW,*LPREBARBANDINFOW;
 typedef REBARBANDINFOA const *LPCREBARBANDINFOA;
@@ -3716,6 +3720,21 @@ typedef REBARBANDINFOA REBARBANDINFO,*LPREBARBANDINFO;
 #define RB_INSERTBAND RB_INSERTBANDA
 #define RB_SETBANDINFO RB_SETBANDINFOA
 #endif
+
+#if (_WIN32_WCE >= 0x200)
+
+#define CMDBAR_HELP 0x000B
+#define CMDBAR_OK 0xF000
+
+typedef struct tagCOMMANDBANDSRESTOREINFO {
+	UINT cbSize;
+	UINT wID;
+	UINT fStyle;
+	UINT cxRestored;
+	BOOL fMaximized;
+} COMMANDBANDSRESTOREINFO, *LPCOMMANDBANDSRESTOREINFO;
+#endif /* _WIN32_WCE >= 0x200 */
+
 #endif /* RC_INVOKED */
 
 #ifdef _WIN32_WCE
@@ -3736,6 +3755,19 @@ COMMCTRLAPI int WINAPI CommandBar_Height(HWND);
 #define CommandBar_Destroy(hwnd) ((void)DestroyWindow(hwnd))
 
 #endif /* _WIN32_WCE */
+
+#if (_WIN32_WCE >= 0x0200)
+
+COMMCTRLAPI BOOL WINAPI CommandBands_AddAdornments(HWND,HINSTANCE,DWORD,LPREBARBANDINFO);
+COMMCTRLAPI BOOL WINAPI CommandBands_AddBands(HWND,HINSTANCE,UINT,LPREBARBANDINFO);
+COMMCTRLAPI HWND WINAPI CommandBands_Create(HINSTANCE,HWND,UINT,DWORD,HIMAGELIST);
+COMMCTRLAPI HWND WINAPI CommandBands_GetCommandBar(HWND,UINT);
+COMMCTRLAPI BOOL WINAPI CommandBands_GetRestoreInformation(HWND,UINT,LPCOMMANDBANDSRESTOREINFO);
+COMMCTRLAPI BOOL WINAPI CommandBands_Show(HWND,BOOL);
+
+#define CommandBands_Height(hwnd) ((UINT)SendMessage((hwnd),RB_GETBARHEIGHT,0,0))
+
+#endif /* _WIN32_WCE >= 0x200 */
 
 #ifdef __cplusplus
 }
