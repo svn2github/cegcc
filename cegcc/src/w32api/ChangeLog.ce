@@ -4,7 +4,7 @@
 	[_WIN32_WCE]: Hide cxHeader field.
 	(CMDBAR_HELP, CMDBAR_OK): Define.
 	(tagCOMMANDBANDSRESTOREINFO, COMMANDBANDSRESTOREINFO,
-	(LPCOMMANDBANDSRESTOREINFO): Define.
+	LPCOMMANDBANDSRESTOREINFO): Define.
 	(CommandBands_AddAdornments, CommandBands_AddBands,
 	CommandBands_Create, CommandBands_GetCommandBar,
 	CommandBands_GetRestoreInformation, CommandBands_Show): Define.
