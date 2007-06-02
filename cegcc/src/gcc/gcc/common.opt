@@ -309,6 +309,10 @@ fcommon
 Common Report Var(flag_no_common,0)
 Do not put uninitialized globals in the common section
 
+fcoverage-base=
+Common Joined Var(flag_coverage_base)
+Directory in which to put coverage analysis files, for cross-compiler environments
+
 fcprop-registers
 Common Report Var(flag_cprop_registers)
 Perform a register copy-propagation optimization pass

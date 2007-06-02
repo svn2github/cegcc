@@ -1,3 +1,12 @@
+2007-06-02  Danny Backx  <dannybackx@users.sourceforge.net>
+	* toplev.h opts.c coverage.c common.opt libgcov.c : Add support for
+	-fcoverage-base option. This supports --coverage in a
+	cross-development environment where it is not always easy to use run
+	time environment variables. This option works at compile time. This
+	has been submitted to gcc-patches.
+	* doc/gcov.texi : Add documentation for -fcoverage-base.
+
+
 2006-12-21  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* config/arm/t-strongarm-pe config/arm/t-strongarm-elf config/arm/t-pe

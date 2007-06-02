@@ -543,9 +543,13 @@ running the program on the same system as it was built or having the same
 absolute directory structure on the target system. The program will try
 to create the needed directory structure, if it is not already present.
 
-To support cross-profiling, a program compiled with @option{-fprofile-arcs}
-can relocate the data files based on two environment variables on the target
-platform, or one on the host platform: 
+There are two options to support cross-profiling. A command line argument
+to the compiler (-fcoverage-base) allows you to override the directory
+stored in the object file; this happens at compile time. Alternatively,
+two runtime environment variables allow you to relocate the data files.
+Both options have effect only on programs compiled with @option{-fprofile-arcs}.
+
+The two environment variables: 
 
 @itemize @bullet
 @item
@@ -559,11 +563,6 @@ the hardwired absolute paths. Default value is 0.
 
 @emph{Note:} GCOV_PREFIX_STRIP has no effect if GCOV_PREFIX is undefined, empty
 or non-absolute.
-
-@item
-GCOV_CROSS_PREFIX is a host platform environment variable. Use it to specify
-a target directory to prefix the compiled file name with, replacing the
-compile directory.
 @end itemize
 
 For example, if the object file @file{/user/build/foo.o} was built with
@@ -574,12 +573,18 @@ it.  This can be overcome by, for example, setting the environment as
 @samp{GCOV_PREFIX=/target/run} and @samp{GCOV_PREFIX_STRIP=1}.  Such a
 setting will name the data file @file{/target/run/build/foo.gcda}.
 
-Alternatively, you can set @samp{GCOV_CROSS_PREFIX=/target/run/build} when
+Alternatively, you can use @samp{-fcoverage-base=/target/run/build} when
 compiling, to achieve the same effect. The object file will no longer contain
 the information @file{/user/build/foo.o} but @file{/target/run/build/foo.o}.
 
 The host and target mechanisms are independent of each other, so they can be
 used together.
+
+The build time command line option can be used like this :
+
+@smallexample
+gcc -fcoverage-base=/target/run -fprofile-arcs -o t.exe t.c
+@end smallexample
 
 You must move the data files to the expected directory tree in order to
 use them for profile directed optimizations (@option{--use-profile}), or to

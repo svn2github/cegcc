@@ -836,6 +836,10 @@ common_handle_option (size_t scode, const char *arg, int value)
       fix_register (arg, 0, 0);
       break;
 
+    case OPT_fcoverage_base_:
+      coverage_base = xstrdup(arg);
+      break;
+
     case OPT_fdiagnostics_show_location_:
       if (!strcmp (arg, "once"))
 	diagnostic_prefixing_rule (global_dc) = DIAGNOSTICS_SHOW_PREFIX_ONCE;

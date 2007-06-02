@@ -89,6 +89,7 @@ static unsigned fn_b_ctrs[GCOV_COUNTERS]; /* Allocation base.  */
 static char *bbg_file_name;
 static unsigned bbg_file_opened;
 static int bbg_function_announced;
+char *coverage_base = NULL;
 
 /* Name of the count data file.  */
 static char *da_file_name;
@@ -813,24 +814,22 @@ build_gcov_info (void)
   TREE_CHAIN (field) = fields;
   fields = field;
 
-  /*
-   * Additional environment variable for cross-development.
-   */
-  if (gcov_cross_prefix = getenv ("GCOV_CROSS_PREFIX"))
-    {
-      filename = concat (gcov_cross_prefix, "/", da_file_name, NULL);
-      filename_len = strlen (filename);
-      filename_string = build_string (filename_len + 1, filename);
-    }
+  /* Additional command line argument for cross-development */
+  if (coverage_base)
+  {
+	  filename = concat (coverage_base, "/", da_file_name, NULL);
+	  filename_len = strlen (filename);
+	  filename_string = build_string (filename_len + 1, filename);
+  }
   else
-    {
-      filename = getpwd ();
-      filename = (filename && da_file_name[0] != '/'
-	      ? concat (filename, "/", da_file_name, NULL)
-	      : da_file_name);
-      filename_len = strlen (filename);
-      filename_string = build_string (filename_len + 1, filename);
-    }
+  {
+	  filename = getpwd ();
+	  filename = (filename && da_file_name[0] != '/'
+			  ? concat (filename, "/", da_file_name, NULL)
+			  : da_file_name);
+	  filename_len = strlen (filename);
+	  filename_string = build_string (filename_len + 1, filename);
+  }
 
   if (filename != da_file_name)
     free (filename);

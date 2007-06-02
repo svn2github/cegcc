@@ -132,6 +132,7 @@ extern int flag_unroll_all_loops;
 extern int flag_unswitch_loops;
 extern int flag_cprop_registers;
 extern int time_report;
+extern char *coverage_base;
 
 /* Things to do with target switches.  */
 extern void print_version (FILE *, const char *);

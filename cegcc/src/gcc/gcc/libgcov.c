@@ -328,7 +328,17 @@ gcov_exit (void)
 #endif
 	  if (!gcov_open (gi_filename))
 	    {
+#ifndef	UNDER_CE
               fprintf (stderr, "profiling:%s:Cannot open\n", gi_filename);
+#else
+	      {
+		wchar_t	x[256];
+		int	l = strlen(gi_filename);
+		l = (l < 256) ? l : 255;
+		mbstowcs(x, gi_filename, l);
+	        MessageBoxW(0, x, L"gcov_open couldn't open file", 0);
+	      }
+#endif
 	      continue;
 	    }
 	}
