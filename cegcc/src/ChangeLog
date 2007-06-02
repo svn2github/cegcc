@@ -1,3 +1,9 @@
+2007-06-02  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* cegcc/libstdc++/Makefile : Remove THE_SYSTEM_LIBS variable, somehow
+	it broke the build, and apparently I was once wrong in thinking this
+	needed to be different for some builds.
+
 2007-05-28  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* build-cegcc.sh (build_libstdcppdll) : Add error handling.
