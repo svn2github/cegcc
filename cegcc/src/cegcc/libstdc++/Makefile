@@ -23,6 +23,10 @@ LDFLAGS += -Wl,-Map,${MY_DIR}/$(DLLNAME).map
 
 RMFILES=
 
+# FIXME: override -j > 1, because this makefile doesn't
+# support parallel builds.
+MAKEFLAGS:=$(MAKEFLAGS) -j 1
+
 # this should be solved with defines passed to libstdc++. see libmath
 #RMFILES+=wf_hypot.o 
 
