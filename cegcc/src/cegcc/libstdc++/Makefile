@@ -1,6 +1,6 @@
 #Pedro Alves <pedro_alves@portugalmail.pt> (C) 2006
 
-PREFIX?=/usr/local
+PREFIX?=/opt/cegcc
 
 BUILD_DIR?=.
 MY_DIR=${BUILD_DIR}/libstdc++
@@ -9,7 +9,7 @@ SRCDIR=${TOP_SRCDIR}/src/cegcc/libstdc++
 
 DLLNAME=libstdc++.dll
 IMPLIB=$(DLLNAME).a
-TARGET?=arm-wince-pe
+TARGET=arm-wince-cegcc
 
 AR=$(TARGET)-ar
 CC=$(TARGET)-gcc
@@ -66,7 +66,6 @@ ${MY_DIR}/$(DLLNAME):
 		-Wl,--output-def,${MY_DIR}/$(DLLNAME).def \
 		-Wl,--whole-archive ${MY_DIR}/_tmp/*.o \
 		-Wl,-no-whole-archive -lcegcc -lcoredll
-
 
 installdll: ${MY_DIR}/stripped/$(DLLNAME)
 	pput.exe -v -v -f ${MY_DIR}/stripped/$(DLLNAME) "\Windows\$(DLLNAME)"

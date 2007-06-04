@@ -1,0 +1,4 @@
+2007-06-04  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* Makefile (PREFIX): Default to /opt/cegcc.
+	(TARGET): Set as arm-wince-cegcc.
