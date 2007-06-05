@@ -1,7 +1,11 @@
 # generate cegcc.dll from libc.a, libc.a, libm.a, libgcc.a
 # based on script from Mamaich's version of the toolchain <http://mamaich.cjb.net/>
 #
-# Pedro Alves <pedro_alves@portugalmail.pt> (C) 2006
+# Pedro Alves <pedro_alves@portugalmail.pt> (C) 2006, 2007
+
+# FIXME: override -j > 1, because this makefile doesn't
+# support parallel builds.
+MAKEFLAGS:=$(MAKEFLAGS) -j 1
 
 PREFIX?=/opt/cegcc
 

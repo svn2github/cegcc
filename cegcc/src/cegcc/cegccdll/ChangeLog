@@ -1,3 +1,7 @@
+2007-06-05  Carsten Sørensen  <surfsmurf@rift.dk>
+
+	* Makefile (MAKEFLAGS): Override -j flag by always setting -j 1.
+
 2006-10-15  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* ChangeLog: New file.
