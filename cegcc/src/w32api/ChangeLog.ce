@@ -1,5 +1,7 @@
 2007-06-10  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* include/winbase.h (ActivateDevice, ActivateDeviceEx,
+	DeactivateDevice): Declare.
 	* include/devload.h: New file.
 
 2007-05-31  Carsten Sørensen  <surfsmurf@rift.dk>
