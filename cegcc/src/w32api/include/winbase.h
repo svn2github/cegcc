@@ -2517,11 +2517,14 @@ typedef PCACTCTXA PCACTCTX;
 #ifdef _WIN32_WCE
 #include <kfuncs.h>
 
-#define	lstrcpyW	wcscpy
-#define lstrcatW	wcscat
-#define lstrlenW	wcslen
+#define	lstrcpyW wcscpy
+#define lstrcatW wcscat
+#define lstrlenW wcslen
 
-#endif
+WINBASEAPI HANDLE WINAPI ActivateDevice(LPCWSTR, DWORD);
+WINBASEAPI HANDLE WINAPI ActivateDeviceEx(LPCWSTR, LPCVOID, DWORD, LPVOID);
+WINBASEAPI BOOL WINAPI DeactivateDevice(HANDLE);
+#endif /* _WIN32_WCE */
 
 #ifdef __cplusplus
 }

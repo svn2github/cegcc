@@ -1,3 +1,7 @@
+2007-06-10  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* include/devload.h: New file.
+
 2007-05-31  Carsten Sørensen  <surfsmurf@rift.dk>
 
 	* include/winuser.h (SYSTEM_COLOR_BASE_OFFSET): Define.
