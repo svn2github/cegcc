@@ -1,0 +1,6 @@
+2007-06-10  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	Initial import.
+	
+	* COPYING, README, TODO, ChangeLog, Makefile, rshd.c, tester.c: New
+	files.

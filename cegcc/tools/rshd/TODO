@@ -1,0 +1,12 @@
+- Handle/test/pass child command line args.
+
+- What should be done with stdin echo?  Should we do it, or not?  Need
+  to test against a real rshd server see what happens there.
+
+- autotoolize.
+
+- Write a proper README.txt file.
+
+- Implement authentication using files or the registry.
+
+- Convert to service, and write a control panel applet ?

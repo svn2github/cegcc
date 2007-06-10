@@ -1,0 +1,25 @@
+		   README for rshd for Windows CE
+
+This directory contains the rshd for Windows CE server.
+
+<TODO: how to build>
+       Depends on PipeLib.
+       PipeLib is found at the cegcc site.
+
+<TODO: how to run>
+
+<TODO: a note on (missing) security>
+
+Have fun!
+
+Pedro Alves
+
+--
+
+See the file COPYING in the various directories, for a description of
+the GNU General Public License terms under which you can copy the
+files.
+
+REPORTING BUGS:
+cegcc-devel@sourceforge.net
+pedro_alves@portugalmail.pt
