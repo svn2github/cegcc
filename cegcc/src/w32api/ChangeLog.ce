@@ -268,3 +268,10 @@
 
 	* include/kfuncs.h (EventModify) : Declare.
 	(TlsCall) : Add WINBASEAPI and WINAPI to declaration.
+
+Local Variables:
+mode: change-log
+left-margin: 8
+fill-column: 74
+version-control: never
+End:
