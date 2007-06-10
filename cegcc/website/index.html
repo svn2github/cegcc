@@ -8,43 +8,6 @@
 <body>
 <p>
 <img src="images/banner1.png" alt="CeGCC cross compiler for PocketPC">
-<!--
-  
-     Button row at the top of the page.
-  
-  -->
-<table bgcolor="blue" border="6"> <tr>
-	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
-		<a href="docs/index.html">
-			Documentation
-		</a>
-	</font> </td>
-	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
-			<a href="http://svn.sourceforge.net/cegcc">
-			SVN Repository
-		</a>
-	</font> </td>
-	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
-			<a href="http://sf.net/projects/cegcc">
-			Project page on SourceForge
-		</a>
-	</font> </td>
-	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
-			<a href="http://sf.net/project/showfiles.php?group_id=173455">
-			Download
-		</a>
-	</font> </td>
-	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
-		<a href="docs/install-linux.html">
-		       Installation on Linux
-		</a>
-	</font> </td>
-</tr></table>
-<!--
-
-     End of the button row
-
-  -->
 <p>
 <table border="3">
 <tr><td width="66%">
@@ -53,6 +16,9 @@
 The CeGCC project implements cross-development tools for Windows CE (PocketPC).
 You can develop on a PC, and create apps that run on a PDA or a WinCE cell phone.
 </font>
+</td>
+</tr>
+</table>
 <p>
 We're aiming at providing a consistent and working set of development tools that
 generate code for Windows CE devices such as PDA's and smart phones.
@@ -67,6 +33,13 @@ We have two products :
 </ul>
 Both toolsets allow you to develop on a PC,
 and create apps that run on a PDA or a WinCE cell phone.
+<p>
+What's the meaning of <b>arm-wince-cegcc</b> and <b>arm-wince-mingw32ce</b> ?
+They both describe the target platform :
+we're building for an <b>ARM</b> processor,
+running the <b>wince</b> (Windows CE) operating system.
+In the <b>cegcc</b> case, there's a portability layer;
+in the <b>mingw32ce</b> case there isn't.
 <p>
 Combine this with our development platforms, and you get four choices :
 <table border="1">
@@ -87,6 +60,11 @@ Combine this with our development platforms, and you get four choices :
 	</tr>
 </table>
 <p>
+Our project is based on a collection of (mostly GNU) software :
+<a href="http://www.gnu.org/software/gcc">GCC</a>,
+<a href="http://www.gnu.org/software/binutils/">binutils</a>,
+<a href="http://sources.redhat.com/newlib/">newlib</a>,
+<a href="http://www.gnu.org/software/gdb">GDB</a>, ... .
 This project is
 <a href="http://www.gnu.org/philosophy/free-sw.html">free software</a>
 - read all about that and
@@ -94,76 +72,29 @@ This project is
 on
 <a href="http://www.gnu.org">the GNU website</a>.
 <p>
-Our project is based on a collection of (mostly GNU) software :
-<ul>
-<li><a href="http://www.gnu.org/software/gcc">GCC</a> - the GNU compiler for C, C++, ..
-<li><a href="http://www.gnu.org/software/binutils/">binutils</a> -
-	the GNU binary utilities (gas, gld, ..)
-<li><a href="http://sources.redhat.com/newlib/">newlib</a> -
-	a C library intended for use on embedded systems
-<li><a href="http://www.gnu.org/software/gdb">GDB</a> - the GNU debugger
-</ul>
-<p>
-What's the meaning of <b>arm-wince-cegcc</b> and <b>arm-wince-mingw32ce</b> ?
-They both describe the target platform :
-<ul>
-<li>
-the <b>arm-wince-cegcc</b> target platform
-implies we're building for an <b>ARM</b> processor,
-running the <b>wince</b> operating system,
-and producing <b>pe</b> executable files
-to be linked with the <b>CEGCC</b> library.
-As we said earlier, this is a porting environment :
-the CEGCC library offers a layer of unix-like functionality on top of Windows CE.
-<li>
-the <b>arm-wince-mingw32ce</b> target platform is closer to WinCE.
-It is based on a subset of the <a href="http://www.mingw.org">MinGW</a> project,
-which offers a MINimalistic Gnu environment for Windows platforms.
-The primary difference with <b>arm-wince-cegcc</b> is that there is not porting layer,
-which means that apps built with <b>arm-wince-mingw32ce</b> use the pure
-<a href="http://www.microsoft.com/windowsce">Windows CE</a> API.
-</ul>
-<p>
-We used to have <i>pe</i> in the target description.
-(It used to be <b>arm-wince-pe</b>, inherited from another project.)
-In that, PE stands for Portable Executable file format,
-and it's 
-<a href="http://www.microsoft.com/whdc/system/platform/firmware/PECOFF.mspx">Microsoft's implementation of COFF</a>
-(the Common Object File Format).
-<a href="http://www.arm.com">ARM</a> is a
-<a href="http://en.wikipedia.org/wiki/ARM_architecture">RISC processor family</a>
-which is found in many embedded systems,
-also implemented by Intel as their
-<a href="http://www.intel.com/design/intelxscale">Xscale</a>
-processor line.
-Wince is shorthand for the 
-<a href="http://www.microsoft.com/windowsce">Windows CE</a> operating system.
-Windows CE is the technology base for environments such as
-PocketPC, Smartphone, and
-<a href="http://www.microsoft.com/windowsmobile">Windows Mobile</a>.
-<p>
-Our project is hosted by
-<a href="http://sf.net">SourceForge.net</a>,
-here is a link to our
-<a href="http://sf.net/projects/cegcc">project page</a>.
-You're welcome to use the
-<a href="http://cegcc.wiki.sourceforge.net">wiki</a>
-to share your experience with CeGCC.
-
-<p>
-Bugfixes, improvements to these core products are actively sent back to the
-projects so everyone will benefit.
-<p>
-One of the project goals is to properly describe how to build a cross-compiler,
-and how to cross-develop for the Windows CE environment using the GNU tools.
-This documentation is still very scarce but is work in progress,
-until we've "finished" that, some of the info is also
-in the mailing list archives.
-The idea is to put the documentation <a href="docs/index.html">here</a>.
-<p>
-</td>
-</tr>
-</table>
+<table border=0 cellspacing=10 width="100%"> <tr>
+	<td align=left valign=top bgcolor="#ededed" width="50%">
+		<h2 align=center>Information</h2>
+		<ul>
+			<li> <a href="docs/index.html"> Documentation </a>
+			<li> <a href="docs/install-linux.html"> Installation on Linux </a>
+			<li> <a href="http://sf.net/projects/cegcc"> Project page on SourceForge </a>
+			<li> <a href="http://cegcc.wiki.sf.net"> CeGCC wiki </a>
+		</ul>
+	</td>
+	<td align=left valign=top bgcolor="#ededed" width="50%">
+		<h2 align=center>Getting it</h2>
+		<ul>
+			<li> <a href="http://sf.net/project/showfiles.php?group_id=173455"> Download CeGCC </a>
+			<li> <a href="http://svn.sourceforge.net/cegcc"> SVN Repository </a>
+		</ul>
+		<h2 align=center>Support</h2>
+		<ul>
+			<li> <a href="mailto:cegcc-devel@lists.sf.net">Questions ? Use the mailing list</a>.
+			<li> <a href="http://sourceforge.net/tracker/?group_id=173455&atid=865514"> CeGCC Bug tracker </a>
+		</ul>
+	</td>
+</tr></table>
 <p>
 You can contact us via the
 <a href="mailto:cegcc-devel@lists.sf.net">mailing list</a>.
