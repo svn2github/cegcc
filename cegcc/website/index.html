@@ -50,7 +50,8 @@
 <tr><td width="66%">
 <p>
 <font size="+1">
-CeGCC is a project that offers cross-development tools for Windows CE (PocketPC).
+The CeGCC project implements cross-development tools for Windows CE (PocketPC).
+You can develop on a PC, and create apps that run on a PDA or a WinCE cell phone.
 </font>
 <p>
 We're aiming at providing a consistent and working set of development tools that
@@ -58,6 +59,33 @@ generate code for Windows CE devices such as PDA's and smart phones.
 Our intended development platforms are
 the <a href="http://www.cygwin.com">cygwin</a> environment
 and <a href="http://www.linux.org">GNU/Linux</a> systems.
+<p>
+We have two products :
+<ul>
+	<li>arm-wince-mingw32ce : toolset to build native Windows CE applications
+	<li>arm-wince-cegcc : toolset to port unix source to Windows CE
+</ul>
+Both toolsets allow you to develop on a PC,
+and create apps that run on a PDA or a WinCE cell phone.
+<p>
+Combine this with our development platforms, and you get four choices :
+<table border="1">
+	<tr>
+		<td> </td>
+		<td> GNU/Linux host </td>
+		<td> Cygwin host </td>
+	</tr>
+	<tr>
+		<td> arm-wince-mingw32ce </td>
+		<td> Develop on Linux, create Windows CE native apps </td>
+		<td> Develop on Cygwin, create Windows CE native apps </td>
+	</tr>
+	<tr>
+		<td> arm-wince-cegcc</td>
+		<td> Develop on Linux, port *nix sources to Windows CE </td>
+		<td> Develop on Cygwin, port *nix sources to Windows CE </td>
+	</tr>
+</table>
 <p>
 This project is
 <a href="http://www.gnu.org/philosophy/free-sw.html">free software</a>
@@ -76,21 +104,29 @@ Our project is based on a collection of (mostly GNU) software :
 <li><a href="http://www.gnu.org/software/gdb">GDB</a> - the GNU debugger
 </ul>
 <p>
-We're implementing all these tools for the <b>arm-wince-cegcc</b> target platform,
-which means we're building for an <b>ARM</b> processor,
+What's the meaning of <b>arm-wince-cegcc</b> and <b>arm-wince-mingw32ce</b> ?
+They both describe the target platform :
+<ul>
+<li>
+the <b>arm-wince-cegcc</b> target platform
+implies we're building for an <b>ARM</b> processor,
 running the <b>wince</b> operating system,
 and producing <b>pe</b> executable files
 to be linked with the <b>CEGCC</b> library.
-This target implements a porting environment :
-the CEGCC library basically offers a layer of unix-like functionality on top of Windows CE.
-<p>
-We also offer a development environment that is closer to the WinCE platform,
-this is called <b>arm-wince-mingw32ce</b>.
+As we said earlier, this is a porting environment :
+the CEGCC library offers a layer of unix-like functionality on top of Windows CE.
+<li>
+the <b>arm-wince-mingw32ce</b> target platform is closer to WinCE.
 It is based on a subset of the <a href="http://www.mingw.org">MinGW</a> project,
 which offers a MINimalistic Gnu environment for Windows platforms.
+The primary difference with <b>arm-wince-cegcc</b> is that there is not porting layer,
+which means that apps built with <b>arm-wince-mingw32ce</b> use the pure
+<a href="http://www.microsoft.com/windowsce">Windows CE</a> API.
+</ul>
 <p>
 We used to have <i>pe</i> in the target description.
-PE stands for Portable Executable file format,
+(It used to be <b>arm-wince-pe</b>, inherited from another project.)
+In that, PE stands for Portable Executable file format,
 and it's 
 <a href="http://www.microsoft.com/whdc/system/platform/firmware/PECOFF.mspx">Microsoft's implementation of COFF</a>
 (the Common Object File Format).
@@ -110,9 +146,6 @@ Our project is hosted by
 <a href="http://sf.net">SourceForge.net</a>,
 here is a link to our
 <a href="http://sf.net/projects/cegcc">project page</a>.
-You're welcome to use the
-<a href="wiki">wiki</a>
-to share your experience with CeGCC.
 <p>
 Bugfixes, improvements to these core products are actively sent back to the
 projects so everyone will benefit.
