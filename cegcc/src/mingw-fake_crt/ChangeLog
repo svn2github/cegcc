@@ -1,4 +1,0 @@
-2006-11-28  Pedro Alves  <pedro_alves@portugalmail.pt>
-
-	* crt3.s: Rename from crt2.s.
-	* install.sh: Adjust to build crt3.o.

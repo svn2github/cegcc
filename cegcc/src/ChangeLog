@@ -1,5 +1,9 @@
 2007-06-13  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* mingw-fake_crt: Remove.
+
+2007-06-13  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* script.sh: Rename to ...
 	* build-mingw32ce-dlls.sh: ... this.
 
