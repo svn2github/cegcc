@@ -31,7 +31,6 @@
 
 #include <windows.h>
 #include <winsock2.h>
-#include <pkfuncs.h>
 
 #include <PipeLib.h>
 
