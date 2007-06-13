@@ -1,11 +1,15 @@
 CeGCC - cross-development tools for Windows CE (PocketPC).
 
+This is the SVN version of CeGCC.
+
 The CeGCC project aims to provide a consistent and working set of development
 tools that generate code for Windows CE devices such as PDA's and smart phones.
 Our intended development platforms are GNU/Linux and Cygwin.
 
 This project is free software. See the files COPYING and COPYING.LIB for
 the GPL and LGPL licenses that cover much - but not all! - of this software.
+The CeGCC project is an aggregation of several components, the original license
+of each component applies.
 
 More information can be found in the docs subdirectory of the distribution,
 and on our website :
