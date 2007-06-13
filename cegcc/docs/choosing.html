@@ -6,26 +6,51 @@
     <img src="../images/banner1.png" alt="CeGCC cross compiler for PocketPC">
     <h1>Choosing in which environment to develop</h1>
     <p>
-      <h2>A Unix-like application</h2>
+    Remember that <i>arm-wince-cegcc</i> implements a unix-like layer on top of Windows CE,
+    and that <i>arm-wince-mingw32ce</i> implements the native CE API.
     <p>
-      <h2>Use only the Windows CE API</h2>
+    <b>Our recommendation is to use the <i>arm-wince-mingw32ce</i> toolset whenever possible</b>
+    because the newlib-based unix-like layer that <i>arm-wince-cegcc</i> implements is
+    incomplete (it's newlib, not glibc) and sometimes confusing and incompatible with coredll.
     <p>
-      <h2>Choosing in which environment to develop</h2>
+    On the other hand, <i>arm-wince-mingw32ce</i> offers more complete C++ DLL support.
+    We will probably implement a C++ DLL for the <i>arm-wince-mingw32ce</i> environment shortly.
+      <h2>1. Porting a Unix-like application</h2>
+    <p>
+    <i>Arm-wince-cegcc</i> is a great tool to start porting your application to WinCE,
+    as it offers a unix-like layer on top of the Windows CE API.
+    <p>
+    This doesn't come without risks though (it is very easy to mix up stdio API's
+    from coredll and newlib, and they're incompatible).
+    Also be aware that Windows CE has many Unicode based system calls,
+    you'll have to make sure your application can deal with that.
+      <h2>2. Porting an application that uses only the Windows CE API</h2>
+    <p>
+    It should be abundantly clear that the right tool for this job is the <i>arm-wince-mingw32ce</i>
+    toolset.
+      <h2>3. Recompiling a CE application that was built with Embedded Visual C++</h2>
     <p>
     <p>If you want to build an existing Windows CE application that already 
-      builds with eVC or MSVC, or you want to develop a Windows CE application that 
-      only depends on the Win32 API and the limited libc support coredll.dll (the 
-      native runtime) offers, then what you want is mingw32ce.</p>
-    <p>If you want to port an application that depends on a more complete c runtime, 
-      the cegcc toolchain will be a better environment. Cegcc offers unified 
-      file descriptors, (in-process only) signals, (TODO: to be completed).</p>
-    <h2>Microsoft environment equivalents</h2>
+    builds with eVC, then you probably think you're not porting an application.
+    <p>
+    The right tool to use is <i>arm-wince-mingw32ce</i>,
+    but you need to be aware that some of the C or C++ extensions supported by
+    eVC aren't available in our toolset.
+      <h2>4. Porting an application that was built with MicroSoft Visual C++</h2>
+    <p>
+    <p>An application that is built not with eVC but MSVC (MicroSoft Visual C++)
+    is not typically a Windows CE but a Windows application.
+    This may be an issue because Windows CE supports only a limited subset of
+    the Windows API.
+    <p>
+    Once more, the right tool to use is <i>arm-wince-mingw32ce</i>.
+    <h2>5. Microsoft environment equivalents</h2>
     <p>The <b>/ENTRY</b> option to the Microsoft compiler is equivalent to ld's <b>-e</b>
       option.</P>
-    <h2>Console Applications</h2>
+    <h2>6. Console Applications</h2>
     <h>In the NT/9x target versions of Microsoft's tools, there is have some 
-      default behaviour, such as <i>if main is defined then CONSOLE subsytem is the 
-        default</i>.
+    default behaviour, such as
+    <i>if main is defined then CONSOLE subsytem is the default</i>.
     <p>Windows CE applications don't have that functionality, as they must always specify the Windows CE subsystem: <a href="http://msdn2.microsoft.com/en-us/library/fcc1zstk.aspx">
         http://msdn2.microsoft.com/en-us/library/fcc1zstk.aspx</a>
     <p>If you want to develop a console based application, take a look at Pocket 
@@ -34,4 +59,22 @@
       one, a default one will be linked in that will call the standard int main (int 
       argc, char** argv) with argc and argv properly filled.</p>
   </body>
+<table border=0 cellspacing=10 width="100%"> <tr>
+	<td align=left valign=top bgcolor="#ededed" width="50%">
+		<h2 align=center>Information</h2>
+		<ul>
+			<li> <a href="http://cegcc.sourceforge.net"> CeGCC Home Page on SourceForge </a>
+			<li> <a href="index.html"> CeGCC Documentation </a>
+			<li> <a href="http://sourceforge.net/projects/cegcc"> Project page on SourceForge </a>
+			<li> <a href="http://cegcc.wiki.sourceforge.net"> CeGCC wiki </a>
+		</ul>
+	</td>
+	<td align=left valign=top bgcolor="#ededed" width="50%">
+		<h2 align=center>Support</h2>
+		<ul>
+			<li> <a href="mailto:cegcc-devel@lists.sourceforge.net">Questions ? Use the mailing list</a>.
+			<li> <a href="http://sourceforge.net/tracker/?group_id=173455&atid=865514"> CeGCC Bug tracker </a>
+		</ul>
+	</td>
+</tr></table>
 </html>

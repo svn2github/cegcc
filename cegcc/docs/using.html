@@ -309,6 +309,47 @@ keep our sources in sync with the maintainers (of MinGW, in this case).
 Note that the <i>arm-wince-cegcc</i> target has different characteristics than
 <i>arm-wince-mingw32ce</i> target.
 The &lt;errno.h&gt; file is an example of such a difference :
-it does exist, and works, in <i>arm-wince-cegcc<i/>.
+it does exist, and works, in <i>arm-wince-cegcc</i>.
+<h2>Mixing coredll.dll and cegcc stdio</h2>
+<p>
+When you're using the <i>arm-wince-cegcc</i> tools,
+the unix-like layer kicks in :
+the <i>cegcc.dll</i> library provides you with all of 
+<a href="http://sources.redhat.com/newlib/">newlib</a>,
+a library originally written to offer a cheap C library for embedded environments.
+<p>
+Newlib comes with its own implementation of <i>stdio</i>,
+functions like <i>fopen</i>, <i>fprintf</i>, <i>fclose</i>, <i>scanf</i>, <i>printf</i>,
+and many more.
+<p>
+The trouble is that coredll.dll,
+Windows CE's runtime library, also comes with these functions,
+and the two libraries are incompatible with each other.
+<p>
+Getting in trouble with this is not all that easy, so we hope you don't go down this road.
+Should you ever find yourself in a position where you find that stdio functions mysteriously
+fail on you, then think about this.
+The way to figure out which functions your application is using is
+to use the <i>arm-wince-cegcc-objdump</i> utility.
+It'll tell you from which library each function is obtained.
+All of stdio should come from the same library.
 </BODY>
+<table border=0 cellspacing=10 width="100%"> <tr>
+	<td align=left valign=top bgcolor="#ededed" width="50%">
+		<h2 align=center>Information</h2>
+		<ul>
+			<li> <a href="http://cegcc.sourceforge.net"> CeGCC Home Page on SourceForge </a>
+			<li> <a href="index.html"> CeGCC Documentation </a>
+			<li> <a href="http://sourceforge.net/projects/cegcc"> Project page on SourceForge </a>
+			<li> <a href="http://cegcc.wiki.sourceforge.net"> CeGCC wiki </a>
+		</ul>
+	</td>
+	<td align=left valign=top bgcolor="#ededed" width="50%">
+		<h2 align=center>Support</h2>
+		<ul>
+			<li> <a href="mailto:cegcc-devel@lists.sourceforge.net">Questions ? Use the mailing list</a>.
+			<li> <a href="http://sourceforge.net/tracker/?group_id=173455&atid=865514"> CeGCC Bug tracker </a>
+		</ul>
+	</td>
+</tr></table>
 </HTML>

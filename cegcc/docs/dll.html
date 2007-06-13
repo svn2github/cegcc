@@ -5,13 +5,18 @@
 </HEAD>
 <BODY>
 <P>
-CeGCC ships with three DLL files.
-You can find them at
+Depending on the package you're using, CeGCC ships with a different number of DLL files.
+The <i>arm-wince-cegcc</i> distribution has three DLLs :
 <PRE>
-/usr/ppc/arm-wince-cegcc/lib/device/cegcc.dll
-/usr/ppc/arm-wince-cegcc/lib/device/cegccthrd.dll
-/usr/ppc/arm-wince-cegcc/lib/device/libstdc++.dll
+/opt/cegcc/arm-wince-cegcc/lib/device/cegcc.dll
+/opt/cegcc/arm-wince-cegcc/lib/device/cegccthrd.dll
+/opt/cegcc/arm-wince-cegcc/lib/device/libstdc++.dll
 </PRE>
+the <i>arm-wince-mingw32ce</i> distribution currently only has one DLL :
+<PRE>
+/opt/mingw32ce/arm-wince-mingw32ce/bin/mingwm10.dll
+</PRE>
+Note that these absolute file names are the ones found in the RPM images that we distribute.
 <P>
 The good thing about those DLLs is they allow you to create
 smaller and more efficient applications.
@@ -23,7 +28,7 @@ and that DLL isn't available, then Windows CE will simply tell you
 that this application or a part of it was not found.
 No reference to which DLL you're missing.
 <P>
-The DLLs which we ship in <i>/usr/ppc/arm-wince-cegcc/lib/device</i>
+The DLLs which we ship in <i>/opt/cegcc/arm-wince-cegcc/lib/device</i>
 are stripped version, meant to be installed on your PDA.
 In the directory above, files of the same name (but bigger) exist.
 They are unstripped versions (they still contain named symbol definitions),
@@ -32,9 +37,28 @@ which you don't need on your PDA.
 Depending on the tools available to you,
 you will want to run commands such as
 <PRE>
-pcp /usr/ppc/arm-wince-cegcc/lib/device/cegcc.dll /windows/cegcc.dll
-pcp /usr/ppc/arm-wince-cegcc/lib/device/cegccthrd.dll /windows/cegccthrd.dll
-pcp /usr/ppc/arm-wince-cegcc/lib/device/libstdc++.dll /windows/libstdc++.dll
+pcp /opt/cegcc/arm-wince-cegcc/lib/device/cegcc.dll :/windows/cegcc.dll
+pcp /opt/cegcc/arm-wince-cegcc/lib/device/cegccthrd.dll :/windows/cegccthrd.dll
+pcp /opt/cegcc/arm-wince-cegcc/lib/device/libstdc++.dll :/windows/libstdc++.dll
+pcp /opt/mingw32ce/arm-wince-mingw32ce/bin/mingwm10.dll :/windows/mingwm10.dll
 </PRE>
 </BODY>
+<table border=0 cellspacing=10 width="100%"> <tr>
+	<td align=left valign=top bgcolor="#ededed" width="50%">
+		<h2 align=center>Information</h2>
+		<ul>
+			<li> <a href="http://cegcc.sourceforge.net"> CeGCC Home Page on SourceForge </a>
+			<li> <a href="index.html"> CeGCC Documentation </a>
+			<li> <a href="http://sourceforge.net/projects/cegcc"> Project page on SourceForge </a>
+			<li> <a href="http://cegcc.wiki.sourceforge.net"> CeGCC wiki </a>
+		</ul>
+	</td>
+	<td align=left valign=top bgcolor="#ededed" width="50%">
+		<h2 align=center>Support</h2>
+		<ul>
+			<li> <a href="mailto:cegcc-devel@lists.sourceforge.net">Questions ? Use the mailing list</a>.
+			<li> <a href="http://sourceforge.net/tracker/?group_id=173455&atid=865514"> CeGCC Bug tracker </a>
+		</ul>
+	</td>
+</tr></table>
 </HTML>

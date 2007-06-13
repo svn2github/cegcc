@@ -44,23 +44,27 @@ Questions, bug reports, .. should be addressed to that same address.
 You can install the CeGCC RPM just like any other one,
 by using the
 <pre>
-	rpm -i cegcc-0.09-2.i586.rpm
+	rpm -i cegcc-cegcc-0.15-1.i586.rpm
+	rpm -i cegcc-mingw32ce-0.15-1.i586.rpm
 </pre>
 command.
+You'll need to be the superuser (root) for this to work.
 For unknown reasons, the RPM sometimes asks for the <i>libiconv</i> to be installed
 first. A workaround is to use the --nodeps option :
 <pre>
-	rpm -i --nodeps cegcc-0.09-2.i586.rpm
+	rpm -i --nodeps cegcc-cegcc-0.15-1.i586.rpm
 </pre>
 <p>
 After a successful installation, all of CeGCC can be found under the
-<i>/usr/ppc</i> directory tree.
+<i>/opt/cegcc</i> and
+<i>/opt/mingw32ce</i> directory trees.
 <h2>How do you use the release ?</h2>
 <p>
 To start using CeGCC, you'll have to put
-the directory <i>/usr/ppc/bin</i> in your path, e.g. like this :
+the directories <i>/opt/cegcc/bin</i> and/or
+<i>/opt/mingw32ce/bin</i> in your path, e.g. like this :
 <pre>
-	export PATH=$PATH:/usr/ppc/bin
+	export PATH=$PATH:/opt/cegcc/bin:/opt/mingw32ce/bin
 </pre>
 <p>
 To make this permanent, you'll want to apply such a change to your login environment,
@@ -124,43 +128,24 @@ included in the file (consequence of using the -g option).
 <H2>Known problems</H2>
 <P>
 None that we care to mention here.
-<!--
-  
-     Button row at the top of the page.
-  
-  -->
-<table bgcolor="blue" border="6"> <tr>
-	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
-		<a href="http://cegcc.sf.net/docs/index.html">
-			Documentation
-		</a>
-	</font> </td>
-	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
-			<a href="http://svn.sourceforge.net/cegcc">
-			SVN Repository
-		</a>
-	</font> </td>
-	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
-			<a href="http://sf.net/projects/cegcc">
-			Project page on SourceForge
-		</a>
-	</font> </td>
-	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
-			<a href="http://sf.net/project/showfiles.php?group_id=173455">
-			Download
-		</a>
-	</font> </td>
-	<td bgcolor="#CCCC00" > <font size="+2" color="#222200">
-		<a href="install-linux.html">
-		       Installation on Linux
-		</a>
-	</font> </td>
-</tr></table>
-<!--
-
-     End of the button row
-
-  -->
 </p>
 </body>
+<table border=0 cellspacing=10 width="100%"> <tr>
+	<td align=left valign=top bgcolor="#ededed" width="50%">
+		<h2 align=center>Information</h2>
+		<ul>
+			<li> <a href="http://cegcc.sourceforge.net"> CeGCC Home Page on SourceForge </a>
+			<li> <a href="index.html"> CeGCC Documentation </a>
+			<li> <a href="http://sourceforge.net/projects/cegcc"> Project page on SourceForge </a>
+			<li> <a href="http://cegcc.wiki.sourceforge.net"> CeGCC wiki </a>
+		</ul>
+	</td>
+	<td align=left valign=top bgcolor="#ededed" width="50%">
+		<h2 align=center>Support</h2>
+		<ul>
+			<li> <a href="mailto:cegcc-devel@lists.sourceforge.net">Questions ? Use the mailing list</a>.
+			<li> <a href="http://sourceforge.net/tracker/?group_id=173455&atid=865514"> CeGCC Bug tracker </a>
+		</ul>
+	</td>
+</tr></table>
 </html>
