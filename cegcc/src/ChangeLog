@@ -1,3 +1,8 @@
+2007-06-13  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* script.sh: Rename to ...
+	* build-mingw32ce-dlls.sh: ... this.
+
 2007-06-02  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* cegcc/libstdc++/Makefile : Remove THE_SYSTEM_LIBS variable, somehow
