@@ -58,6 +58,21 @@ first. A workaround is to use the --nodeps option :
 After a successful installation, all of CeGCC can be found under the
 <i>/opt/cegcc</i> and
 <i>/opt/mingw32ce</i> directory trees.
+<h3>Help : /opt is a bad place on my system</h3>
+Some people have insufficient free space on /opt,
+or /opt is not the place where they want this software to be.
+There are two ways around this.
+<ol start=1>
+	<li>Tell RPM to install in another place 
+	<pre>
+rpm -i --relocate /opt=/home/cegcc-opt cegcc-cegcc-0.15-1.i586.rpm
+	</pre>
+	<li>You can put rpm on quicksand, by pointing /opt to another place
+	<pre>
+# mkdir /home/cegcc-opt
+# ln -s /home/cegcc-opt /opt
+	</pre>
+</ol>
 <h2>How do you use the release ?</h2>
 <p>
 To start using CeGCC, you'll have to put
