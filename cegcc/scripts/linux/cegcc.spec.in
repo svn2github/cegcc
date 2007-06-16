@@ -8,7 +8,7 @@ Packager:	Danny Backx <dannybackx@users.sourceforge.net>
 Group:		Development/Tools
 Prefix:		/opt/cegcc
 # Source:		http://sourceforge.net/project/showfiles.php?group_id=173455
-Source:		/tmp/cegcc-src-%{version}.tar.gz
+Source:		/tmp/cegcc-cegcc-src-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-buildroot
 
 %description

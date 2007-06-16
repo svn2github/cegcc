@@ -75,7 +75,7 @@ else
 	if [ -r ./NEWS -a -r scripts/linux/cegcc.spec -a -r scripts/linux/rpm-create-source.sh ]; then
 		TOPDIR=.
 	else
-		if [ -f ../NEWS -a -r linux/cegcc.spec -a -r linux/rpm-create-source.sh ]; then
+		if [ -f ../NEWS -a -r linux/cegcc.spec.in -a -r linux/rpm-create-source.sh.in ]; then
 			TOPDIR=..
 		else
 			echo "Cannot find CeGCC source directory, exiting"
