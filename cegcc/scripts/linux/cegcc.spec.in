@@ -1,5 +1,5 @@
 Summary:	CeGCC offers cross-development to create Windows CE apps for ARM processors
-Name:		cegcc
+Name:		cegcc-cegcc
 %define version VerSION
 Version:	VerSION
 Release:	1
