@@ -1,5 +1,5 @@
 #!/bin/sh
-if [ -x ./rpm-create-source.sh ]; then
+if [ -r ./rpm-create-source.sh ]; then
 	cd ../..
 	TOP_SRCDIR=`pwd`
 else
