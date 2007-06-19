@@ -370,14 +370,14 @@ else
 	else
 		PREFIX="$LINUXDISTRO-"
 	fi
-	echo "put $LIST $PREFIX$LIST" >>$FTPFILE
+	echo "put $LIST -o $PREFIX$LIST" >>$FTPFILE
 	LIST=`ls cegcc-mingw32ce-$VERSION-*.i586.rpm`
 	COUNT=`echo $LIST | wc -w`
 	if [ $COUNT -ne 1 ]; then
 		echo "Unexpected number of RPM files, please clean up before continuing."
 		exit 1
 	fi
-	echo "put $LIST $PREFIX$LIST" >>$FTPFILE
+	echo "put $LIST -o $PREFIX$LIST" >>$FTPFILE
 	echo "bye" >>$FTPFILE
 	lftp -f $FTPFILE
 	#
