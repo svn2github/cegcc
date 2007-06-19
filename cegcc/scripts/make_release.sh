@@ -396,7 +396,6 @@ then
 	echo "Skip level 70 (Build binary tar images)"
 else
 	echo "Level 70 (Build binary tar images)"
-	set -x
 	if [ "x$LINUXDISTRO" = "x" ]; then
 		PREFIX=""
 	else
