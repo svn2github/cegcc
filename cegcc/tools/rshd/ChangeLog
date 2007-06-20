@@ -1,3 +1,10 @@
+2007-06-20  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* rshd.c (init_client_data): Init refcount as 0.
+	(rsh_userok): Don't compile.
+	(rexec_userok): Delete.
+	(create_child): Handle program arguments.
+
 2007-06-13  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* rshd.c : Remove #include <pkfuncs.h>.

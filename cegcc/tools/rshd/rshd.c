@@ -176,6 +176,8 @@ init_client_data (struct client_data_t *data)
   static int clientid = 0;
   int i;
 
+  data->refcount = 0;
+
   memset (&data->sin, 0, sizeof (data->sin));
 
   data->clientid = ++clientid;
@@ -190,6 +192,7 @@ init_client_data (struct client_data_t *data)
   data->stop = FALSE;
 }
 
+#if 0
 /* check if hostname is in users .rhost file */
 static int
 rsh_userok (const char *hostname, const char *user)
@@ -226,23 +229,7 @@ rsh_userok (const char *hostname, const char *user)
   (void)user;
   return 1;
 }
-
-int
-rexec_userok (const char *user, const char *pass)
-{
-#if 0
-  struct passwd *pw;
-  char s[256] = "";
-  if ((pw = getpwnam(user)) == NULL)
-    return 0;
-
-  if (strncmp(pw->pw_passwd, pass, 13) != 0)
-    return 0;
 #endif
-  (void)user;
-  (void)pass;
-  return 1;
-}
 
 static DWORD WINAPI
 stdin_thread (void *arg)
@@ -441,14 +428,21 @@ create_child (char *program, HANDLE *readh, HANDLE *writeh)
     }
 
   argslen = 0;
-  args = "";
-
-  to_back_slashes (program);
+  args = program;
+  /* TODO: program paths with embedded spaces?  */
+  args = strchr (args, ' ');
+  if (args != NULL)
+    *args++ = '\0';
+  else
+    args = "";
+  argslen = strlen (args);
   wargs = alloca ((argslen + 1) * sizeof (wchar_t));
-  mbstowcs (wargs, args, argslen);
+  mbstowcs (wargs, args, argslen + 1);
+
+  /* PROGRAM is now free from args.  */
+  to_back_slashes (program);
   wprogram = alloca ((strlen (program) + 1) * sizeof (wchar_t));
   mbstowcs (wprogram, program, strlen (program) + 1);
-
   /* Do the PipeLib/WinCE dup dance.  */
 
   for (i = 0; i < 3; i++)
@@ -480,7 +474,7 @@ create_child (char *program, HANDLE *readh, HANDLE *writeh)
   if (!ret)
     {
       DWORD err = GetLastError ();
-      fprintf (stderr, "Error creating process \"%s%s\", (error %d): %s\n",
+      fprintf (stderr, "Error creating process \"%s %s\", (error %d): %s\n",
 	       program, args, (int) err, strwinerror (err));
 
       for (i = 0; i < 3; i++)
