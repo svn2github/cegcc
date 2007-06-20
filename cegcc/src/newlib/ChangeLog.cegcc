@@ -1,3 +1,16 @@
+2007-06-20  Danny Backx  <danny.backx@users.sourceforge.net>
+
+	* newlib/libc/sys/wince/startup.c (_eh_handler) : Add code to call new
+	function _Wince_Log instead of printf statements that often go
+	nowhere.
+	* newlib/libc/sys/wince/startup.c (_Wince_Log) : New function that can
+	be configured at runtime to either print to stdout or a file or to pop
+	up a dialog window.
+	* newlib/libc/sys/wince/startup.c (_get_registry_debug,
+	_get_registry_debugflag) : New functions to figure out where the user
+	wants _Wince_Log to put its output.
+	* newlib/libc/sys/wince/startup.h : New file to declare _Wince_Log.
+
 2006-12-29  Danny Backx  <danny.backx@users.sourceforge.net>
 
 	* newlib/libc/sys/wince/startup.c : Call ExitProcess instead of

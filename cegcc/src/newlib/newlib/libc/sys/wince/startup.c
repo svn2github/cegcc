@@ -13,6 +13,153 @@
 #include "sys/io.h"
 #include "sys/fixpath.h"
 
+/*
+ * This function will query the registry for the value of an flag.
+ * Use it to determine whether to use printf to some file,
+ * or MessageBox in case of trouble.
+ *
+ * There's a fixed size buffer in here.
+ *
+ * Simplistic version - do this only once.
+ */
+static wchar_t *_get_registry_debugflag(void)
+{
+	static int	onlyonce = 0;
+
+	LONG	r;
+	const static wchar_t	*env = L"cegcc";
+	const static wchar_t	*wname = L"debug";
+	size_t	l;
+	DWORD	tp;
+	HKEY	k;
+
+#define	BUF_SIZE	256
+
+	static wchar_t	*wbuffer = NULL;
+	static DWORD	bufsize;
+
+	if (onlyonce) {
+		return wbuffer;
+	}
+	onlyonce++;
+
+	r = RegOpenKeyEx(HKEY_CURRENT_USER, env, 0, 0, &k);
+	if (r != ERROR_SUCCESS)
+		return NULL;
+
+	bufsize = BUF_SIZE;
+	wbuffer = (wchar_t *)malloc(bufsize);
+	r = RegQueryValueEx(k, wname, NULL, &tp, (LPBYTE)wbuffer, &bufsize);
+	RegCloseKey(k);
+
+	if (r != ERROR_SUCCESS) {
+		free(wbuffer);
+		wbuffer = NULL;
+		return NULL;
+	}
+
+	if (tp == REG_SZ)
+		return wbuffer;
+	free(wbuffer);
+	wbuffer = NULL;
+	return NULL;
+}
+
+static char	*_log_filename = NULL;
+static FILE	*_log_fp = NULL;
+static int	_fp_needsclose = 0;
+
+/*
+ * Note this also relies on not behaving differently once inside a process.
+ */
+static FILE *_get_registry_debug(void)
+{
+	wchar_t		*r = _get_registry_debugflag();
+	int		l;
+	static int	inited = 0;
+
+	if (inited)
+		return _log_fp;
+	inited = 1;
+
+	if (r == NULL) {	/* This was the original behaviour */
+		_log_fp = stdout;
+		return _log_fp;
+	}
+	if (wcscmp(r, L"dialog") == 0) {
+		return NULL;	/* Call MessageBoxW() */
+	}
+	if (wcscmp(r, L"stdout") == 0) {	/* Again, original behaviour */
+		_log_fp = stdout;
+		return _log_fp;
+	}
+	if (wcscmp(r, L"stderr") == 0) {
+		_log_fp = stderr;
+		return _log_fp;
+	}
+
+	l = wcslen(r)+1;
+	_log_filename = malloc(l);
+	wcstombs(_log_filename, r, l);
+
+	_log_fp = fopen(_log_filename, "a");
+	_fp_needsclose = 1;
+
+	/* Ignore errors here ? Naah, we need a fallback */
+	if (_log_fp == 0) {
+		_log_filename = "/cegcc-errlog.txt";
+		_log_fp = fopen(_log_filename, "a");
+		_fp_needsclose = 1;
+	}
+
+	return _log_fp;
+}
+
+/*
+ * Apparently we need the separate declaration to be able to
+ * specify the attribute handling.
+ */
+void _Wince_Log(int onlyprintf, char *title, char *fmt, ...)
+	__attribute__((format(printf, 3, 4)));
+
+/*
+ * Produce logging or exception messages.
+ * This can be configured via the registry, see _get_registry_debug().
+ *
+ */
+void _Wince_Log(int onlyprintf, char *title, char *fmt, ...)
+{
+	static char	msg[512];
+	va_list		ap;
+	FILE		*fp;
+
+	va_start(ap, fmt);
+	vsnprintf(msg, sizeof(msg), fmt, ap);
+	va_end(ap);
+	msg[sizeof(msg)] = '\0';
+
+	fp = _get_registry_debug();
+	if (fp) {
+		fprintf(fp, "%s : %s", title, msg);
+		if (_fp_needsclose) {
+			fclose(fp);
+			fp = 0;
+		}
+	} else if (!onlyprintf) {
+		static wchar_t	wmsg[512], wtitle[64];
+
+		mbstowcs(wmsg, msg, strlen(msg)+1);
+		mbstowcs(wtitle, title, strlen(title)+1);
+
+		MessageBoxW(0, wmsg, wtitle, MB_OK);
+	} else {
+		/*
+		 * For now, silently ignore logging when "dialog" is specified
+		 * and "onlyprintf" is passed.
+		 */
+	}
+}
+
 void
 _start_process(wchar_t *exe, wchar_t *cmd)
 {
@@ -38,24 +185,25 @@ struct exception_map_t
   const char* str;
 };
 
+#define	EXCEPTION_MAP_ENTRY(W, U, T)	{ W, U, T }
 /* from pocket console */
 struct exception_map_t __exception_map[] = 
 {
-  { STATUS_ACCESS_VIOLATION,         SIGSEGV,  "Access Violation" },
-  { STATUS_ILLEGAL_INSTRUCTION,      SIGILL, "Illegal Instruction"},
-  { STATUS_PRIVILEGED_INSTRUCTION,   SIGILL, "Privileged Instruction" },
-  /*      { (unsigned long)STATUS_NONCONTINUABLE_EXCEPTION, NOSIG,   SIG_DIE }, */
-  /*      { (unsigned long)STATUS_INVALID_DISPOSITION,      NOSIG,   SIG_DIE }, */
-  { STATUS_INTEGER_DIVIDE_BY_ZERO,   SIGFPE, "Integer divide by zero" },
-  { STATUS_FLOAT_DENORMAL_OPERAND,   SIGFPE, "Float denormal operand" },
-  { STATUS_FLOAT_DIVIDE_BY_ZERO,     SIGFPE, "Float divide by zero" },
-  { STATUS_FLOAT_INEXACT_RESULT,     SIGFPE, "Float inexact result" },
-  { STATUS_FLOAT_INVALID_OPERATION,  SIGFPE, "Float invalid operation" },
-  { STATUS_FLOAT_OVERFLOW,           SIGFPE, "Float overflow" },
-  { STATUS_FLOAT_STACK_CHECK,        SIGFPE, "Float stack check" },
-  { STATUS_FLOAT_UNDERFLOW,          SIGFPE, "Float underflow" },
-  /*      { (unsigned long)STATUS_INTEGER_DIVIDE_BY_ZERO,   NOSIG }, */
-  /*      { (unsigned long)STATUS_STACK_OVERFLOW,           NOSIG } */
+  { STATUS_ACCESS_VIOLATION,		SIGSEGV,	"Access Violation"},
+  { STATUS_ILLEGAL_INSTRUCTION,		SIGILL,		"Illegal Instruction"},
+  { STATUS_PRIVILEGED_INSTRUCTION,	SIGILL,		"Privileged Instruction"},
+  /* {(unsigned long)STATUS_NONCONTINUABLE_EXCEPTION,	NOSIG,	  SIG_DIE },		*/
+  /* {(unsigned long)STATUS_INVALID_DISPOSITION,	NOSIG,	  SIG_DIE },		*/
+  { STATUS_INTEGER_DIVIDE_BY_ZERO,	SIGFPE,		"Integer divide by zero"},
+  { STATUS_FLOAT_DENORMAL_OPERAND,	SIGFPE,		"Float denormal operand"},
+  { STATUS_FLOAT_DIVIDE_BY_ZERO,	SIGFPE,		"Float divide by zero"},
+  { STATUS_FLOAT_INEXACT_RESULT,	SIGFPE,		"Float inexact result"},
+  { STATUS_FLOAT_INVALID_OPERATION,	SIGFPE,		"Float invalid operation"},
+  { STATUS_FLOAT_OVERFLOW,	        SIGFPE,		"Float overflow"},
+  { STATUS_FLOAT_STACK_CHECK,		SIGFPE,		"Float stack check"},
+  { STATUS_FLOAT_UNDERFLOW,		SIGFPE,		"Float underflow"},
+  /* {(unsigned long)STATUS_INTEGER_DIVIDE_BY_ZERO,	NOSIG },*/
+  /* {(unsigned long)STATUS_STACK_OVERFLOW,		NOSIG } */
 };
 
 static struct exception_map_t* get_exception_map_for(DWORD xcptnum)
@@ -103,36 +251,40 @@ _eh_handler_(struct _EXCEPTION_RECORD *ExceptionRecord,
 {
   // ### What is this needed for?
   static int NestedException=0;
-  if(NestedException)
-  {
+  wchar_t	msg[256];
+  int		unhandled = 0;
+  FILE		*fp = NULL;
+  DWORD		*sp;
+
+  if (NestedException) {
   	printf("nested exception\n");
   	goto Nest;
   }
   NestedException=1;
 
-  if (ExceptionRecord->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT)
-  {
+  if (ExceptionRecord->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT) {
     int i;
     DWORD Cmd;
     DWORD DataAddr;
 
-#if 0
-    printf("Trying to handle EXCEPTION_DATATYPE_MISALIGNMENT Flags:%x Addr:%x "
-      "SP:%x LR:%x R0:%x R1:%x R2:%x R3:%x R4:%x R5:%x R12:%x FP:%x\n", 
-      ExceptionRecord->ExceptionFlags,
-      ExceptionRecord->ExceptionAddress,
-      ContextRecord->Sp,
-      ContextRecord->Lr,
-      ContextRecord->R0,
-      ContextRecord->R1,
-      ContextRecord->R2,
-      ContextRecord->R3,
-      ContextRecord->R4,
-      ContextRecord->R5,
-      ContextRecord->R12,
-      EstablisherFrame
-    );
-#endif
+    /*
+     * Don't put a dialog up on this message, when an application triggers it you may
+     * have to click away the dialog hundreds of times, sometimes WinCE dies.
+     */
+    _Wince_Log(1, "Error 1", "Trying to handle EXCEPTION_DATATYPE_MISALIGNMENT Flags:%x Addr:%x "
+		    "SP:%x LR:%x R0:%x R1:%x R2:%x R3:%x R4:%x R5:%x R12:%x FP:%x\r\n",
+		    ExceptionRecord->ExceptionFlags,
+		    ExceptionRecord->ExceptionAddress,
+		    ContextRecord->Sp,
+		    ContextRecord->Lr,
+		    ContextRecord->R0,
+		    ContextRecord->R1,
+		    ContextRecord->R2,
+		    ContextRecord->R3,
+		    ContextRecord->R4,
+		    ContextRecord->R5,
+		    ContextRecord->R12,
+		    EstablisherFrame);
 
     Cmd=*(DWORD*)(ExceptionRecord->ExceptionAddress);  // this may cause other exception
 
@@ -144,7 +296,7 @@ _eh_handler_(struct _EXCEPTION_RECORD *ExceptionRecord,
       Dst=(Cmd>>12)&0xf;
       Off=Cmd&0xfff;
       DataAddr=Regs[Dst]+Off;
-      fprintf(stderr, "Warning: Emulating unaligned LDR R%d,[R%d+%d] (DataAddr:%d) (Cmd:%x)\n",
+      _Wince_Log(1, "Error 2", "Warning: Emulating unaligned LDR R%d,[R%d+%d] (DataAddr:%d) (Cmd:%x)\r\n",
                 Src, Dst, Off, DataAddr, Cmd);
       memcpy(Regs+Dst, (char*)DataAddr, 4);
     } 
@@ -156,12 +308,12 @@ _eh_handler_(struct _EXCEPTION_RECORD *ExceptionRecord,
       Src=(Cmd>>12)&0xf;
       Off=Cmd&0xfff;
       DataAddr=Regs[Dst]+Off;
-      fprintf(stderr, "Warning: Emulating unaligned STR R%d,[R%d+%d] (DataAddr:%d) (Cmd:%x)\n",
+      _Wince_Log(1, "Error 3", "Warning: Emulating unaligned STR R%d,[R%d+%d] (DataAddr:%d) (Cmd:%x)\r\n",
                 Src, Dst, Off, DataAddr, Cmd);
       memcpy((char*)DataAddr, Regs+Src, 4);
     }
     else {
-      printf("Unhandled command:%x\n", Cmd);
+      _Wince_Log(1, "Data type misalignment exception", "Unhandled command:%x\n", Cmd);
       goto Cont;
     }
 
@@ -170,27 +322,31 @@ _eh_handler_(struct _EXCEPTION_RECORD *ExceptionRecord,
     NestedException=0;
     return ExceptionContinueExecution;
 Cont:
-    printf("Unhandled ");
+    _Wince_Log(1, "Error 4", "Unhandled ");
+    unhandled++;
   }
 Nest:
-  printf("Exception: Code:%x Flags:%x Addr:%x "
-    "SP:%x LR:%x R0:%x R1:%x R2:%x R3:%x R4:%x R5:%x R12:%x FP:%x\n", 
-    ExceptionRecord->ExceptionCode,
-    ExceptionRecord->ExceptionFlags,
-    ExceptionRecord->ExceptionAddress,
-    ContextRecord->Sp,
-    ContextRecord->Lr,
-    ContextRecord->R0,
-    ContextRecord->R1,
-    ContextRecord->R2,
-    ContextRecord->R3,
-    ContextRecord->R4,
-    ContextRecord->R5,
-    ContextRecord->R12,
-    EstablisherFrame
-    );
-
-  DWORD* sp = (DWORD*)ContextRecord->Sp;
+#if 0
+  /*
+   * No message box here, there's a call with textual explanation for the end user below.
+   */
+  _Wince_Log(1, "Error 5", "Exception: Code:%x Flags:%x Addr:%x "
+      "SP:%x LR:%x R0:%x R1:%x R2:%x R3:%x R4:%x R5:%x R12:%x FP:%x\r\n", 
+      ExceptionRecord->ExceptionCode,
+      ExceptionRecord->ExceptionFlags,
+      ExceptionRecord->ExceptionAddress,
+      ContextRecord->Sp,
+      ContextRecord->Lr,
+      ContextRecord->R0,
+      ContextRecord->R1,
+      ContextRecord->R2,
+      ContextRecord->R3,
+      ContextRecord->R4,
+      ContextRecord->R5,
+      ContextRecord->R12,
+      EstablisherFrame);
+#endif
+  sp = (DWORD*)ContextRecord->Sp;
   *--sp = ContextRecord->Pc;
   *--sp = ContextRecord->Lr;
   *--sp = ContextRecord->Sp;
@@ -217,17 +373,26 @@ Nest:
   struct exception_map_t* expt = get_exception_map_for(ExceptionRecord->ExceptionCode);
   if (!expt)
   {
-    printf("Unhandled kernel exception %x\n", ExceptionRecord->ExceptionCode);
+    _Wince_Log(0, "Unhandled kernel exception", "Exception %x\n", ExceptionRecord->ExceptionCode);
     exit(-1);
   }
-  printf("%s\n", expt->str);
+
+  /*
+   * Show readable text explaining what went wrong, with a limited amount of detail.
+   */
+  _Wince_Log(0, "WinCE Exception", "%s\r\nCode:%x Flags:%x Addr:%x SP:%x",
+		  expt->str,
+		  ExceptionRecord->ExceptionCode,
+		  ExceptionRecord->ExceptionFlags,
+		  ExceptionRecord->ExceptionAddress,
+		  ContextRecord->Sp);
   ContextRecord->R0 = expt->signal;
 
   /* raise(SIGSEGV); */
   __eh_continue(ContextRecord);
 
   /* NOT REACHED */
-  printf("Signal handler returned!\n");
+  _Wince_Log(1, "Error 6", "Signal handler returned!\r\n");
   exit(1);
 }
 
