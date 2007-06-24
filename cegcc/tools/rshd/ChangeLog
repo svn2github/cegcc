@@ -1,5 +1,9 @@
 2007-06-25  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* rshd.c (handle_connection): Remove out of sync comment.
+
+2007-06-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* rshd.c (GetStdioPathW, SetStdioPathW): Declare.
 	(SafeCloseHandle): New function.
 	(stdin_thread): Don't close the reading side of the pipe too early.

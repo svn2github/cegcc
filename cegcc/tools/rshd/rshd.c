@@ -887,8 +887,6 @@ handle_connection (void *arg)
 
   release_data (client_data);
 
-  /* maybe we should wait for all the still alive threads again?  */
-
   return 0;
 }
 
