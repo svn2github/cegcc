@@ -34,6 +34,10 @@
 
 #include <PipeLib.h>
 
+/* from coredll.dll */
+extern BOOL GetStdioPathW (int, wchar_t*, DWORD*);
+extern BOOL SetStdioPathW (int, const wchar_t*);
+
 #ifndef COUNTOF
 #define COUNTOF(STR) (sizeof (STR) / sizeof ((STR)[0]))
 #endif
@@ -192,6 +196,19 @@ init_client_data (struct client_data_t *data)
   data->stop = FALSE;
 }
 
+static BOOL
+SafeCloseHandle (HANDLE *h)
+{
+  if (*h == INVALID_HANDLE_VALUE)
+    return TRUE;
+
+  if (!CloseHandle (*h))
+    return FALSE;
+
+  *h = INVALID_HANDLE_VALUE;
+  return TRUE;
+}
+
 #if 0
 /* check if hostname is in users .rhost file */
 static int
@@ -239,10 +256,6 @@ stdin_thread (void *arg)
 
   addref_data (data);
 
-  /* We don't need the reading side.  */
-  CloseHandle (data->readh[0]);
-  data->readh[0] = INVALID_HANDLE_VALUE;
-
   while (!data->stop)
     {
       int read = 0;
@@ -274,26 +287,28 @@ stdin_thread (void *arg)
 
       if (read)
 	{
-	  int written;
 	  DWORD dwwritten;
-
-#if 1
-	  /* echo data back ...  */
-	  written = send (data->sockfd, buf, read, 0);
-	  if (written < 0)
-	    logprintf ("%s: write ERROR, winerr %d\n",
-		       thread_name,
-		       GetLastError ());
-	  else if (written < read)
-	    logprintf ("%s: ERROR only wrote %d of %d bytes\n",
-		       thread_name, written, read);
-#endif
-
-	  /* ... and stuff it into the child's stdin.  */
+	  /* Stuff it into the child's stdin.  */
 	  if (!WriteFile (data->writeh[0], buf, read, &dwwritten, NULL))
 	    {
 	      logprintf ("%s: broken pipe (2)\n", thread_name);
 	      break;
+	    }
+	  else
+	    {
+	      /* We can't close the reading side of the pipe until the
+		 child opens its version.  Since it will only be open on the
+		 first stdin access, we have to wait until the write side
+		 returns something - which means the child opened stdin.  */
+	      SafeCloseHandle (&data->readh[0]);
+	    }
+
+	  if (debug)
+	    {
+	      printf ("0: (%d)", read);
+	      fflush (stdout);
+	      write (fileno (stdout), buf, read);
+	      printf ("\n");
 	    }
 	}
     }
@@ -320,14 +335,13 @@ stdout_thread (void *arg)
 	  logprintf ("%s: broken pipe\n", thread_name);
 	  break;
 	}
-      else if (data->writeh[1] != INVALID_HANDLE_VALUE)
+      else
 	{
 	  /* We can't close the write side of the pipe until the
 	     child opens its version.  Since it will only be open on the
 	     first stdout access, we have to wait until the read side returns
 	     something - which means the child opened stdout.  */
-	  CloseHandle (data->writeh[1]);
-	  data->writeh[1] = INVALID_HANDLE_VALUE;
+	  SafeCloseHandle (&data->writeh[1]);
 	}
       if (read)
 	{
@@ -339,6 +353,14 @@ stdout_thread (void *arg)
 	  else if ((DWORD) written < read)
 	    logprintf ("%s: ERROR only wrote %d of %d bytes\n",
 		       thread_name, written, read);
+
+	  if (debug)
+	    {
+	      printf ("1: (%u)", (unsigned)read);
+	      fflush (stdout);
+	      write (fileno (stdout), buf, read);
+	      printf ("\n");
+	    }
 	}
     }
 
@@ -372,14 +394,13 @@ stderr_thread (void *arg)
 	  logprintf ("%s: broken pipe\n", thread_name);
 	  break;
 	}
-      else if (data->writeh[2] != INVALID_HANDLE_VALUE)
+      else
 	{
 	  /* We can't close the write side of the pipe until the
 	     child opens its version.  Since it will only be open on the
 	     first stderr access, we have to wait until the read side returns
 	     something - which means the child opened stderr.  */
-	  CloseHandle (data->writeh[2]);
-	  data->writeh[2] = INVALID_HANDLE_VALUE;
+	  SafeCloseHandle (&data->writeh[2]);
 	}
       if (read)
 	{
@@ -391,6 +412,14 @@ stderr_thread (void *arg)
 	  else if ((DWORD) written < read)
 	    logprintf ("%s: ERROR only wrote %d of %d bytes\n",
 		       thread_name, written, read);
+
+	  if (debug)
+	    {
+	      printf ("2: (%u)", (unsigned) read);
+	      fflush (stdout);
+	      write (fileno (stdout), buf, read);
+	      printf ("\n");
+	    }
 	}
     }
 
@@ -410,15 +439,15 @@ to_back_slashes (char *path)
 /* Start a new process.
    Returns the new process' handle on success, NULL on failure.  */
 static HANDLE
-create_child (char *program, HANDLE *readh, HANDLE *writeh)
+create_child (char *program, HANDLE *readh, HANDLE *writeh, PROCESS_INFORMATION *pi)
 {
   BOOL ret;
   char *args;
   int argslen;
-  PROCESS_INFORMATION pi;
   wchar_t *wargs, *wprogram;
   wchar_t prev_path[3][MAX_PATH];
   size_t i;
+  DWORD flags;
 
   if (program == NULL || program[0] == '\0')
     {
@@ -456,17 +485,17 @@ create_child (char *program, HANDLE *readh, HANDLE *writeh)
       GetStdioPathW (i, prev_path[i], &dwLen);
       SetStdioPathW (i, devname);
     }
-
+  flags = CREATE_SUSPENDED;
   ret = CreateProcessW (wprogram, /* image name */
 			wargs,    /* command line */
 			NULL,     /* security, not supported */
 			NULL,     /* thread, not supported */
 			FALSE,    /* inherit handles, not supported */
-			0,        /* start flags */
+			flags,    /* start flags */
 			NULL,     /* environment, not supported */
 			NULL,     /* current directory, not supported */
 			NULL,     /* start info, not supported */
-			&pi);     /* proc info */
+			pi);     /* proc info */
 
   for (i = 0; i < 3; i++)
     SetStdioPathW (i, prev_path[i]);
@@ -479,18 +508,15 @@ create_child (char *program, HANDLE *readh, HANDLE *writeh)
 
       for (i = 0; i < 3; i++)
 	{
-	  CloseHandle (readh[i]);
-	  CloseHandle (writeh[i]);
+	  SafeCloseHandle (&readh[i]);
+	  SafeCloseHandle (&writeh[i]);
 	}
       return NULL;
     }
   else
     logprintf ("Process created: %s\n", program);
 
-  CloseHandle (pi.hThread);
-  pi.hThread = NULL;
-
-  return pi.hProcess;
+  return pi->hProcess;
 }
 
 static int
@@ -524,7 +550,7 @@ rresvport (int *alport)
     }
 }
 
-int
+static int
 connect_stderr (int in, unsigned short stderr_port)
 {
   int s;
@@ -572,6 +598,7 @@ connect_stderr (int in, unsigned short stderr_port)
 static WINAPI DWORD
 handle_connection (void *arg)
 {
+  PROCESS_INFORMATION pi = { 0 };
   int s2 = (int) arg; /* sizeof (void*) == sizeof (int) */
   int stderrsockfd = -1;
   unsigned short stderr_port = 0;
@@ -590,7 +617,7 @@ handle_connection (void *arg)
 
   HANDLE waith[4];
   HANDLE hndproc;
-  DWORD tid[3];
+  DWORD stopped;
   size_t i;
   int enabled = 1;
   /*  int disabled = 0; */
@@ -734,7 +761,7 @@ handle_connection (void *arg)
   send (s2, "", 1, 0);
 
   logprintf ("handle_connection: starting command... \n");
-  hndproc = create_child (command, client_data->readh, client_data->writeh);
+  hndproc = create_child (command, client_data->readh, client_data->writeh, &pi);
   if (!hndproc)
     {
       logprintf ("handle_connection: ERROR can't create child process, "
@@ -745,34 +772,96 @@ handle_connection (void *arg)
   client_data->sockfd = s2;
   client_data->stderrsockfd = stderrsockfd;
 
-  waith[0] = CreateThread (NULL, 0, stdin_thread, client_data, 0, &tid[0]);
-  waith[1] = CreateThread (NULL, 0, stdout_thread, client_data, 0, &tid[1]);
-  waith[2] = CreateThread (NULL, 0, stderr_thread, client_data, 0, &tid[2]);
+  waith[0] = CreateThread (NULL, 0, stdin_thread, client_data, 0, NULL);
+  waith[1] = CreateThread (NULL, 0, stdout_thread, client_data, 0, NULL);
+  waith[2] = CreateThread (NULL, 0, stderr_thread, client_data, 0, NULL);
   waith[3] = hndproc;
 
-  switch (WaitForMultipleObjects (COUNTOF (waith), waith, FALSE, INFINITE))
+  ResumeThread (pi.hThread);
+  CloseHandle (pi.hThread);
+  pi.hThread = NULL;
+
+  /* Wait for stdin/stdout/stderr to close before exiting.  */
+
+  i = 0;
+  stopped = 0;
+
+  /* Wait for the three threads (stdin/stdout/stderr) to finish.  */
+  while (i < 3)
     {
-    case WAIT_OBJECT_0:
-    case WAIT_OBJECT_0 + 1:
-    case WAIT_OBJECT_0 + 2:
-      TerminateProcess (hndproc, 0);
-      break;
-    case WAIT_OBJECT_0 + 3:
-      break;
-    default:
-      logprintf ("WaitForMultipleObjects' default reached\n");
-      break;
+      DWORD waitCount = COUNTOF (waith) - stopped;
+      DWORD w;
+      w = WaitForMultipleObjects (waitCount, waith, FALSE, INFINITE);
+      if (WAIT_OBJECT_0 <= w && w < WAIT_OBJECT_0 + waitCount)
+	{
+	  DWORD j = w - WAIT_OBJECT_0;
+	  HANDLE h = waith[j];
+
+	  /* Let's not wait for this handle again.  */
+	  CloseHandle (waith[j]);
+	  for (;j < COUNTOF (waith) - 1; j++)
+	    waith[j] = waith[j + 1];
+	  waith[COUNTOF (waith) - 1] = INVALID_HANDLE_VALUE;
+
+	  stopped++;
+
+	  if (h == hndproc && stopped < COUNTOF (waith))
+	    {
+	      int k;
+
+	      /* The child died without ever opening it's side
+		 of the pipe, so our threads didn't see it close,
+		 because we never closed our side.  */
+
+	      /* Tell the threads we are stopping.  */
+	      client_data->stop = 1;
+
+	      /* Close them now.  */
+	      for (k = 0; k < 3; k++)
+		{
+		  SafeCloseHandle (&client_data->writeh[k]);
+		  SafeCloseHandle (&client_data->readh[k]);
+		}
+
+	      /* Also close the sockets.  At least stdin
+	       will be frequenly blocked in a recv call.  */
+	      if (s2 != -1)
+		{
+		  shutdown (s2, 2);
+		  closesocket (s2);
+		  s2 = -1;
+		  client_data->sockfd = -1;
+		}
+
+	      if (stderrsockfd != -1)
+		{
+		  shutdown (stderrsockfd, 2);
+		  closesocket (stderrsockfd);
+		  client_data->stderrsockfd = -1;
+		}
+	    }
+	  else if (h != hndproc)
+	    i++;
+	}
+      else
+	{
+	  logprintf ("WaitForMultipleObjects' default reached with %d : %u\n",
+		     w, (unsigned)GetLastError ());
+	  goto break_wait_loop;
+	}
     }
 
-  client_data->stop = TRUE;
+  logprintf ("all threads gone\n");
 
-  for (i = 0; i < 4; i++)
-    CloseHandle (waith[i]);
+ break_wait_loop:
+
+  for (i = 0; i < COUNTOF (waith); i++)
+    SafeCloseHandle (&waith[i]);
 
   for (i = 0; i < 3; i++)
     {
-      CloseHandle (client_data->writeh[i]);
-      CloseHandle (client_data->readh[i]);
+      SafeCloseHandle (&client_data->writeh[i]);
+      SafeCloseHandle (&client_data->readh[i]);
     }
 
  shutdown:
@@ -781,13 +870,20 @@ handle_connection (void *arg)
 	     ntohs (client_data->sin.sin_port));
 
   /* close sockets */
-  shutdown (s2, 2);
-  closesocket (s2);
+  if (s2 != -1)
+    {
+      shutdown (s2, 2);
+      closesocket (s2);
+    }
+
   if (stderrsockfd != -1)
     {
       shutdown (stderrsockfd, 2);
       closesocket (stderrsockfd);
     }
+
+  if (pi.hThread != NULL)
+    CloseHandle (pi.hThread);
 
   release_data (client_data);
 

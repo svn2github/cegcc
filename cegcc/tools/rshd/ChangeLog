@@ -1,3 +1,44 @@
+2007-06-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* rshd.c (GetStdioPathW, SetStdioPathW): Declare.
+	(SafeCloseHandle): New function.
+	(stdin_thread): Don't close the reading side of the pipe too early.
+	Use SafeCloseHandle.  Don't echo data back.  Add debug output
+	into rshd's console.
+	(stdout_thread): Use SafeCloseHandle.  Add debug output
+	into rshd's console.
+	(stderr_thread): Use SafeCloseHandle.  Add debug output
+	into rshd's console.
+	(create_child): Add PROCESS_INFORMATION* parameter.  Create child
+	suspended.  Use SafeCloseHandle.
+	(connect_stderr): Make it static.
+	(handle_connection): Don't store the children't pids.  Pass a new
+	PROCESS_INFORMATION local var to create_child.  Resume child after
+	starting the stdin/stdout/stderr threads.  Always wait for the three
+	threads to finish.  If the child dies before closing stdin, stdout
+	and stderr, close our ends of the pipe.  Use SafeCloseHandle.
+	* tester.c (main): Remove sleeps.
+	* Makefile (STRIP): New.
+	(UNSTRIPPED_BINS): New.
+	(STRIPPED_BINS, LIBS, TARGETS): Delete.
+	(OBJECTS): New.
+	(bins, libs): Delete.
+	(rshd.exe): Rename to ...
+	(rshd_unstripped.exe): ... this.
+	(rshd-stripped.exe): Rename to ...
+	(rshd.exe): ... this.
+	(tester.exe): Rename to ...
+	(tester_unstripped.exe): ... this.
+	(tester-stripped.exe): Rename to ...
+	(tester.exe): ... this.
+	(download-rshd): New rule.
+	(download-tester): New rule.
+	(download): Depend on download-rshd and download-tester to do the work.
+	(clean): Clean $(OBJECTS), $(BINS) and $(UNSTRIPPED_BINS)
+	(.PHONY): Add dependencies on download-rshd and download-tester.
+	
+	* TODO: Remove already implemented items.
+
 2007-06-20  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* rshd.c (init_client_data): Init refcount as 0.

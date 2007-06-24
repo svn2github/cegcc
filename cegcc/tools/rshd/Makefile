@@ -8,12 +8,12 @@ INCLUDES=
 ALLFLAGS=$(CFLAGS) $(INCLUDES) $(WARNFLAGS)
 
 CC=$(TARGET)-gcc
+STRIP=$(TARGET)-strip
 
+UNSTRIPPED_BINS = rshd_unstripped.exe tester_unstripped.exe
 BINS = rshd.exe tester.exe
-STRIPPED_BINS = rshd-stripped.exe tester-stripped.exe
 
-LIBS    =
-TARGETS = $(BINS) $(LIBS)
+OBJECTS=rshd.o tester.o
 
 srcdir=.
 distdir=rshd-0.1.0
@@ -28,27 +28,29 @@ BINDIST_FILES=\
 	rshd.exe
 
 all:  $(TARGETS)
-bins: $(BINS)
-libs: $(LIBS)
 
-rshd.exe: rshd.c Makefile
+rshd_unstripped.exe: rshd.c Makefile
 	$(CC) -o $@ $< $(ALLFLAGS) $(LDFLAGS)
 
-rshd-stripped.exe: rshd.exe
-	$(TARGET)-strip $< -o $@
+rshd.exe: rshd_unstripped.exe
+	$(STRIP) $< -o $@
 
-tester.exe: tester.c Makefile
+tester_unstripped.exe: tester.c Makefile
 	$(CC) -o $@ $< $(ALLFLAGS)
 
-tester-stripped.exe: tester.exe
+tester.exe: tester_unstripped.exe
 	$(TARGET)-strip $< -o $@
 
-download: rshd-stripped.exe tester-stripped.exe
-	pcp rshd-stripped.exe ":/rshd.exe"
-	pcp tester-stripped.exe ":/tester.exe"
+download: download-rshd download-tester
+
+download-rshd: rshd.exe
+	pcp $< ":/rshd.exe"
+
+download-tester: tester.exe
+	pcp $< ":/tester.exe"
 
 clean:
-	rm -f $(BINS) $(STRIPPED_BINS) $(LIBS)
+	rm -f $(OBJECTS) $(BINS) $(UNSTRIPPED_BINS)
 
 dist: srcdist bindist
 
@@ -73,4 +75,4 @@ bindist: all
 	$(TAR) $(TARFLAGS)cf $(distdir)-bin$(TARFILEEXT) $(distdir)
 
 
-.PHONY: all install download clean dist bindist srcdist
+.PHONY: all install download download-rshd download-tester clean dist bindist srcdist
