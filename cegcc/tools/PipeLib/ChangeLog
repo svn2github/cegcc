@@ -1,0 +1,8 @@
+2007-06-09  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	Initial import.
+	
+	* PipeLib/Makefile, PipeLib/PipeLib.cpp, PipeLib/PipeLib.h,
+	PipeDev/Makefile, PipeDev/PipeDevice.cpp, PipeDev/PipeDevice.h,
+	PipeTest/Makefile, PipeTest/PipeTest.cpp, TestClient/Makefile,
+	TestClient/TestClient.cpp: New files.
