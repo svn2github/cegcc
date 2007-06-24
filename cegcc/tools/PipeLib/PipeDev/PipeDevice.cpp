@@ -219,18 +219,12 @@ public:
 #ifdef DEBUG_LOCKS
   LockGuard (int line, T &cs) : cs_(cs), lineno(line)
   {
-    WCHAR buf[100];
-    wsprintf (buf, L"line : %d", line);
-    MessageBoxW(0, buf, L"lock", 0);
-
+    LOG ("LockGuard: line : %d\n", line);
     cs_.Lock (); 
   }
   ~LockGuard ()
   {
-    WCHAR buf[100];
-    wsprintf (buf, L"line : %d", lineno);
-    MessageBoxW(0, buf, L"unlock", 0);
-
+    LOG ("~LockGuard: line : %d\n", lineno);
     cs_.Unlock (); 
   }
 #else
@@ -383,39 +377,59 @@ DllMain (HANDLE /*hinstDLL*/, DWORD dwReason, LPVOID /*lpvReserved*/)
   return TRUE;
 }
 
+#ifdef DEBUG_MODE
 static void
-LogMessage (const char* msg, ...)
+LogMessage2 (const char* msg)
 {
-#if 0
-  va_list ap;
-  va_start (ap, msg);
-  FILE* log = fopen ("log.txt", "a+");
-  vfprintf (log, msg, ap);
+  FILE* log = fopen ("pipelog.txt", "a+");
+  fprintf (log, "%s", msg);
   fclose (log);
+}
+
+static void
+LogMessage (const char *file, int line, const char* msg, ...)
+{
+  va_list ap;
+  char buf[1024];
+  char *b = buf;
+  va_start (ap, msg);
+  sprintf (b, "%08x: %s (%d): ", (unsigned) GetCurrentThreadId (), file, line);
+  b += strlen (b);
+  vsprintf (b, msg, ap);
   va_end (ap);
-#else
-  (void)msg;
-#endif
+
+  LogMessage2 (buf);
 }
 
 struct LogScope
 {
-  explicit LogScope (const char* func)
+  explicit LogScope (const char *func, const char* msg)
     : func_(func)
+    , msg_(msg)
   {
-    LogMessage ("entering %s\n", func_);
+    char buf[512];
+    sprintf (buf, "> %s", msg_);
+    LogMessage (func_, -1, buf);
   }
   ~LogScope ()
   {
-    LogMessage ("leaving %s\n", func_);
+    char buf[512];
+    sprintf (buf, "< %s", msg_);
+    LogMessage (func_, -1, buf);
   }
 
   const char* func_;
+  const char* msg_;
 };
 
-#define LOGSCOPE(MSG) LogScope scope ## __LINE__(#MSG)
+# define LOG(MSG, ...) LogMessage (__FUNCTION__, __LINE__, MSG, ## __VA_ARGS__)
+# define LOGSCOPE(MSG) LogScope scope ## __LINE__(__FUNCTION__, MSG)
+#else
+# define LOG(MSG, ...) do; while (0)
+# define LOGSCOPE(MSG) do; while (0)
+#endif
 
-/* This is needed for MSVC.  */
+/* This is needed for MSVC, but it makes no harm in gcc.  */
 struct ltwstr
 {
   bool operator () (const std::wstring& s1, const std::wstring& s2) const
@@ -432,7 +446,7 @@ PIPEDEV_API BOOL Deinit (PipeDeviceContext* pDeviceContext);
 static HANDLE
 GetDeviceHandle (PipeDeviceContext* pDeviceContext)
 {
-  LOGSCOPE (GetDeviceHandle);
+  LOGSCOPE ("\n");
   HKEY hActive;
   DWORD Type;
   HANDLE hDev = INVALID_HANDLE_VALUE;
@@ -458,13 +472,11 @@ GetDeviceHandle (PipeDeviceContext* pDeviceContext)
 PIPEDEV_API DWORD
 Init (LPCTSTR pContext)
 {
-  LOGSCOPE ("Init");
+  LOGSCOPE ("\n");
   CSWrapper cs (&open_pipes_cs);
   LockGuard<CSWrapper> guard G(cs);
 
-#ifdef DEBUG_MODE
-  MessageBoxW (0, pContext, L"Init", 0);
-#endif
+  LOG ("%ls\n", pContext);
 
   /* TODO: The key here isn't exactly the best.  Maybe we should use
      the device name instead, and get that from the registry - that would
@@ -489,15 +501,14 @@ static int close_calls;
 PIPEDEV_API BOOL
 Deinit (PipeDeviceContext* pDeviceContext)
 {
-  LOGSCOPE ("Deinit");
+  LOGSCOPE ("\n");
   /* All file handles must to be closed before deinitialising
      the driver.  */
 
 #ifdef DEBUG_MODE
-  WCHAR buf[100];
-  wsprintf (buf, L"opencount %d : calls %d", pDeviceContext->OpenCount,
-	    close_calls);
-  MessageBoxW (0, buf, L"Deinit", 0);
+  LOG ("oc %lu, wc: %lu, close_calls: %d\n",
+       dev->OpenCount,
+       dev->WROpenCount, close_calls);
 #endif
 
   if (pDeviceContext == NULL)
@@ -510,9 +521,7 @@ Deinit (PipeDeviceContext* pDeviceContext)
       return FALSE;
   }
 
-#ifdef DEBUG_MODE
-  MessageBoxW (0, L"deactivate success", L"Deinit", 0);
-#endif
+  LOG ("deactivate success\n");
 
   /* Allow reuse.  */
   open_pipes.erase (pDeviceContext->ActivePath);
@@ -527,67 +536,42 @@ Deinit (PipeDeviceContext* pDeviceContext)
 PIPEDEV_API DWORD
 Open (PipeDeviceContext* pDeviceContext, DWORD AccessCode, DWORD ShareMode)
 {
-  LOGSCOPE ("Open");
+  LOGSCOPE ("\n");
 
-#ifdef DEBUG_MODE
-  wchar_t buf[100];
-  wsprintf (buf, L"opencount %d", pDeviceContext->OpenCount);
-  MessageBoxW (0, buf, L"open 1", 0);
-#endif
+  LOG ("oc %lu, wc: %lu, AccessCode %x, ShareMode %x\n",
+       pDeviceContext->OpenCount, pDeviceContext->WROpenCount,
+       AccessCode, ShareMode);
 
   PipeOpenContext* pOpenContext =
     new PipeOpenContext (pDeviceContext, AccessCode, ShareMode);
 
-#ifdef DEBUG_MODE
-  MessageBoxW (0, L"going to lock", L"open 2", 0);
-#endif
+  LOG ("going to lock\n");
 
   PipeDeviceContext::LockGuard guard G(*pOpenContext->DeviceContext);
 
-#ifdef DEBUG_MODE
-  MessageBoxW (0, L"locked", L"open 3", 0);
-#endif
+  LOG ("locked\n");
 
   pDeviceContext->OpenCount++;
 
   if (AccessCode & GENERIC_WRITE)
     pDeviceContext->WROpenCount++;
 
-#ifdef DEBUG_MODE
-  wsprintf (buf, L"opencount %d", pDeviceContext->OpenCount);
-  MessageBoxW (0, buf, L"open", 0);
-#endif
+  LOG ("OpenCount: %lu, WROpenCount: %lu\n",
+       pDeviceContext->OpenCount,
+       pDeviceContext->WROpenCount);
 
   return (DWORD)pOpenContext;
 }
 
-struct DeactivatorData
-{
-  HANDLE th;
-  HANDLE dev;
-};
-
 static DWORD WINAPI
-Deactivator (void* arg)
+Deactivator (HANDLE dev)
 {
-  LOGSCOPE ("Deactivator");
+  LOGSCOPE ("\n");
 
-  DeactivatorData* data = (DeactivatorData*)arg;
-
-#ifdef DEBUG_MODE
-  wchar_t buf[100];
-  wsprintf (buf, L"%x", data->dev);
-  MessageBoxW(0, buf, L"close: dev handle", 0);
-  if (!DeactivateDevice (data->dev))
-    MessageBoxW(0, buf, L"deactivate failed", 0);
+  if (!DeactivateDevice (dev))
+    LOG("deactivate failed\n");
   else
-    MessageBoxW(0, buf, L"after deactivate", 0);
-#else
-  DeactivateDevice (data->dev);
-#endif
-
-  CloseHandle (data->th);
-  delete data;
+    LOG("deactivate success\n");
 
   return 0;
 }
@@ -595,37 +579,26 @@ Deactivator (void* arg)
 static void
 DeactivatePipeDevice (PipeDeviceContext* dev)
 {
-  LOGSCOPE ("DeactivatePipeDevice");
-
+  LOGSCOPE ("\n");
   HANDLE hdev = GetDeviceHandle (dev);
-  DeactivatorData* data = new DeactivatorData ();
-  data->dev = hdev;
-  data->th = CreateThread (NULL, 0, Deactivator, data,
-			   CREATE_SUSPENDED, NULL);
-  ResumeThread (data->th);
+  HANDLE h = CreateThread (NULL, 0, Deactivator, hdev, 0, NULL);
+  CloseHandle (h);
 }
 
 PIPEDEV_API BOOL
 Close (PipeOpenContext* pOpenContext)
 {
-  LOGSCOPE ("Close");
+  LOGSCOPE ("\n");
 #ifdef DEBUG_MODE
   close_calls++;
-
-  wchar_t buf[100];
-  if (pOpenContext)
-    {
-      wsprintf (buf, L"opencount %d : %p",
-		pOpenContext->DeviceContext->OpenCount,
-		pOpenContext);
-      MessageBoxW (0, buf, L"close", 0);
-    }
-  else
-    {
-      wsprintf (buf, L"openctx %p", pOpenContext);
-      MessageBoxW (0, buf, L"close", 0);
-    }
 #endif
+
+  if (pOpenContext)
+    LOG ("oc %lu, wc: %lu\n",
+	 pOpenContext->DeviceContext->OpenCount,
+	 pOpenContext->DeviceContext->WROpenCount);
+  else
+    LOG ("openctx %p\n", pOpenContext);
 
   if (pOpenContext == NULL)
     return FALSE;
@@ -650,19 +623,15 @@ Close (PipeOpenContext* pOpenContext)
 
   delete pOpenContext;
 
-#ifdef DEBUG_MODE
-  wsprintf (buf, L"opencount %d", dev->OpenCount);
-  MessageBoxW (0, buf, L"close 2", 0);
-#endif
+  LOG ("oc %lu, wc: %lu\n",
+       dev->OpenCount, dev->WROpenCount);
 
   if (dev->OpenCount == 0)
     {
-#if 0
-      HANDLE hdev = GetDeviceHandle (dev);
-      DeactivateDevice (hdev);
-#else
+      /* Deactivating the device here seems to
+	 corrupt the Device.exe, and sometimes hangs
+	 the device.  Do it in an auxilary thread.  */
       DeactivatePipeDevice (dev);
-#endif
     }
 
   return TRUE;
@@ -671,11 +640,12 @@ Close (PipeOpenContext* pOpenContext)
 PIPEDEV_API DWORD
 Read (PipeOpenContext* pOpenContext, LPVOID pBuffer_, DWORD dwCount)
 {
-  LOGSCOPE ("Read");
+  LOGSCOPE ("\n");
 
   if (IsBadReadPtr (pBuffer_, dwCount))
     {
       SetLastError (ERROR_INVALID_PARAMETER);
+      LOG ("\n");
       return -1;
     }
 	
@@ -684,7 +654,10 @@ Read (PipeOpenContext* pOpenContext, LPVOID pBuffer_, DWORD dwCount)
 
   if (pOpenContext == NULL
       || (pOpenContext->dwAccessCode & GENERIC_READ) == 0)
-    return (DWORD)-1;
+    {
+      LOG ("Invalid access or no context\n");
+      return (DWORD)-1;
+    }
 
   PipeDeviceContext* dev = pOpenContext->DeviceContext;
 
@@ -699,18 +672,9 @@ Read (PipeOpenContext* pOpenContext, LPVOID pBuffer_, DWORD dwCount)
 	Events[0] = dev->WriteEvent;
 	Events[1] = dev->AbortEvent;
 
-	if (dev->Aborting)
-	  /* this device is long gone */
-	  return (DWORD)-1;
-
-	if (dev->WROpenCount == 0)
-	  /* broken pipe */
-	  return (DWORD)-1;
-
-	if (dev->OpenCount == 0)
-	  /* weird */
-	  return (DWORD)-1;
-
+	/* Read before checking for broken pipe, so
+	   we get a chance to return valid data when that
+	   happens.  */
 	DWORD read = dev->readBytes (pBuffer, dwCount);
 	pBuffer += read;
 	dwCount -= read;
@@ -718,53 +682,81 @@ Read (PipeOpenContext* pOpenContext, LPVOID pBuffer_, DWORD dwCount)
 	if (read)
 	  SetEvent (dev->ReadEvent);
 
-	if (dwCount == 0)
-	  break;
+	if (dev->Aborting            /* this device is long gone, */
+	    || dev->WROpenCount == 0 /* or broken pipe */
+	    || dev->OpenCount == 0   /* or, ... weird */
+	    )
+	  {
+	    SetLastError (ERROR_BROKEN_PIPE);
+	    if (needed - dwCount)
+	      {
+		/* I don't know a way to report error and 'valid
+		   data' at the same time.  Is there a way?  Instead
+		   we report 'valid' and the next Read call will error.  */
+		LOG ("Pipe broken, but with data\n");
+		break;
+	      }
+	    LOG ("Pipe broken\n");
+	    return (DWORD) -1;
+	  }
+
+	if (read || dwCount == 0)
+	  {
+	    /* We've either read something or pBuffer_ is full.  */
+	    LOG ("read || dwCount == 0\n");
+	    break;
+	  }
 
 	if (breaknext)
 	  break;
       }
 
+      /* The buffer was empty, wait for data.  */
       switch (WaitForMultipleObjects (2, Events, FALSE, INFINITE))
 	{
 	case WAIT_OBJECT_0:
+	  /* Data was written to the pipe.  Do one more iteration
+	     to fetch what we can and bail out.  */
 	  breaknext = TRUE;
 	  break;
 	default:
-	  //			MessageBoxW (0, L"pipe aborted", L"Read", 0);
 	  /* With either wait error or AbortEvent
 	     signaled, return with error.  */
-	  return (DWORD)-1;
+	  LOG ("WaitForMultipleObjects default case\n");
+	  return (DWORD) -1;
 	}
     }
   while (dwCount);
 
+  LOG ("Read: %u\n", needed - dwCount);
   return needed - dwCount;
 }
 
 PIPEDEV_API DWORD
 Write (PipeOpenContext* pOpenContext, LPCVOID pBuffer_, DWORD dwCount)
 {
-  LOGSCOPE ("Write");
+  LOGSCOPE ("\n");
 
-  if (IsBadReadPtr (pBuffer_, dwCount))
+  if (IsBadWritePtr ((void*) pBuffer_, dwCount))
     {
       SetLastError (ERROR_INVALID_PARAMETER);
+      LOG ("\n");
       return -1;
     }
 
   const BYTE* pBuffer = (const BYTE*)pBuffer_;
   DWORD needed = dwCount;
 
-#ifdef DEBUG_MODE
-  wchar_t buf[100];
-  wsprintf (buf, L"opencount %d", pOpenContext->DeviceContext->OpenCount);
-  MessageBoxW (0, buf, L"write", 0);
-#endif
+  LOG ("oc %lu, wc: %lu\n",
+       pOpenContext->DeviceContext->OpenCount,
+       pOpenContext->DeviceContext->WROpenCount);
 
   if (pOpenContext == NULL
       || (pOpenContext->dwAccessCode & GENERIC_WRITE) == 0)
-    return (DWORD)-1;
+    {
+      LOG ("Invalid access or no context\n");
+      return (DWORD)-1;
+    }
 
   PipeDeviceContext* dev = pOpenContext->DeviceContext;
 
@@ -776,24 +768,36 @@ Write (PipeOpenContext* pOpenContext, LPCVOID pBuffer_, DWORD dwCount)
       {
 	PipeDeviceContext::LockGuard guard G(*dev);
 
-#ifdef DEBUG_MODE
-	MessageBoxW (0, L"lock acquired", L"write", 0);
-#endif
+	LOG ("lock acquired\n");
 
 	Events[0] = dev->ReadEvent;
 	Events[1] = dev->AbortEvent;
 
 	if (dev->Aborting)
-	  /* this device is long gone */
-	  return (DWORD)-1;
+	  {
+	    /* this device is long gone */
+	    SetLastError (ERROR_NO_DATA);
+	    LOG ("Device is gone\n");
+	    return (DWORD)-1;
+	  }
 
 	if (dev->OpenCount == 0)
-	  /* weird */
-	  return (DWORD)-1;
+	  {
+	    /* weird */
+	    SetLastError (ERROR_NO_DATA);
+	    LOG ("Device is not open\n");
+	    return (DWORD)-1;
+	  }
 
-	/* According to MSDN, attempting to read from a pipe without writers,
-	   generates a broken pipe error, but the opposite isn't forbidden, so we
-	   allow writing to a pipe without a reader.  */
+	if (dev->OpenCount == dev->WROpenCount)
+	  {
+	    /* no readers */
+	    SetLastError (ERROR_NO_DATA);
+	    LOG ("No readers left: oc %lu, wc: %lu\n",
+		 dev->OpenCount,
+		 dev->WROpenCount);
+	    return (DWORD)-1;
+	  }
 
 	DWORD wrote = dev->writeBytes (pBuffer, dwCount);
 	pBuffer += wrote;
@@ -816,21 +820,22 @@ Write (PipeOpenContext* pOpenContext, LPCVOID pBuffer_, DWORD dwCount)
 	  breaknext = TRUE;
 	  break;
 	default:
-	  //			MessageBoxW (0, L"pipe aborted", L"Write", 0);
 	  /* With either wait error or AbortEvent
 	     signaled, return with error.  */
+	  LOG ("WaitForMultipleObjects default case\n");
 	  return (DWORD) -1;
 	}
     }
   while (dwCount);
 
+  LOG ("%u\n", needed - dwCount);
   return needed - dwCount;
 }
 
 PIPEDEV_API DWORD
 Seek (PipeOpenContext* /*pOpenContext*/, long /*Amount*/, WORD /*wType*/)
 {
-  LOGSCOPE ("Seek");
+  LOGSCOPE ("\n");
   /* Pipes don't support seeking.  */
   return (DWORD)-1;
 }
@@ -840,7 +845,7 @@ IOControl (PipeOpenContext* pOpenContext, DWORD dwCode,
 	   PBYTE pBufIn, DWORD dwLenIn,
 	   PBYTE pBufOut, DWORD dwLenOut, PDWORD pdwActualOut)
 {
-  LOGSCOPE ("IOControl");
+  LOGSCOPE ("\n");
 
   /* Kill unused warnings.  */
   (void)pBufIn;
@@ -858,9 +863,7 @@ IOControl (PipeOpenContext* pOpenContext, DWORD dwCode,
   PipeDeviceContext::LockGuard guard G(*dev);
 
 #ifdef DEBUG_MODE
-  wchar_t buf[100];
-  wsprintf (buf, L"%x : %d", dwCode, dev->OpenCount);
-  MessageBoxW (0, buf, L"IOControl", 0);
+  LOG ("%x : %d\n", dwCode, dev->OpenCount);
 #endif
 
   if (dwCode == IOCTL_PSL_NOTIFY)
@@ -870,11 +873,7 @@ IOControl (PipeOpenContext* pOpenContext, DWORD dwCode,
       if (pPslPacket->dwSize == sizeof (DEVICE_PSL_NOTIFY)
 	  && pPslPacket->dwFlags == DLL_PROCESS_EXITING)
 	{
-#ifdef DEBUG_MODE
-	  WCHAR buf[100];
-	  wsprintf (buf, L"%p : %p", pPslPacket->hProc, pPslPacket->hThread);
-	  MessageBoxW(0, buf, L"process dying", 0);
-#endif
+	  LOG ("Process dying: %p : %p\n", pPslPacket->hProc, pPslPacket->hThread);
 	  dev->Aborting = TRUE;
 	  /* Unlock all blocked threads.  */
 	  SetEvent (dev->AbortEvent);

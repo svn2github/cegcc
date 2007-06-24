@@ -1,11 +1,50 @@
 2007-06-24  Pedro Alves  <pedro_alves@portugalmail.pt>
+	Make PipeLib closer to desktop Windows Pipes.
+
+	* PipeDev/Makefile (STRIP): New.
+	(PipeDev.dll): Rename to ...
+	(PipeDev_unstripped.dll): ... this. Add Makefile to dependencies.
+	(PipeDev.dll): New rule for stripped version of PipeDev_unstripped.dll.
+	(download): New rule.
+	(.PHONY): Fix typo.  Add download.
+	* PipeDev/PipeDevice.cpp (LogMessage2): New.
+	(LogMessage): Provide more info.  Call LogMessage2.
+	(LogScope::LogScope): Add MSG parameter.  Change output to ">".
+	(LogScope::~LogScope): Change output to "<".
+	(LogScope::msg_): New field.
+	(LOG): New macro.
+	(LOGSCOPE): Pass __FUNCTION__ and __LINE__.  Expect a char* as
+	parameter.
+	(GetDeviceHandle): Use new LOGSCOPE interface.
+	(Init): Use new LOGSCOPE interface.  Use LOG.
+	(Deinit): Likewise.
+	(Open): Likewise.
+	(DeactivatorData): Delete.
+	(Deactivator): Change void* parameter to HANDLE. Use new LOGSCOPE
+	interface.  Use LOG.  Adapt to get the device HANDLE directly from the
+	parameter.
+	(DeactivatePipeDevice): Use new LOGSCOPE interface.  Pass
+	device->dev directly to CreateThread as start routine data.
+	(Close): Use LOG.  Add a comment explaining why we deactivate the
+	device in a separate thread.
+	(Read): Use new LOGSCOPE interface.  Use LOG.  Return success if the
+	pipe is broken but the buffer still has data.  Return success and
+	don't block waiting for a Write if the read didn't fill the in buffer,
+	but did get more than 0 bytes.  Add a few comments explaing the code.
+	(Write): Use new LOGSCOPE interface.  Use LOG.  Use IsBadWritePtr
+	instead of IsBadReadPtr.  Set ERROR_NO_DATA in case the pipe was
+	broken.
+	(Seek): Use new LOGSCOPE interface.
+	(IOControl): Use new LOGSCOPE interface.  Use LOG.
+
+2007-06-24  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* LICENSE, README, TODO: New files.
 
 2007-06-09  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	Initial import.
-	
+
 	* ChangeLog, PipeLib/Makefile, PipeLib/PipeLib.cpp,
 	PipeLib/PipeLib.h, PipeDev/Makefile, PipeDev/PipeDevice.cpp,
 	PipeDev/PipeDevice.h, PipeTest/Makefile, PipeTest/PipeTest.cpp,
