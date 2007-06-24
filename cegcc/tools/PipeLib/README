@@ -1,0 +1,45 @@
+		   README for PipeLib
+
+This directory contains the PipeLib enhancer for Windows CE.
+
+PipeLib implements a stream driver that is exposed in an interface
+similar to unnamed pipes on desktop Windows.  Namelly, pipes are
+created with CreatePipe and the pipe ends are manipulated with the normal
+ReadFileW/WriteFileW/CloseHandle coredll.dll functions.
+
+To build the lib and the driver you will need the arm-wince-mingw32ce
+toolchain.  An early version of PipeLib was also tested with MSVC2005,
+but project files aren't presently included.
+
+To build, ensure you have arm-wince-mingw32ce-gcc in your $PATH, and
+type:
+
+make
+
+If you have synce-tools installed, type:
+
+make download
+
+The previous command will copy the driver (PipeDev.dll) to \Windows on
+the device.
+
+If you don't have synce-tools installed, then copy the newly built
+PipeDev.dll file into the \Windows on the device.
+
+PipeLib comes with a sample tester, but the main testbed client is
+currently the rshd server for Windows CE found at
+http://cegcc.sourceforge.net.  Both PipeLib and rshd share the same
+repository, so be sure you have a checkout from the same date before
+reporting bugs.
+
+Have fun!
+
+Pedro Alves
+
+--
+
+See the file LICENSE in the various directories, for a description of
+the license the software is license in.
+
+REPORTING BUGS: cegcc-devel@sourceforge.net
+pedro_alves@portugalmail.pt

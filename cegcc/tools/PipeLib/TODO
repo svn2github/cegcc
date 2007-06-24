@@ -1,0 +1,4 @@
+- Add SetLastError in all the error code paths.
+
+- Add to libPipeLib.a some more pipe related calls, following the
+  interface exposed on desktop Windows.  To be added on a need basis.
