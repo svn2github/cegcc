@@ -1,4 +1,8 @@
 2007-06-24  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* conformtest.c: New file.
+
+2007-06-24  Pedro Alves  <pedro_alves@portugalmail.pt>
 	Make PipeLib closer to desktop Windows Pipes.
 
 	* PipeDev/Makefile (STRIP): New.
