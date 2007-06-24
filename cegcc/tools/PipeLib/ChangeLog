@@ -6,3 +6,10 @@
 	PipeDev/Makefile, PipeDev/PipeDevice.cpp, PipeDev/PipeDevice.h,
 	PipeTest/Makefile, PipeTest/PipeTest.cpp, TestClient/Makefile,
 	TestClient/TestClient.cpp: New files.
+
+Local Variables:
+mode: change-log
+left-margin: 8
+fill-column: 74
+version-control: never
+End:
