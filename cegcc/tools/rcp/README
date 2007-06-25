@@ -1,0 +1,26 @@
+		   README for rcp for Windows CE
+
+This directory contains rcp for Windows CE.
+
+This tool was written based on the rcp extension to 
+"rshd - Remote Shell Daemon for Windows NT version 1.6" written by
+Silviu C. Marghescu (http://www.cs.umd.edu/~silviu).  The rcp
+extension was written by Gary Doss (gdoss@rpspo2.atlantaga.ncr.com).
+
+The rcp part was totally separated from Silviu's rshd, and converted
+to read/write from/to stdin/stdout.  It is supposed to be invoked from
+rshd for WinCE with stdin/stdout/stderr redirected, much like a unix
+version of rcp would do.
+
+To build make sure you have the mingw32ce toolchain on your path, and
+type make.
+
+Have fun!
+
+Pedro Alves
+
+--
+
+REPORTING BUGS:
+cegcc-devel@sourceforge.net
+pedro_alves@portugalmail.pt

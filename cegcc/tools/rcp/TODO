@@ -1,0 +1,5 @@
+
+* Rewrite the ParseTarget, NextTarget and CloseTarget function to use
+  _findfirst, or dirent or something else.
+
+* Convert rcp_main to use getopt.
