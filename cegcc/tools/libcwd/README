@@ -1,0 +1,22 @@
+This is a cwd lib for WinCE.
+
+This is a lib that serves as a porting aid.  It provides chdir and
+getcwd calls, thus a current working directory notion.
+
+Note that this lib is built as a static lib, so be careful with
+linking the lib into several dlls/exe.  Don't expect the same cwd
+to be seen across dlls.  For that to work, you'll need to build a
+libcwd.dll.
+
+Have fun!
+
+Pedro Alves
+
+--
+
+See the file LICENSE in the various directories, for a description of
+the license the software is licensed in.
+
+REPORTING BUGS:
+cegcc-devel@sourceforge.net
+pedro_alves@portugalmail.pt

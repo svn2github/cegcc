@@ -1,0 +1,13 @@
+2007-06-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	Initial import.
+	
+	* LICENSE, README, TODO, ChangeLog, Makefile, cwd.c cwd.h: New files.
+
+
+Local Variables:
+mode: change-log
+left-margin: 8
+fill-column: 74
+version-control: never
+End:
