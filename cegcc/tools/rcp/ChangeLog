@@ -1,5 +1,10 @@
 2007-06-25  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* FindFileA.c: Add a notice on file origin.  Convert C++ comments
+	into C comments.
+
+2007-06-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	Initial import.
 	
 	* LICENSE, README, TODO, ChangeLog, Makefile, rcp.c, FindFileA.c,

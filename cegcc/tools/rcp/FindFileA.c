@@ -1,6 +1,5 @@
-// findfile.c
-//
-// Time-stamp: <12/02/01 14:42:40 keuchel@keuchelnt>
+/* Simple Ansi->Wide wrappers based on code original from
+   Rainer Keuchel's celib, which migrated into cegcc.dll.  */
 
 #include <wchar.h>
 
@@ -39,7 +38,7 @@ FindFirstFileA (const char *lpName, LPWIN32_FIND_DATAA lpfd)
 			  COUNTOF (lpfd->cFileName),
 			  NULL, NULL);
 
-      // not in wince...
+      /* Not in wince...  */
       lpfd->cAlternateFileName[0] = 0;
     }
 
@@ -52,7 +51,8 @@ FindNextFileA (HANDLE hFind, LPWIN32_FIND_DATAA lpfd)
   WIN32_FIND_DATAW fdw;
   BOOL res;
 
-  // is this needed?
+  /* Is this needed?
+     Shouldn't be, as lpfd could contain garbage... */
   fdw.dwFileAttributes = lpfd->dwFileAttributes;
   fdw.ftCreationTime = lpfd->ftCreationTime;
   fdw.ftLastAccessTime = lpfd->ftLastAccessTime;
