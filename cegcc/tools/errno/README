@@ -1,0 +1,28 @@
+This is an errno <-> {Get|Set}LastError mapper.
+
+<describe here the technique used>
+
+Do *not* install errno.h into
+/opt/mingw32ce/arm-wince-mingw32ce/include.
+
+You have been warned.
+
+This is only used as a porting aid.  Ideally you use this as an
+interim measure until you finish the port.  If you chose to keep using
+it, and you are writing a lib to be reused by others, be sure to *NOT*
+export any header that includes errno.h.  Do *NOT* expect your users
+to have errno.h.  If needed, copy errno.h and errno.c into your
+project, but again, do *NOT* force it into the users.
+
+Have fun!
+
+Pedro Alves
+
+--
+
+See the file LICENSE in the various directories, for a description of
+the license the software is license in.
+
+REPORTING BUGS:
+cegcc-devel@sourceforge.net
+pedro_alves@portugalmail.pt
