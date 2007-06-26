@@ -27,7 +27,7 @@ SRCDIST_FILES=\
 BINDIST_FILES=\
 	rshd.exe
 
-all:  $(TARGETS)
+all:  $(BINS)
 
 rshd_unstripped.exe: rshd.c Makefile
 	$(CC) -o $@ $< $(ALLFLAGS) $(LDFLAGS)

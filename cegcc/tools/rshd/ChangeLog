@@ -1,7 +1,11 @@
+2007-06-26  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* Makefile (all): Depend on $(BINS) not $(TARGETS).
+	
 2007-06-25  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* rshd.c (handle_connection): Remove out of sync comment.
-
+	
 2007-06-25  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* rshd.c (GetStdioPathW, SetStdioPathW): Declare.
@@ -62,3 +66,10 @@
 	
 	* COPYING, README, TODO, ChangeLog, Makefile, rshd.c, tester.c: New
 	files.
+
+Local Variables:
+mode: change-log
+left-margin: 8
+fill-column: 74
+version-control: never
+End:
