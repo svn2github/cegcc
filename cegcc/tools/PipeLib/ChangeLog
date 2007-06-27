@@ -2,6 +2,7 @@
 
 	* PipeLib/PipeLib.h (SetPipeTag): Declare.
 	* PipeLib/PipeLib.cpp (SetPipeTag): Define.
+	* PipeDev/PipeDevice.h (PIPE_IOCTL_SET_PIPE_TAG): Define.
 
 2007-06-24  Pedro Alves  <pedro_alves@portugalmail.pt>
 
