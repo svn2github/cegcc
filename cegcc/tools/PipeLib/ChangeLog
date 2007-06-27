@@ -1,3 +1,8 @@
+2007-06-28  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* PipeLib/PipeLib.h (SetPipeTag): Declare.
+	* PipeLib/PipeLib.cpp (SetPipeTag): Define.
+
 2007-06-24  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* conformtest.c: New file.

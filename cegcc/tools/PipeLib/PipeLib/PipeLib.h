@@ -35,6 +35,9 @@ extern "C"
 BOOL CreatePipe (PHANDLE,PHANDLE,LPSECURITY_ATTRIBUTES,DWORD);
 BOOL GetPipeName (HANDLE, WCHAR*);
 
+/* Internal, for pipedev.dll debugging purposes.  */
+BOOL SetPipeTag (HANDLE, const WCHAR*);
+
 #ifdef __cplusplus
 }
 #endif

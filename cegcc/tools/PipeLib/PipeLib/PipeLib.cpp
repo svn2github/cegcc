@@ -92,6 +92,17 @@ PrepareRegistryForInstance (DWORD dwIndex, WCHAR** wzKey)
   RegCloseKey (hk);
 }
 
+/* Undocumented, for pipedev.dll debugging purposes only.  */
+extern "C" BOOL
+SetPipeTag (HANDLE p, const WCHAR* name)
+{
+  if (!DeviceIoControl (p, PIPE_IOCTL_SET_PIPE_TAG,
+			(LPVOID) name, (wcslen (name) + 1) * sizeof (WCHAR),
+			NULL, 0, NULL, NULL))
+    return FALSE;
+  return TRUE;
+}
+
 static BOOL
 SetPipeName (HANDLE p, WCHAR* name)
 {
