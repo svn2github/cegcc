@@ -1,5 +1,9 @@
 2007-06-28  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* PipeDev/PipeDevice.cpp (FastCS): Delete.
+
+2007-06-28  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* PipeDev/PipeDevice.cpp (LogMessage2, LogMessage, LogScope)
 	(LOG, LOGSCOPE): Move higher up in the file.
 	(PipeDeviceContext::DeviceTag): New field.

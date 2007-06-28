@@ -157,47 +157,6 @@ private:
   CRITICAL_SECTION cs_;
 };
 
-class FastCS
-{
-public:
-  FastCS () : Count(0)
-  {
-#ifndef NOLOCKS
-    /* auto - only release one at a time.  */
-    EventHandle = CreateEvent (NULL, FALSE, FALSE, NULL); 
-#endif
-  }
-  ~FastCS ()
-  {
-#ifndef NOLOCKS
-    CloseHandle (EventHandle);
-#endif
-  }
-
-  void Lock ()
-  { 
-#ifndef NOLOCKS
-    if (InterlockedIncrement (&Count) == 1)
-      /* first come - first serve.  */
-      return;
-
-    /* everyone else, get in line.  */
-    WaitForSingleObject (EventHandle, INFINITE);
-#endif
-  }
-  void Unlock ()
-  {
-#ifndef NOLOCKS
-    if (InterlockedDecrement (&Count) > 0)
-      /* release one pending */
-      SetEvent (EventHandle);
-#endif
-  }
-private:
-  HANDLE EventHandle;
-  LONG Count;
-};
-
 class RecursiveCS
 {
 public :
