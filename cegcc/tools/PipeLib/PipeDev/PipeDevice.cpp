@@ -64,6 +64,58 @@ typedef struct _DEVICE_PSL_NOTIFY
 # define G(CS) (CS)
 #endif
 
+#ifdef DEBUG_MODE
+static void
+LogMessage2 (const char* msg)
+{
+  FILE* log = fopen ("pipelog.txt", "a+");
+  fprintf (log, "%s", msg);
+  fclose (log);
+}
+
+static void
+LogMessage (const char *file, int line, const char* msg, ...)
+{
+  va_list ap;
+  char buf[1024];
+  char *b = buf;
+  va_start (ap, msg);
+  sprintf (b, "%08x: %s (%d): ", (unsigned) GetCurrentThreadId (), file, line);
+  b += strlen (b);
+  vsprintf (b, msg, ap);
+  va_end (ap);
+
+  LogMessage2 (buf);
+}
+
+struct LogScope
+{
+  explicit LogScope (const char *func, const char* msg)
+    : func_(func)
+    , msg_(msg)
+  {
+    char buf[512];
+    sprintf (buf, "> %s", msg_);
+    LogMessage (func_, -1, buf);
+  }
+  ~LogScope ()
+  {
+    char buf[512];
+    sprintf (buf, "< %s", msg_);
+    LogMessage (func_, -1, buf);
+  }
+
+  const char* func_;
+  const char* msg_;
+};
+
+# define LOG(MSG, ...) LogMessage (__FUNCTION__, __LINE__, MSG, ## __VA_ARGS__)
+# define LOGSCOPE(MSG) LogScope scope ## __LINE__(__FUNCTION__, MSG)
+#else
+# define LOG(MSG, ...) do; while (0)
+# define LOGSCOPE(MSG) do; while (0)
+#endif
+
 class CSWrapper
 {
 public:
@@ -251,7 +303,12 @@ public:
     : OpenCount(0)
     , WROpenCount(0)
     , DeviceName(NULL)
+    , DeviceTag(NULL)
     , Aborting(FALSE)
+#ifdef DEBUG_MODE
+    , TotalWritten(0)
+    , TotalRead(0)
+#endif
     , head(0)
     , count(0)
   {
@@ -267,6 +324,8 @@ public:
   {
     if (DeviceName)
       free (DeviceName);
+    if (DeviceTag)
+      free (DeviceTag);
     if (ActivePath)
       free (ActivePath);
     CloseHandle (ReadEvent);
@@ -294,29 +353,31 @@ public:
     cs.Unlock ();
   }
 
-  DWORD writeBytes (const void* data_, DWORD dsize)
+  DWORD writeBytes (const BYTE* data, DWORD dsize)
   {
     DWORD fit = sizeof (buffer) - size ();
     fit = min (dsize, fit);
-    const BYTE* data = (const BYTE*)data_;
-    BYTE* b = buffer + tail ();
+    DWORD t = tail ();
     for (DWORD i = 0; i < fit; i++)
-      b[i & (sizeof (buffer) - 1)] = data[i];
+      buffer[(t + i) & (sizeof (buffer) - 1)] = data[i];
     count += fit;
+#ifdef DEBUG_MODE
+    TotalWritten += fit;
+#endif
     return fit;
   }
 
-  DWORD readBytes (void* buf_, DWORD bsize)
+  DWORD readBytes (BYTE* buf, DWORD bsize)
   {
-    BYTE* buf = (BYTE*)buf_;
     DWORD fit = min (bsize, size ());
-
-    const BYTE* h = buffer + head;
     for (DWORD i = 0; i < fit; i++)
-      buf[i] = h[i & (sizeof (buffer) - 1)];
+      buf[i] = buffer[(head + i) & (sizeof (buffer) - 1)];
     count -= fit;
     head += fit;
     head &= (sizeof (buffer) - 1);
+#ifdef DEBUG_MODE
+    TotalRead += fit;
+#endif
     return fit;
   }
 
@@ -331,7 +392,13 @@ public:
   HANDLE AbortEvent;
 
   WCHAR* DeviceName;
+  WCHAR* DeviceTag;
   BOOL Aborting;
+
+#ifdef DEBUG_MODE
+  DWORD TotalWritten;
+  DWORD TotalRead;
+#endif
 
 private:
   BYTE buffer[0x1000];
@@ -377,58 +444,6 @@ DllMain (HANDLE /*hinstDLL*/, DWORD dwReason, LPVOID /*lpvReserved*/)
   return TRUE;
 }
 
-#ifdef DEBUG_MODE
-static void
-LogMessage2 (const char* msg)
-{
-  FILE* log = fopen ("pipelog.txt", "a+");
-  fprintf (log, "%s", msg);
-  fclose (log);
-}
-
-static void
-LogMessage (const char *file, int line, const char* msg, ...)
-{
-  va_list ap;
-  char buf[1024];
-  char *b = buf;
-  va_start (ap, msg);
-  sprintf (b, "%08x: %s (%d): ", (unsigned) GetCurrentThreadId (), file, line);
-  b += strlen (b);
-  vsprintf (b, msg, ap);
-  va_end (ap);
-
-  LogMessage2 (buf);
-}
-
-struct LogScope
-{
-  explicit LogScope (const char *func, const char* msg)
-    : func_(func)
-    , msg_(msg)
-  {
-    char buf[512];
-    sprintf (buf, "> %s", msg_);
-    LogMessage (func_, -1, buf);
-  }
-  ~LogScope ()
-  {
-    char buf[512];
-    sprintf (buf, "< %s", msg_);
-    LogMessage (func_, -1, buf);
-  }
-
-  const char* func_;
-  const char* msg_;
-};
-
-# define LOG(MSG, ...) LogMessage (__FUNCTION__, __LINE__, MSG, ## __VA_ARGS__)
-# define LOGSCOPE(MSG) LogScope scope ## __LINE__(__FUNCTION__, MSG)
-#else
-# define LOG(MSG, ...) do; while (0)
-# define LOGSCOPE(MSG) do; while (0)
-#endif
-
 /* This is needed for MSVC, but it makes no harm in gcc.  */
 struct ltwstr
 {
@@ -469,6 +484,41 @@ GetDeviceHandle (PipeDeviceContext* pDeviceContext)
   return hDev;
 }
 
+#ifdef DEBUG_MODE
+
+static DWORD WINAPI
+LogThread (void *arg)
+{
+  PipeDeviceContext* dev = (PipeDeviceContext*)arg;
+
+  int count = 0;
+
+  while (1)
+    switch (WaitForSingleObject (dev->AbortEvent, 1000))
+      {
+      case WAIT_TIMEOUT:
+	{
+	  PipeDeviceContext::LockGuard guard G(*dev);
+	  LOG ("(%08d)\t"
+	       "%ls\t"
+	       "buffer size = %lu\t"
+	       "read = %lu\t"
+	       "write = %lu\n",
+	       count++,
+	       dev->DeviceTag ?: L"(notag)",
+	       dev->size (),
+	       dev->TotalRead,
+	       dev->TotalWritten);
+	}
+	break;
+      default:
+	return 0;
+      }
+
+  return 0;
+}
+#endif
+
 PIPEDEV_API DWORD
 Init (LPCTSTR pContext)
 {
@@ -489,6 +539,10 @@ Init (LPCTSTR pContext)
   if (pDeviceContext == NULL)
     return 0;
 
+#ifdef DEBUG_MODE
+  CloseHandle (CreateThread (NULL, 0, LogThread, (void*)pDeviceContext, 0, NULL));
+#endif
+
   open_pipes.insert (pContext);
 
   return (DWORD)pDeviceContext;
@@ -506,9 +560,13 @@ Deinit (PipeDeviceContext* pDeviceContext)
      the driver.  */
 
 #ifdef DEBUG_MODE
-  LOG ("oc %lu, wc: %lu, close_calls: %d\n",
-       dev->OpenCount,
-       dev->WROpenCount, close_calls);
+  if (pDeviceContext)
+    LOG ("oc %lu, wc: %lu, close_calls: %d\n",
+	 pDeviceContext->OpenCount,
+	 pDeviceContext->WROpenCount,
+	 close_calls);
+  else
+    LOG ("close_calls: %d\n", close_calls);
 #endif
 
   if (pDeviceContext == NULL)
@@ -611,15 +669,12 @@ Close (PipeOpenContext* pOpenContext)
     return FALSE;
 
   dev->OpenCount--;
-
   if (pOpenContext->dwAccessCode & GENERIC_WRITE)
-    {
-      dev->WROpenCount--;
-      if (dev->WROpenCount == 0)
-	/* Wake up the reading side so it can see
-	   the broken pipe.  */
-	SetEvent (dev->AbortEvent);
-    }
+    dev->WROpenCount--;
+
+  if (dev->WROpenCount == 0 || dev->OpenCount == 0)
+    /* Wake up the other side so it can see the broken pipe.  */
+    SetEvent (dev->AbortEvent);
 
   delete pOpenContext;
 
@@ -628,9 +683,13 @@ Close (PipeOpenContext* pOpenContext)
 
   if (dev->OpenCount == 0)
     {
-      /* Deactivating the device here seems to
-	 corrupt the Device.exe, and sometimes hangs
-	 the device.  Do it in an auxilary thread.  */
+      /* Deactivating the device here seems to corrupt Device.exe, and
+	 sometimes hangs the device.  Do it in an auxilary thread.  */
+      /* Perhaps this should be made safer.  If anotherthread was just
+	 waken up due to the SetEvent above, this will be a race.
+	 Perhaps we need a wait counter per device and have the
+	 deactivator thread wait for it to reach 0 ... Irks, this is
+	 getting fishy.  */
       DeactivatePipeDevice (dev);
     }
 
@@ -638,18 +697,17 @@ Close (PipeOpenContext* pOpenContext)
 }
 
 PIPEDEV_API DWORD
-Read (PipeOpenContext* pOpenContext, LPVOID pBuffer_, DWORD dwCount)
+Read (PipeOpenContext* pOpenContext, BYTE* pBuffer, DWORD dwCount)
 {
   LOGSCOPE ("\n");
 
-  if (IsBadReadPtr (pBuffer_, dwCount))
+  if (IsBadReadPtr (pBuffer, dwCount))
     {
       SetLastError (ERROR_INVALID_PARAMETER);
       LOG ("\n");
       return -1;
     }
 	
-  BYTE* pBuffer = (BYTE*)pBuffer_;
   DWORD needed = dwCount;
 
   if (pOpenContext == NULL
@@ -666,11 +724,13 @@ Read (PipeOpenContext* pOpenContext, LPVOID pBuffer_, DWORD dwCount)
 
   do
     {
+      LOG ("new iteration\n");
+
       {
 	PipeDeviceContext::LockGuard guard G(*dev);
 
-	Events[0] = dev->WriteEvent;
-	Events[1] = dev->AbortEvent;
+	Events[0] = dev->AbortEvent;
+	Events[1] = dev->WriteEvent;
 
 	/* Read before checking for broken pipe, so
 	   we get a chance to return valid data when that
@@ -711,12 +771,15 @@ Read (PipeOpenContext* pOpenContext, LPVOID pBuffer_, DWORD dwCount)
 	  break;
       }
 
+      LOG ("going to wait for data\n");
+
       /* The buffer was empty, wait for data.  */
       switch (WaitForMultipleObjects (2, Events, FALSE, INFINITE))
 	{
-	case WAIT_OBJECT_0:
+	case WAIT_OBJECT_0 + 1:
 	  /* Data was written to the pipe.  Do one more iteration
 	     to fetch what we can and bail out.  */
+	  LOG ("write event detected\n");
 	  breaknext = TRUE;
 	  break;
 	default:
@@ -733,18 +796,17 @@ Read (PipeOpenContext* pOpenContext, LPVOID pBuffer_, DWORD dwCount)
 }
 
 PIPEDEV_API DWORD
-Write (PipeOpenContext* pOpenContext, LPCVOID pBuffer_, DWORD dwCount)
+Write (PipeOpenContext* pOpenContext, const BYTE* pBuffer, DWORD dwCount)
 {
   LOGSCOPE ("\n");
 
-  if (IsBadWritePtr ((void*) pBuffer_, dwCount))
+  if (IsBadWritePtr ((void*) pBuffer, dwCount))
     {
       SetLastError (ERROR_INVALID_PARAMETER);
       LOG ("\n");
       return -1;
     }
 
-  const BYTE* pBuffer = (const BYTE*)pBuffer_;
   DWORD needed = dwCount;
 
   LOG ("oc %lu, wc: %lu\n",
@@ -765,13 +827,15 @@ Write (PipeOpenContext* pOpenContext, LPCVOID pBuffer_, DWORD dwCount)
 
   do
     {
+      LOG ("new iteration\n");
+
       {
 	PipeDeviceContext::LockGuard guard G(*dev);
 
 	LOG ("lock acquired\n");
 
-	Events[0] = dev->ReadEvent;
-	Events[1] = dev->AbortEvent;
+	Events[0] = dev->AbortEvent;
+	Events[1] = dev->ReadEvent;
 
 	if (dev->Aborting)
 	  {
@@ -803,6 +867,8 @@ Write (PipeOpenContext* pOpenContext, LPCVOID pBuffer_, DWORD dwCount)
 	pBuffer += wrote;
 	dwCount -= wrote;
 
+	LOG ("written %lu\n", wrote);
+
 	/* According to MSDN, a write of 0, also wakes
 	   the reading end of the pipe.  */
 	PulseEvent (dev->WriteEvent);
@@ -814,9 +880,11 @@ Write (PipeOpenContext* pOpenContext, LPCVOID pBuffer_, DWORD dwCount)
 	  break;
       }
 
+      LOG ("going to wait for event\n");
       switch (WaitForMultipleObjects (2, Events, FALSE, INFINITE))
 	{
-	case WAIT_OBJECT_0:
+	case WAIT_OBJECT_0 + 1:
+	  LOG ("got read event\n");
 	  breaknext = TRUE;
 	  break;
 	default:
@@ -828,7 +896,7 @@ Write (PipeOpenContext* pOpenContext, LPCVOID pBuffer_, DWORD dwCount)
     }
   while (dwCount);
 
-  LOG ("%u\n", needed - dwCount);
+  LOG ("returning %u\n", needed - dwCount);
   return needed - dwCount;
 }
 
@@ -883,6 +951,12 @@ IOControl (PipeOpenContext* pOpenContext, DWORD dwCode,
 
   switch (dwCode)
     {
+    case PIPE_IOCTL_SET_PIPE_TAG:
+      if (dev->DeviceTag)
+	free (dev->DeviceTag);
+      dev->DeviceTag = wcsdup ((WCHAR*)pBufIn);
+      bRet = TRUE;
+      break;
     case PIPE_IOCTL_SET_PIPE_NAME:
       if (dev->DeviceName)
 	free (dev->DeviceName);

@@ -1,5 +1,33 @@
 2007-06-28  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* PipeDev/PipeDevice.cpp (LogMessage2, LogMessage, LogScope)
+	(LOG, LOGSCOPE): Move higher up in the file.
+	(PipeDeviceContext::DeviceTag): New field.
+	(PipeDeviceContext::TotalWritten, PipeDeviceContext::TotalRead)
+	[DEBUG_MODE]: New fields.
+	(PipeDeviceContext::~PipeDeviceContext): Free DeviceTag.
+	(PipeDeviceContext::writeBytes(const void*, DWORD)): Change signature
+	to ...
+	(PipeDeviceContext::writeBytes(const BYTE*, DWORD)): ... this.
+	Correct buffer wrapping.  Add written bytes to TotalWritten.
+	(PipeDeviceContext::readBytes(void*, DWORD)): Change signature
+	to ...
+	(PipeDeviceContext::readBytes(BYTE*, DWORD)): ... this.
+	Correct buffer wrapping.  Add read bytes to TotalRead.
+	(LogThread) [DEBUG_MODE]: New function.
+	(Init) [DEBUG_MODE]: Create a LogThread thread.  Also set the
+	AbortEvent event when OpenCount is 0.
+	(Read(PipeOpenContext*, LPVOID, DWORD)): Change signature to ...
+	(Read(PipeOpenContext*, BYTE*, DWORD)): ... this.  Swap order of the
+	wait events in the wait event array, so AbortEvent has priority.
+	(Write(PipeOpenContext*, LPCVOID, DWORD)): Change signature to ...
+	(Write(PipeOpenContext*, const BYTE*, DWORD)): ... this.  Swap order
+	of the wait events in the wait event array, so AbortEvent has priority.
+	(IOControl): On PIPE_IOCTL_SET_PIPE_TAG ioctl, record the debug
+	DeviceTag.
+
+2007-06-28  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* PipeLib/PipeLib.h (SetPipeTag): Declare.
 	* PipeLib/PipeLib.cpp (SetPipeTag): Define.
 	* PipeDev/PipeDevice.h (PIPE_IOCTL_SET_PIPE_TAG): Define.
