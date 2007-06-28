@@ -1,3 +1,13 @@
+2007-06-29  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* PipeDev/PipeDevice.cpp : Move ...
+	* PipeDev.cpp : ... here.  Include PipeDev.h instead of PipeDevice.h.
+	* PipeDev/PipeDevice.h : Move ...
+	* PipeDev.h : ... here.
+	* PipeDev/Makefile : Move ...
+	* Makefile : ... here.
+	(PipeDev_unstripped.dll): Depend on PipeDev.cpp and PipeDev.h.
+
 2007-06-28  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* PipeDev/PipeDevice.cpp (RecursiveCS): New implementation.

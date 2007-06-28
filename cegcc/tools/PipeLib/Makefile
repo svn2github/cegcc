@@ -12,7 +12,7 @@ ALLFLAGS=$(INCLUDES) $(CXXFLAGS) $(WARNFLAGS)
 
 all: PipeDev.dll
 
-PipeDev_unstripped.dll: PipeDevice.cpp Makefile
+PipeDev_unstripped.dll: PipeDev.cpp PipeDev.h Makefile
 	$(CXX) $< -shared -o $@ $(ALLFLAGS)
 
 PipeDev.dll: PipeDev_unstripped.dll
