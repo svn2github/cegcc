@@ -1,5 +1,17 @@
 2007-06-29  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* PipeLib/PipeLib.cpp : Move ...
+	* PipeLib.cpp : ... here.  Include PipeDev.h instead of PipeDevice.h.
+	* PipeLib/PipeLib.h : Move ...
+	* PipeLib.h : ... here.
+	* PipeDev/Makefile : Delete.
+	* Makefile (all): Add libPipeLib.a.
+	(PipeLib.o, libPipeLib.a, clean-dev, clean-lib): New rules.
+	(clean): Depend on clean-dev and clean-lib to do the clean work.
+	(.PHONY): Add clean-dev and clean-lib.
+
+2007-06-29  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* PipeDev/PipeDevice.cpp : Move ...
 	* PipeDev.cpp : ... here.  Include PipeDev.h instead of PipeDevice.h.
 	* PipeDev/PipeDevice.h : Move ...

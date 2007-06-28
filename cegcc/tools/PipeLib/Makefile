@@ -10,7 +10,7 @@ INCLUDES=
 
 ALLFLAGS=$(INCLUDES) $(CXXFLAGS) $(WARNFLAGS)
 
-all: PipeDev.dll
+all: PipeDev.dll libPipeLib.a
 
 PipeDev_unstripped.dll: PipeDev.cpp PipeDev.h Makefile
 	$(CXX) $< -shared -o $@ $(ALLFLAGS)
@@ -18,10 +18,22 @@ PipeDev_unstripped.dll: PipeDev.cpp PipeDev.h Makefile
 PipeDev.dll: PipeDev_unstripped.dll
 	$(STRIP) $< -o $@
 
+PipeLib.o: PipeLib.cpp
+	$(CXX) $< -c -o $@ $(ALLFLAGS)
+
+libPipeLib.a: PipeLib.o
+	rm -f $@
+	$(AR) r $@ $<
+
 download: PipeDev.dll
 	pcp PipeDev.dll ":/Windows/PipeDev.dll"
 
-clean:
-	rm -f PipeDev.dll
+clean-dev:
+	rm -f PipeDev.dll PipeDev_unstripped.dll
 
-.PHONY: all clean download
+clean-lib:
+	rm -f libPipeLib.a PipeLib.o
+
+clean: clean-dev clean-lib
+
+.PHONY: all clean clean-dev clean-lib download
