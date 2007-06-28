@@ -1,5 +1,11 @@
 2007-06-28  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* PipeDev/PipeDevice.cpp (RecursiveCS): New implementation.
+	(LockGuard): Better split the DEBUG_LOCKS version.
+	(LockGuard::LockGuard) [DEBUG_LOCKS]: Prepend a "+" to the log output.
+
+2007-06-28  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* PipeDev/PipeDevice.cpp (FastCS): Delete.
 
 2007-06-28  Pedro Alves  <pedro_alves@portugalmail.pt>

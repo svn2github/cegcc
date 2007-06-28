@@ -159,78 +159,85 @@ private:
 
 class RecursiveCS
 {
-public :
-  RecursiveCS ()
-    : Count(0)
-    , RecursionCount(0)
-    , ThreadID(0)
+ public:
+  RecursiveCS();
+  ~RecursiveCS();
 
-  {
-#ifndef NOLOCKS
-    /* auto - only release one at a time.  */
-    EventHandle = CreateEvent (NULL, FALSE, FALSE, NULL); 
-#endif
-  }
+  void Lock();
+  void Unlock();
 
-  ~RecursiveCS ()
-  {
-#ifndef NOLOCKS
-    CloseHandle (EventHandle);
-#endif
-  }
-
-  void Lock ()
-  {
-#ifndef NOLOCKS
-    if (ThreadID == GetCurrentThreadId ())
-      {
-	InterlockedIncrement (&RecursionCount);
-	return;
-      }
-
-    if (InterlockedIncrement (&Count) == 1)
-      InterlockedExchange (&RecursionCount, 0);
-    else
-      WaitForSingleObject (EventHandle, INFINITE);
-
-    ThreadID = GetCurrentThreadId ();
-#endif
-  }
-	
-  void Unlock ()
-  {
-#ifndef NOLOCKS
-    if (RecursionCount == 0)
-      {
-	if (InterlockedDecrement (&Count) > 0)
-	  {
-	    /* release one thread */
-	    SetEvent (EventHandle);
-	  }
-      }
-    else
-      {
-	InterlockedDecrement (&RecursionCount);
-      }
-#endif
-  }
-
-private:
-  HANDLE EventHandle;
-  LONG Count;
-  LONG RecursionCount;
+ private:
+  LONG Locks;
   DWORD ThreadID;
+  DWORD Count;
+  HANDLE EventHandle;
 };
 
+RecursiveCS::RecursiveCS()
+  : Locks(0)
+  , ThreadID(0)
+  , Count(0)
+{
+#ifndef NOLOCKS
+  /* auto - only release one at a time.  */
+  EventHandle = CreateEvent (NULL, FALSE, FALSE, NULL); 
+#endif
+}
 
+RecursiveCS::~RecursiveCS()
+{
+#ifndef NOLOCKS
+  CloseHandle (EventHandle);
+#endif
+}
+
+void
+RecursiveCS::Lock()
+{
+#ifndef NOLOCKS
+  int test;
+  do
+    test = Locks;
+  while (InterlockedCompareExchange(&Locks, test + 1, test) != test);
+
+  if (test != 0)
+    {
+      if (ThreadID != GetCurrentThreadId())
+	{
+	  /* Get in line */
+	  WaitForSingleObject (EventHandle, INFINITE);
+	}
+
+      /* No need to wait anymore. */
+      InterlockedDecrement (&Locks);
+    }
+  ThreadID = GetCurrentThreadId();
+  ++Count;
+#endif
+}
+
+void
+RecursiveCS::Unlock()
+{
+#ifndef NOLOCKS
+  if (!--Count)
+    {
+      ThreadID = 0;
+
+      if (InterlockedCompareExchange (&Locks, 0, 1) != 1)
+	SetEvent (EventHandle);
+    }
+#endif
+}
+
+#ifdef DEBUG_LOCKS
 template <class T>
 class LockGuard
 {
 public:
-#ifdef DEBUG_LOCKS
   LockGuard (int line, T &cs) : cs_(cs), lineno(line)
   {
-    LOG ("LockGuard: line : %d\n", line);
+    LOG ("+LockGuard: line : %d\n", line);
     cs_.Lock (); 
   }
   ~LockGuard ()
@@ -238,18 +245,24 @@ public:
     LOG ("~LockGuard: line : %d\n", lineno);
     cs_.Unlock (); 
   }
-#else
-  explicit LockGuard (T &cs) : cs_(cs) { cs_.Lock (); }
-  ~LockGuard () { cs_.Unlock (); }
-#endif
 
 private:
   T &cs_;
 
-#ifdef DEBUG_LOCKS
   int lineno;
-#endif
 };
+#else
+template <class T>
+class LockGuard
+{
+public:
+  explicit LockGuard (T &cs) : cs_(cs) { cs_.Lock (); }
+  ~LockGuard () { cs_.Unlock (); }
+
+private:
+  T &cs_;
+};
+#endif
 
 class PipeOpenContext;
 
