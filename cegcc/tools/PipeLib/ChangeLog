@@ -1,5 +1,10 @@
 2007-06-29  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* (PipeLib): Delete.
+	* (PipeDev): Delete.
+
+2007-06-29  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* PipeLib/PipeLib.cpp : Move ...
 	* PipeLib.cpp : ... here.  Include PipeDev.h instead of PipeDevice.h.
 	* PipeLib/PipeLib.h : Move ...
