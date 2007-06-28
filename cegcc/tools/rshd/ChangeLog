@@ -1,3 +1,15 @@
+2007-06-28  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* rshd.c (localecho): New global.
+	(stdin_thread, stdout_thread, stderr_thread): Exit thread with
+	exit code of 1 if the thread is closing because the host closed.
+	Echo to local console depending on localecho instead of debug.
+	(create_child): Use SetPipeTag.
+	(handle_connection): If creating the child failed, report an error
+	message to the host.  If the remote host closed the connection
+	abruptly, kill the child.
+	(main): Map -l option to localecho global var.
+	
 2007-06-26  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* Makefile (all): Depend on $(BINS) not $(TARGETS).

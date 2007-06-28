@@ -43,6 +43,7 @@ extern BOOL SetStdioPathW (int, const wchar_t*);
 #endif
 
 static BOOL debug = FALSE;
+static BOOL localecho = FALSE;
 
 
 
@@ -248,11 +249,18 @@ rsh_userok (const char *hostname, const char *user)
 }
 #endif
 
+/* All 3 threads return 0 if they are closing because the pipes were
+   broken due to the child closing them, and 1 if the remote side
+   closed the sockets before the child died.  We use this knowledge in
+   the main WaitForMultipleObjects to kill the child if the remote
+   side closed the connection.  */
+
 static DWORD WINAPI
 stdin_thread (void *arg)
 {
   struct client_data_t *data = arg;
   const char *thread_name = "stdin_thread";
+  DWORD ret = 0;
 
   addref_data (data);
 
@@ -277,7 +285,9 @@ stdin_thread (void *arg)
 	      logprintf ("%s: recv ERROR, winerr %d\n", thread_name, err);
 	      break;
 	    }
-	  break;
+	  if (!data->stop)
+	    ret = 1;
+	  goto out;
 	}
       else if (read == 0)
 	{
@@ -303,7 +313,7 @@ stdin_thread (void *arg)
 	      SafeCloseHandle (&data->readh[0]);
 	    }
 
-	  if (debug)
+	  if (localecho)
 	    {
 	      printf ("0: (%d)", read);
 	      fflush (stdout);
@@ -313,9 +323,10 @@ stdin_thread (void *arg)
 	}
     }
 
+out:
   release_data (data);
-  logprintf ("%s gone\n", thread_name);
-  return 0;
+  logprintf ("%s gone : %lu\n", thread_name, ret);
+  return ret;
 }
 
 static DWORD WINAPI
@@ -323,6 +334,7 @@ stdout_thread (void *arg)
 {
   struct client_data_t *data = arg;
   const char *thread_name = "stdout_thread";
+  DWORD ret = 0;
 
   addref_data (data);
 
@@ -330,6 +342,7 @@ stdout_thread (void *arg)
     {
       DWORD read = 0;
       char buf[256];
+      logprintf ("%s (%d): going to ReadFile\n", thread_name, __LINE__);
       if (!ReadFile (data->readh[1], buf, sizeof (buf), &read, FALSE))
 	{
 	  logprintf ("%s: broken pipe\n", thread_name);
@@ -337,15 +350,20 @@ stdout_thread (void *arg)
 	}
       else
 	{
+	  logprintf ("%s (%d): ReadFile ok: %lu\n", thread_name, __LINE__, read);
 	  /* We can't close the write side of the pipe until the
 	     child opens its version.  Since it will only be open on the
 	     first stdout access, we have to wait until the read side returns
 	     something - which means the child opened stdout.  */
 	  SafeCloseHandle (&data->writeh[1]);
+	  logprintf ("%s (%d): SafeCloseHandle ok\n", thread_name, __LINE__);
 	}
       if (read)
 	{
-	  int written = send (data->sockfd, buf, read, 0);
+	  int written;
+	  logprintf ("%s (%d): going to send\n", thread_name, __LINE__);
+	  written = send (data->sockfd, buf, read, 0);
+	  ret = 1;
 	  if (written < 0)
 	    logprintf ("%s: write ERROR, winerr %d\n",
 		       thread_name,
@@ -353,20 +371,34 @@ stdout_thread (void *arg)
 	  else if ((DWORD) written < read)
 	    logprintf ("%s: ERROR only wrote %d of %d bytes\n",
 		       thread_name, written, read);
+	  else
+	    {
+	      logprintf ("%s (%d): sent ok\n", thread_name, __LINE__);
+	      ret = 0;
+	    }
 
-	  if (debug)
+	  if (ret)
+	    goto out;
+
+	  logprintf ("%s (%d): going to echo\n", thread_name, __LINE__);
+
+	  if (localecho)
 	    {
 	      printf ("1: (%u)", (unsigned)read);
 	      fflush (stdout);
 	      write (fileno (stdout), buf, read);
 	      printf ("\n");
 	    }
+
+	  logprintf ("%s (%d): going to echo: done\n", thread_name, __LINE__);
 	}
     }
 
+ out:
+  logprintf ("%s (%d): at out\n", thread_name, __LINE__);
   release_data (data);
-  logprintf ("%s gone\n", thread_name);
-  return 0;
+  logprintf ("%s gone : %lu\n", thread_name, ret);
+  return ret;
 }
 
 static DWORD WINAPI
@@ -375,6 +407,7 @@ stderr_thread (void *arg)
   struct client_data_t *data = arg;
   const char *thread_name = "stderr_thread";
   int sockfd;
+  DWORD ret = 0;
 
   addref_data (data);
 
@@ -405,6 +438,7 @@ stderr_thread (void *arg)
       if (read)
 	{
 	  int written = send (sockfd, buf, read, 0);
+	  ret = 1;
 	  if (written < 0)
 	    logprintf ("%s: write ERROR, winerr %d\n",
 		       thread_name,
@@ -412,8 +446,13 @@ stderr_thread (void *arg)
 	  else if ((DWORD) written < read)
 	    logprintf ("%s: ERROR only wrote %d of %d bytes\n",
 		       thread_name, written, read);
+	  else
+	    ret = 0;
 
-	  if (debug)
+	  if (ret)
+	    goto out;
+
+	  if (localecho)
 	    {
 	      printf ("2: (%u)", (unsigned) read);
 	      fflush (stdout);
@@ -423,9 +462,10 @@ stderr_thread (void *arg)
 	}
     }
 
+ out:
   release_data (data);
-  logprintf ("%s gone\n", thread_name);
-  return 0;
+  logprintf ("%s gone : %lu\n", thread_name, ret);
+  return ret;
 }
 
 static void
@@ -479,6 +519,9 @@ create_child (char *program, HANDLE *readh, HANDLE *writeh, PROCESS_INFORMATION 
       wchar_t devname[MAX_PATH];
       if (!CreatePipe (&readh[i], &writeh[i], NULL, 0))
 	return NULL;
+
+      wsprintf (devname, L"dev%d", i);
+      SetPipeTag (readh[i], devname);
 
       GetPipeName (readh[i], devname);
       DWORD dwLen = MAX_PATH;
@@ -696,7 +739,6 @@ handle_connection (void *arg)
     *p++ = c;
   *p = 0;
 
-
   if ((stderr_port = atoi (stderrport)) > 0)
     {
       stderrsockfd = connect_stderr (s2, stderr_port);
@@ -764,8 +806,12 @@ handle_connection (void *arg)
   hndproc = create_child (command, client_data->readh, client_data->writeh, &pi);
   if (!hndproc)
     {
+      static char buf[1024];
+      DWORD err = GetLastError ();
       logprintf ("handle_connection: ERROR can't create child process, "
-		 "winerr %d\n", GetLastError ());
+		 "winerr %lu\n", err);
+      sprintf (buf, "can't create process\n%s\n", strwinerror (err));
+      send (s2, buf, strlen (buf), 0);
       goto shutdown;
     }
 
@@ -796,25 +842,42 @@ handle_connection (void *arg)
 	{
 	  DWORD j = w - WAIT_OBJECT_0;
 	  HANDLE h = waith[j];
-
-	  /* Let's not wait for this handle again.  */
-	  CloseHandle (waith[j]);
-	  for (;j < COUNTOF (waith) - 1; j++)
-	    waith[j] = waith[j + 1];
-	  waith[COUNTOF (waith) - 1] = INVALID_HANDLE_VALUE;
+	  DWORD ec = 0;
+	  BOOL abrupt;
 
 	  stopped++;
 
-	  if (h == hndproc && stopped < COUNTOF (waith))
+	  /* i counts threads */
+	  if (h != hndproc)
+	    i++;
+
+	  abrupt = (h != hndproc
+		     && !client_data->stop
+		     && (GetExitCodeThread (h, &ec) && ec == 1));
+
+	  if (debug)
+	    {
+	      fprintf (stderr, "j = %ld, abrupt = %d, stopped = %ld, i = %d\n",
+		      j, abrupt, stopped, i);
+	      fflush (stderr);
+	    }
+
+	  if (abrupt
+	      || (h == hndproc && stopped < COUNTOF (waith)))
 	    {
 	      int k;
 
-	      /* The child died without ever opening it's side
-		 of the pipe, so our threads didn't see it close,
-		 because we never closed our side.  */
+	      /* if (h == hndproc, the child died without ever opening
+		 it's side of the pipe, so our threads didn't see it
+		 close, because we never closed our side.  */
 
 	      /* Tell the threads we are stopping.  */
 	      client_data->stop = 1;
+
+	      if (abrupt)
+		/* A thread died abruptly.  This means the remote side
+		   is gone (SIGINT p.ex.).  Let's kill the child.  */
+		TerminateProcess (hndproc, 1);
 
 	      /* Close them now.  */
 	      for (k = 0; k < 3; k++)
@@ -840,8 +903,12 @@ handle_connection (void *arg)
 		  client_data->stderrsockfd = -1;
 		}
 	    }
-	  else if (h != hndproc)
-	    i++;
+
+	  /* Let's not wait for this handle again.  */
+	  CloseHandle (waith[j]);
+	  for (;j < COUNTOF (waith) - 1; j++)
+	    waith[j] = waith[j + 1];
+	  waith[COUNTOF (waith) - 1] = INVALID_HANDLE_VALUE;
 	}
       else
 	{
@@ -975,11 +1042,20 @@ accept_connections (void)
 int
 main (int argc, char **argv)
 {
+  int i;
   WSADATA wsad;
   WSAStartup (MAKEWORD (2, 0), &wsad);
 
-  if (argc > 1 && strcmp(argv[1], "-d") == 0)
-    debug = 1;
+  for (i = 1; i < argc; i++)
+    if (strcmp(argv[i], "-d") == 0)
+      debug = 1;
+    else if (strcmp(argv[i], "-l") == 0)
+      localecho = 1;
+    else
+      {
+	fprintf (stderr, "unknown option %s\n", argv[i]);
+	exit (1);
+      }
 
   accept_connections ();
   return 0;
