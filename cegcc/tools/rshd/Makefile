@@ -1,6 +1,6 @@
 TARGET=arm-wince-mingw32ce
-LDFLAGS=-lws2 -L../PipeLib/PipeLib -lPipeLib
-CFLAGS=-O0 -g3 -I../PipeLib/PipeLib
+LDFLAGS=-lws2 -L../PipeLib -lPipeLib
+CFLAGS=-O0 -g3 -I../PipeLib
 WARNFLAGS=-Wall -Wextra
 
 INCLUDES=

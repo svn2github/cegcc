@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <malloc.h>
+#include <getopt.h>
 
 #include <windows.h>
 #include <winsock2.h>
@@ -44,15 +45,16 @@ extern BOOL SetStdioPathW (int, const wchar_t*);
 
 static BOOL debug = FALSE;
 static BOOL localecho = FALSE;
+static const char* logfile = NULL;
 
 
 
 static void
 logprintf (const char *fmt, ...)
 {
-  if (0)
+  if (logfile)
     {
-      FILE *logfile = fopen("/rshd.log", "a+");
+      FILE *logfile = fopen(logfile, "a+");
 
       if (logfile)
 	{
@@ -249,6 +251,8 @@ rsh_userok (const char *hostname, const char *user)
 }
 #endif
 
+#define BUFSIZE 0x1000
+
 /* All 3 threads return 0 if they are closing because the pipes were
    broken due to the child closing them, and 1 if the remote side
    closed the sockets before the child died.  We use this knowledge in
@@ -267,9 +271,9 @@ stdin_thread (void *arg)
   while (!data->stop)
     {
       int read = 0;
-      char buf[1];
+      char buf[BUFSIZE + 1];
 
-      read = recv (data->sockfd, buf, sizeof(buf), 0);
+      read = recv (data->sockfd, buf, BUFSIZE, 0);
       if (read < 0)
 	{
 	  DWORD err = WSAGetLastError ();
@@ -315,10 +319,8 @@ stdin_thread (void *arg)
 
 	  if (localecho)
 	    {
-	      printf ("0: (%d)", read);
-	      fflush (stdout);
-	      write (fileno (stdout), buf, read);
-	      printf ("\n");
+	      buf[BUFSIZE] = '\0';
+	      logprintf ("0 (%d): %s\n", read, buf);
 	    }
 	}
     }
@@ -341,9 +343,9 @@ stdout_thread (void *arg)
   while (!data->stop)
     {
       DWORD read = 0;
-      char buf[256];
+      char buf[BUFSIZE + 1];
       logprintf ("%s (%d): going to ReadFile\n", thread_name, __LINE__);
-      if (!ReadFile (data->readh[1], buf, sizeof (buf), &read, FALSE))
+      if (!ReadFile (data->readh[1], buf, BUFSIZE, &read, FALSE))
 	{
 	  logprintf ("%s: broken pipe\n", thread_name);
 	  break;
@@ -380,17 +382,11 @@ stdout_thread (void *arg)
 	  if (ret)
 	    goto out;
 
-	  logprintf ("%s (%d): going to echo\n", thread_name, __LINE__);
-
 	  if (localecho)
 	    {
-	      printf ("1: (%u)", (unsigned)read);
-	      fflush (stdout);
-	      write (fileno (stdout), buf, read);
-	      printf ("\n");
+	      buf[BUFSIZE] = '\0';
+	      logprintf ("1 (%lu): %s\n", read, buf);
 	    }
-
-	  logprintf ("%s (%d): going to echo: done\n", thread_name, __LINE__);
 	}
     }
 
@@ -420,9 +416,9 @@ stderr_thread (void *arg)
   while (!data->stop)
     {
       DWORD read = 0;
-      char buf[256];
+      char buf[BUFSIZE + 1];
 
-      if (!ReadFile (data->readh[2], buf, sizeof (buf), &read, FALSE))
+      if (!ReadFile (data->readh[2], buf, BUFSIZE, &read, FALSE))
 	{
 	  logprintf ("%s: broken pipe\n", thread_name);
 	  break;
@@ -454,10 +450,8 @@ stderr_thread (void *arg)
 
 	  if (localecho)
 	    {
-	      printf ("2: (%u)", (unsigned) read);
-	      fflush (stdout);
-	      write (fileno (stdout), buf, read);
-	      printf ("\n");
+	      buf[BUFSIZE] = '\0';
+	      logprintf ("2 (%lu): %s\n", read, buf);
 	    }
 	}
     }
@@ -641,7 +635,7 @@ connect_stderr (int in, unsigned short stderr_port)
 static WINAPI DWORD
 handle_connection (void *arg)
 {
-  PROCESS_INFORMATION pi = { 0 };
+  PROCESS_INFORMATION pi;
   int s2 = (int) arg; /* sizeof (void*) == sizeof (int) */
   int stderrsockfd = -1;
   unsigned short stderr_port = 0;
@@ -827,18 +821,17 @@ handle_connection (void *arg)
   CloseHandle (pi.hThread);
   pi.hThread = NULL;
 
-  /* Wait for stdin/stdout/stderr to close before exiting.  */
-
   i = 0;
   stopped = 0;
 
-  /* Wait for the three threads (stdin/stdout/stderr) to finish.  */
+  /* Wait for the three threads (stdin/stdout/stderr) to finish, or
+     for the child to exit.  */
   while (i < 3)
     {
       DWORD waitCount = COUNTOF (waith) - stopped;
       DWORD w;
       w = WaitForMultipleObjects (waitCount, waith, FALSE, INFINITE);
-      if (WAIT_OBJECT_0 <= w && w < WAIT_OBJECT_0 + waitCount)
+      if (/* WAIT_OBJECT_0 <= w && */ w < WAIT_OBJECT_0 + waitCount)
 	{
 	  DWORD j = w - WAIT_OBJECT_0;
 	  HANDLE h = waith[j];
@@ -887,7 +880,7 @@ handle_connection (void *arg)
 		}
 
 	      /* Also close the sockets.  At least stdin
-	       will be frequenly blocked in a recv call.  */
+		 will be frequenly blocked in a recv call.  */
 	      if (s2 != -1)
 		{
 		  shutdown (s2, 2);
@@ -900,6 +893,7 @@ handle_connection (void *arg)
 		{
 		  shutdown (stderrsockfd, 2);
 		  closesocket (stderrsockfd);
+		  stderrsockfd = -1;
 		  client_data->stderrsockfd = -1;
 		}
 	    }
@@ -948,9 +942,6 @@ handle_connection (void *arg)
       shutdown (stderrsockfd, 2);
       closesocket (stderrsockfd);
     }
-
-  if (pi.hThread != NULL)
-    CloseHandle (pi.hThread);
 
   release_data (client_data);
 
@@ -1039,23 +1030,52 @@ accept_connections (void)
     }
 }
 
+static const char* progname;
+
+static void usage (void) __attribute__((noreturn));
+
+static void
+usage (void)
+{
+  fprintf (stderr,
+"%s: RSH server for Windows CE\n"
+"Usage: rsh [-h] [-d] [-e] [-l FILE]\n"
+"-h       Give this help list\n"
+"-d       Debug mode\n"
+"-e       Echo child stdin/stdout/stderr to local console\n"
+"-l FILE  Log debug to FILE.  Implies -d\n"
+, progname);
+  exit (1);
+}
+
 int
 main (int argc, char **argv)
 {
-  int i;
+  int c;
   WSADATA wsad;
   WSAStartup (MAKEWORD (2, 0), &wsad);
 
-  for (i = 1; i < argc; i++)
-    if (strcmp(argv[i], "-d") == 0)
-      debug = 1;
-    else if (strcmp(argv[i], "-l") == 0)
-      localecho = 1;
-    else
+  progname = argv[0];
+  while ((c = getopt (argc, argv, "hdel:")) != -1)
+    {
+      switch (c)
       {
-	fprintf (stderr, "unknown option %s\n", argv[i]);
-	exit (1);
+      case 'h':
+	usage ();
+      case 'd':
+	debug = 1;
+	break;
+      case 'e':
+	localecho = 1;
+	break;
+      case 'l':
+	logfile = optarg;
+	break;
+      default:
+	fprintf (stderr, "Unknown option -- %c\n", optopt);
+	usage ();
       }
+    }
 
   accept_connections ();
   return 0;

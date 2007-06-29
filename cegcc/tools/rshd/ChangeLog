@@ -1,3 +1,20 @@
+2007-06-30  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* rshd.c: Include getopt.h.
+	(logfile): New global.
+	(logprintf): Use logfile if set.
+	(BUFSIZE): New define.
+	(stdin_thread): Use BUFSIZE.  Echo using logprintf.
+	(stdout_thread): Likewise.
+	(stderr_thread): Likewise.
+	(handle_connection): Kill a few warnings.  Set stderrsockfd to -1
+	after closing it.  Remove dead code.
+	(progname): New global.
+	(usage): New function.
+	(main): Use getopt.  Add -l option.
+	* Makefile (LDFLAGS): Adjust to new PipeLib path.
+	(CFLAGS): Likewise.
+
 2007-06-28  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* rshd.c (localecho): New global.
