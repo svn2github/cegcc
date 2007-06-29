@@ -1,9 +1,12 @@
 TARGET=arm-wince-mingw32ce
-LDFLAGS=-lws2 -L../PipeLib -lPipeLib
-CFLAGS=-O0 -g3 -I../PipeLib
+
+LDFLAGS=
+CFLAGS=-O0 -g3 
 WARNFLAGS=-Wall -Wextra
 
-INCLUDES=
+PIPELIBDIR=../PipeLib
+LIBS=-lws2 -L$(PIPELIBDIR) -lPipeLib
+INCLUDES=-I$(PIPELIBDIR)
 
 ALLFLAGS=$(CFLAGS) $(INCLUDES) $(WARNFLAGS)
 
@@ -27,10 +30,10 @@ SRCDIST_FILES=\
 BINDIST_FILES=\
 	rshd.exe
 
-all:  $(BINS)
+all: $(BINS)
 
 rshd_unstripped.exe: rshd.c Makefile
-	$(CC) -o $@ $< $(ALLFLAGS) $(LDFLAGS)
+	$(CC) -o $@ $< $(ALLFLAGS) $(LDFLAGS) $(LIBS)
 
 rshd.exe: rshd_unstripped.exe
 	$(STRIP) $< -o $@
@@ -41,7 +44,7 @@ tester_unstripped.exe: tester.c Makefile
 tester.exe: tester_unstripped.exe
 	$(TARGET)-strip $< -o $@
 
-download: download-rshd download-tester
+download: download-rshd
 
 download-rshd: rshd.exe
 	pcp $< ":/rshd.exe"

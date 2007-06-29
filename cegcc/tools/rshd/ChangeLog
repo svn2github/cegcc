@@ -1,5 +1,15 @@
 2007-06-30  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* Makefile (LDFLAGS): Clear.
+	(CFLAGS): Remove PipeLib reference.
+	(PIPELIBDIR): New.
+	(LIBS): New.
+	(INCLUDES): Add -I$(PIPELIBDIR).
+	(rshd_unstripped.exe): Link with $(LIBS).
+	(download): Don't download tester.exe by default.
+
+2007-06-30  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* rshd.c: Include getopt.h.
 	(logfile): New global.
 	(logprintf): Use logfile if set.
