@@ -5,8 +5,8 @@ AR=$(TARGET)-ar
 
 WARNFLAGS=-Wall -Wextra
 
-INCLUDES=-I../PipeLib
-LIBS=-L../PipeLib -lPipeLib
+INCLUDES=-I..
+LIBS=-L.. -lPipeLib
 
 ALLFLAGS=$(INCLUDES) $(CXXFLAGS) $(WARNFLAGS)
 
