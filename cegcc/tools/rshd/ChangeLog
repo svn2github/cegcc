@@ -95,8 +95,8 @@
 
 2007-06-13  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* rshd.c : Remove #include <pkfuncs.h>.
-	* Makefile : Add references to PipeLib directory so rshd can be built
+	* rshd.c: Remove #include <pkfuncs.h>.
+	* Makefile: Add references to PipeLib directory so rshd can be built
 	without installing PipeLib.
 
 2007-06-10  Pedro Alves  <pedro_alves@portugalmail.pt>
