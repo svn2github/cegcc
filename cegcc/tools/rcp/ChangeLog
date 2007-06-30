@@ -1,3 +1,21 @@
+2007-06-30  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* rcp.c (get_logfile): Delete.
+	(logfile): New global.
+	(vlog): New.
+	(error): Use vlog.
+	(debug): Use vlog.
+	(MIN): New define.
+	(RCP_ERR_DELAY): Remove.
+	(RcpReceive): Don't output to stderr - use debug instead.
+	(ParseTarget): Likewise.
+	(RcpSvrSend): Remove Sleep calls.
+	(RcpSvrRecv): Change type of blen to DWORD.  Remove Sleep calls.
+	Don't output to stderr - use debug instead.  Limit the amount of
+	bytes to receive to the size of the receiving file.  Wait for the
+	extra NULL byte afterwards.
+	(rcp_main): Add start and stop logging.
+
 2007-06-25  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* FindFileA.c: Add a notice on file origin.  Convert C++ comments

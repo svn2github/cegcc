@@ -66,32 +66,31 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  */
 
 #include <cwd.h>
 
-static FILE *
-get_logfile (void)
-{
-#if 0
-  static FILE* logger = NULL;
-
-  if (logger == NULL)
-    {
-      char buf[200];
-      sprintf (buf, "rcp-%08x", (unsigned) GetCurrentProcessId ());
-      logger = fopen (buf, "a+");
-    }
-  return logger;
-#else
-  return stderr;
-#endif
-}
+static const char *logfile = "rcp.log";
 
 static int debugFlag = 0;
 
 static void
-error (const char *message)
+vlog (const char *pre, const char *format, va_list ap)
 {
-  FILE* f = get_logfile ();
-  fprintf (f, "%s\n", message);
-  fflush (f);
+  FILE *f = fopen (logfile, "a+");
+  if (!f)
+    return;
+  fprintf (f, "%s", pre);
+  vfprintf (f, format, ap);
+  fclose (f);
+}
+
+static void
+error (const char *format, ...)
+{
+  if (debugFlag)
+    {
+      va_list ap;
+      va_start (ap, format);
+      vlog ("error: ", format, ap);
+      va_end (ap);
+    }
 }
 
 static void
@@ -99,20 +98,19 @@ debug (const char *format, ...)
 {
   if (debugFlag)
     {
-      FILE* f = get_logfile ();
       va_list ap;
       va_start (ap, format);
-      vfprintf (f, format, ap);
-      fflush (f);
+      vlog ("debug: ", format, ap);
       va_end (ap);
     }
 }
 
+#ifndef MIN
+#define MIN(A, B) ((A) < (B) ? (A) : (B))
+#endif
+
 /* This is the size of the buffer used with rcp */
 #define RCP_BUFFER_SIZE 8192
-/* This is a delay time in milliseconds to wait after sending an error
-   condition to the remote hosts during an rcp.  */
-#define RCP_ERR_DELAY   1000
 
 /* Several of the messages sent in the rcp protocol are single
    byte ( 0x00 ) or are text messages terminated by a ('\n').
@@ -138,13 +136,10 @@ RcpReceive (char *buff, int blen)
 	  error ("Cannot receive client data.");
 	  return rlen;
 	}
-      if (debugFlag)
-	{
-	  if (!rlen)
-	    fprintf (stderr, "...got %d chars. \n", rlen);
-	  else
-	    fprintf (stderr, "...got %d chars. [%c]\n", rlen, buff[i]);
-	}
+      if (rlen == 0)
+	debug ("...got %d chars. \n", rlen);
+      else
+	debug ("...got %d chars. [%c]\n", rlen, buff[i]);
       tchar = buff[i];
       i++;
       if (i > blen)
@@ -195,9 +190,8 @@ ParseTarget (HANDLE * hFile, char *Target, BOOL *bDir)
 #if 0
   lLen = ExpandEnvironmentStrings (Target, strPath, MAX_PATH);
 
-  if (debugFlag)
-    fprintf (stderr, "The expanded path is %d chars %d: %s\n", lLen,
-	     GetLastError (), strPath);
+  debug ("The expanded path is %d chars %d: %s\n", lLen,
+	 GetLastError (), strPath);
 #else
   strcpy (strPath, Target);
 #endif
@@ -398,7 +392,6 @@ RcpSvrSend (const char *Target, BOOL bRecursive)
       sprintf (&buff[1], "rcp:  %s: Not a plain file\n", expTarget);
       if (write (fileno (stdout), buff, strlen (&buff[1]) + 1) < 1)
 	error ("Error sending result status.");
-      Sleep (RCP_ERR_DELAY);
       if (bMoreFiles)
 	CloseTarget (hFile);
       return;
@@ -417,7 +410,6 @@ RcpSvrSend (const char *Target, BOOL bRecursive)
 	sprintf (&buff[1], "rcp: %s: Permission Denied\n", expTarget);
       if (write (fileno (stdout), buff, strlen (&buff[1]) + 1) < 1)
 	error ("Error sending result status.");
-      Sleep (RCP_ERR_DELAY);
       if (bMoreFiles)
 	CloseTarget (hFile);
       return;
@@ -491,7 +483,6 @@ RcpSvrSend (const char *Target, BOOL bRecursive)
 	      sprintf (&buff[1], "rcp: %s: Cannot open file\n", FileName);
 	      if (write (fileno (stdout), buff, strlen (&buff[1]) + 1) < 1)
 		error ("Error sending result status.");
-	      Sleep (RCP_ERR_DELAY);
 	      if (bMoreFiles)
 		CloseTarget (hFile);
 	      return;
@@ -545,7 +536,6 @@ RcpSvrSend (const char *Target, BOOL bRecursive)
 			  < 1)
 			error ("Error sending result status.");
 		      close (FileId);
-		      Sleep (RCP_ERR_DELAY);
 		      if (bMoreFiles)
 			CloseTarget (hFile);
 		      return;
@@ -637,7 +627,7 @@ void
 RcpSvrRecv (char *Target, BOOL bRecursive, BOOL bTargDir)
 {
   char buff[RCP_BUFFER_SIZE + 1];
-  int blen = RCP_BUFFER_SIZE;
+  DWORD blen = RCP_BUFFER_SIZE;
   int FileId;
   DWORD dwFileSize;
   DWORD dwBytesRecv;
@@ -669,7 +659,6 @@ RcpSvrRecv (char *Target, BOOL bRecursive, BOOL bTargDir)
 	    {
 	      error ("Error sending result status.");
 	    }
-	  Sleep (RCP_ERR_DELAY);
 	  CloseTarget (hFile);
 	  return;
 	}
@@ -686,7 +675,6 @@ RcpSvrRecv (char *Target, BOOL bRecursive, BOOL bTargDir)
 	{
 	  error ("Error sending result status.");
 	}
-      Sleep (RCP_ERR_DELAY);
       return;
     }
 
@@ -703,7 +691,6 @@ RcpSvrRecv (char *Target, BOOL bRecursive, BOOL bTargDir)
 	    sprintf (&buff[1], "rcp: %s: Permission Denied\n", expTarget);
 	  if (write (fileno (stdout), buff, strlen (&buff[1]) + 1) < 1)
 	    error ("Error sending result status.");
-	  Sleep (RCP_ERR_DELAY);
 	  return;
 	}
     }
@@ -734,7 +721,6 @@ RcpSvrRecv (char *Target, BOOL bRecursive, BOOL bTargDir)
 		       expTarget);
 	      if (write (fileno (stdout), buff, strlen (&buff[1]) + 1) < 1)
 		error ("Error sending result status.");
-	      Sleep (RCP_ERR_DELAY);
 	      return;
 	    }
 	}
@@ -794,10 +780,8 @@ RcpSvrRecv (char *Target, BOOL bRecursive, BOOL bTargDir)
 		  buff[0] = 1;
 		  sprintf (&buff[1], "rcp: %s: Directory access failure %d\n",
 			   expTarget, errno);
-		  if (write (fileno (stdout), buff, strlen (&buff[1]) + 1) <
-		      1)
+		  if (write (fileno (stdout), buff, strlen (&buff[1]) + 1) < 1)
 		    error ("Error sending result status.");
-		  Sleep (RCP_ERR_DELAY);
 		  return;
 		}
 	      /* Create directory.  */
@@ -810,7 +794,6 @@ RcpSvrRecv (char *Target, BOOL bRecursive, BOOL bTargDir)
 			   expTarget);
 		  if (write (fileno (stdout), buff, strlen (&buff[1]) + 1) < 1)
 		    error ("Error sending result status.");
-		  Sleep (RCP_ERR_DELAY);
 		  return;
 		}
 	    }
@@ -841,7 +824,6 @@ RcpSvrRecv (char *Target, BOOL bRecursive, BOOL bTargDir)
 	      sprintf (&buff[1], "rcp: %s :Cannot open file\n", Target2);
 	      if (write (fileno (stdout), buff, strlen (&buff[1]) + 1) < 1)
 		error ("Error sending result status.");
-	      Sleep (RCP_ERR_DELAY);
 	      return;
 	    }
 	  break;
@@ -851,8 +833,7 @@ RcpSvrRecv (char *Target, BOOL bRecursive, BOOL bTargDir)
 	}
 
       dwFileSize = atol (&buff[6]);
-      if (debugFlag)
-	fprintf (stderr, "Receiving file %s of size %lu.\n", Target2, dwFileSize);
+      debug ("Receiving file %s of size %lu.\n", Target2, dwFileSize);
 
       buff[0] = 0;
       if (write (fileno (stdout), buff, 1) < 1)
@@ -881,7 +862,8 @@ RcpSvrRecv (char *Target, BOOL bRecursive, BOOL bTargDir)
 	  while (dwBytesRecv < dwFileSize)
 	    {
 	      /* Receive data from the client.  */
-	      if ((dwBytes = read (fileno (stdin), buff, blen)) == -1)
+	      int toread = MIN (dwFileSize - dwBytesRecv, blen);
+	      if ((dwBytes = read (fileno (stdin), buff, toread)) == -1)
 		{
 		  error ("Cannot receive client data.");
 		  close (FileId);
@@ -889,6 +871,8 @@ RcpSvrRecv (char *Target, BOOL bRecursive, BOOL bTargDir)
 		}
 
 	      dwBytesRecv += dwBytes;
+
+	      debug ("Got %lu (%lu/%lu).\n", dwBytes, dwBytesRecv, dwFileSize);
 
 	      /* Write the data to the file.  */
 	      nValue = write (FileId, buff, dwBytes);
@@ -901,11 +885,17 @@ RcpSvrRecv (char *Target, BOOL bRecursive, BOOL bTargDir)
 			   Target2);
 		  if (write (fileno (stdout), buff, strlen (&buff[1]) + 1) < 1)
 		    error ("Error writing error status.");
-		  Sleep (RCP_ERR_DELAY);
 		  close (FileId);
 		  return;
 		}
 	    }
+
+	  if ((dwBytes = read (fileno (stdin), buff, 1)) == -1)
+	    error ("Cannot receive NULL byte.");
+	  else if (buff[0] != '\0')
+	    error ("Got invalid data (0x%02x).", (int)buff[0]);
+	  else
+	    debug ("Done receiving.\n");
 	}
 
       close (FileId);
@@ -979,6 +969,8 @@ rcp_main (int argc, char **argv)
       exit (1);
     }
 
+  debug ("starting up\n");
+
   if (bSvrRecv)
     {
       if (bRecursive)
@@ -989,9 +981,14 @@ rcp_main (int argc, char **argv)
   else
     RcpSvrSend (argv[i], bRecursive);
 
+  debug ("closing down\n");
+
   /* Make sure we end up where we started.  */
   chdir (HomeDir);
   free (HomeDir);
+
+  debug ("closing down (2)\n");
+
   return 0;
 }
 
