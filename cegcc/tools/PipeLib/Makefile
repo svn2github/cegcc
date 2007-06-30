@@ -25,7 +25,7 @@ libPipeLib.a: PipeLib.o
 	rm -f $@
 	$(AR) r $@ $<
 
-download: PipeDev.dll
+download: all
 	pcp PipeDev.dll ":/Windows/PipeDev.dll"
 
 clean-dev:

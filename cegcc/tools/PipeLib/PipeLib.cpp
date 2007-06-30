@@ -24,9 +24,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  */
 
+#include <windows.h>
+
+#include "PipeLib.h"
 #include "PipeDev.h"
 
-#include <windows.h>
 #include <devload.h>
 #include <stdlib.h>
 
@@ -93,7 +95,7 @@ PrepareRegistryForInstance (DWORD dwIndex, WCHAR** wzKey)
 }
 
 /* Undocumented, for pipedev.dll debugging purposes only.  */
-extern "C" BOOL
+PIPELIB_API BOOL
 SetPipeTag (HANDLE p, const WCHAR* name)
 {
   if (!DeviceIoControl (p, PIPE_IOCTL_SET_PIPE_TAG,
@@ -113,7 +115,7 @@ SetPipeName (HANDLE p, WCHAR* name)
   return TRUE;
 }
 
-extern "C" BOOL
+PIPELIB_API BOOL
 GetPipeName (HANDLE p, WCHAR* name)
 {
   DWORD actual;
@@ -125,11 +127,11 @@ GetPipeName (HANDLE p, WCHAR* name)
   return TRUE;
 }
 
-extern "C" BOOL
+PIPELIB_API BOOL
 CreatePipe (PHANDLE hReadPipe,
 	    PHANDLE hWritePipe,
-	    LPSECURITY_ATTRIBUTES lpPipeAttributes,
-	    DWORD nSize)
+	    LPSECURITY_ATTRIBUTES /* lpPipeAttributes */,
+	    DWORD /* nSize */)
 {
   int inst;
   WCHAR* wsKey;
@@ -145,9 +147,8 @@ CreatePipe (PHANDLE hReadPipe,
       RegDeleteKey (HKEY_LOCAL_MACHINE, wsKey);
       free (wsKey);
 
-      /* Although MSDN documentcs that error should
-	 return INVALID_HANDLE_VALUE, I see it returning
-	 NULL here.  */
+      /* Although MSDN documents the error as INVALID_HANDLE_VALUE, I
+	 see it returning NULL here.  */
       if (h != INVALID_HANDLE_VALUE && h != NULL)
 	break;
     }
@@ -155,7 +156,7 @@ CreatePipe (PHANDLE hReadPipe,
   if (inst == MAX_INSTANCES)
     return FALSE;
 
-  /* name + num + ':' + '0' */
+  /* name + num + ':' + '\0' */
   wchar_t device_name[(sizeof (NAME_BASE) - 1) + 2 + 1 + 1];
   wsprintf (device_name, L"%s%02d:", NAME_BASE, inst);
 
@@ -194,7 +195,7 @@ struct PeekStruct
     LPDWORD lpBytesLeftThisMessage
     };
 
-BOOL
+PIPELIB_API BOOL
 PeekNamedPipe (HANDLE hNamedPipe,
 	       LPVOID lpBuffer,
 	       DWORD nBufferSize,

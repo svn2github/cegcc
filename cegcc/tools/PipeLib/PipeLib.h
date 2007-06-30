@@ -28,19 +28,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  */
 #define __PIPE_LIB_H__
 
 #ifdef __cplusplus
-extern "C"
-{
+# define PIPELIB_API extern "C"
+#else
+# define PIPELIB_API
 #endif
 
-BOOL CreatePipe (PHANDLE,PHANDLE,LPSECURITY_ATTRIBUTES,DWORD);
-BOOL GetPipeName (HANDLE, WCHAR*);
+PIPELIB_API BOOL CreatePipe (PHANDLE,PHANDLE,LPSECURITY_ATTRIBUTES,DWORD);
+PIPELIB_API BOOL GetPipeName (HANDLE, WCHAR*);
 
 /* Internal, for pipedev.dll debugging purposes.  */
-BOOL SetPipeTag (HANDLE, const WCHAR*);
-
-#ifdef __cplusplus
-}
-#endif
+PIPELIB_API BOOL SetPipeTag (HANDLE, const WCHAR*);
 
 
 #endif
