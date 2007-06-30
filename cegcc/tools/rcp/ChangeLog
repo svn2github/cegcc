@@ -1,3 +1,16 @@
+2007-07-01  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* rcp.c (error): Output a newline.
+	(totalread): New global.
+	(LogThread): New.
+	(RcpReceive): Change log message when stdin is closed.  Don't
+	increment read counter when stdin returned 0 bytes.  Increment
+	totalread.
+	(RcpSvrSend): Add to totalread.
+	(RcpSvrRecv): Add to totalread.  Don't wait for the extra NULL
+	byte afterwards here.
+	(rcp_main): If debugFlag is set, create the LogThread.
+
 2007-06-30  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* rcp.c (get_logfile): Delete.

@@ -89,6 +89,7 @@ error (const char *format, ...)
       va_list ap;
       va_start (ap, format);
       vlog ("error: ", format, ap);
+      vlog ("", "\n", ap);
       va_end (ap);
     }
 }
@@ -109,6 +110,22 @@ debug (const char *format, ...)
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 #endif
 
+static volatile DWORD totalread;
+
+DWORD WINAPI
+LogThread (void *arg)
+{
+  int count = 0;
+
+  while (1)
+    if (WAIT_TIMEOUT == (WaitForSingleObject (GetModuleHandle (NULL), 1000)))
+      debug ("(%08d)\ttotalread = %lu\n", count++, totalread);
+    else
+      break;
+
+  return 0;
+}
+
 /* This is the size of the buffer used with rcp */
 #define RCP_BUFFER_SIZE 8192
 
@@ -125,26 +142,34 @@ RcpReceive (char *buff, int blen)
   int i;
   int rlen;
   char tchar;
+  int fildes = fileno (stdin);
 
   i = 0;
   buff[0] = 0;
   do
     {
-      rlen = read (fileno (stdin), &buff[i], 1);
+      rlen = read (fildes, &buff[i], 1);
       if (rlen == -1)
 	{
-	  error ("Cannot receive client data.");
-	  return rlen;
+	  error ("stdin closed.\n");
+	  return -1;
 	}
+
       if (rlen == 0)
-	debug ("...got %d chars. \n", rlen);
-      else
-	debug ("...got %d chars. [%c]\n", rlen, buff[i]);
+	{
+	  debug ("...got 0 chars.\n");
+	  continue;
+	}
+
+      debug ("...got 1 char. [%c]\n", buff[i]);
       tchar = buff[i];
       i++;
+      totalread++;
+
       if (i > blen)
 	{
 	  /* The buffer has overflowed.  */
+	  debug ("buffer overflow (%d/%d)\n", i, blen);
 	  SetLastError (WSAEMSGSIZE);
 	  return -1;
 	}
@@ -541,6 +566,8 @@ RcpSvrSend (const char *Target, BOOL bRecursive)
 		      return;
 		    }
 
+		  totalread += nBytesRead;
+
 		  nBytesSent += nBytesRead;
 		  if (write (fileno (stdout), buff, nBytesRead) < 1)
 		    {
@@ -870,6 +897,8 @@ RcpSvrRecv (char *Target, BOOL bRecursive, BOOL bTargDir)
 		  return;
 		}
 
+	      totalread += dwBytes;
+
 	      dwBytesRecv += dwBytes;
 
 	      debug ("Got %lu (%lu/%lu).\n", dwBytes, dwBytesRecv, dwFileSize);
@@ -889,13 +918,6 @@ RcpSvrRecv (char *Target, BOOL bRecursive, BOOL bTargDir)
 		  return;
 		}
 	    }
-
-	  if ((dwBytes = read (fileno (stdin), buff, 1)) == -1)
-	    error ("Cannot receive NULL byte.");
-	  else if (buff[0] != '\0')
-	    error ("Got invalid data (0x%02x).", (int)buff[0]);
-	  else
-	    debug ("Done receiving.\n");
 	}
 
       close (FileId);
@@ -970,6 +992,9 @@ rcp_main (int argc, char **argv)
     }
 
   debug ("starting up\n");
+
+  if (debugFlag)
+    CloseHandle (CreateThread (NULL, 0, LogThread, NULL, 0, NULL));
 
   if (bSvrRecv)
     {
