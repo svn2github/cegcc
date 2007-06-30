@@ -1,5 +1,9 @@
 2007-07-01  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* rcp.c (LogThread): Use Sleep instead of WaitForSingleObject.
+
+2007-07-01  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* rcp.c (error): Output a newline.
 	(totalread): New global.
 	(LogThread): New.

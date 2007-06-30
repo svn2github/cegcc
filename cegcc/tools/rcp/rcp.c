@@ -118,10 +118,10 @@ LogThread (void *arg)
   int count = 0;
 
   while (1)
-    if (WAIT_TIMEOUT == (WaitForSingleObject (GetModuleHandle (NULL), 1000)))
+    {
       debug ("(%08d)\ttotalread = %lu\n", count++, totalread);
-    else
-      break;
+      Sleep (1000);
+    }
 
   return 0;
 }
