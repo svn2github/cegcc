@@ -296,8 +296,6 @@ stdin_thread (void *arg)
       else if (read == 0)
 	{
 	  logprintf ("%s: connection closed\n", thread_name);
-	  if (!data->stop)
-	    ret = 1;
 	  break;
 	}
 
@@ -328,6 +326,8 @@ stdin_thread (void *arg)
     }
 
 out:
+  SafeCloseHandle (&data->readh[0]);
+  SafeCloseHandle (&data->writeh[0]);
   release_data (data);
   logprintf ("%s gone : %lu\n", thread_name, ret);
   return ret;
@@ -393,6 +393,8 @@ stdout_thread (void *arg)
     }
 
  out:
+  SafeCloseHandle (&data->readh[1]);
+  SafeCloseHandle (&data->writeh[1]);
   release_data (data);
   logprintf ("%s gone : %lu\n", thread_name, ret);
   return ret;
@@ -458,6 +460,8 @@ stderr_thread (void *arg)
     }
 
  out:
+  SafeCloseHandle (&data->readh[2]);
+  SafeCloseHandle (&data->writeh[2]);
   release_data (data);
   logprintf ("%s gone : %lu\n", thread_name, ret);
   return ret;

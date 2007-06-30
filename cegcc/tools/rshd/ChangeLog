@@ -1,3 +1,10 @@
+2007-07-01  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* rshd.c (stdin_thread): Revert previous commit - return 0 if the
+	child is still running.
+	(stdin_thread, stdout_thread, stderr_thread): Close reading and
+	writing side of the pipes before returning.
+
 2007-06-30  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* rshd.c (create_child): Add a few comments.
