@@ -1,5 +1,10 @@
 2007-06-30  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* rshd.c (stdin_thread): If connection closed gracefully but child
+	is still running, return 1.  Remove unneeded log call.
+
+2007-06-30  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* Makefile (LDFLAGS): Clear.
 	(CFLAGS): Remove PipeLib reference.
 	(PIPELIBDIR): New.
