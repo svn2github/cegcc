@@ -1,7 +1,7 @@
 2007-06-29  Pedro Alves  <pedro_alves@portugalmail.pt>
 
-	* (PipeLib): Delete.
-	* (PipeDev): Delete.
+	* PipeLib: Delete.
+	* PipeDev: Delete.
 
 2007-06-29  Pedro Alves  <pedro_alves@portugalmail.pt>
 
