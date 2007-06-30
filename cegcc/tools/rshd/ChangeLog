@@ -1,7 +1,11 @@
 2007-06-30  Pedro Alves  <pedro_alves@portugalmail.pt>
 
-	* rshd.c (stdin_thread): If connection closed gracefully but child
-	is still running, return 1.  Remove unneeded log call.
+	* rshd.c (create_child): Add a few comments.
+
+2007-06-30  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* rshd.c (stdin_thread): If the connection closed gracefully but
+	the child is still running, return 1.  Remove unneeded log call.
 
 2007-06-30  Pedro Alves  <pedro_alves@portugalmail.pt>
 

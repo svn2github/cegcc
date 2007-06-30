@@ -507,7 +507,12 @@ create_child (char *program, HANDLE *readh, HANDLE *writeh, PROCESS_INFORMATION 
   to_back_slashes (program);
   wprogram = alloca ((strlen (program) + 1) * sizeof (wchar_t));
   mbstowcs (wprogram, program, strlen (program) + 1);
-  /* Do the PipeLib/WinCE dup dance.  */
+
+  /* Do the PipeLib/WinCE dup dance:
+     Create the pipes, redirect stdin/stdout/stderr to them,
+     create the child, which inherits the parent's
+     stdin/stdout/stderr paths, and restore the parent's
+     paths.  */
 
   for (i = 0; i < 3; i++)
     {
@@ -523,6 +528,7 @@ create_child (char *program, HANDLE *readh, HANDLE *writeh, PROCESS_INFORMATION 
       GetStdioPathW (i, prev_path[i], &dwLen);
       SetStdioPathW (i, devname);
     }
+
   flags = CREATE_SUSPENDED;
   ret = CreateProcessW (wprogram, /* image name */
 			wargs,    /* command line */
@@ -535,6 +541,7 @@ create_child (char *program, HANDLE *readh, HANDLE *writeh, PROCESS_INFORMATION 
 			NULL,     /* start info, not supported */
 			pi);     /* proc info */
 
+  /* Restore the paths.  */
   for (i = 0; i < 3; i++)
     SetStdioPathW (i, prev_path[i]);
 
