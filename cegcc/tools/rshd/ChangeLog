@@ -1,5 +1,16 @@
 2007-07-01  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* rshd.c (logprintf): Avoid name clash.
+	(initclientdata): Clear the correct pipes.
+	(stdin_thread): Enhance comment.  Add a totalread variable, and
+	logprint it.
+	(stdout_thread): Add a totalread variable, and logprint it.
+	(stderr_thread): Likewise.
+	(connect_stderr): Remove unneeded extra closesocket.
+	(usage): Print to stdout instead of stderr.
+
+2007-07-01  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* rshd.c (stdin_thread): Revert previous commit - return 0 if the
 	child is still running.
 	(stdin_thread, stdout_thread, stderr_thread): Close reading and

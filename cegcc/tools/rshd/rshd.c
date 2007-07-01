@@ -54,15 +54,15 @@ logprintf (const char *fmt, ...)
 {
   if (logfile)
     {
-      FILE *logfile = fopen(logfile, "a+");
+      FILE *f = fopen(logfile, "a+");
 
-      if (logfile)
+      if (f)
 	{
 	  va_list ap;
 	  va_start (ap, fmt);
-	  vfprintf (logfile, fmt, ap);
+	  vfprintf (f, fmt, ap);
 	  va_end (ap);
-	  fclose (logfile);
+	  fclose (f);
 	}
     }
   else if (debug)
@@ -192,8 +192,8 @@ init_client_data (struct client_data_t *data)
 
   for (i = 0; i < 3; i++)
     {
-      data->readh[0] = INVALID_HANDLE_VALUE;
-      data->writeh[0] = INVALID_HANDLE_VALUE;
+      data->readh[i] = INVALID_HANDLE_VALUE;
+      data->writeh[i] = INVALID_HANDLE_VALUE;
     }
 
   data->stop = FALSE;
@@ -257,7 +257,7 @@ rsh_userok (const char *hostname, const char *user)
    broken due to the child closing them, and 1 if the remote side
    closed the sockets before the child died.  We use this knowledge in
    the main WaitForMultipleObjects to kill the child if the remote
-   side closed the connection.  */
+   side closed the connection abruptly (user 'CTRL-C'ed, p.ex).  */
 
 static DWORD WINAPI
 stdin_thread (void *arg)
@@ -265,6 +265,7 @@ stdin_thread (void *arg)
   struct client_data_t *data = arg;
   const char *thread_name = "stdin_thread";
   DWORD ret = 0;
+  DWORD totalread = 0;
 
   addref_data (data);
 
@@ -298,11 +299,17 @@ stdin_thread (void *arg)
 	  logprintf ("%s: connection closed\n", thread_name);
 	  break;
 	}
-
-      if (read)
+      else
 	{
 	  DWORD dwwritten;
+
+	  totalread += read;
+
+	  logprintf ("%s (%d): totalread = %lu\n",
+		     thread_name, __LINE__, totalread);
+
 	  /* Stuff it into the child's stdin.  */
+	  logprintf ("%s (%d): going to WriteFile\n", thread_name, __LINE__);
 	  if (!WriteFile (data->writeh[0], buf, read, &dwwritten, NULL))
 	    {
 	      logprintf ("%s: broken pipe (2)\n", thread_name);
@@ -316,6 +323,7 @@ stdin_thread (void *arg)
 		 returns something - which means the child opened stdin.  */
 	      SafeCloseHandle (&data->readh[0]);
 	    }
+	  logprintf ("%s: written to pipe\n", thread_name);
 
 	  if (localecho)
 	    {
@@ -339,6 +347,7 @@ stdout_thread (void *arg)
   struct client_data_t *data = arg;
   const char *thread_name = "stdout_thread";
   DWORD ret = 0;
+  DWORD totalread = 0;
 
   addref_data (data);
 
@@ -354,17 +363,18 @@ stdout_thread (void *arg)
 	}
       else
 	{
-	  logprintf ("%s (%d): ReadFile ok: %lu\n", thread_name, __LINE__, read);
 	  /* We can't close the write side of the pipe until the
 	     child opens its version.  Since it will only be open on the
 	     first stdout access, we have to wait until the read side returns
 	     something - which means the child opened stdout.  */
 	  SafeCloseHandle (&data->writeh[1]);
-	  logprintf ("%s (%d): SafeCloseHandle ok\n", thread_name, __LINE__);
 	}
       if (read)
 	{
 	  int written;
+	  totalread += read;
+	  logprintf ("%s (%d): totalread = %lu\n",
+		     thread_name, __LINE__, totalread);
 	  logprintf ("%s (%d): going to send\n", thread_name, __LINE__);
 	  written = send (data->sockfd, buf, read, 0);
 	  ret = 1;
@@ -407,6 +417,7 @@ stderr_thread (void *arg)
   const char *thread_name = "stderr_thread";
   int sockfd;
   DWORD ret = 0;
+  DWORD totalread = 0;
 
   addref_data (data);
 
@@ -436,7 +447,11 @@ stderr_thread (void *arg)
 	}
       if (read)
 	{
-	  int written = send (sockfd, buf, read, 0);
+	  int written;
+	  totalread += read;
+	  logprintf ("%s (%d): totalread = %lu\n",
+		     thread_name, __LINE__, totalread);
+	  written = send (sockfd, buf, read, 0);
 	  ret = 1;
 	  if (written < 0)
 	    logprintf ("%s: write ERROR, winerr %d\n",
@@ -633,7 +648,6 @@ connect_stderr (int in, unsigned short stderr_port)
 	    }
 
 	  logprintf ("connect: %s\n", strwinerror (WSAGetLastError ()));;
-	  closesocket (s);
 	  return -1;
 	}
 
@@ -1049,7 +1063,7 @@ static void usage (void) __attribute__((noreturn));
 static void
 usage (void)
 {
-  fprintf (stderr,
+  printf (
 "%s: RSH server for Windows CE\n"
 "Usage: rsh [-h] [-d] [-e] [-l FILE]\n"
 "-h       Give this help list\n"
