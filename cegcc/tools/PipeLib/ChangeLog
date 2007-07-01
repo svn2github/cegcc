@@ -1,3 +1,7 @@
+2007-07-01  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* PipeDev.cpp (Write): Remove breaknext and its usage.
+
 2007-06-30  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* Makefile (download): Depend on all instead of only on

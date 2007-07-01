@@ -180,7 +180,7 @@ RecursiveCS::RecursiveCS()
 {
 #ifndef NOLOCKS
   /* auto - only release one at a time.  */
-  EventHandle = CreateEvent (NULL, FALSE, FALSE, NULL); 
+  EventHandle = CreateEvent (NULL, FALSE, FALSE, NULL);
 #endif
 }
 
@@ -794,7 +794,6 @@ Write (PipeOpenContext* pOpenContext, const BYTE* pBuffer, DWORD dwCount)
 
   PipeDeviceContext* dev = pOpenContext->DeviceContext;
 
-  BOOL breaknext = FALSE;
   HANDLE Events[2];
 
   do
@@ -847,9 +846,6 @@ Write (PipeOpenContext* pOpenContext, const BYTE* pBuffer, DWORD dwCount)
 
 	if (dwCount == 0)
 	  break;
-
-	if (breaknext)
-	  break;
       }
 
       LOG ("going to wait for event\n");
@@ -857,7 +853,6 @@ Write (PipeOpenContext* pOpenContext, const BYTE* pBuffer, DWORD dwCount)
 	{
 	case WAIT_OBJECT_0 + 1:
 	  LOG ("got read event\n");
-	  breaknext = TRUE;
 	  break;
 	default:
 	  /* With either wait error or AbortEvent
