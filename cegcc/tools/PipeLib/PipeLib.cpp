@@ -147,6 +147,13 @@ CreatePipe (PHANDLE hReadPipe,
       RegDeleteKey (HKEY_LOCAL_MACHINE, wsKey);
       free (wsKey);
 
+      if (!h && GetLastError() != ERROR_DEVICE_IN_USE)
+	{
+	  /* Something went wrong.  Use GetLastError for extended
+	     information.  */
+	  return FALSE;
+	}
+
       /* Although MSDN documents the error as INVALID_HANDLE_VALUE, I
 	 see it returning NULL here.  */
       if (h != INVALID_HANDLE_VALUE && h != NULL)
@@ -154,7 +161,10 @@ CreatePipe (PHANDLE hReadPipe,
     }
 
   if (inst == MAX_INSTANCES)
-    return FALSE;
+    {
+      SetLastError (ERROR_TOO_MANY_OPEN_FILES);
+      return FALSE;
+    }
 
   /* name + num + ':' + '\0' */
   wchar_t device_name[(sizeof (NAME_BASE) - 1) + 2 + 1 + 1];

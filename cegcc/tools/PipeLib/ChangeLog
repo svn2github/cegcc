@@ -1,3 +1,10 @@
+2007-07-02  Pedro Alves  <pedro_alves@portugalmail.pt>
+	    Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* PipeLib.cpp (CreatePipe): Handle unexpected ActivateDevice
+	failures.  Record last error as ERROR_TOO_MANY_OPEN_FILES when
+	there aren't any pipe slots left.
+
 2007-07-01  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* PipeDev.cpp (Write): Remove breaknext and its usage.
