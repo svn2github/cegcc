@@ -493,7 +493,9 @@ to_back_slashes (char *path)
 /* Start a new process.
    Returns the new process' handle on success, NULL on failure.  */
 static HANDLE
-create_child (char *program, HANDLE *readh, HANDLE *writeh, PROCESS_INFORMATION *pi)
+create_child (char *program,
+	      struct client_data_t* child,
+	      PROCESS_INFORMATION *pi)
 {
   BOOL ret;
   char *args;
@@ -536,13 +538,31 @@ create_child (char *program, HANDLE *readh, HANDLE *writeh, PROCESS_INFORMATION 
   for (i = 0; i < 3; i++)
     {
       wchar_t devname[MAX_PATH];
-      if (!CreatePipe (&readh[i], &writeh[i], NULL, 0))
-	return NULL;
+      if (!CreatePipe (&child->readh[i], &child->writeh[i], NULL, 0))
+	{
+	  char buf[1024];
+	  DWORD err = GetLastError ();
+	  if (err == ERROR_FILE_NOT_FOUND)
+	    {
+	      sprintf (buf,
+		       "Error creating pipe.  "
+		       "Copy PipeDev.dll to the device.\n");
+	      logprintf ("%s", buf);
+	    }
+	  else
+	    {
+	      sprintf (buf, "Error creating pipe\n"
+		       "%s (%lu)\n", strwinerror (err), err);
+	      logprintf ("%s", buf);
+	    }
+	  send (child->sockfd, buf, strlen (buf), 0);
+	  return NULL;
+	}
 
       wsprintf (devname, L"dev%d", i);
-      SetPipeTag (readh[i], devname);
+      SetPipeTag (child->readh[i], devname);
 
-      GetPipeName (readh[i], devname);
+      GetPipeName (child->readh[i], devname);
       DWORD dwLen = MAX_PATH;
       GetStdioPathW (i, prev_path[i], &dwLen);
       SetStdioPathW (i, devname);
@@ -567,13 +587,19 @@ create_child (char *program, HANDLE *readh, HANDLE *writeh, PROCESS_INFORMATION 
   if (!ret)
     {
       DWORD err = GetLastError ();
-      fprintf (stderr, "Error creating process \"%s %s\", (error %d): %s\n",
-	       program, args, (int) err, strwinerror (err));
+      char buf[1024];
+
+      sprintf (buf,
+	       "Error creating process \"%s\"\n"
+	       "%s  (error %lu)\n",
+	       program, strwinerror (err), err);
+      logprintf ("%s", buf);
+      send (child->sockfd, buf, strlen (buf), 0);
 
       for (i = 0; i < 3; i++)
 	{
-	  SafeCloseHandle (&readh[i]);
-	  SafeCloseHandle (&writeh[i]);
+	  SafeCloseHandle (&child->readh[i]);
+	  SafeCloseHandle (&child->writeh[i]);
 	}
       return NULL;
     }
@@ -827,17 +853,10 @@ handle_connection (void *arg)
   client_data->stderrsockfd = stderrsockfd;
 
   logprintf ("handle_connection: starting command... \n");
-  hndproc = create_child (command, client_data->readh, client_data->writeh, &pi);
+  hndproc = create_child (command, client_data, &pi);
   if (!hndproc)
-    {
-      static char buf[1024];
-      DWORD err = GetLastError ();
-      logprintf ("handle_connection: ERROR can't create child process, "
-		 "winerr %lu\n", err);
-      sprintf (buf, "can't create process\n%s\n", strwinerror (err));
-      send (s2, buf, strlen (buf), 0);
-      goto shutdown;
-    }
+    /* create_child already reports the errors to the host.  */
+    goto shutdown;
 
   thread[0] = CreateThread (NULL, 0, stdin_thread, client_data, 0, NULL);
   thread[1] = CreateThread (NULL, 0, stdout_thread, client_data, 0, NULL);

@@ -1,4 +1,13 @@
 2007-07-02  Pedro Alves  <pedro_alves@portugalmail.pt>
+	    Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* rshd.c (create_child): Pass struct client_data_t* as parameter,
+	instead of the pipe array pointers.  Report CreatePipe and
+	CreateProcess failures to the host.
+	(handle_connection): Pass client_data to create_child.  Don't report
+	create_child failures here.
+
+2007-07-02  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* rshd.c (handle_connection): If closing because the child died,
 	wait for stdout to flush before closing the socket.
