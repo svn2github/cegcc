@@ -1,3 +1,8 @@
+2007-07-02  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* rshd.c (handle_connection): If closing because the child died,
+	wait for stdout to flush before closing the socket.
+
 2007-07-01  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* rshd.c (logprintf): Avoid name clash.

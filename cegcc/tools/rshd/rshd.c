@@ -678,6 +678,7 @@ handle_connection (void *arg)
 
   struct client_data_t* client_data;
 
+  HANDLE thread[3];
   HANDLE waith[4];
   HANDLE hndproc;
   DWORD stopped;
@@ -822,6 +823,9 @@ handle_connection (void *arg)
   /* send OK */
   send (s2, "", 1, 0);
 
+  client_data->sockfd = s2;
+  client_data->stderrsockfd = stderrsockfd;
+
   logprintf ("handle_connection: starting command... \n");
   hndproc = create_child (command, client_data->readh, client_data->writeh, &pi);
   if (!hndproc)
@@ -835,13 +839,13 @@ handle_connection (void *arg)
       goto shutdown;
     }
 
-  client_data->sockfd = s2;
-  client_data->stderrsockfd = stderrsockfd;
+  thread[0] = CreateThread (NULL, 0, stdin_thread, client_data, 0, NULL);
+  thread[1] = CreateThread (NULL, 0, stdout_thread, client_data, 0, NULL);
+  thread[2] = CreateThread (NULL, 0, stderr_thread, client_data, 0, NULL);
 
-  waith[0] = CreateThread (NULL, 0, stdin_thread, client_data, 0, NULL);
-  waith[1] = CreateThread (NULL, 0, stdout_thread, client_data, 0, NULL);
-  waith[2] = CreateThread (NULL, 0, stderr_thread, client_data, 0, NULL);
-  waith[3] = hndproc;
+  for (i = 0; i < COUNTOF (thread); i++)
+    waith[i] = thread[i];
+  waith[i] = hndproc;
 
   ResumeThread (pi.hThread);
   CloseHandle (pi.hThread);
@@ -871,56 +875,65 @@ handle_connection (void *arg)
 	    i++;
 
 	  abrupt = (h != hndproc
-		     && !client_data->stop
-		     && (GetExitCodeThread (h, &ec) && ec == 1));
+		    && !client_data->stop
+		    && (GetExitCodeThread (h, &ec) && ec == 1));
 
-	  if (debug)
+	  logprintf ("j = %ld, abrupt = %d, stopped = %ld, i = %d\n",
+		     j, abrupt, stopped, i);
+
+
+	  if (abrupt)
 	    {
-	      fprintf (stderr, "j = %ld, abrupt = %d, stopped = %ld, i = %d\n",
-		      j, abrupt, stopped, i);
-	      fflush (stderr);
-	    }
-
-	  if (abrupt
-	      || (h == hndproc && stopped < COUNTOF (waith)))
-	    {
-	      int k;
-
-	      /* if (h == hndproc, the child died without ever opening
-		 it's side of the pipe, so our threads didn't see it
-		 close, because we never closed our side.  */
-
-	      /* Tell the threads we are stopping.  */
+	      /* Record that we are stopping.  */
 	      client_data->stop = 1;
 
-	      if (abrupt)
-		/* A thread died abruptly.  This means the remote side
-		   is gone (SIGINT p.ex.).  Let's kill the child.  */
-		TerminateProcess (hndproc, 1);
+	      /* A thread died abruptly.  This means the remote side
+		 is gone (SIGINT p.ex.).  Let's kill the child.  */
+	      TerminateProcess (hndproc, 1);
+	    }
+	  else if (h == hndproc)
+	    {
+	      /* Record that we are stopping.  */
+	      client_data->stop = 1;
 
-	      /* Close them now.  */
-	      for (k = 0; k < 3; k++)
+	      /* Close our unused sides of the pipes, since the child
+		 may have never opened its version, thus we might
+		 never have closed them.  If we don't do this, the
+		 threads won't see the broken pipes, as the number of
+		 readers/writers won't reach 0.  */
+	      SafeCloseHandle (&client_data->readh[0]);
+	      SafeCloseHandle (&client_data->writeh[1]);
+	      SafeCloseHandle (&client_data->writeh[2]);
+	    }
+
+	  if (client_data->stop)
+	    {
+	      if (h == thread[1])
 		{
-		  SafeCloseHandle (&client_data->writeh[k]);
-		  SafeCloseHandle (&client_data->readh[k]);
+		  /* The child is gone, and so is the stdout thread.
+		     All the data is now flushed to the host.  Close
+		     the socket, enabling stdin_thread to unblock.  */
+		  if (s2 != -1)
+		    {
+		      logprintf ("closing stdin/stdout socket\n");
+		      shutdown (s2, SD_BOTH);
+		      closesocket (s2);
+		      s2 = -1;
+		      client_data->sockfd = -1;
+		    }
 		}
-
-	      /* Also close the sockets.  At least stdin
-		 will be frequenly blocked in a recv call.  */
-	      if (s2 != -1)
+	      else if (h == thread[2])
 		{
-		  shutdown (s2, 2);
-		  closesocket (s2);
-		  s2 = -1;
-		  client_data->sockfd = -1;
-		}
-
-	      if (stderrsockfd != -1)
-		{
-		  shutdown (stderrsockfd, 2);
-		  closesocket (stderrsockfd);
-		  stderrsockfd = -1;
-		  client_data->stderrsockfd = -1;
+		  /* Not sure how the host rsh handles *only* stderr
+		     closing. */
+		  if (stderrsockfd != -1)
+		    {
+		      logprintf ("closing socket stderr\n");
+		      shutdown (stderrsockfd, SD_BOTH);
+		      closesocket (stderrsockfd);
+		      stderrsockfd = -1;
+		      client_data->stderrsockfd = -1;
+		    }
 		}
 	    }
 
