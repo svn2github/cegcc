@@ -1,3 +1,7 @@
+2007-08-01  Steven Hicks  <crashoverride025@gmail.com>
+
+	* include/winbase.h (DeregisterDevice, RegisterDevice): Declare.
+
 2007-06-10  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* include/winbase.h (ActivateDevice, ActivateDeviceEx,
