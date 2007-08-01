@@ -541,7 +541,11 @@ BOOL WINAPI GetSaveFileNameW(LPOPENFILENAMEW);
 BOOL WINAPI PageSetupDlgA(LPPAGESETUPDLGA);
 BOOL WINAPI PageSetupDlgW(LPPAGESETUPDLGW);
 BOOL WINAPI PrintDlgA(LPPRINTDLGA);
+#ifndef _WIN32_WCE
 BOOL WINAPI PrintDlgW(LPPRINTDLGW);
+#else
+BOOL WINAPI PrintDlg(LPPRINTDLGW);
+#endif
 HWND WINAPI ReplaceTextA(LPFINDREPLACEA);
 HWND WINAPI ReplaceTextW(LPFINDREPLACEW);
 #if (WINVER >= 0x0500) && !defined (_OBJC_NO_COM)
@@ -571,7 +575,9 @@ typedef PRINTDLGW PRINTDLG,*LPPRINTDLG;
 #define GetOpenFileName GetOpenFileNameW
 #define GetSaveFileName GetSaveFileNameW
 #define PageSetupDlg PageSetupDlgW
+#ifndef _WIN32_WCE
 #define PrintDlg PrintDlgW
+#endif
 #define ReplaceText ReplaceTextW
 #if (WINVER >= 0x0500) && !defined (_OBJC_NO_COM)
 typedef PRINTDLGEXW PRINTDLGEX, *LPPRINTDLGEX;

@@ -1,3 +1,8 @@
+2007-08-01  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* include/commdlg.h (PrintDlg): Remove the W suffix on WinCE.
+	* include/shellapi.h (ShellExecuteEx, ShellGetFileInfo): Likewise.
+
 2007-08-01  Steven Hicks  <crashoverride025@gmail.com>
 
 	* include/winbase.h (DeregisterDevice, RegisterDevice): Declare.
