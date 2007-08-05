@@ -234,3 +234,48 @@
 #ifndef BUFSIZ
 # undef FILE
 #endif
+
+/*
+ * An ARM specific header for function declarations.
+ *
+ * This one is needed for exception handlers : the entry in the pdata section
+ * needs to know the size of the function for which we handle exceptions.
+ */
+#undef ASM_DECLARE_FUNCTION_NAME
+#define ASM_DECLARE_FUNCTION_NAME(STREAM, NAME, DECL)			\
+  do									\
+    {									\
+      char *eh;								\
+      eh = arm_exception_handler(STREAM, NAME, DECL);			\
+      if (eh)								\
+        {								\
+          asm_fprintf (STREAM, "%@ %s has exception handler %s\n",	\
+			       NAME, eh);				\
+          asm_fprintf (STREAM, "\t.section .pdata\n");			\
+          asm_fprintf (STREAM, "\t.word %s\n", NAME);			\
+          asm_fprintf (STREAM, "\t.word 0xc0000002 | "			\
+			"((((.L%s_end - %s) / 4) & 0x3ffffff) << 8) "	\
+			"/* _cegcc_%s size */\n", NAME, NAME, NAME);	\
+          asm_fprintf (STREAM, "\t.text\n");				\
+          asm_fprintf (STREAM, ".L%s_data:\n", NAME);			\
+          asm_fprintf (STREAM, "\t.word %s /* .L%s_handler */\n",	\
+			       eh, NAME);				\
+          asm_fprintf (STREAM, "\t.word 0 /* .L%s_handler_data */\n",	\
+			       NAME);					\
+        }								\
+      ARM_PE_DECLARE_FUNCTION_NAME(STREAM, NAME, DECL);			\
+    }									\
+  while (0)
+
+/*
+ * An ARM specific trailer for function declarations.
+ *
+ * This one is needed for exception handlers : the entry in the pdata section
+ * needs to know the size of the function for which we handle exceptions.
+ */
+#undef  ASM_DECLARE_FUNCTION_SIZE
+#define ASM_DECLARE_FUNCTION_SIZE(STREAM, NAME, DECL)			\
+    {									\
+	if (arm_exception_handler(STREAM, NAME, DECL))			\
+		asm_fprintf (STREAM, ".L%s_end:\n", NAME);		\
+    }

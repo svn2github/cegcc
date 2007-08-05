@@ -117,8 +117,11 @@ do {									\
 /* Write the extra assembler code needed to declare a function
    properly.  If we are generating SDB debugging information, this
    will happen automatically, so we only need to handle other cases.  */
-#undef ASM_DECLARE_FUNCTION_NAME
-#define ASM_DECLARE_FUNCTION_NAME(STREAM, NAME, DECL)			\
+/* Give this another name so more sub-architectures can overrule ARM_DECLARE_FUNCTION_NAME
+ * and still call ARM_PE_DECLARE_FUNCTION_NAME. The alternative is to duplicate the code
+ * below to the sub-architectures, that's a bad idea.
+ * This is currently done in wince-pe.h . */
+#define ARM_PE_DECLARE_FUNCTION_NAME(STREAM, NAME, DECL)			\
   do									\
     {									\
     if (arm_pe_dllexport_name_p (NAME))				\
@@ -131,6 +134,9 @@ do {									\
     ASM_OUTPUT_LABEL (STREAM, NAME);					\
     }									\
     while (0)
+
+#undef ASM_DECLARE_FUNCTION_NAME
+#define ASM_DECLARE_FUNCTION_NAME ARM_PE_DECLARE_FUNCTION_NAME
 
 /* Output function declarations at the end of the file.  */
 #undef TARGET_ASM_FILE_END

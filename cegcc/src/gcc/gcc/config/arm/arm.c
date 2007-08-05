@@ -15553,4 +15553,28 @@ arm_thumb_arch_p (void)
   return (insn_flags & FL_THUMB) == FL_THUMB;
 }
 
+/*
+ * called from ASM_DECLARE_FUNCTION_NAME in gcc/config/arm/wince-pe.h
+ */
+char *
+arm_exception_handler (FILE *fp, char *name, tree decl)
+{
+	tree	attr, a2;
+
+	attr = DECL_ATTRIBUTES (decl);
+	if (! attr)
+		return NULL;
+	a2 = lookup_attribute ("__exception_handler__", attr);
+	if (! a2)
+		return NULL;
+	if (a2)
+	{
+		return IDENTIFIER_POINTER (TREE_VALUE (TREE_VALUE (a2)));
+	}
+
+	warning (0, "exception handler information not found for function %s",
+		 name);
+	return NULL;
+}
+
 #include "gt-arm.h"

@@ -197,3 +197,23 @@
 	* config/arm/t-wince-cegcc: Make it empty, we now inherit the
 	generic t-wince-pe.
 	* ChangeLog.ce: New file.
+
+2007-08-05  Danny Backx  <danny.backx@users.sourceforge.net>
+
+	* c-common.c (handle_exception_handler_attribute) : Add new handler to
+	support the __exception_handler__ attribute.
+	* config/arm/arm.c (arm_exception_handler) : Add function to query the
+	structures built by the compiler for the exception handler for the
+	function that we're currently generating code for.
+	* config/arm/wince-pe.h (ASM_DECLARE_FUNCTION_NAME) : Add macro to
+	generate function header including an exception handler spec and an
+	entry in the .pdata segment, call the one in pe.h to reuse the
+	existing code.
+	* config/arm/wince-pe.h (ASM_DECLARE_FUNCTION_SIZE) : Add macro to
+	generate function trailer (one additional local label) so we can do a
+	size calculation.
+	* config/arm/pe.h  (ASM_DECLARE_FUNCTION_NAME) : Rename to
+	ARM_PE_DECLARE_FUNCTION_NAME so it can be called from
+	ASM_DECLARE_FUNCTION_NAME in config/arm/wince-pe.h . Code reuse
+	instead of code duplication.
+

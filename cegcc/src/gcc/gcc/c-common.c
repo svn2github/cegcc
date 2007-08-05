@@ -505,6 +505,8 @@ static tree handle_noreturn_attribute (tree *, tree, tree, int, bool *);
 static tree handle_noinline_attribute (tree *, tree, tree, int, bool *);
 static tree handle_always_inline_attribute (tree *, tree, tree, int,
 					    bool *);
+static tree handle_exception_handler_attribute (tree *, tree, tree, int,
+					    bool *);
 static tree handle_flatten_attribute (tree *, tree, tree, int, bool *);
 static tree handle_used_attribute (tree *, tree, tree, int, bool *);
 static tree handle_unused_attribute (tree *, tree, tree, int, bool *);
@@ -633,6 +635,8 @@ const struct attribute_spec c_common_attribute_table[] =
 			      handle_cleanup_attribute },
   { "warn_unused_result",     0, 0, false, true, true,
 			      handle_warn_unused_result_attribute },
+  { "exception_handler",      1, 1, true,  false, false,
+			      handle_exception_handler_attribute },
   { "sentinel",               0, 1, false, true, true,
 			      handle_sentinel_attribute },
   { NULL,                     0, 0, false, false, false, NULL }
@@ -4206,6 +4210,59 @@ handle_always_inline_attribute (tree *node, tree name,
     {
       /* Do nothing else, just set the attribute.  We'll get at
 	 it later with lookup_attribute.  */
+    }
+  else
+    {
+      warning (OPT_Wattributes, "%qE attribute ignored", name);
+      *no_add_attrs = true;
+    }
+
+  return NULL_TREE;
+}
+
+/*
+ * Handle a "exception_handler" attribute.
+ *
+ * One argument is required : the name of a function to call in case of exceptions.
+ * Example syntax :
+ *
+ * int main(int argc, char *argv[])
+ *         __attribute__((__exception_handler__(handler)));
+ */
+
+static tree
+handle_exception_handler_attribute (tree *node, tree name,
+				tree args,
+				int ARG_UNUSED (flags),
+				bool *no_add_attrs)
+{
+  if (TREE_CODE (*node) == FUNCTION_DECL)
+    {
+	    /*
+	     * We need to pass the name of the exception handler. The
+	     * right code then gets generated from config/arm/mingw32.h
+	     * or similar, the assembler and linker will do the hard work.
+	     *
+	     * FIX ME We don't support passing data to the exception handler.
+	     *
+	     * This should be possible though, by using an additional argument
+	     * which needs to fit in the dword (e.g. a pointer) and storing that
+	     * in the right field as we do with the exception handler.
+	     */
+
+	    /* Handle mode attribute, handle_section_attribute, .. use args */
+	tree id = TREE_VALUE (args);
+	tree attr = NULL_TREE;
+
+#if 1
+	attr = tree_cons (get_identifier ("exception_handler"), args, attr);
+#else
+	/* Works too */
+	const char *x = IDENTIFIER_POINTER(id);
+
+	attr = tree_cons (get_identifier ("exception_handler"),
+			build_string (strlen (x), x), attr);
+#endif
     }
   else
     {
