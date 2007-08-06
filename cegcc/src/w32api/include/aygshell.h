@@ -62,18 +62,6 @@ extern BOOL SHInvokeContextMenuCommand(HWND,UINT,HANDLE);
 extern BOOL SHHandleWMSettingChange(HWND, WPARAM, LPARAM, SHACTIVATEINFO *);
 extern BOOL SHHandleWMActivate(HWND, WPARAM, LPARAM, SHACTIVATEINFO *, DWORD);
 
-/*
- * Query the SIP state
- */
-typedef	struct SIPINFO {
-	DWORD		cbSize;
-	DWORD		fdwFlags;
-	RECT		rcVisibleDesktop;
-	RECT		rcSipRect;
-	DWORD		dwImDataSize;
-	void		*pvImData;
-} SIPINFO, *PSIPINFO;
-
 #define	SPI_SETCOMPLETIONINFO	223
 #define	SPI_SETSIPINFO		224
 #define	SPI_GETSIPINFO		225

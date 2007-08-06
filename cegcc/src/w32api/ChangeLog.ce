@@ -1,5 +1,10 @@
 2007-08-06  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* include/sipapi.h: New file.
+	* include/aygshell.h (SIPINFO): Moved to new sipapi.h.
+
+2007-08-06  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* include/winbase.h (GetCharABCWidths): Remove the W suffix on
 	WinCE.
 
