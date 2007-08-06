@@ -1,5 +1,10 @@
 2007-08-06  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* include/winbase.h (LocalFlags, LocalHandle, LocalLock, LocalUnlock):
+	Define for WinCE.
+	
+2007-08-06  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* include/winbase.h (LocalLock):
 	Change return type to LPVOID as per MSDN.
 
