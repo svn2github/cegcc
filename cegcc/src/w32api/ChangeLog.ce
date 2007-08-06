@@ -1,3 +1,8 @@
+2007-08-06  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* include/winbase.h (LocalLock):
+	Change return type to LPVOID as per MSDN.
+
 2007-08-01  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* include/commdlg.h (PrintDlg): Remove the W suffix on WinCE.
