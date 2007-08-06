@@ -37,15 +37,33 @@ typedef struct tagSHMENUBARINFO {
 #define	SHCMBF_COLORBK		0x08
 #define	SHCMBF_HMENU		0x10
 
-typedef struct tagSHACTIVATEINFO {
-	DWORD		cbSize;
-	HWND		hwndLastFocus;
-	UINT		fSipUp:1;
-	UINT		fSipOnDeactivation:1;
-	UINT		fActive:1;
-	UINT		fReserved:29;
+#define SHIDIM_FLAGS                0x0001
+
+#define SHIDIF_DONEBUTTON           0x0001
+#define SHIDIF_SIZEDLG              0x0002
+#define SHIDIF_SIZEDLGFULLSCREEN    0x0004
+#define SHIDIF_SIPDOWN              0x0008
+#define SHIDIF_FULLSCREENNOMENUBAR  0x0010
+#define SHIDIF_EMPTYMENU            0x0020
+
+typedef struct tagSHACTIVATEINFO
+{
+	DWORD	cbSize;
+	HWND	hwndLastFocus;
+	UINT	fSipUp:1;
+	UINT	fSipOnDeactivation:1;
+	UINT	fActive:1;
+	UINT	fReserved:29;
 } SHACTIVATEINFO, *PSHACTIVATEINFO;
 
+typedef struct tagSHINITDLGINFO
+{
+	DWORD	dwMask;
+	HWND	hDlg;
+	DWORD	dwFlags;
+} SHINITDLGINFO, *PSHINITDLGINFO;
+
+WINSHELLAPI BOOL WINAPI SHInitDialog(PSHINITDLGINFO);
 WINSHELLAPI BOOL WINAPI SHCreateMenuBar(SHMENUBARINFO *);
 WINSHELLAPI HWND WINAPI SHFindMenuBar(HWND);
 WINSHELLAPI HRESULT WINAPI SHCreateNewItem(HWND,REFCLSID);

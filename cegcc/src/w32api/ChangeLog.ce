@@ -1,5 +1,13 @@
 2007-08-06  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* include/aygshell.h (SHIDIM_FLAGS, SHIDIF_DONEBUTTON,
+	SHIDIF_SIZEDLG, SHIDIF_SIZEDLGFULLSCREEN, SHIDIF_SIPDOWN,
+	SHIDIF_FULLSCREENNOMENUBAR, SHIDIF_EMPTYMENU): New defines.
+	(SHINITDLGINFO): New struct.
+	(SHInitDialog): New function.
+
+2007-08-06  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* include/sipapi.h: New file.
 	* include/aygshell.h (SIPINFO): Moved to new sipapi.h.
 
