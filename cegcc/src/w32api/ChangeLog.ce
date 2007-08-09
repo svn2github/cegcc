@@ -1,3 +1,13 @@
+2007-08-09  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/service.h: New file. Declares functions and a structure as
+	documented on MSDN. Used only on CE > 4.
+	* include/service.h (ServiceEnumInfo): New struct.
+	* include/service.h (RegisterService, ActivateService,
+	DeregisterService, EnumServices, GetServiceHandle, ServiceAddPort,
+	ServiceClosePort, ServiceIoControl, ServiceUnbindPorts): New
+	functions.
+
 2007-08-06  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* include/aygshell.h (SHIDIM_FLAGS, SHIDIF_DONEBUTTON,
