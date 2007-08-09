@@ -27,6 +27,15 @@ typedef struct ServiceEnumInfo {
   DWORD dwServiceState;
 } ServiceEnumInfo;
 
+/* Values for dwServiceState */
+#define SERVICE_STATE_OFF		0
+#define SERVICE_STATE_ON		1
+#define SERVICE_STATE_STARTING_UP	2
+#define SERVICE_STATE_SHUTTING_DOWN	3
+#define SERVICE_STATE_UNLOADING		4
+#define SERVICE_STATE_UNINITIALIZED	5
+#define SERVICE_STATE_UNKNOWN		0xffffffff
+
 HANDLE RegisterService (LPCWSTR lpszType, DWORD dwIndex, LPCWSTR lpszLib,
 			DWORD dwInfo);
 HANDLE ActivateService (LPCWSTR lpszDevKey, DWORD dwClientInfo);
@@ -41,6 +50,7 @@ BOOL ServiceIoControl (HANDLE hService, DWORD dwIoControlCode, LPVOID lpInBuf,
 		       DWORD nInBufSize, LPVOID lpOutBuf, DWORD nOutBufSize,
 		       LPDWORD lpBytesReturned, LPOVERLAPPED lpOverlapped);
 BOOL ServiceUnbindPorts (HANDLE hService);
+
 #endif	/* _WIN32_WCE */
 
 #ifdef __cplusplus

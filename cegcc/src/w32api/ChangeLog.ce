@@ -1,5 +1,12 @@
 2007-08-09  Danny Backx  <dannybackx@users.sourceforge.net>
 
+	* include/service.h (SERVICE_STATE_OFF, SERVICE_STATE_ON,
+	SERVICE_STATE_STARTING_UP, SERVICE_STATE_SHUTTING_DOWN,
+	SERVICE_STATE_UNLOADING, SERVICE_STATE_UNINITIALIZED,
+	SERVICE_STATE_UNKNOWN): Define values for dwServiceState field.
+
+2007-08-09  Danny Backx  <dannybackx@users.sourceforge.net>
+
 	* include/service.h: New file. Declares functions and a structure as
 	documented on MSDN. Used only on CE > 4.
 	* include/service.h (ServiceEnumInfo): New struct.
