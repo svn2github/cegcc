@@ -1,3 +1,9 @@
+2007-09-02  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* PipeLib.cpp (Read): Switch to IsBadWritePtr.  Only set last
+	error to ERROR_BROKEN_PIPE if returning.
+	(Write): Switch to IsBadReadPtr.
+
 2007-07-02  Danny Backx  <dannybackx@users.sourceforge.net>
 	    Pedro Alves  <pedro_alves@portugalmail.pt>
 

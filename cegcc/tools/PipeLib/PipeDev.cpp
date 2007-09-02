@@ -673,7 +673,7 @@ Read (PipeOpenContext* pOpenContext, BYTE* pBuffer, DWORD dwCount)
 {
   LOGSCOPE ("\n");
 
-  if (IsBadReadPtr (pBuffer, dwCount))
+  if (IsBadWritePtr (pBuffer, dwCount))
     {
       SetLastError (ERROR_INVALID_PARAMETER);
       LOG ("\n");
@@ -719,7 +719,6 @@ Read (PipeOpenContext* pOpenContext, BYTE* pBuffer, DWORD dwCount)
 	    || dev->OpenCount == 0   /* or, ... weird */
 	    )
 	  {
-	    SetLastError (ERROR_BROKEN_PIPE);
 	    if (needed - dwCount)
 	      {
 		/* I don't know a way to report error and 'valid
@@ -729,6 +728,7 @@ Read (PipeOpenContext* pOpenContext, BYTE* pBuffer, DWORD dwCount)
 		break;
 	      }
 	    LOG ("Pipe broken\n");
+	    SetLastError (ERROR_BROKEN_PIPE);
 	    return (DWORD) -1;
 	  }
 
@@ -772,7 +772,7 @@ Write (PipeOpenContext* pOpenContext, const BYTE* pBuffer, DWORD dwCount)
 {
   LOGSCOPE ("\n");
 
-  if (IsBadWritePtr ((void*) pBuffer, dwCount))
+  if (IsBadReadPtr (pBuffer, dwCount))
     {
       SetLastError (ERROR_INVALID_PARAMETER);
       LOG ("\n");
