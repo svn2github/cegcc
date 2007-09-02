@@ -1,0 +1,16 @@
+		   README for rcp for Windows CE
+
+This directory contains rcp for Windows CE.
+
+To build make sure you have the mingw32ce toolchain on your path, and
+type make.
+
+Have fun!
+
+Pedro Alves
+
+--
+
+REPORTING BUGS:
+cegcc-devel@sourceforge.net
+pedro_alves@portugalmail.pt

@@ -1,0 +1,14 @@
+2007-09-03  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	Initial import.
+	
+	* README, ChangeLog, Makefile, rcp.c, config.h, extern.h, util.c:
+	New files.
+
+
+Local Variables:
+mode: change-log
+left-margin: 8
+fill-column: 74
+version-control: never
+End:
