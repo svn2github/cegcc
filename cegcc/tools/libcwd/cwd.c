@@ -169,9 +169,9 @@ XCEGetCurrentDirectoryA (DWORD dwSize, char *buf)
   DWORD dwLen;
   wchar_t wbuf[MAX_PATH+1];
 
-  dwLen = XCEGetCurrentDirectoryW (dwSize, wbuf);
   if (dwSize == 0 && buf == 0)
     return dwSize;
+  dwLen = XCEGetCurrentDirectoryW (dwSize, wbuf);
   WideCharToMultiByte (CP_ACP, 0, wbuf, -1,
 		       buf, MIN(dwLen, dwSize), NULL, NULL);
   buf[MIN(dwLen, dwSize)] = 0;
@@ -317,4 +317,47 @@ char *
 getcwd (char *buf, int size)
 {
   return _getcwd (buf, size);
+}
+
+char*
+libcwd_fixpath (char* out, const char *in)
+{
+  wchar_t wout[MAX_PATH];
+  wchar_t win[MAX_PATH];
+
+  mbstowcs (win, in, MAX_PATH);
+//  XCEFixPathW (win, wout);
+  const wchar_t *wpathin = win;
+  wchar_t *wpathout = wout;
+  {
+    wchar_t wdir[MAX_PATH+1];
+    wchar_t *p;
+
+    wpathout[0] = 0;
+
+    if(wpathin[0] != '\\' && wpathin[0] != '/')
+      {
+	XCEGetCurrentDirectoryW (sizeof(wdir), wdir);
+	wcscat (wpathout, wdir);
+	append_slash_if_needed (wpathout);
+      }
+
+    wcscat (wpathout, wpathin);
+
+    for(p = wpathout; *p; p++)
+      {
+	if(*p == '/')
+	  *p = '\\';
+      }
+
+    /* Don't allow slash at end of directory name... */
+    if(p[-1] == '\\' && p != wpathout + 1)
+      p[-1] = 0;
+
+    /* Now remove . and ..  */
+    XCECanonicalizePathW (wpathout);
+  }
+
+  wcstombs (out, wout, MAX_PATH);
+  return out;
 }

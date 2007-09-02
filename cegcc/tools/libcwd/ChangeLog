@@ -1,3 +1,10 @@
+2007-09-02  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* cwd.h (libcwd_fixpath): Declare.
+	* cwd.c (XCEGetCurrentDirectoryA): Delay XCEGetCurrentDirectoryW
+	call to after checking for valid buffer.
+	(libcwd_fixpath): New.
+
 2007-06-25  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	Initial import.

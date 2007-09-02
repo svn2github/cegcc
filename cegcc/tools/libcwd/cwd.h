@@ -12,6 +12,8 @@ extern char *_getcwd (char *buf, int size);
 extern int chdir (const char *path);
 extern int _chdir (const char *path);
 
+extern char* libcwd_fixpath (char* out, const char *in);
+
 #ifdef __cplusplus
 }
 #endif
