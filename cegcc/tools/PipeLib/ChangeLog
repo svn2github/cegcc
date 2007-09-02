@@ -1,5 +1,5 @@
-2007-07-02  Pedro Alves  <pedro_alves@portugalmail.pt>
-	    Danny Backx  <dannybackx@users.sourceforge.net>
+2007-07-02  Danny Backx  <dannybackx@users.sourceforge.net>
+	    Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* PipeLib.cpp (CreatePipe): Handle unexpected ActivateDevice
 	failures.  Record last error as ERROR_TOO_MANY_OPEN_FILES when
