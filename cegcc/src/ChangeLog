@@ -1,3 +1,7 @@
+2007-09-03  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* cegcc/importlibs/build.sh: Generate proxy for the toolhelp library.
+
 2007-06-13  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* mingw-fake_crt: Remove.

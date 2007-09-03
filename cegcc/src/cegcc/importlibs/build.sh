@@ -15,5 +15,6 @@ outputdir=$2
 ./mkimport.sh $defdir/winsock.def $outputdir || exit
 ./mkimport.sh $defdir/ws2.def $outputdir || exit
 ./mkimport.sh $defdir/mmtimer.def $outputdir || exit
+./mkimport.sh $defdir/toolhelp.def $outputdir || exit
 #./winsock.sh $defdir $outputdir || exit
 #./ws2.sh $defdir $outputdir 
