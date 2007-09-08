@@ -1,3 +1,11 @@
+2007-09-08  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* rshd.c (create_child): On pipe creation failure, close the pipes
+	that had already been created.
+	(handle_connection): If closing because the child died, close the
+	stdout/stdin and stderr sockets if stdout or stderr pipes have
+	respectivelly already closed.
+
 2007-07-02  Pedro Alves  <pedro_alves@portugalmail.pt>
 	    Danny Backx  <dannybackx@users.sourceforge.net>
 

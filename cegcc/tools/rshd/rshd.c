@@ -538,8 +538,10 @@ create_child (char *program,
   for (i = 0; i < 3; i++)
     {
       wchar_t devname[MAX_PATH];
+      child->readh[i] = child->writeh[i] = INVALID_HANDLE_VALUE;
       if (!CreatePipe (&child->readh[i], &child->writeh[i], NULL, 0))
 	{
+	  size_t j;
 	  char buf[1024];
 	  DWORD err = GetLastError ();
 	  if (err == ERROR_FILE_NOT_FOUND)
@@ -556,6 +558,15 @@ create_child (char *program,
 	      logprintf ("%s", buf);
 	    }
 	  send (child->sockfd, buf, strlen (buf), 0);
+
+	  /* Close the previously succeeded pipes.  */
+	  for (j = 0; j < i; j++)
+	    {
+	      wchar_t devname[MAX_PATH];
+	      SafeCloseHandle (&child->readh[j]);
+	      SafeCloseHandle (&child->writeh[j]);
+	    }
+
 	  return NULL;
 	}
 
@@ -578,7 +589,7 @@ create_child (char *program,
 			NULL,     /* environment, not supported */
 			NULL,     /* current directory, not supported */
 			NULL,     /* start info, not supported */
-			pi);     /* proc info */
+			pi);      /* proc info */
 
   /* Restore the paths.  */
   for (i = 0; i < 3; i++)
@@ -706,6 +717,7 @@ handle_connection (void *arg)
 
   HANDLE thread[3];
   HANDLE waith[4];
+  HANDLE allh[4];
   HANDLE hndproc;
   DWORD stopped;
   size_t i;
@@ -866,6 +878,9 @@ handle_connection (void *arg)
     waith[i] = thread[i];
   waith[i] = hndproc;
 
+  for (i = 0; i < COUNTOF (waith); i++)
+    allh[i] = waith[i];
+
   ResumeThread (pi.hThread);
   CloseHandle (pi.hThread);
   pi.hThread = NULL;
@@ -886,6 +901,7 @@ handle_connection (void *arg)
 	  HANDLE h = waith[j];
 	  DWORD ec = 0;
 	  BOOL abrupt;
+	  const char *name = "<?>";
 
 	  stopped++;
 
@@ -897,9 +913,36 @@ handle_connection (void *arg)
 		    && !client_data->stop
 		    && (GetExitCodeThread (h, &ec) && ec == 1));
 
-	  logprintf ("j = %ld, abrupt = %d, stopped = %ld, i = %d\n",
-		     j, abrupt, stopped, i);
+	  {
+	    int m;
+	    const struct
+	    {
+	      HANDLE h;
+	      const char *name;
+	      HANDLE *m;
+	    } hi[] =
+	      {
+		{ thread[0], "stdin", &allh[0] },
+		{ thread[1], "stdout", &allh[1] },
+		{ thread[2], "stderr", &allh[2] },
+		{ hndproc, "child", &allh[3] },
+	      };
 
+	    for (m = 0; m < COUNTOF (hi); m++)
+	      {
+		if (hi[m].h == h)
+		  {
+		    name = hi[m].name;
+		    /* record the fact that the object corresponding
+		       to h is now closed.  */
+		    *hi[m].m = INVALID_HANDLE_VALUE;
+		    break;
+		  }
+	      }
+	  }
+
+	  logprintf ("j = %ld, abrupt = %d, stopped = %ld, i = %d, \"%s\"\n",
+		     j, abrupt, stopped, i, name);
 
 	  if (abrupt)
 	    {
@@ -927,7 +970,7 @@ handle_connection (void *arg)
 
 	  if (client_data->stop)
 	    {
-	      if (h == thread[1])
+	      if (allh[1] == INVALID_HANDLE_VALUE)
 		{
 		  /* The child is gone, and so is the stdout thread.
 		     All the data is now flushed to the host.  Close
@@ -941,7 +984,8 @@ handle_connection (void *arg)
 		      client_data->sockfd = -1;
 		    }
 		}
-	      else if (h == thread[2])
+
+	      if (allh[2] == INVALID_HANDLE_VALUE)
 		{
 		  /* Not sure how the host rsh handles *only* stderr
 		     closing. */
@@ -965,7 +1009,7 @@ handle_connection (void *arg)
       else
 	{
 	  logprintf ("WaitForMultipleObjects' default reached with %d : %u\n",
-		     w, (unsigned)GetLastError ());
+		     w, (unsigned) GetLastError ());
 	  goto break_wait_loop;
 	}
     }
