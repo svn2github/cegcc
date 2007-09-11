@@ -1,29 +1,55 @@
-2007-06-02  Danny Backx  <dannybackx@users.sourceforge.net>
-	* toplev.h opts.c coverage.c common.opt libgcov.c : Add support for
-	-fcoverage-base option. This supports --coverage in a
-	cross-development environment where it is not always easy to use run
-	time environment variables. This option works at compile time. This
-	has been submitted to gcc-patches.
-	* doc/gcov.texi : Add documentation for -fcoverage-base.
+2007-08-05  Danny Backx  <danny.backx@users.sourceforge.net>
 
+	* c-common.c (handle_exception_handler_attribute): Add new handler
+	to support the __exception_handler__ attribute.
+
+	* config/arm/arm.c (arm_exception_handler): Add function to query
+	the structures built by the compiler for the exception handler for
+	the function that we're currently generating code for.
+
+	* config/arm/wince-pe.h (ASM_DECLARE_FUNCTION_NAME): Add macro to
+	generate function header including an exception handler spec and
+	an entry in the .pdata segment, call the one in pe.h to reuse the
+	existing code.
+
+	* config/arm/wince-pe.h (ASM_DECLARE_FUNCTION_SIZE): Add macro to
+	generate function trailer (one additional local label) so we can
+	do a size calculation.
+	
+	* config/arm/pe.h (ASM_DECLARE_FUNCTION_NAME): Rename to
+	ARM_PE_DECLARE_FUNCTION_NAME so it can be called from
+	ASM_DECLARE_FUNCTION_NAME in config/arm/wince-pe.h.
+
+2007-06-02  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* toplev.h, opts.c, coverage.c, common.opt, libgcov.c: Add support
+	for -fcoverage-base option. This supports --coverage in a
+	cross-development environment where it is not always easy to use
+	run time environment variables. This option works at compile
+	time. This has been submitted to gcc-patches.
+	* doc/gcov.texi: Add documentation for -fcoverage-base.
 
 2006-12-21  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* config/arm/t-strongarm-pe config/arm/t-strongarm-elf config/arm/t-pe
-	config/arm/t-arm-elf config/arm/t-xscale-elf config/arm/t-xscale-coff
-	config/arm/t-arm-coff config/arm/t-wince-pe : Remove inhibit_libc .
+	* config/arm/t-strongarm-pe, config/arm/t-strongarm-elf,
+	config/arm/t-pe config/arm/t-arm-elf, config/arm/t-xscale-elf,
+	config/arm/t-xscale-coff config/arm/t-arm-coff,
+	config/arm/t-wince-pe: Remove inhibit_libc.
 
-	* coverage.c (build_gcov_info) : Add more support for dealing with
-	directory names in cross-debugging environment. Main difference
-	is that this is specified on the host, not the target platform.
+	* coverage.c (build_gcov_info): Add more support for dealing with
+	directory names in cross-debugging environment. Main difference is
+	that this is specified on the host, not the target platform.
 
-	* doc/gcov.texi : Add documentation for GCOV_CROSS_PREFIX.
+	* doc/gcov.texi: Add documentation for GCOV_CROSS_PREFIX.
 
-	* tsystem.h : Don't include <errno.h> when __MINGW32CE__ is defined.
+	* tsystem.h: Don't include <errno.h> when __MINGW32CE__ is
+	defined.
 
-	* gcov-io.c (gcov_open) : Call setvbuf instead of setbuf in mingw32ce.
+	* gcov-io.c (gcov_open): Call setvbuf instead of setbuf in
+	mingw32ce.
 
-	* libgcov.c (gcov_exit) : Don't call getenv and setenv in mingw32ce.
+	* libgcov.c (gcov_exit): Don't call getenv and setenv in
+	mingw32ce.
 
 2006-12-03  Pedro Alves  <pedro_alves@portugalmail.pt>
 
@@ -50,13 +76,14 @@
 
 2006-11-04  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* config/arm/pe.h (PROFILE_HOOK): Remove, it looks like we don't need
-	it to get profiling to work.
+	* config/arm/pe.h (PROFILE_HOOK): Remove, it looks like we don't
+	need it to get profiling to work.
 
 2006-10-30  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* target-def.h (TARGET_ATTRIBUTE_TABLE): Only define if not
 	defined before.
+	
 	* config/arm/arm.c (arm_file_end): Give it external linkage.
 	(arm_handle_struct_attribute): New.
 	(arm_ms_bitfield_layout_p): New.
@@ -170,50 +197,30 @@
 
 2006-10-17  Pedro Alves  <pedro_alves@portugalmail.pt>
 
-	* config/arm/wince-cegcc.h (STARTFILE_SPEC) : Add gcrt3.o instead
+	* config/arm/wince-cegcc.h (STARTFILE_SPEC): Add gcrt3.o instead
 	of gcrt2.o.
 	* config/arm/mingw32.h: Likewise.
 
 2006-10-16  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* config/arm/wince-cegcc.h (LIB_SPEC) : Link -lgmon when called
+	* config/arm/wince-cegcc.h (LIB_SPEC): Link -lgmon when called
 	with -pg.
 	(STARTFILE_SPEC): Add gcrt2.o when called with -pg.
 
 2006-10-12  Danny Backx <dannybackx@users.sourceforge.net>
 
-	* config/arm/wince-cegcc.h (mno-cegcc): Remove option. 
-	Use the arm-wince-mingw32ce target instead.
+	* config/arm/wince-cegcc.h (mno-cegcc): Remove option.  Use the
+	arm-wince-mingw32ce target instead.
 
 2006-10-10  Pedro Alves  <pedro_alves@portugalmail.pt>
 
-	* config/arm/cegcc.c: Delete. We use the originals instead.
-	This code is generic PE code, and will hopefully get
-	pushed down to a more general place in GCC 4.3 stage1.
+	* config/arm/cegcc.c: Delete. We use the originals instead.  This
+	code is generic PE code, and will hopefully get pushed down to a
+	more general place in GCC 4.3 stage1.
 	* cegcc-cxx.c: Likewise.
 	* cegcc-stubs.c: Likewise.
-	* config.gcc: Use the originals instead of the new copies for the 
+	* config.gcc: Use the originals instead of the new copies for the
 	arm*-wince-cegcc case.
 	* config/arm/t-wince-cegcc: Make it empty, we now inherit the
 	generic t-wince-pe.
 	* ChangeLog.ce: New file.
-
-2007-08-05  Danny Backx  <danny.backx@users.sourceforge.net>
-
-	* c-common.c (handle_exception_handler_attribute) : Add new handler to
-	support the __exception_handler__ attribute.
-	* config/arm/arm.c (arm_exception_handler) : Add function to query the
-	structures built by the compiler for the exception handler for the
-	function that we're currently generating code for.
-	* config/arm/wince-pe.h (ASM_DECLARE_FUNCTION_NAME) : Add macro to
-	generate function header including an exception handler spec and an
-	entry in the .pdata segment, call the one in pe.h to reuse the
-	existing code.
-	* config/arm/wince-pe.h (ASM_DECLARE_FUNCTION_SIZE) : Add macro to
-	generate function trailer (one additional local label) so we can do a
-	size calculation.
-	* config/arm/pe.h  (ASM_DECLARE_FUNCTION_NAME) : Rename to
-	ARM_PE_DECLARE_FUNCTION_NAME so it can be called from
-	ASM_DECLARE_FUNCTION_NAME in config/arm/wince-pe.h . Code reuse
-	instead of code duplication.
-
