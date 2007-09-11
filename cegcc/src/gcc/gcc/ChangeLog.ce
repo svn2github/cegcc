@@ -1,3 +1,8 @@
+2007-09-11  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config/arm/wince-pe.h (ARM_DOUBLEWORD_ALIGN, BIGGEST_ALIGNMENT):
+	Define.
+
 2007-08-05  Danny Backx  <danny.backx@users.sourceforge.net>
 
 	* c-common.c (handle_exception_handler_attribute): Add new handler
