@@ -19,7 +19,7 @@
 extern "C" {
 #endif
 
-#if defined(_WIN32_WCE) && (_WIN32_WCE >= 0x0400)
+#if defined(_WIN32_WCE) && (_WIN32_WCE >= 400)
 typedef struct ServiceEnumInfo {
   WCHAR szPrefix[6];
   WCHAR szDllName;
@@ -43,7 +43,7 @@ BOOL DeregisterService (HANDLE hDevice);
 BOOL EnumServices (PBYTE pBuffer, DWORD *pdwServiceEntries, DWORD *pdwBufferLen);
 HANDLE GetServiceHandle (LPWSTR szPrefix, LPWSTR szDllName, DWORD *pdwDllBuf);
 BOOL ServiceAddPort (HANDLE hService, SOCKADDR *pSockAddr, INT cbSockAddr,
-		     INT iProtocol, WCHAR szRegWritePath);
+		     INT iProtocol, WCHAR *szRegWritePath);
 BOOL ServiceClosePort (HANDLE hService, SOCKADDR *pSockAddr, int cbSockAddr, 
 		       int iProtocol, BOOL fRemoveFromRegistry);
 BOOL ServiceIoControl (HANDLE hService, DWORD dwIoControlCode, LPVOID lpInBuf,

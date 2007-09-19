@@ -1,3 +1,9 @@
+2007-09-19  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/service.h (ServiceAddPort): Fix type of szRegWritePath
+	parameter, MSDN is wrong.
+	* include/service.h: Use 400, not 0x0400 to conditionally compile.
+
 2007-08-09  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/service.h (SERVICE_STATE_OFF, SERVICE_STATE_ON,
