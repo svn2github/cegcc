@@ -1,3 +1,18 @@
+2007-10-16  Erik van Pienbroek  <erik@vanpienbroek.nl>
+
+	* include/commdlg.h (ChooseColor): New declaration, and hide
+	macro.
+	(ChooseColorA, ChooseColorW): Hide.
+	* include/shellapi.h (SHLoadBIBitmap): Declare.
+	* include/winbase.h (_SYSTEM_POWER_STATUS, _SYSTEM_POWER_STATUS)
+	(LPSYSTEM_POWER_STATUS, GetSystemPowerStatus): Hide.
+	* include/winuser.h (EnumDisplaySettings, EnumDisplayDevices): New
+	declarations, and hide macros.
+	(EnumDisplaySettingsA, EnumDisplaySettingsW)
+	(EnumDisplaySettingsExA, EnumDisplaySettingsExW)
+	(EnumDisplayDevicesA, EnumDisplayDevicesW): Hide.
+	(TrackPopupMenu): Define in terms of TrackPopupMenuEx.
+
 2007-09-19  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/service.h (ServiceAddPort): Fix type of szRegWritePath

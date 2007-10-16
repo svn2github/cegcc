@@ -525,8 +525,12 @@ typedef struct tagPDEXW {
 } PRINTDLGEXW, *LPPRINTDLGEXW;
 #endif /* WINVER >= 0x0500 */
 
+#ifdef _WIN32_WCE
+BOOL WINAPI ChooseColor(LPCHOOSECOLORW);
+#else
 BOOL WINAPI ChooseColorA(LPCHOOSECOLORA);
 BOOL WINAPI ChooseColorW(LPCHOOSECOLORW);
+#endif
 BOOL WINAPI ChooseFontA(LPCHOOSEFONTA);
 BOOL WINAPI ChooseFontW(LPCHOOSEFONTW);
 DWORD WINAPI CommDlgExtendedError(void);
@@ -568,7 +572,9 @@ typedef OPENFILENAMEW OPENFILENAME,*LPOPENFILENAME;
 typedef OFNOTIFYW OFNOTIFY,*LPOFNOTIFY;
 typedef PAGESETUPDLGW PAGESETUPDLG,*LPPAGESETUPDLG;
 typedef PRINTDLGW PRINTDLG,*LPPRINTDLG;
+#ifndef _WIN32_WCE
 #define ChooseColor ChooseColorW
+#endif
 #define ChooseFont ChooseFontW
 #define FindText FindTextW
 #define GetFileTitle GetFileTitleW
@@ -598,7 +604,9 @@ typedef OPENFILENAMEA OPENFILENAME,*LPOPENFILENAME;
 typedef OFNOTIFYA OFNOTIFY,*LPOFNOTIFY;
 typedef PAGESETUPDLGA PAGESETUPDLG,*LPPAGESETUPDLG;
 typedef PRINTDLGA PRINTDLG,*LPPRINTDLG;
+#ifndef _WIN32_WCE
 #define ChooseColor ChooseColorA
+#endif
 #define ChooseFont ChooseFontA
 #define FindText FindTextA
 #define GetFileTitle GetFileTitleA
