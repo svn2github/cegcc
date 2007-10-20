@@ -1,3 +1,13 @@
+2007-10-20  Jacek M. Holeczek <holeczek@us.edu.pl>
+	* include/winuser.h (ChangeDisplaySettings): Define differently for CE
+	than for other Windows versions.
+	* include/shellapi.h (ShellExecuteEx, ShellExecute): Define only those
+	functions that exist in the CE API.
+	* include/wingdi.h (struct _devicemodeW, DEVMODEW, LPDEVMODEW,
+	PDEVMODEW): Define this structure, the typedefs, and the constants
+	it requires differently for Windows CE than for other Windows
+	platforms.
+
 2007-10-20  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/winuser.h (IsDlgButtonChecked) : Change to a macro for

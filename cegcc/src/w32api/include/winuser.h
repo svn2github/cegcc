@@ -3391,11 +3391,15 @@ WINUSERAPI LRESULT WINAPI CallWindowProcW(WNDPROC,HWND,UINT,WPARAM,LPARAM);
 WINUSERAPI WORD WINAPI CascadeWindows(HWND,UINT,LPCRECT,UINT,const HWND*);
 WINUSERAPI BOOL WINAPI ChangeClipboardChain(HWND,HWND);
 #ifndef NOGDI
+#ifndef _WIN32_WCE
 WINUSERAPI LONG WINAPI ChangeDisplaySettingsA(PDEVMODEA,DWORD);
 WINUSERAPI LONG WINAPI ChangeDisplaySettingsW(PDEVMODEW,DWORD);
 WINUSERAPI LONG WINAPI ChangeDisplaySettingsExA(LPCSTR,LPDEVMODEA,HWND,DWORD,LPVOID);
 WINUSERAPI LONG WINAPI ChangeDisplaySettingsExW(LPCWSTR,LPDEVMODEW,HWND,DWORD,LPVOID);
-#endif
+#else /* _WIN32_WCE */
+WINUSERAPI LONG WINAPI ChangeDisplaySettingsEx(LPCWSTR,LPDEVMODEW,HWND,DWORD,LPVOID);
+#endif /* _WIN32_WCE */
+#endif /* NOGDI */
 WINUSERAPI BOOL WINAPI ChangeMenuA(HMENU,UINT,LPCSTR,UINT,UINT);
 WINUSERAPI BOOL WINAPI ChangeMenuW(HMENU,UINT,LPCWSTR,UINT,UINT);
 WINUSERAPI LPSTR WINAPI CharLowerA(LPSTR);
@@ -4254,14 +4258,14 @@ typedef MONITORINFOEXW MONITORINFOEX, *LPMONITORINFOEX;
 #ifndef NOGDI
 typedef ICONMETRICSW ICONMETRICS,*LPICONMETRICS;
 typedef NONCLIENTMETRICSW NONCLIENTMETRICS,*LPNONCLIENTMETRICS;
-#define ChangeDisplaySettings ChangeDisplaySettingsW
-#define ChangeDisplaySettingsEx ChangeDisplaySettingsExW
 #define CreateDesktop CreateDesktopW
 #ifndef _WIN32_WCE
+#define ChangeDisplaySettings ChangeDisplaySettingsW
+#define ChangeDisplaySettingsEx ChangeDisplaySettingsExW
 #define EnumDisplaySettings EnumDisplaySettingsW
 #define EnumDisplaySettingsEx EnumDisplaySettingsExW
 #define EnumDisplayDevices EnumDisplayDevicesW
-#endif
+#endif /* _WIN32_WCE */
 #endif /* NOGDI */
 #else /* UNICODE */
 #define EDITWORDBREAKPROC EDITWORDBREAKPROCA

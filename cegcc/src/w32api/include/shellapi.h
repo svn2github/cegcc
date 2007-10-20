@@ -297,14 +297,14 @@ BOOL WINAPI Shell_NotifyIconA(DWORD,PNOTIFYICONDATAA);
 BOOL WINAPI Shell_NotifyIconW(DWORD,PNOTIFYICONDATAW);
 int WINAPI ShellAboutA(HWND,LPCSTR,LPCSTR,HICON);
 int WINAPI ShellAboutW(HWND,LPCWSTR,LPCWSTR,HICON);
+#ifndef _WIN32_WCE
 HINSTANCE WINAPI ShellExecuteA(HWND,LPCSTR,LPCSTR,LPCSTR,LPCSTR,INT);
 HINSTANCE WINAPI ShellExecuteW(HWND,LPCWSTR,LPCWSTR,LPCWSTR,LPCWSTR,INT);
 BOOL WINAPI ShellExecuteExA(LPSHELLEXECUTEINFOA);
-#ifndef _WIN32_WCE
 BOOL WINAPI ShellExecuteExW(LPSHELLEXECUTEINFOW);
-#else
+#else /* _WIN32_WCE */
 BOOL WINAPI ShellExecuteEx(LPSHELLEXECUTEINFOW);
-#endif
+#endif /* _WIN32_WCE */
 int WINAPI SHFileOperationA(LPSHFILEOPSTRUCTA);
 int WINAPI SHFileOperationW(LPSHFILEOPSTRUCTW);
 void WINAPI SHFreeNameMappings(HANDLE);
@@ -341,10 +341,10 @@ typedef SHFILEINFOW SHFILEINFO;
 #define FindExecutable FindExecutableW
 #define Shell_NotifyIcon Shell_NotifyIconW
 #define ShellAbout ShellAboutW
-#define ShellExecute ShellExecuteW
 #ifndef _WIN32_WCE
+#define ShellExecute ShellExecuteW
 #define ShellExecuteEx ShellExecuteExW
-#endif
+#endif /* _WIN32_WCE */
 #define SHFileOperation SHFileOperationW
 #ifndef _WIN32_WCE
 #define SHGetFileInfo SHGetFileInfoW

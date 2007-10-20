@@ -1182,10 +1182,20 @@ extern "C" {
 #define DM_PELSHEIGHT 0x00100000
 #define DM_DISPLAYFLAGS 0x00200000
 #define DM_DISPLAYFREQUENCY 0x00400000
+#ifndef _WIN32_WCE
 #define DM_ICMMETHOD 0x00800000
 #define DM_ICMINTENT 0x01000000
 #define DM_MEDIATYPE 0x02000000
 #define DM_DITHERTYPE 0x04000000
+#else /* _WIN32_WCE */
+#define DM_DISPLAYORIENTATION 0x00800000
+#define DM_DISPLAYQUERYORIENTATION 0x01000000
+#define DMDO_0 0
+#define DMDO_DEFAULT DMDO_0
+#define DMDO_90 1
+#define DMDO_180 2
+#define DMDO_270 4
+#endif /* _WIN32_WCE */
 #if(WINVER >= 0x0500)
 #define DM_PANNINGWIDTH 0x08000000
 #define DM_PANNINGHEIGHT 0x10000000
@@ -1523,6 +1533,7 @@ typedef struct _devicemodeA {
 #endif
 #endif /* WINVER >= 0x0400 */
 } DEVMODEA,*LPDEVMODEA,*PDEVMODEA;
+#ifndef _WIN32_WCE
 typedef struct _devicemodeW { 
   WCHAR   dmDeviceName[CCHDEVICENAME]; 
   WORD   dmSpecVersion; 
@@ -1574,6 +1585,37 @@ typedef struct _devicemodeW {
 #endif
 #endif /* WINVER >= 0x0400 */
 } DEVMODEW,*LPDEVMODEW,*PDEVMODEW;
+#else /* _WIN32_WCE */
+typedef struct _devicemodeW { 
+  WCHAR  dmDeviceName[CCHDEVICENAME]; 
+  WORD   dmSpecVersion; 
+  WORD   dmDriverVersion; 
+  WORD   dmSize; 
+  WORD   dmDriverExtra; 
+  DWORD  dmFields; 
+  short  dmOrientation;
+  short  dmPaperSize;
+  short  dmPaperLength;
+  short  dmPaperWidth;
+  short  dmScale; 
+  short  dmCopies; 
+  short  dmDefaultSource; 
+  short  dmPrintQuality; 
+  short  dmColor; 
+  short  dmDuplex; 
+  short  dmYResolution; 
+  short  dmTTOption; 
+  short  dmCollate; 
+  WCHAR  dmFormName[CCHFORMNAME]; 
+  WORD   dmLogPixels; 
+  DWORD  dmBitsPerPel; 
+  DWORD  dmPelsWidth; 
+  DWORD  dmPelsHeight; 
+  DWORD  dmDisplayFlags; 
+  DWORD  dmDisplayFrequency; 
+  DWORD  dmDisplayOrientation;
+} DEVMODEW,*PDEVMODEW,*NPDEVMODEW,*LPDEVMODEW;
+#endif /* _WIN32_WCE */
 typedef struct tagDIBSECTION {
 	BITMAP dsBm;
 	BITMAPINFOHEADER dsBmih;
