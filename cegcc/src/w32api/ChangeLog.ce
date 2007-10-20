@@ -1,3 +1,8 @@
+2007-10-20  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/winuser.h (IsDlgButtonChecked) : Change to a macro for
+	Windows CE.
+
 2007-10-16  Erik van Pienbroek  <erik@vanpienbroek.nl>
 
 	* include/commdlg.h (ChooseColor): New declaration, and hide
