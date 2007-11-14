@@ -1,3 +1,12 @@
+2007-11-14  Matthew Kille  <matt@amiga.com>
+
+	* include/winbase.h (THREAD_PRIORITY_TIME_CRITICAL)
+	(THREAD_PRIORITY_HIGHEST, THREAD_PRIORITY_ABOVE_NORMAL)
+	(THREAD_PRIORITY_NORMAL, THREAD_PRIORITY_BELOW_NORMAL)
+	(THREAD_PRIORITY_LOWEST, THREAD_PRIORITY_IDLE): Correct values for
+	Windows CE.
+	(THREAD_PRIORITY_ABOVE_IDLE): Define.
+
 2007-10-20  Jacek M. Holeczek <holeczek@us.edu.pl>
 	* include/winuser.h (ChangeDisplaySettings): Define differently for CE
 	than for other Windows versions.
