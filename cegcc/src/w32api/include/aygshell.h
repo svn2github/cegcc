@@ -216,6 +216,18 @@ typedef struct tagSHRGI {
 WINSHELLAPI DWORD SHRecognizeGesture(SHRGINFO *shrg);
 #endif
 
+#if (_WIN32_WCE >= 0x0300)
+/*
+ * http://www.docjar.com/html/api/org/eclipse/swt/internal/win32/OS.java.html
+ */
+#define	SHCMBM_GETSUBMENU	0x0591
+#endif /* _WIN32_WCE */
+
+#if (_WIN32_WCE >= 0x0400)
+HBITMAP SHLoadImageFile(LPCTSTR pszFileName);
+HBITMAP SHLoadImageResource(HINSTANCE hinst, UINT uIdImageFile);
+#endif	/*  _WIN32_WCE >= 0x0300 */
+
 #ifdef	__cplusplus
 }
 #endif

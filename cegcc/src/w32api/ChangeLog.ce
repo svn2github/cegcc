@@ -1,3 +1,13 @@
+2007-11-15  Jacek M. Holeczek <holeczek@us.edu.pl>
+
+	* include/aygshell.h (SHLoadImageFile, SHLoadImageResource) : Define.
+	* include/sipapi.h (SipShowIM, SipGetCurrentIM, SipSetCurrentIM) :
+	Define.
+
+2007-11-15  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/aygshell.h (SHCMBM_GETSUBMENU) : Define.
+
 2007-11-14  Matthew Kille  <matt@amiga.com>
 
 	* include/winbase.h (THREAD_PRIORITY_TIME_CRITICAL)

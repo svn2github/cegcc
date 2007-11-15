@@ -49,7 +49,11 @@ typedef int (*IMENUMPROC)(IMENUMINFO *);
 
 int WINAPI SipEnumIM(IMENUMPROC);
 
-#endif
+BOOL WINAPI SipShowIM(DWORD);
+BOOL WINAPI SipGetCurrentIM(CLSID *);
+BOOL WINAPI SipSetCurrentIM(CLSID *);
+
+#endif	/* _WIN32_WCE >= 0x0201 */
 
 #ifdef __cplusplus
 }
