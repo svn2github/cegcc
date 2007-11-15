@@ -1,3 +1,10 @@
+2007-11-15  Danny Backx  <danny.backx@users.sourceforge.net>
+
+	* config/arm/mingw32.h (EXTRA_OS_CPP_BUILTINS, CPP_SPEC): Move
+	macro definitions of __COREDLL__, __MINGW32__, and __MINGW32CE__
+	from former to latter construction so they show up when using
+	-dumpspecs.
+
 2007-09-11  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* config/arm/wince-pe.h (ARM_DOUBLEWORD_ALIGN, BIGGEST_ALIGNMENT):

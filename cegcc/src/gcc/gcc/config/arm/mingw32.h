@@ -27,9 +27,6 @@ Boston, MA 02110-1301, USA.  */
 #define EXTRA_OS_CPP_BUILTINS()					\
   do								\
     {								\
-      builtin_define ("__COREDLL__");				\
-      builtin_define ("__MINGW32__");			   	\
-      builtin_define ("__MINGW32CE__");			   	\
       builtin_define ("_WIN32");				\
       builtin_define_std ("WIN32");				\
       builtin_define_std ("WINNT");				\
@@ -38,6 +35,7 @@ Boston, MA 02110-1301, USA.  */
 
 #undef CPP_SPEC
 #define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{mthreads:-D_MT} \
+-D__COREDLL__ -D__MINGW32__ -D__MINGW32CE__ \
 %{!nostdinc: -idirafter ../include/w32api%s -idirafter ../../include/w32api%s }"
 
 #undef LIB_SPEC
