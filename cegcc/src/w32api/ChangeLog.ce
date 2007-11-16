@@ -1,3 +1,8 @@
+2007-11-16  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/shlwapi.h (PathCombine) : Define without W or A suffix for
+	Windows CE.
+
 2007-11-15  Jacek M. Holeczek <holeczek@us.edu.pl>
 
 	* include/aygshell.h (SHLoadImageFile, SHLoadImageResource) : Define.
