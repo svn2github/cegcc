@@ -1,0 +1,13 @@
+A simple ABI checker.  It isn't very smart, or automatic, but
+serves the immediate purpose.
+
+The idea is to have gcc built code interfacing with MSVC
+built code, and ensuring the the arguments are passed
+correctly to both sides.
+
+msvc.obj is built with MSVC.  Since access to a MSVC is limited,
+the object file is kept in the repository.
+
+To build, type `make'.  If you're changing the msvc.cpp file, be sure
+to have access to an MSVC that can output ARM WinCE code, and type
+`make all-msvc'.

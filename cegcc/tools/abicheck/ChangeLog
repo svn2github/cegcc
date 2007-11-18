@@ -1,0 +1,5 @@
+2007-11-18  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	Initial release.
+	* Makefile, README, common.h, driver.cpp, makemsvc.sh, msvc.cpp,
+	msvc.h, msvc.obj: New files.
