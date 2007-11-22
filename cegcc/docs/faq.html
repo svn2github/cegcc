@@ -1,0 +1,872 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+     The CeGCC FAQ
+
+     last update: see the bottom of this file
+-->
+
+<HTML LANG="en">
+
+<HEAD>
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+
+<TITLE>CeGCC FAQ</TITLE>
+
+</HEAD>
+
+<BODY TEXT="#000000" LINK="#000099" VLINK="#660066" BGCOLOR="#FFFFFF" ALINK="#FF0040">
+
+<!-- BEGIN OF CONTENT -->
+
+<H1>
+Everything you always wanted to know about CeGCC but were afraid to ask.
+</H1>
+The author of this FAQ is Jacek M. Holeczek. Thank you Jacek !
+
+<HR NOSHADE>
+
+<H3><A NAME="ToC">Table of Contents</A></H3>
+
+<OL>
+  
+      <!-- QUESTION TEMPLATE BEGIN ---
+      
+  <LI><A HREF="#PUT_YOUR_QUESTION_REFERENCE_HERE">PUT_YOUR_QUESTION_HERE</A></LI>
+      
+      ---- QUESTION TEMPLATE END   -->
+      
+<!-- BEGIN OF QUESTIONS -->
+
+  <LI><A HREF="#WinCE">What are &quot;Windows (Embedded) CE&quot;, &quot;Windows Mobile&quot;, &quot;Handheld
+      PC&quot;, &quot;Pocket PC&quot;, &quot;SmartPhone&quot; and &quot;Portable Media Center&quot;?</A></LI>
+
+  <LI><A HREF="#FileTransfer">How can I transfer files between my PC and my WinCE device?</A></LI>
+      
+  <LI><A HREF="#Emulator">Can I debug/test my DLL/EXE entirely on the PC itself (without any risk to make any harm to my WinCE device)?</A></LI>
+      
+  <LI><A HREF="#DDD">I hate to use the command-line driven &quot;gdb&quot;! Doesn&#39;t there exist any debugger with a graphical front-end?</A></LI>
+      
+  <LI><A HREF="#GdbError126Stub">I get &quot;Unable to start remote stub &#39;\gdb\wince-stub.exe&#39;.  Windows CE error 126.&quot; when I try to debug MyProgram with the &quot;arm-wince-cegcc-gdb&quot;.</A></LI>
+      
+  <LI><A HREF="#GdbError126User">I get &quot;Error creating process \gdb\MyProgram.exe, (error 126).&quot; when I try to debug MyProgram.</A></LI>
+      
+  <LI><A HREF="#GdbMappingError">I get &quot;Error while mapping shared library sections: coredll.dll: No such file or directory.&quot; when I try to debug MyProgram.</A></LI>
+      
+  <LI><A HREF="#GdbStippedExe">I get &quot;No line number known for MyProcedure&quot;, or &quot;(no debugging symbols found)&quot;, or &quot;No symbol table is loaded.  Use the &#39;file&#39; command.&quot;, when I try to debug MyProgram.</A></LI>
+      
+  <LI><A HREF="#GdbDonPedro">I get &quot;/cygdrive/e/pedro/cegcc/0.50/src/mingw/crt3.c: No such file or directory.&quot;, or &quot;Function &#39;main&#39; not defined.&quot;, when I try to &quot;list&quot; the source code in the debugger (and who&#39;s that mysterious Don Pedro anyhow?).</A></LI>
+      
+  <LI><A HREF="#LargeBinaries">Why is my &quot;arm-wince-mingw32ce-g++&quot; compiled DLL/EXE so large?</A></LI>
+      
+  <LI><A HREF="#MissingSymbols">The arm-wince-mingw32ce compiler complains about undeclared identifier &#39;SOME_WIN_CE_IDENTIFIER&#39;.</A></LI>
+      
+  <LI><A HREF="#MissingFunctions">The arm-wince-mingw32ce linker complains about undefined reference to &#39;SomeWinCeFunctionW&#39; (and what&#39;s that &quot;W&quot; suffix appended to the function&#39;s name?).</A></LI>
+      
+  <LI><A HREF="#MissingDLLImports">How can I find/trace any missing &quot;DLL imports&quot;?</A></LI>
+  <LI><A HREF="#LastErrorC1">I get &quot;GetLastError returns c1&quot; when
+      I try to use my DLL/EXE.</A></LI>
+  <LI><A HREF="#BadExeFormat">I get &quot;ERROR_BAD_EXE_FORMAT&quot; when 
+      I try to use my DLL/EXE.</A></LI>
+  <LI><A HREF="#FileNotWinCEApplication">I get &quot;&#39;MyProgram&#39; is not a
+      valid Windows CE application&quot; when I try to run MyProgram.</A></LI>
+      
+  <LI><A HREF="#More">Need More Informations?</A></LI>
+  
+<!-- END OF QUESTIONS -->
+
+</OL>
+
+<HR NOSHADE>
+
+<OL>
+  
+      <!-- ANSWER TEMPLATE BEGIN ---
+      
+  <LI>
+      <STRONG><A NAME="PUT_YOUR_QUESTION_REFERENCE_HERE">
+      PUT_YOUR_QUESTION_HERE
+      </A></STRONG><BR>
+      <P>
+      PUT_YOUR_ANSWER_HERE
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+      ---- ANSWER TEMPLATE END   -->
+      
+<!-- BEGIN OF ANSWERS -->
+
+  <!-- WinCE -->
+
+  <LI>
+      <STRONG><A NAME="WinCE">
+      What are &quot;Windows (Embedded) CE&quot;, &quot;Windows Mobile&quot;, &quot;Handheld PC&quot;, &quot;Pocket PC&quot;, 
+      &quot;SmartPhone&quot; and &quot;Portable Media Center&quot;?
+      </A></STRONG><BR>
+      <P>
+      See 
+      <A HREF="http://en.wikipedia.org/">Wikipedia</A>
+      articles about the 
+      <A HREF="http://en.wikipedia.org/wiki/Windows_CE">Windows CE</A>
+      and the 
+      <A HREF="http://en.wikipedia.org/wiki/Windows_Mobile">Windows Mobile</A>.
+      See the 
+      <A HREF="http://www.hpcfactor.com/qlink/?linkID=20">History &amp; Overview of Windows CE</A>
+      and the 
+      <A HREF="http://www.hpcfactor.com/support/cesd/s/0108.asp">Determining the Windows CE / H/PC version</A>
+      from the 
+      <A HREF="http://www.hpcfactor.com/support/">HPC:Factor CESD</A>,
+      the 
+      <A HREF="http://www.pocketpcfaq.com/wce/versions.htm">Windows CE / Windows Mobile Versions</A>
+      table from the
+      <A HREF="http://www.pocketpcfaq.com/">Pocket PC FAQ</A>,
+      and the 
+      <A HREF="http://msdn2.microsoft.com/en-us/windowsmobile/bb264342.aspx">Learn Windows Mobile</A>
+      from the 
+      <A HREF="http://msdn2.microsoft.com/en-us/windowsmobile/default.aspx">Windows Mobile Developer Center</A>.
+      In practice, all this means that, different WinCE driven devices come with
+      different sets of implemented functions in the system provided default
+      DLLs, and even with partially different sets of system provided default DLLs.
+      This in turn means that, a utility (or a DLL), which runs on one variation of WinCE,
+      may refuse to start on another one (even when their kernel versions match), just because 
+      <A HREF="#MissingDLLImports">some required functions are missing in some system DLLs, or even some required system DLLs are missing at all</A>.
+      <BR>Note also that, while compiling your source code, you may need to 
+<A HREF="details.html">
+define the &quot;_WIN32_IE&quot; and the &quot;_WIN32_WCE&quot; macros
+</A>,
+in order to tell the compiler which version of WinCE you&#39;re using.
+
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+  <!-- FileTransfer -->
+
+  <LI>
+      <STRONG><A NAME="FileTransfer">
+      How can I transfer files between my PC and my WinCE device?
+      </A></STRONG><BR>
+      <P>
+      Several possibilities exist.
+<UL>
+
+<LI>
+If you use PC Windows (x86/x64), you may need to use the
+    &quot;standard&quot; native tool provided by the system.
+    WE WILL ALWAYS REFERENCE TO IT AS TO THE 
+    <A HREF="http://en.wikipedia.org/wiki/Activesync">ActiveSync</A>
+    (USB, Infrared, Serial, Bluetooth, WiFi/LAN/Dial-up TCP/IP - support depends on the version),
+    while in fact ...
+    <UL>
+<LI>
+    On Windows XP SP2 and earlier, you need the &quot;real&quot;
+    <A HREF="http://en.wikipedia.org/wiki/Activesync">ActiveSync</A>.
+    If you want to connect to a WinCE 6.0 based device, you will definitely need the 
+    <A HREF="http://www.microsoft.com/windowsmobile/activesync/default.mspx">ActiveSync 4.5, or newer</A>
+    (WinCE 3.0 and newer supported).
+    On the other hand, starting with this release, Microsoft Office
+    Outlook 2000 is no longer supported (you need Outlook 2003 or newer).
+    Hence, if your device is WinCE 5.0 based, you can use the 
+    <A HREF="http://www.microsoft.com/downloads/details.aspx?FamilyID=7269173a-28bf-4cac-a682-58d3233efb4c&DisplayLang=en">ActiveSync 4.2</A>
+    (WinCE 3.0 and newer supported, see also
+    <A HREF="http://www.hpcfactor.com/qlink/?linkID=8#Download">here</A>).
+    For yet older WinCE based devices, try the 
+    <A HREF="http://www.hpcfactor.com/qlink/?linkID=7#Download">ActiveSync 3.8</A>
+    (from WinCE 2.0 to WinCE 4.2.1, maybe also WinCE 5.0).
+    <BR>Getting this really big s..t working may often be very, if not
+    &quot;extremely&quot;, difficult.
+    The best idea, which solves all these problems (and many, many, many more), is
+    to delete PC Windows and install <A HREF="http://en.wikipedia.org/wiki/Linux">Linux</A>.
+    If you, however, still insist on running PC Windows, some advices are
+    <A HREF="http://www.pocketpcfaq.com/faqs/t-shootactivesync.htm">here</A>,
+    <A HREF="http://www.pocketpcfaq.com/wiki/tiki-index.php?page=Unresolved+Activesync+Problems">here</A>,
+    <A HREF="http://bevhoward.com/ASync.htm">here</A>,
+    <A HREF="http://blogs.msdn.com/jasonlan/archive/2006/03/22/556946.aspx">here</A>,
+    <A HREF="http://modernnomads.info/wiki/index.php?page=ActiveSync+4.0+Troubleshooting">here</A>,
+    <A HREF="http://modernnomads.info/wiki/index.php?page=ActiveSync+3.8+Troubleshooting">here</A>,
+    <A HREF="http://www.hpcfactor.com/support/cesd/i/S0017.asp">here</A>,
+   <A HREF=" http://kb.palm.com/SRVS/CGI-BIN/WEBCGI.EXE?New,Kb=PalmSupportKB,ts=Palm_External2001,Case=obj(41820)">here</A>,
+    <A HREF="http://support.microsoft.com/?scid=915152">here</A>,
+    and <A HREF="http://www.microsoft.com/windowsmobile/help/activesync/default.mspx">here</A>.
+    See also the
+<A HREF="http://www.hpcfactor.com/support/syncsoft/">Handheld PC Desktop Synchronisation Software</A>
+    article from the 
+    <A HREF="http://www.hpcfactor.com/support/">HPC:Factor CESD</A>,
+and the 
+<A HREF="http://www.pocketpcfaq.com/wiki/tiki-index.php?page=ActiveSync">Pocket PC ActiveSync FAQ Wiki</A>.
+</LI>
+<LI>
+    On Windows Vista (and newer), you need the &quot;new tool&quot; called 
+    <A HREF="http://www.microsoft.com/windowsmobile/devicecenter.mspx">Windows Mobile Device Center</A>
+    (WinCE 4.2 based devices and newer supported).
+    Problems? Install <A HREF="http://en.wikipedia.org/wiki/Linux">Linux</A>! Otherwise, see
+    <A HREF="http://www.pocketpcfaq.com/faqs/wmdc/t-shoot-wmdc.htm">here</A>,
+    <A HREF="http://modernnomads.info/wiki/index.php?page=Windows+Mobile+Device+Center+Troubleshooting">here</A>,
+    and <A HREF="http://www.microsoft.com/windowsmobile/devicecenter/troubleshooting.mspx">here</A>.
+</LI>
+</UL>
+Note, on top of these tools, you can also use the 
+<A HREF="http://www.xs4all.nl/~itsme/projects/xda/tools.html">Xda RAPI Utilities</A>.
+</LI>
+
+<LI>
+If you use <A HREF="http://en.wikipedia.org/wiki/Linux">Linux</A>
+    (or another UNIX like system with USB, Bluetooth, WiFi/LAN), see the
+<A HREF="http://www.synce.org/">SynCE</A>
+    and the
+    <A HREF="http://en.wikipedia.org/wiki/OpenSync">OpenSync</A>
+    projects, for example (note: many contemporary distributions come
+    with such packages built-in, i.e. ready to use). And, if you (accidentally) do not use <A
+    HREF="http://en.wikipedia.org/wiki/Linux">Linux</A> (yet), think it through!
+</LI>
+
+<LI>
+If your WinCE device has any
+<A HREF="http://en.wikipedia.org/wiki/Memory_card">flash memory card</A>
+reader (SD, CF, ...), you can use these cards.
+</LI>
+
+<LI>
+If your WinCE device has any Internet connectivity (Ethernet, Wi-Fi, or Bluetooth), you can use it.
+</LI>
+
+</UL>
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+  <!-- Emulator -->
+
+  <LI>
+      <STRONG><A NAME="Emulator">
+      Can I debug/test my DLL/EXE entirely on the PC itself (without any risk to make any harm to my WinCE device)?
+      </A></STRONG><BR>
+      <P>
+
+If you use a contemporary PC Windows (x86/x64) system, then you can
+      use the free
+<A HREF="http://www.microsoft.com/downloads/details.aspx?FamilyID=dd567053-f231-4a64-a648-fea5e7061303&DisplayLang=en">Microsoft Device Emulator 2.0 -- Standalone Release</A>.
+
+<UL>
+<LI>
+It runs code compiled for ARM processors. In most cases, you can run the same binaries on the emulator as you do on the device.
+</LI>
+<LI>
+You can connect a runnning Device Emulator to a directory on your PC as if the directory were a drive mounted on the Device Emulator. In the file system for the Device Emulator, the connected directory appears at the root level as Storage Card (you can connect the Device Emulator to only one directory, with all its subdirectories, at a time).
+</LI>
+<LI>
+It supports synchronizing with 
+<A HREF="#FileTransfer">ActiveSync</A>.
+This feature allows you to debug applications that are syncing, or be able to use real synchronized data from within the Device Emulator.
+Use the Device Emulator Manager (DEM) to start, connect to, and manage Device Emulator instances on your PC. Using the DEM menu commands, you can connect to the emulator, cradle and uncradle it, shut it down, reset it, bring it to the front, clear saved states, refresh images, and perform other tasks.
+When a device is cradled, it can communicate using <A HREF="#FileTransfer">ActiveSync</A> (synchronizing contents of email, calendar, application installations, and so on). The Device Emulator by itself has no equivalent functionality and cannot work with <A HREF="#FileTransfer">ActiveSync</A> unless it is cradled. A common scenario is to launch the Device Emulator, cradle it using the DEM, and then establish an <A HREF="#FileTransfer">ActiveSync</A> (set &quot;File -> Connection Settings... -> Allow connections to one of the following: DMA&quot;) partnership with it.
+</LI>
+</UL>
+
+In order to use it, you just need to:
+
+<UL>
+
+<LI>
+(well, if you haven&#39;t done it yet, then download and install an appropriate, for
+    your PC Windows system release, version of the free
+    <A HREF="#FileTransfer">ActiveSync</A> software)
+</LI>
+  <LI>
+download and install the free 
+<A HREF="http://www.microsoft.com/downloads/details.aspx?FamilyID=04d26402-3199-48a3-afa2-2dc0b40a73b6&DisplayLang=en">
+Virtual PC 2007</A>,
+</LI>
+<LI>
+download and install the free
+<A HREF="http://www.microsoft.com/downloads/details.aspx?FamilyID=dd567053-f231-4a64-a648-fea5e7061303&DisplayLang=en">
+Microsoft Device Emulator 2.0 -- Standalone Release</A>,
+</LI>
+<LI>
+download and install the free ARM CPU Emulator Images (you need at least one, you can
+    install as many of them as you like):
+    <UL>
+<LI>
+    for Windows Mobile 5.0 MSFP (ARM CPU) operating system images, get the free 
+    <A HREF="http://www.microsoft.com/downloads/details.aspx?familyid=C62D54A5-183A-4A1E-A7E2-CC500ED1F19A&displaylang=en">
+    efp.msi</A> file (English language version only, both, the &quot;Pocket PC&quot;, and the
+    &quot;SmartPhone&quot; WinCE 5.0 ARM CPU operating system images
+    are provided; unfortunately, the pure &quot;WinCE 5.0 Core&quot;
+    image is not provided); do not install the
+    &quot;V1Emulator.zip&quot; file, you&#39;ve already installed the
+    V2 release of the Device Emulator in the previous step,
+</LI>
+<LI>
+    for Windows Mobile 6 MSFP (ARM CPU) operating system images, get the free 
+    <A HREF="http://www.microsoft.com/downloads/details.aspx?familyid=38C46AA8-1DD7-426F-A913-4F370A65A582&displaylang=en">Windows Mobile 6 Localized Emulator Images</A>
+    (versions for many languages are provided,
+    <A HREF="http://msdn2.microsoft.com/en-us/windowsmobile/bb264342.aspx#Difference">
+    &quot;Professional/Classic&quot; and &quot;Standard&quot;</A>
+    images are provided, the pure &quot;WinCE 6.0 Core&quot;
+    image is not provided).
+</LI>
+</UL>
+
+</UL>
+
+The installation will create shortcuts on your start menu from where you can launch the various configurations of the Windows Mobile 5.0/6 MSFP (ARM CPU). You will also see a shortcut for the Device Emulator Manager (DEM) using which you can launch any of the installed images.
+
+<BR>Note again that, you do NOT need any non-free tools (in particular, you do NOT need the
+<A HREF="http://en.wikipedia.org/wiki/Visual_studio">
+Microsoft Visual Studio</A>,
+for example).
+<BR>For the time being, I do not know if this software can be used on
+<A HREF="http://en.wikipedia.org/wiki/Linux">Linux</A>
+with the <A HREF="http://www.winehq.org/">Wine</A>), sorry.
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+  <!-- DDD -->
+
+  <LI>
+      <STRONG><A NAME="DDD">
+      I hate to use the command-line driven &quot;gdb&quot;! Doesn&#39;t there exist any debugger with a graphical front-end?
+      </A></STRONG><BR>
+      <P>
+      Well, you can use the free 
+      <A HREF="http://www.gnu.org/software/ddd/">GNU Data Display Debugger (DDD)</A>.
+      It&#39;s a graphical front-end for several command-line debuggers, including the
+      <A HREF="http://www.gnu.org/software/gdb/gdb.html">gdb</A>.
+      Besides &quot;usual&quot; front-end features, such as viewing source texts,
+      <A HREF="http://www.gnu.org/software/ddd/">DDD</A>
+      has become famous through its interactive graphical data display,
+      where data structures are displayed as graphs.
+      When invoking 
+      <A HREF="http://www.gnu.org/software/ddd/">DDD</A>,
+      you simply need to specify the name under which the inferior debugger is to be invoked:
+      <UL>
+      <LI>
+      ddd --debugger &quot;arm-wince-[cegcc/mingw32ce]-gdb&quot; MyProgram.exe
+      </LI>
+      </UL>
+      Note however, from time to time, you will still need to interact with the 
+      <A HREF="http://www.gnu.org/software/gdb/gdb.html">gdb</A>, via its command-line console window
+      (integrated in <A HREF="http://www.gnu.org/software/ddd/">DDD</A>).
+      <BR>For more informations see the 
+      <A HREF="http://www.gnu.org/manual/ddd/html_mono/ddd.html">DDD Manual</A>.
+      <BR>See also <A HREF="#GdbDonPedro">this answer</A>, if you&#39;re debugging a GUI application.
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+  <!-- GdbError126Stub -->
+
+  <LI>
+      <STRONG><A NAME="GdbError126Stub">
+      I get &quot;Unable to start remote stub &#39;\gdb\wince-stub.exe&#39;.  Windows CE error 126.&quot; when I try to debug MyProgram with the &quot;arm-wince-cegcc-gdb&quot;.
+      </A></STRONG><BR>
+      <P>
+      The arm-wince-cegcc compiled binaries (including the &quot;arm-wince-cegcc-stub.exe&quot;) require at least the &quot;cegcc.dll&quot; to be present on your WinCE device.
+      You can <A HREF="#FileTransfer">copy</A>
+the &quot;/opt/cegcc/arm-wince-cegcc/lib/device/cegcc.dll&quot; to the &quot;\gdb&quot; subdirectory, or to the &quot;\Windows&quot; subdirectory, or to any subdirectory that is present in the registry subkey &quot;SystemPath&quot;, in the &quot;HKEY_LOCAL_MACHINE\Loader&quot; registry entry, on your WinCE device (any change to the &quot;SystemPath&quot; subkey itself does not take effect until the WinCE device is reset).
+      <BR>You should not get this error when you try to use the &quot;arm-wince-mingw32ce-gdb&quot; (arm-wince-mingw32ce binaries NEVER need the &quot;cegcc.dll&quot;, so also the &quot;arm-wince-mingw32ce-stub.exe&quot; does not need it), unless you are trying to debug an arm-wince-cegcc binary (the arm-wince-cegcc generated binary DLL/EXE will need it, of course), but in this case you should switch back to the &quot;arm-wince-cegcc-gdb&quot;.
+      <BR>See <A HREF="dll.html">Beware! need to install CeGCC DLL&#39;s first</A>, and
+      <A HREF="#MissingDLLImports">How can I find/trace any missing &quot;DLL imports&quot;?</A>.
+      <BR>Note, the magic error &quot;126&quot;, hexadecimal &quot;0x7e&quot;, known also as &quot;ERROR_MOD_NOT_FOUND&quot; and &quot;The specified module could not be found&quot;, is defined in the &quot;winerror.h&quot;.
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+  <!-- GdbError126User -->
+
+  <LI>
+      <STRONG><A NAME="GdbError126User">
+      I get &quot;Error creating process \gdb\MyProgram.exe, (error 126).&quot; when I try to debug MyProgram.
+      </A></STRONG><BR>
+      <P>
+      Your DLL/EXE could not be loaded/started.
+      This usually means that, one (or more) DLLs, required by your DLL/EXE, are missing on your WinCE device
+      (or, if all DLLs exist, one or more functions, which your program needs, are missing in some of them).
+
+      You need to <A HREF="#FileTransfer">copy</A>
+the required DLLs to the &quot;\gdb&quot; subdirectory, or to the &quot;\Windows&quot; subdirectory, or to any subdirectory that is present in the registry subkey &quot;SystemPath&quot;, in the &quot;HKEY_LOCAL_MACHINE\Loader&quot; registry entry, on your WinCE device (any change to the &quot;SystemPath&quot; subkey itself does not take effect until the WinCE device is reset).
+
+      <BR>See <A HREF="dll.html">Beware! need to install CeGCC DLL&#39;s first</A>,
+      <A HREF="#LastErrorC1">I get &quot;GetLastError returns c1&quot; when I try to use my DLL/EXE.</A>,
+      and 
+      <A HREF="#MissingDLLImports">How can I find/trace any missing &quot;DLL imports&quot;?</A>.
+      <BR>Note, the magic error &quot;126&quot;, hexadecimal &quot;0x7e&quot;, known also as &quot;ERROR_MOD_NOT_FOUND&quot; and &quot;The specified module could not be found&quot;, is defined in the &quot;winerror.h&quot;.
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+  <!-- GdbMappingError -->
+
+  <LI>
+      <STRONG><A NAME="GdbMappingError">
+      I get &quot;Error while mapping shared library sections: coredll.dll: No such file or directory.&quot; when I try to debug MyProgram.
+      </A></STRONG><BR>
+      <P>
+      So what? Does it really bother you THAT much? Haven&#39;t you got any more serious problems in your life?
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+  <!-- GdbStippedExe -->
+
+  <LI>
+      <STRONG><A NAME="GdbStippedExe">
+      I get &quot;No line number known for MyProcedure&quot;, or &quot;(no debugging symbols found)&quot;, or &quot;No symbol table is loaded.  Use the &#39;file&#39; command.&quot;, when I try to debug MyProgram.
+      </A></STRONG><BR>
+      <P>
+      <UL>
+      <LI>
+      The error &quot;No line number known for MyProcedure&quot; means that the debugging symbols are not present in your binary DLL/EXE. It seems, you&#39;ve forgotten to use the &quot;-g&quot; compiler flag (when compiling your source code).
+      </LI>
+      <LI>
+      The errors &quot;(no debugging symbols found)&quot; and &quot;No symbol table is loaded.  Use the &#39;file&#39; command.&quot; mean that symbol table and relocation information have been removed from your binary DLL/EXE. Either you&#39;ve been using the &quot;-s&quot; compiler flag (when compiling your source code), or you&#39;ve run &quot;arm-wince-[cegcc/mingw32ce]-strip MyProgram.[dll/exe]&quot; later.
+      </LI>
+      </UL>
+      The best idea is to recompile your source code (with &quot;-g&quot; and without &quot;-s&quot; compiler flags), and then try to debug it once again.
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+  <!-- GdbDonPedro -->
+
+  <LI>
+      <STRONG><A NAME="GdbDonPedro">
+      I get &quot;/cygdrive/e/pedro/cegcc/0.50/src/mingw/crt3.c: No such file or directory.&quot;, or &quot;Function &#39;main&#39; not defined.&quot;, when I try to &quot;list&quot; the source code in the debugger (and who&#39;s that mysterious Don Pedro anyhow?).
+      </A></STRONG><BR>
+      <P>
+      You get this error message because, the debugger tries to &quot;list&quot; the source code for the &quot;program entry point routine&quot;, which it apparently cannot locate in your source code.
+      <BR>Most probably, you&#39;re trying to debug an application which is a WinCE GUI (Graphical User Interface) application.
+      The normal user&#39;s startup routine for such an application is called &quot;WinMain&quot;.
+      However, the &quot;standard&quot; entry point, for C/C++ language programs, is the &quot;main&quot;.
+      So, CeGCC implements a special glue module which automatically defines the &quot;main&quot; function for you, which then calls your &quot;WinMain&quot; routine.
+      <BR>The solution is simple, just ask the debugger to &quot;list WinMain&quot;, and you should immediately see your source code, unless you have forgotten to <A HREF="#GdbStippedExe">provide the debugging symbols</A>.
+      <BR>Note also that, when you compile a program that has the &quot;main&quot; routine of its own, then the automatic CeGCC &quot;main&quot; module is simply not used. In this case, you should never get such an error message, unless you have forgotten to <A HREF="#GdbStippedExe">provide the debugging symbols</A> (try to &quot;list main&quot;), of course.
+      <BR>See <A HREF="profile.html#start and terminate">Startup and termination of WinCE programs</A>.
+      <BR>Last, but not least, that mysterious <A HREF="mailto:pedro_alves@portugalmail.pt">Don Pedro</A> is the one whoem you own a big tribute, for the possiblility to run your CeGCC binary distribution. He&#39;s the one who prepared it for you.
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+  <!-- LargeBinaries -->
+
+  <LI>
+      <STRONG><A NAME="LargeBinaries">
+      Why is my &quot;arm-wince-mingw32ce-g++&quot; compiled DLL/EXE so large?
+      </A></STRONG><BR>
+      <P>
+      First, let me explain, why I am taking about the &quot;arm-wince-mingw32ce-g++&quot; compiler only, and not about the &quot;arm-wince-cegcc-g++&quot;.
+      The reason is simple. The &quot;arm-wince-mingw32ce&quot; target ALWAYS STATICALLY LINKS the 
+<A HREF="http://en.wikipedia.org/wiki/C%2B%2B_standard_library">stdc++ library</A>
+into your every DLL/EXE binary.
+      This may cause some really LARGE PARTS of this library to be INCLUDED in EACH of your DLL/EXE. You aks why? So do I! Apparently, it is the conseqence of the fact that, this target comes from the <A HREF="http://www.mingw.org/">MinGW</A> project, and 
+<A HREF="http://www.mingw.org/mingwfaq.shtml#faq-cpp-size">
+that&#39;s how they do it</A>.
+      The &quot;arm-wince-cegcc&quot; target, on the other hand, uses DYNAMICALLY LINKED 
+<A HREF="http://en.wikipedia.org/wiki/C%2B%2B_standard_library">stdc++ library</A>,
+by default (of course,
+<A HREF="dll.html">Beware! need to install CeGCC DLL&#39;s first</A>).
+
+      <BR>So, let us now try to get the lowest possible size of your &quot;arm-wince-mingw32ce-g++&quot; compiled binaries. Let us create a very dumb &quot;MyProgram.cpp&quot;, which contains just &quot;int main(void) { return 0; }&quot;.
+<UL>
+
+  <LI>
+
+If you do not need to debug your DLL/EXE any more, get rid of all symbol table and relocation information from it. Either <A HREF="#GdbStippedExe">remove them using &quot;arm-wince-[cegcc/mingw32ce]-strip MyProgram.[dll/exe]&quot;, or recompile your source code WITHOUT the &quot;-g&quot; and WITH the &quot;-s&quot; compiler flags</A>.
+<BR>The example &quot;MyProgram.cpp&quot; compiled WITH &quot;-g&quot; is 203 kB long (for &quot;arm-wince-cegcc-g++&quot; it is just 18 kB long), but stripped, it is just 40 kB long (for &quot;arm-wince-cegcc-g++&quot;, it is just 3 kB long, when stripped).
+
+  </LI>
+
+  <LI>
+
+If you do not need the
+<A HREF="http://en.wikipedia.org/wiki/Exception_handling">exception handling</A>
+(i.e. 
+&quot;<A HREF="http://www.parashift.com/c++-faq-lite/exceptions.html">try/catch/throw</A>&quot;)
+in your source code, compile it adding the &quot;-fno-exceptions&quot; compiler flag.
+The <A HREF="http://en.wikipedia.org/wiki/Exception_handling">exception handling</A>
+generates extra code needed to propagate exceptions, which then triggers some 
+<A HREF="http://en.wikipedia.org/wiki/C%2B%2B_standard_library">stdc++ library</A>
+(&quot;/opt/mingw32ce/arm-wince-mingw32ce/lib/libstdc++.a&quot;) functions
+
+to be statically linked into your DLL/EXE.
+
+<BR>Note that, if you do not specify this option, GNU CC will enable
+<A HREF="http://en.wikipedia.org/wiki/Exception_handling">exception handling</A>
+by default for languages like C++ which normally require it,
+and disable it for languages like C that do not
+normally require it.  However, you may need to enable this option
+when compiling C code (adding the &quot;-fexceptions&quot; compiler flag)
+that needs to interoperate properly with exception handlers written in C++.
+<BR>The example &quot;MyProgram.cpp&quot; compiled WITH &quot;-fexceptions&quot; (the default), and stripped, is 40 kB long, but compiled WITH &quot;-fno-exceptions&quot;, and stripped, is just 4.5 kB long (for &quot;arm-wince-cegcc-g++&quot;, it doesn&#39;t really matter, it&#39;s always about 3 kB long, when stripped).
+
+  <LI>
+
+Avoid using any 
+<A HREF="http://en.wikipedia.org/wiki/Standard_Template_Library">Standard Template Library</A>
+elements, especially in your DLL libraries, no matter what the cost!
+C++ programs (and shared libraries) using the 
+<A HREF="http://en.wikipedia.org/wiki/Standard_Template_Library">Standard Template Library</A>
+(e.g. which &quot;#include &lt;iostream&gt;&quot; or any close &quot;relative&quot;) cause a really large part of the 
+<A HREF="http://en.wikipedia.org/wiki/C%2B%2B_standard_library">stdc++ library</A>
+(&quot;/opt/mingw32ce/arm-wince-mingw32ce/lib/libstdc++.a&quot;) to be statically linked into the binary.
+<BR>If the only functions from &quot;libstdc++.a&quot; which you need are language support functions (those listed in 
+<A HREF="http://www.zib.de/benger/C++/clause18.html">the Clause 18 of the C++ Standard</A>,
+e.g. &quot;new&quot; and &quot;delete&quot;), then try linking against &quot;libsupc++.a&quot; (using gcc instead of g++ and explicitly linking in &quot;-lsupc++&quot; for the final link step should do it). This library contains only those support routines, one per object file. But if you are using anything from the rest of the library, such as &quot;IOStreams&quot; or &quot;Vectors&quot;, then you&#39;ll still need pieces from &quot;libstdc++.a&quot;.
+<BR>Let us now extend the &quot;MyProgram.cpp&quot; example. Let us add a line in form &quot;#include &lt;iostream&gt;&quot;, before our &quot;main&quot; routine (we will NOT use any &quot;IOStreams&quot;, it is sufficient to just include this file). The extended example &quot;MyProgram.cpp&quot; compiled WITH &quot;-g&quot; is almost 4 MB long (for &quot;arm-wince-cegcc-g++&quot;, it is just 49 kB long). Stripped, it is still 544 kB long (for &quot;arm-wince-cegcc-g++&quot;, it is just 3.5 kB long, when stripped). The &quot;-fno-exceptions&quot; compiler flag has no impact on the size now (the 
+<A HREF="http://en.wikipedia.org/wiki/C%2B%2B_standard_library">stdc++ library</A>
+<A HREF="http://en.wikipedia.org/wiki/Exception_handling">exception handling</A>
+code is always linked in anyhow, because it&#39;s used by the 
+<A HREF="http://en.wikipedia.org/wiki/Standard_Template_Library">Standard Template Library</A>
+routines, I believe).
+
+  </LI>
+
+</UL>
+
+Last, but not least, you can, of course, use the above advices to minimize the size of your &quot;arm-wince-mingw32ce-gcc&quot; generated DLL/EXE binaries, too (i.e. when you compile any C source code, except for the 
+<A HREF="http://en.wikipedia.org/wiki/Standard_Template_Library">Standard Template Library</A>
+advice, which is C++ specific).
+
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+  <!-- MissingSymbols -->
+
+  <LI>
+      <STRONG><A NAME="MissingSymbols">
+      The arm-wince-mingw32ce compiler complains about undeclared identifier &#39;SOME_WIN_CE_IDENTIFIER&#39;.
+      </A></STRONG><BR>
+      <P>
+
+      First, make sure that you
+<A HREF="details.html">
+properly define the &quot;_WIN32_IE&quot; and the &quot;_WIN32_WCE&quot; macros
+</A>,
+while compiling your source code (in order to tell the compiler which version of WinCE you&#39;re using).
+
+      <BR>If you do, then it&#39;s quite possible that you&#39;ve hit a CeGCC bug.
+
+      <BR>Indeed, we don&#39;t have all the macros we should have. Our include files (&quot;/opt/mingw32ce/arm-wince-mingw32ce/include/*&quot;)
+are inherited from other projects (e.g. <A HREF="http://www.mingw.org/">MinGW</A>).
+They&#39;re very good, but they tend to lack some WinCE specific stuff (well, WinCE is not their focus).
+A patch for our include files would be very welcome.
+The good sources for this information are (in this order):
+<UL>
+<LI>
+reliable documentation, such as
+<A HREF="http://msdn2.microsoft.com/en-us/library/ms376734.aspx">MSDN</A>,
+</LI>
+<LI>
+publicly avaiable programming examples.
+</LI>
+</UL>
+
+A bad source for such information is a copy of a Microsoft include file - that&#39;s copyrighted.
+
+<BR>In any case, please, do inform us about the missing identifier 
+(regardless whether you were able to fix it, or not), using either the
+<A HREF="http://sourceforge.net/tracker/?group_id=173455">CeGCC Tracker</A>
+system, and/or the
+<A HREF="http://sourceforge.net/mailarchive/forum.php?forum_name=cegcc-devel">cegcc-devel</A>
+mailing list.
+
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+  <!-- MissingFunctions -->
+
+  <LI>
+      <STRONG><A NAME="MissingFunctions">
+      The arm-wince-mingw32ce linker complains about undefined reference to &#39;SomeWinCeFunctionW&#39; (and what&#39;s that &quot;W&quot; suffix appended to the function&#39;s name?).
+      </A></STRONG><BR>
+      <P>
+
+      First, make sure that you
+<A HREF="details.html">
+properly define the &quot;_WIN32_IE&quot; and the &quot;_WIN32_WCE&quot; macros
+</A>,
+while compiling your source code (in order to tell the compiler which version of WinCE you&#39;re using).
+
+      <BR>If you do, then it&#39;s quite possible that you&#39;ve hit a CeGCC bug.
+
+<BR>In general, because the
+<A HREF="http://en.wikipedia.org/wiki/Comparison_of_Windows_versions">
+Microsoft Windows System comes in so many flavours</A>,
+there exist two mysterious suffixes, &quot;A&quot; and &quot;W&quot;, which may get appended to function names.
+They directly correspond to the &quot;ASCII&quot; and the &quot;Wide-Character&quot; versions of the Windows API.
+The system include files are meant to automatically map a function name into a function with
+an added &quot;A&quot; or &quot;W&quot; to its name, depending on whether the &quot;UNICODE&quot; macro is defined, or not.
+For WinCE, however, the &quot;UNICODE&quot; should always be defined, as WinCE supports only that part of the API.
+Hence, there is no need to append the &quot;W&quot; suffix in this case (and it should not be present).
+Our include files (&quot;/opt/mingw32ce/arm-wince-mingw32ce/include/*&quot;) are inherited from other projects (e.g. <A HREF="http://www.mingw.org/">MinGW</A>).
+They&#39;re very good, but they tend to lack some WinCE specific stuff (well, WinCE is not their focus).
+<BR>By running &quot;arm-wince-mingw32ce-strings&quot; on the right library file (&quot;/opt/mingw32ce/arm-wince-mingw32ce/lib/*.a&quot;), you can check whether the &quot;SomeWinCeFunction&quot; is present in there.
+If it is not there, then
+<A HREF="#MissingSymbols">we need to implement this function</A>.
+If it is present, however, then it usually requires just some slight modifications of one of our include files
+(you should then immediately be able to use this function, no further steps required).
+
+The fix is to &quot;#ifdef&quot; the function&#39;s prototype, in the appropriate header file, with &quot;_WIN32_WCE&quot;,
+so that this function is always declared as &quot;SomeWinCeFunction&quot;,
+instead of the non-WinCE &quot;SomeWinCeFunctionA&quot; + &quot;SomeWinCeFunctionW&quot; pair
+(which also depends on the &quot;UNICODE&quot; macro).
+See, for example, any other function, which is present in the same header file as
+&quot;SomeWinCeFunction&quot;, in order to learn what needs to be done.
+
+A patch for our include files would be very welcome.
+
+<BR>In any case, please, do inform us about this problem
+(regardless whether you were able to fix it, or not), using either the
+<A HREF="http://sourceforge.net/tracker/?group_id=173455">CeGCC Tracker</A>
+system, and/or the
+<A HREF="http://sourceforge.net/mailarchive/forum.php?forum_name=cegcc-devel">cegcc-devel</A>
+mailing list.
+
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+  <!-- MissingDLLImports -->
+
+  <LI>
+      <STRONG><A NAME="MissingDLLImports">
+      How can I find/trace any missing &quot;DLL imports&quot;?
+      </A></STRONG><BR>
+      <P>
+      Different variations of 
+      <A HREF="#WinCE">Windows CE</A>
+      based systems come with different sets of functions implemented
+      in the system provided default DLLs, and with partially different
+      sets of system provided default DLLs (even when their kernel versions match).
+      Hence, it sometimes happens that a user added DLL / EXE will not
+      run on the user&#39;s system, just because it misses a specific
+      function to be imported from some specific system default DLL,
+      or even the required DLL itself does not exist at all on the user&#39;s system.
+      
+      <BR>How can one find/trace any missing &quot;DLL imports&quot;?
+      <BR>You can find the ultimate answer below!
+
+<UL>
+      
+<LI>
+    Get the free PC Windows (x86/x64) utility called 
+      <A HREF="http://dependencywalker.com/">Dependency Walker</A>.
+   Although it is a PC Windows (x86/x64) utility
+   (on <A HREF="http://en.wikipedia.org/wiki/Linux">Linux</A>,
+    you can try to run it with the <A HREF="http://www.winehq.org/">Wine</A>),
+   it can also &quot;scan&quot; WinCE (ARM) libraries
+   and executables. What one needs to do is to open the &quot;Options ->
+   Configure Module Search Order&quot; window, remove all &quot;standard PC Windows
+   subdirectories&quot; from there, and add one&#39;s own (which hold WinCE DLLs).
+   Then, one can &quot;Save...&quot; these settings, in order to easily run the 
+   <A HREF="http://dependencywalker.com/">Dependency Walker</A>
+   later, giving it the &quot;saved module search order&quot; as
+   a command line parameter. See the question &quot;Will Dependency Walker
+      work with Windows CE modules?&quot; in the 
+      <A HREF="http://dependencywalker.com/faq.html">Dependency Walker Frequently Asked Questions (FAQ)</A>,
+   and read about its
+        <A HREF="http://dependencywalker.com/help/html/hidd_search_order.htm">Module Search Order</A>
+   and its 
+        <A HREF="http://dependencywalker.com/help/html/hidr_command_line_help.htm">Command Line Options</A>.
+   <BR>Note that, in order to &quot;resolve&quot; all dependencies, you will need to
+   have a copy of the WinCE DLLs, provided by YOUR OWN WinCE device in the
+   &quot;\Windows&quot; subdirectory, in the PC. However, as these libraries reside in ROM,
+   they cannot be simply copied to the PC, you cannot
+   even copy them entirely inside of the WinCE system (using its file manager).
+</LI>
+
+<LI>
+   Get the free WinCE utility called 
+   <A HREF="http://forum.xda-developers.com/showthread.php?p=1571715">ROM Extractor</A>.
+   This utility can &quot;extract&quot; DLL / EXE / CPL / ... modules from ROM (files
+   which have the &quot;FILE_ATTRIBUTE_ROMMODULE&quot; set, i.e. files which cannot be copied by using a
+   file manager nor by the 
+   <A HREF="#FileTransfer">ActiveSync</A>).
+    <A HREF="#FileTransfer">Copy</A> these &quot;extracted&quot; files into the PC 
+   (preserving their original names), put them into a separate subdirectory, and use the
+   &quot;Add Directory&quot; button in the &quot;Options -> Configure Module Search
+   Order&quot; window (of the 
+   <A HREF="http://dependencywalker.com/">Dependency Walker</A>
+   ), in order to add this
+   subdirectory to the &quot;Current Search Order&quot;.
+   <BR>There are two things, I need to mention here. Although my CPU is an
+   &quot;ARM&quot;, the &quot;extracted modules&quot; are marked as &quot;Thumb&quot;. This fools the
+   <A HREF="http://dependencywalker.com/">Dependency Walker</A>
+   a bit - it will mark all of them in red, to notify
+   the user that the CPU types do not match. I do not know if this
+   &quot;Thumb&quot; signature is really put in my ROM, or is it just the 
+   <A HREF="http://forum.xda-developers.com/showthread.php?p=1571715">ROM Extractor</A>
+   which does it. The solution, however, is very simple. Just
+   take any tool that can edit binary files (I use the free 
+   <A HREF="http://en.wikipedia.org/wiki/Midnight_commander">
+   GNU Midnight Commander</A>)
+   and change one byte, or two, in each DLL (the bytes which define the
+   CPU type). Very close to the beginning of the DLL file (usually inside of the first 256 bytes),
+   you should find a sequence of bytes in form:
+        &quot;0x50 0x45 0x00 0x00 0xC2 0x01&quot; (&quot;0x50 0x45&quot; = &quot;PE&quot;).
+   The sequence &quot;0xC2 0x01&quot; means &quot;Thumb&quot; CPU, so we need to change it
+   into &quot;0xC0 0x01&quot;, which means &quot;ARM&quot; CPU (just one, single byte to be changed):
+        &quot;0x50 0x45 0x00 0x00 0xC0 0x01&quot;.
+   The second thing to mention is related to the usage of the 
+   <A HREF="http://forum.xda-developers.com/showthread.php?p=1571715">ROM Extractor</A>.
+   On my WinCE system, it keeps closing the &quot;Input Panel&quot;
+   (i.e. the &quot;Keyboard&quot;), so that I cannot enter the &quot;Save to:&quot; output
+   file. The solution is to manually open the &quot;Input Panel&quot; BEFORE
+   starting the 
+   <A HREF="http://forum.xda-developers.com/showthread.php?p=1571715">ROM Extractor</A>
+   executable (then the &quot;Keyboard&quot; remains available all the time).
+</LI>
+
+</UL>
+
+And voil&agrave;, you can use the 
+   <A HREF="http://dependencywalker.com/">Dependency Walker</A>
+to trace your problems!
+
+<BR> There is still one thing, I need to mention here. As of today, Sun, Nov 11, 2007,
+the <A HREF="http://dependencywalker.com/">Dependency Walker</A> has some problems
+with binaries (DLL/EXE) generated by the CeGCC-0.50 release (and earlier, I believe).
+The problem is related to the DLL names &quot;encoded&quot; inside of the CeGCC generated DLL/EXE files.
+All these names miss the &quot;.dll&quot; file name extension. As a result, the
+<A HREF="http://dependencywalker.com/">Dependency Walker</A> seeks for files
+named &quot;DllName&quot; (which do NOT exist) instead of &quot;DllName.dll&quot; (which, hopefully, DO exist).
+A temporary solution is to keep a copy of every &quot;DllName.dll&quot; file as a &quot;DllName&quot; file
+(note, you do NOT need these copies on your WinCE device, just on the PC).
+
+<BR>For the completeness of this description, let me add the following.
+
+<UL>
+
+<LI>
+   There exists a simple free, &quot;command line&quot; driven, WinCE utility called
+    <A HREF="http://www.geocities.co.jp/SiliconValley-Cupertino/2039/">Executability Check</A>,
+   which can be helpful (it checks which libraries are needed and it can
+   &quot;rewrite&quot; both, the library name and it&#39;s version), but using it is a
+   pain. Moreover, as this utility is NOT able to read system DLLs, it
+   will not tell you which function is missing (if any), nor it will tell
+   you which functions are provided by the system default DLLs.
+   Note, this is really a &quot;command line&quot; driven utility. It NEEDS to get
+   the name of the DLL/EXE file (to be &quot;inspected&quot;) in the command line
+   (as a parameter). It will not start without this parameter.
+</LI>
+
+<LI>
+   There exists a more advanced free WinCE tool called 
+    <A HREF="http://s-k-tools.com/index.html?m_products.html">PEInfo</A>.
+   It will provide you with many informations about your DLL/EXE,
+   including the list of imported functions. However, as this utility is
+   NOT able to read system DLLs, it will not tell you which function is
+   missing (if any). Moreover, it does NOT even check whether the required function (to be
+   imported) is actually exported by the system DLL. As soon as it finds
+   the required DLL, it will simply happily assume that all required
+   functions are really provided by it.
+</LI>
+
+</UL>
+
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+    
+  <!-- LastErrorC1 -->
+
+  <LI>
+    <STRONG><A NAME="LastErrorC1">
+      I get &quot;GetLastError returns c1&quot; when
+      I try to use my DLL/EXE.
+      </A></STRONG><BR>
+      <P>
+      Your DLL/EXE could not be loaded/started.
+      Are you mistakenly trying to run a PC Windows (x86/x64) DLL/EXE on your WinCE device?
+      If not (i.e. you are sure this is really a WinCE ARM binary), then
+      this usually means that one or more functions, which your
+      program needs, are missing in some system DLLs, or even that
+      one or more required DLLs are missing at all 
+      (well, you might have also forgotten to <A HREF="#FileTransfer">copy</A> some DLLs, that came
+      with your program, to your WinCE device, for example).
+      In such case, one gets a mysterious message &quot;&#39;MyProgram&#39; is not a
+      valid Windows CE  application&quot;, often bundled with a mysterious
+      error message &quot;GetLastError returns c1&quot;. The &quot;0xc1&quot;, decimal
+      &quot;193&quot;, error is called &quot;ERROR_BAD_EXE_FORMAT&quot;. It is defined in
+      the &quot;winerror.h&quot; file.
+      <BR>See <A HREF="#MissingDLLImports">How can I find/trace any missing &quot;DLL imports&quot;?</A>
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+  <!-- BadExeFormat -->
+
+  <LI>
+      <STRONG><A NAME="BadExeFormat">
+      I get &quot;ERROR_BAD_EXE_FORMAT&quot; when I try to use my DLL/EXE.
+      </A></STRONG><BR>
+      <P>
+      That is just another form of the message 
+      &quot;<A HREF="#LastErrorC1">GetLastError returns c1</A>&quot;.
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+  <!-- FileNotWinCEApplication -->
+
+  <LI>
+      <STRONG><A NAME="FileNotWinCEApplication">
+      I get &quot;&#39;MyProgram&#39; is not a valid Windows CE application&quot; when
+      I try to run MyProgram.
+      </A></STRONG><BR>
+      <P>
+      That is just another form of the message 
+      &quot;<A HREF="#LastErrorC1">GetLastError returns c1</A>&quot;.
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+  <!-- More -->
+
+  <LI>
+      <STRONG><A NAME="More">
+      Need More Informations?
+      </A></STRONG><BR>
+      <P>
+      See the <A HREF="index.html">CeGCC Documentation</A>.
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
+<!-- END OF ANSWERS -->
+
+</OL>
+
+<HR NOSHADE>
+
+
+<!-- END OF CONTENT -->
+
+</BODY>
+
+<table border=0 cellspacing=10 width="100%"> <tr>
+	<td align=left valign=top bgcolor="#ededed" width="50%">
+		<h2 align=center>Information</h2>
+		<ul>
+			<li> <a href="http://cegcc.sourceforge.net"> CeGCC Home Page on SourceForge </a>
+			<li> <a href="index.html"> CeGCC Documentation </a>
+			<li> <a href="http://sourceforge.net/projects/cegcc"> Project page on SourceForge </a>
+			<li> <a href="http://cegcc.wiki.sourceforge.net"> CeGCC wiki </a>
+		</ul>
+	</td>
+	<td align=left valign=top bgcolor="#ededed" width="50%">
+		<h2 align=center>Support</h2>
+		<ul>
+			<li> <a href="faq.html">Frequently asked questions ? Read the FAQ</a>.
+			<li> <a href="mailto:cegcc-devel@lists.sourceforge.net">Questions ? Use the mailing list</a>.
+			<li> <a href="http://sourceforge.net/tracker/?group_id=173455&atid=865514"> CeGCC Bug tracker </a>
+			<LI><A HREF="reporting.html">Information to including when asking help or when reporting problems</A></LI>
+		</ul>
+	</td>
+</tr></table>
+</HTML>
