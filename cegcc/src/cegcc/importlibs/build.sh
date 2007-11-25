@@ -4,7 +4,6 @@ defdir=$1
 outputdir=$2
 
 ./mkimport.sh $defdir/coredll.def $outputdir || exit
-./mkimport.sh $defdir/icmplib.def $outputdir || exit
 ./mkimport.sh $defdir/note_prj.def $outputdir || exit
 ./mkimport.sh $defdir/iphlpapi.def $outputdir || exit
 ./mkimport.sh $defdir/commctrl.def $outputdir || exit

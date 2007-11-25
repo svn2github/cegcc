@@ -1,3 +1,8 @@
+2007-11-25  Pedro Alves, Danny Backx <dannybackx@users.sourceforge.net>
+
+        * w32api/libce/icmplib.def: Remove proxy for icmplib, MSDN says it's
+	a static library only.
+
 2007-11-16  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/shlwapi.h (PathCombine) : Define without W or A suffix for

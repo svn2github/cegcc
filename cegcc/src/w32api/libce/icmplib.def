@@ -1,6 +1,0 @@
-LIBRARY ICMPLIB
-EXPORTS
-IcmpCreateFile
-IcmpCloseHandle
-IcmpSendEcho
-
