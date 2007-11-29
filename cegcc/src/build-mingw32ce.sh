@@ -120,6 +120,17 @@ fi
 # embedded tabs in the sed below -- do not untabify
 components=`echo "${components}" | sed -e 's/[ 	,][ 	,]*/,/g' -e 's/,$//'`
 
+# Don't build in source directory, it will clobber things and cleanup is hard.
+if [ -d ${BUILD_DIR}/.svn ]; then
+	echo "Don't build in a source directory, please create an empty directory and build there."
+	echo "Example :"
+	echo "  mkdir build-mingw32ce"
+	echo "  cd build-mingw32ce"
+	echo "  sh ../build-mingw32ce.sh $@"
+	exit 1
+fi
+
+# Report about options.
 echo The following components will be built: ${components}
 
 export TARGET="arm-wince-mingw32ce"

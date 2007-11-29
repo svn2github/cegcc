@@ -28,7 +28,8 @@
 
 #undef CPP_SPEC
 #define CPP_SPEC "%(cpp_cpu) %{posix:-D_POSIX_SOURCE} \
-  -D__CEGCC32__ -D__CEGCC__ %{!ansi:-Dunix} -D__unix__ -D__unix \
+  -D__CEGCC32__ -D__CEGCC__ -D__CEGCC_VERSION__ \
+  %{!ansi:-Dunix} -D__unix__ -D__unix \
   %{mwin32: -DWIN32 -D_WIN32 -D__WIN32 -D__WIN32__ } \
   %{!nostdinc:%{!mno-win32: -idirafter ../include/w32api%s -idirafter ../../include/w32api%s }} \
 "

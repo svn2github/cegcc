@@ -1,6 +1,11 @@
-2007-11-25  Pedro Alves, Danny Backx <dannybackx@users.sourceforge.net>
+2007-11-29  Danny Backx  <dannybackx@users.sourceforge.net>
 
-        * w32api/libce/icmplib.def: Remove proxy for icmplib, MSDN says it's
+	* w32api/include/cegcc.h.in : Add file to provide version tracking
+	macros.
+
+2007-11-25  Pedro Alves, Danny Backx  <dannybackx@users.sourceforge.net>
+
+        * w32api/libce/icmplib.def : Remove proxy for icmplib, MSDN says it's
 	a static library only.
 
 2007-11-16  Danny Backx  <dannybackx@users.sourceforge.net>

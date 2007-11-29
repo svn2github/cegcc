@@ -205,6 +205,42 @@ else
 	#
 	#	End level 20 (checkout new tag from SVN)
 	#
+	RESTARTED=21
+	report_status
+	#
+fi
+
+#
+# Level 21
+#
+if test $RESTARTED -ge 22
+then
+	echo "Skip level 21 (create version include file)"
+else
+	echo "Level 21 (create version include file)"
+
+	OK=no
+	TS1=`date +%Y%m%d`
+	cd $TAGSDIR/cegcc-$VERSION/src/w32api/includes
+	CEGCC_VERSION_MAJOR=`echo $VERSION | awk -F. '{print $1}'`
+	CEGCC_VERSION_MINOR=`echo $VERSION | awk -F. '{print $2}'`
+	CEGCC_VERSION_PATCHLEVEL=`echo $VERSION | awk -F. '{print $3}'`
+	L1=`grep -s -n "Automatic changes below" cegcc.h.in | awk -F: '{print $1}'`
+	L2=`grep -s -n "Automatic changes above" cegcc.h.in | awk -F: '{print $1}'`
+	head -$L1 cegcc.h.in >cegcc.h
+	echo "#define   __CEGCC_VERSION_MAJOR__ " $CEGCC_VERSION_MAJOR >> cegcc.h
+	echo "#define   __CEGCC_VERSION_MINOR__ " $CEGCC_VERSION_MINOR >> cegcc.h
+	echo "#define   __CEGCC_VERSION_PATCHLEVEL__ " $CEGCC_VERSION_PATCHLEVEL >> cegcc.h
+	echo "#define   __CEGCC_BUILD_DATE__" `date +%Y%m%d` >> cegcc.h
+	tail +$L2 cegcc.h.in >>cegcc.h
+	svn commit cegcc.h -m "Version file for release $VERSION" && OK=yes
+	if [ $OK = "no" ]; then
+		echo "SVN commit failed, exiting..."
+		exit 1
+	fi
+	#
+	#	End level 21 (create version include file)
+	#
 	RESTARTED=30
 	report_status
 	#
