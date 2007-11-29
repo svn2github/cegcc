@@ -1,7 +1,9 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef	__CEGCC__
 #include <errno.h>
+#endif
 #include <fcntl.h>
 
 static int init = 0;
@@ -10,8 +12,12 @@ static void show_errmsg_dll(const char *func)
 {
 	char msg[128];
 	wchar_t *w_msg;
-	int e = GetLastError();
+#ifdef	__CEGCC__
 	snprintf(msg, sizeof(msg), "%s: errno = %i", func, errno);
+#else
+	int e = GetLastError();
+	snprintf(msg, sizeof(msg), "%s: last error = %i", func, e);
+#endif
 	w_msg = (wchar_t *) malloc(sizeof(wchar_t) * strlen(msg));
 	mbstowcs(w_msg, msg, strlen(msg));
 	MessageBoxW(0, w_msg, NULL, 0);

@@ -1,4 +1,5 @@
-T=		arm-wince-cegcc
+T=		arm-wince-mingw32ce
+# T=		arm-wince-cegcc
 CC=		${T}-gcc -g
 DLLTOOL=	${T}-dlltool
 
