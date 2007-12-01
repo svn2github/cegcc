@@ -1,3 +1,7 @@
+2007-12-01  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* w32api/include/aygshell.h : Add SHInitExtraControls.
+
 2007-11-29  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* w32api/include/cegcc.h.in : Add file to provide version tracking

@@ -234,4 +234,8 @@ HBITMAP SHLoadImageResource(HINSTANCE hinst, UINT uIdImageFile);
 
 #endif	/* _WIN32_WCE >= 400 */
 
+#if (_WIN32_WCE >= 0x0300)
+BOOL SHInitExtraControls(void);
+#endif
+
 #endif	/* _AYGSHELL_H */
