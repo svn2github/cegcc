@@ -218,10 +218,10 @@ then
 	echo "Skip level 21 (create version include file)"
 else
 	echo "Level 21 (create version include file)"
-
 	OK=no
 	TS1=`date +%Y%m%d`
-	cd $TAGSDIR/cegcc-$VERSION/src/w32api/includes
+	cd $ORIGDIR
+	cd $TAGSDIR/cegcc-$VERSION/src/w32api/include
 	CEGCC_VERSION_MAJOR=`echo $VERSION | awk -F. '{print $1}'`
 	CEGCC_VERSION_MINOR=`echo $VERSION | awk -F. '{print $2}'`
 	CEGCC_VERSION_PATCHLEVEL=`echo $VERSION | awk -F. '{print $3}'`
@@ -233,6 +233,7 @@ else
 	echo "#define   __CEGCC_VERSION_PATCHLEVEL__ " $CEGCC_VERSION_PATCHLEVEL >> cegcc.h
 	echo "#define   __CEGCC_BUILD_DATE__" `date +%Y%m%d` >> cegcc.h
 	tail +$L2 cegcc.h.in >>cegcc.h
+	svn add cegcc.h
 	svn commit cegcc.h -m "Version file for release $VERSION" && OK=yes
 	if [ $OK = "no" ]; then
 		echo "SVN commit failed, exiting..."
