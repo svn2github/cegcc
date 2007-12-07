@@ -1,3 +1,7 @@
+2007-12-07  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* w32api/include/icmpapi.h : Add new file.
+
 2007-12-01  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* w32api/include/aygshell.h : Add SHInitExtraControls.
