@@ -146,7 +146,7 @@ echo "components: ${components}"
 mkdir -p ${BUILD_DIR} || exit 1
 mkdir -p ${PREFIX} || exit 1
 
-function build_binutils()
+build_binutils()
 {
     echo ""
     echo "BUILDING BINUTILS --------------------------"
@@ -165,7 +165,7 @@ function build_binutils()
     cd ${BUILD_DIR}
 }    
 
-function build_bootstrap_gcc()
+build_bootstrap_gcc()
 {
     mkdir -p gcc-bootstrap || exit 1
     cd gcc-bootstrap
@@ -192,7 +192,7 @@ function build_bootstrap_gcc()
     cd ${BUILD_DIR}
 }
 
-function build_w32api()
+build_w32api()
 {
 #I have this normally set by ccache.
 #Must unset them, because mingw being a lib,
@@ -215,7 +215,7 @@ function build_w32api()
     cd ${BUILD_DIR}
 }
 
-function build_mingw_runtime()
+build_mingw_runtime()
 {
 #I have this normally set by ccache.
 #Must unset them, because mingw being a lib,
@@ -239,7 +239,7 @@ function build_mingw_runtime()
     cd ${BUILD_DIR}
 }
 
-function build_gcc()
+build_gcc()
 {
     mkdir -p gcc || exit 1
     cd gcc
@@ -283,7 +283,7 @@ function build_gcc()
     cd ${BUILD_DIR}
 }
 
-function build_gdb()
+build_gdb()
 {
     echo ""
     echo "BUILDING GDB --------------------------"
@@ -317,7 +317,7 @@ function build_gdb()
     cd ${BUILD_DIR}
 }
 
-function build_gdbstub()
+build_gdbstub()
 {
     echo ""
     echo "BUILDING GDB stub --------------------------"
@@ -336,7 +336,7 @@ function build_gdbstub()
     cd ${BUILD_DIR}
 }
 
-function build_docs()
+build_docs()
 {
     echo ""
     echo "INSTALLING documentation --------------------------"
@@ -360,7 +360,7 @@ function build_docs()
     cd ${BUILD_DIR}
 }
 
-function build_profile()
+build_profile()
 {
     echo ""
     echo "BUILDING profiling libraries --------------------------"
@@ -383,7 +383,7 @@ function build_profile()
     cd ${BUILD_DIR}
 }
 
-function build_all
+build_all()
 {
     build_binutils
     build_bootstrap_gcc
