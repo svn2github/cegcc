@@ -1,11 +1,13 @@
-2007-11-25  Pedro Alves, Danny Backx <dannybackx@users.sourceforge.net>
+2007-11-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+	    Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* cegcc/importlibs/build.sh: Remove proxy for icmplib, MSDN says it's
-	a static library only.
+	* cegcc/importlibs/build.sh: Remove import lib for icmplib, MSDN
+	says it's a static library only.
 
 2007-09-03  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* cegcc/importlibs/build.sh: Generate proxy for the toolhelp library.
+	* cegcc/importlibs/build.sh: Generate import lib for the toolhelp
+	library.
 
 2007-06-13  Pedro Alves  <pedro_alves@portugalmail.pt>
 
