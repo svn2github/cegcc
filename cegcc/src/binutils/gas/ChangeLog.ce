@@ -1,3 +1,7 @@
+2007-12-17  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* configure.tgt: Add arm-*-mingw32ce* target.
+
 2006-10-31  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* config/te-wince-pe-h (CPU_DEFAULT): Define to ARM_ARCH_V4.
