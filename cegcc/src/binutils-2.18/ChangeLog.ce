@@ -1,0 +1,12 @@
+2007-12-21  Danny Backx  <danny.backx@users.sourceforge.net>
+
+	* config.sub : Add cegcc as a recognized system.
+	* configure.ac, gas/configure.tgt, ld/configure.tgt,
+	binutils/configure.in, bfd/config.bfd : Add arm-*-mingw32ce* and arm-*-cegcc* .
+	* configure, binutils/configure : Regenerated.
+	* binutils/Makefile.in, binutils/doc/Makefile.in : Regenerated but no
+	functional difference.
+
+2007-12-21  Danny Backx  <danny.backx@users.sourceforge.net>
+
+	* Initial import into cegcc svn : binutils 2.18.

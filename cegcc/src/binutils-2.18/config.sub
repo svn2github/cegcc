@@ -447,6 +447,10 @@ case $basic_machine in
 		basic_machine=c90-cray
 		os=-unicos
 		;;
+	cegcc)
+		basic_machine=arm-unknown
+		os=-cegcc
+		;;
 	convex-c1)
 		basic_machine=c1-convex
 		os=-bsd
@@ -1226,7 +1230,8 @@ case $os in
 	      | -os2* | -vos* | -palmos* | -uclinux* | -nucleus* \
 	      | -morphos* | -superux* | -rtmk* | -rtmk-nova* | -windiss* \
 	      | -powermax* | -dnix* | -nx6 | -nx7 | -sei* | -dragonfly* \
-	      | -skyos* | -haiku* | -rdos* | -toppers* | -drops*)
+	      | -skyos* | -haiku* | -rdos* | -toppers* | -drops* \
+	      | -cegcc* | -mingw32ce*)
 	# Remember, each alternative MUST END IN *, to match a version number.
 		;;
 	-qnx*)
