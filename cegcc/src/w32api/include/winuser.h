@@ -1962,6 +1962,12 @@ extern "C" {
 #endif
 #define VK_OEM_2	0xBF
 #define VK_OEM_3	0xC0
+#define	VK_APP1		0xC1
+#define	VK_APP2		0xC2
+#define	VK_APP3		0xC3
+#define	VK_APP4		0xC4
+#define	VK_APP5		0xC5
+#define	VK_APP6		0xC6
 #define VK_OEM_4	0xDB
 #define VK_OEM_5	0xDC
 #define VK_OEM_6	0xDD

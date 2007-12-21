@@ -1,3 +1,8 @@
+2007-12-21  Pavel Chernikov  <pchernik@gmail.com>
+
+	* w32api/include/winuser.h (VK_APP1, VK_APP2, VK_APP3, VK_APP4,
+	VK_APP5, VK_APP6) : Define.
+
 2007-12-07  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* w32api/include/icmpapi.h : Add new file.
