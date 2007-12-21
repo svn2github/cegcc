@@ -1,0 +1,3 @@
+2007-12-21  Danny Backx  <danny.backx@users.sourceforge.net>
+
+	* configure.tgt : Add arm-*-mingw32ce* and arm-*-cegcc* .
