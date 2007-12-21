@@ -1,3 +1,8 @@
+2007-12-21  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* build-mingw32ce.sh, build-mingw32ce-dll.sh: Change target to
+	arm-unknown-mingw32ce.
+
 2007-12-17  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* build-mingw32ce.sh: Make it build with sh.

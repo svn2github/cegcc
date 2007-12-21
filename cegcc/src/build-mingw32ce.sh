@@ -133,7 +133,8 @@ fi
 # Report about options.
 echo The following components will be built: ${components}
 
-export TARGET="arm-wince-mingw32ce"
+export TARGET="arm-unknown-mingw32ce"
+# export TARGET="arm-wince-mingw32ce"
 export BUILD=`sh ${BASE_DIRECTORY}/gcc/config.guess`
 export PATH=${PREFIX}/bin:${PATH}
 
@@ -355,7 +356,7 @@ build_docs()
     cp NEWS README ${PREFIX} || exit 1
     cp src/binutils/COPYING ${PREFIX} || exit 1
     cp src/binutils/COPYING.LIB ${PREFIX} || exit 1
-    cp src/binutils/COPYING.NEWLIB ${PREFIX} || exit 1
+    cp src/newlib/COPYING.NEWLIB ${PREFIX} || exit 1
 
     cd ${BUILD_DIR}
 }

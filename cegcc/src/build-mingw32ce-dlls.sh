@@ -3,7 +3,7 @@
 # Based on script from:
 # http://cygwin.com/ml/cygwin-apps/2006-05/msg00044.html
 
-TARGET=arm-wince-mingw32ce
+TARGET=arm-unknown-mingw32ce
 PREFIX=/opt/mingw32ce
 GCC_VERSION=4.1.0
 
