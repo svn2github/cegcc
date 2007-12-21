@@ -757,6 +757,21 @@ arm*-wince-cegcc*)
 	  ;;
 	esac
 	;;
+arm-*-cegcc*)
+	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h arm/wince-pe.h arm/wince-cegcc.h"
+	tmake_file="arm/t-arm arm/t-wince-pe arm/t-wince-cegcc"
+	extra_options="${extra_options} arm/pe.opt arm/cegcc.opt"
+	extra_objs="pe.o pe-stubs.o"
+	extra_gcc_objs=cegcc1.o
+	cxx_target_objs=pe-cxx.o
+	target_gtfiles="\$(srcdir)/config/arm/pe.c"
+	case ${enable_threads} in
+	  "" | yes | win32)
+	  thread_file='win32'
+	  tmake_file="${tmake_file} arm/t-gthr-win32"
+	  ;;
+	esac
+	;;
 arm-*-pe*)
 	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h"
 	tmake_file="arm/t-arm arm/t-pe"
@@ -1254,6 +1269,21 @@ i[34567]86-*-pe | i[34567]86-*-cygwin*)
 	if test x$enable_threads = xyes; then
 		thread_file='posix'
 	fi
+	;;
+arm-*-mingw32*)
+	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h arm/wince-pe.h arm/mingw32.h"
+	xm_file=arm/xm-mingw32.h
+	tmake_file="arm/t-arm arm/t-wince-pe arm/t-cygming arm/t-mingw32"
+	target_gtfiles="\$(srcdir)/config/arm/pe.c"
+	extra_options="${extra_options} arm/pe.opt arm/cygming.opt"
+	extra_objs="pe.o pe-stubs.o"
+	cxx_target_objs=pe-cxx.o
+	case ${enable_threads} in
+	  "" | yes | win32)
+	  thread_file='win32'
+	  tmake_file="${tmake_file} arm/t-gthr-win32"
+	  ;;
+	esac
 	;;
 arm-wince-mingw32*)
 	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h arm/wince-pe.h arm/mingw32.h"

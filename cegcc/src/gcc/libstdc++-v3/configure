@@ -82586,7 +82586,7 @@ done
   CXXFLAGS="$ac_save_CXXFLAGS"
 
     ;;
-  *arm-wince-pe | *-cegcc*)
+  *arm-unknown-* | *arm-wince-pe | *-cegcc*)
 
 
 
