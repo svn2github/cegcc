@@ -36,6 +36,8 @@ extern void seekdir(DIR *dir, long loc);
 extern void rewinddir(DIR *dir);
 extern int  closedir(DIR *dir);
 
+extern int readdir_r(DIR *dirp, struct dirent *entry, struct dirent **result);
+
 #ifdef __cplusplus
 };
 #endif
