@@ -1,3 +1,7 @@
+2007-12-24  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* build-mingw32ce.sh (usage): Make it run with sh.
+
 2007-12-21  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* build-mingw32ce.sh, build-mingw32ce-dll.sh: Change target to

@@ -10,7 +10,7 @@ ME=`basename $0`
 ac_default_prefix="/opt/mingw32ce"
 export BUILD_DIR=`pwd`
 
-function usage
+usage()
 {
     cat << _ACEOF
 
