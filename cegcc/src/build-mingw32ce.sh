@@ -22,8 +22,8 @@ Usage: $0 [OPTIONS] ...
   --prefix=PREFIX         install toolchain in PREFIX
 			  [$ac_default_prefix]
   --components=LIST       specify which components to build
-                          valid components are: all,binutils,gcc,w32api,mingw,
-                          gdb,gdbstub,docs and profile
+                          valid components are: all,binutils,bootstrapgcc,
+                          gcc,w32api,mingw, gdb,gdbstub,docs and profile
 			  [all]
 
 Report bugs to <cegcc-devel@lists.sourceforge.net>.
@@ -129,23 +129,6 @@ if [ -d ${BUILD_DIR}/.svn ]; then
 	echo "  sh ../build-mingw32ce.sh $@"
 	exit 1
 fi
-
-# Report about options.
-echo The following components will be built: ${components}
-
-export TARGET="arm-unknown-mingw32ce"
-# export TARGET="arm-wince-mingw32ce"
-export BUILD=`sh ${BASE_DIRECTORY}/gcc/config.guess`
-export PATH=${PREFIX}/bin:${PATH}
-
-echo "Building mingw32ce:"
-echo "source: ${BASE_DIRECTORY}"
-echo "building in: ${BUILD_DIR}"
-echo "prefix: ${PREFIX}"
-echo "components: ${components}"
-
-mkdir -p ${BUILD_DIR} || exit 1
-mkdir -p ${PREFIX} || exit 1
 
 build_binutils()
 {
@@ -397,21 +380,39 @@ build_all()
     build_gdbstub
 }
 
+split_components=`echo "${components}" | sed -e 's/,/ /g'`
+
 # check for valid options before trying to build them all.
-eval "set -- $components"
+eval "set -- $split_components"
 while [ -n "$1" ]; do
     case $1 in
 	binutils | bootstrapgcc | w32api | \
 	    mingw | gcc | gdb | gdbstub | \
 	    docs | profile | all) 
 	    ;;
-	*) echo "Please enter a valid build option." ;;
+	*)
+	    echo "Please enter a valid build option."
+	    exit 1
+	    ;;
     esac
     shift
 done
 
+export TARGET="arm-unknown-mingw32ce"
+export BUILD=`sh ${BASE_DIRECTORY}/gcc/config.guess`
+export PATH=${PREFIX}/bin:${PATH}
+
+echo "Building mingw32ce:"
+echo "source: ${BASE_DIRECTORY}"
+echo "building in: ${BUILD_DIR}"
+echo "prefix: ${PREFIX}"
+echo "components: ${components}"
+
+mkdir -p ${BUILD_DIR} || exit 1
+mkdir -p ${PREFIX} || exit 1
+
 # now actually try to build them.
-eval "set -- $components"
+eval "set -- $split_components"
 while [ -n "$1" ]; do
     case $1 in
 	binutils) build_binutils ;;
