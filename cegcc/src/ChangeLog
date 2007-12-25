@@ -1,5 +1,9 @@
 2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* build-mingw32ce.sh: Change default target to arm-mingw32ce.
+
+2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* build-mingw32ce.sh: Display bootstrapgcc option on `usage`.
 	Move option reporting below option processing.  Exit immediatelly
 	if an invalid component is specified.  Actually allow specifying a

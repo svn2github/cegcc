@@ -398,7 +398,7 @@ while [ -n "$1" ]; do
     shift
 done
 
-export TARGET="arm-unknown-mingw32ce"
+export TARGET="arm-mingw32ce"
 export BUILD=`sh ${BASE_DIRECTORY}/gcc/config.guess`
 export PATH=${PREFIX}/bin:${PATH}
 
