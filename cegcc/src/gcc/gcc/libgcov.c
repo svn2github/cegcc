@@ -319,11 +319,14 @@ gcov_exit (void)
 #endif
 #ifdef	UNDER_CE
 	  {
-            wchar_t	x[256];
-	    int		l = strlen(gi_filename);
+            wchar_t x[256];
+	    int	l = strlen (gi_filename);
 	    l = (l < 256) ? l : 255;
-	    wcstombs(x, gi_filename, l);
-	    MessageBoxW(0, L"gcov_open", x, 0);
+	    mbstowcs (x, gi_filename, l);
+	    x[l] = '\0';
+	    extern int MessageBoxW (void *, const wchar_t *,
+				    const wchar_t *, unsigned);
+	    MessageBoxW (0, L"gcov_open", x, 0);
 	  }
 #endif
 	  if (!gcov_open (gi_filename))
@@ -333,10 +336,13 @@ gcov_exit (void)
 #else
 	      {
 		wchar_t	x[256];
-		int	l = strlen(gi_filename);
+		int l = strlen (gi_filename);
 		l = (l < 256) ? l : 255;
-		mbstowcs(x, gi_filename, l);
-	        MessageBoxW(0, x, L"gcov_open couldn't open file", 0);
+		mbstowcs (x, gi_filename, l);
+		x[l] = '\0';
+		extern int MessageBoxW (void *, const wchar_t *,
+					const wchar_t *, unsigned);
+	        MessageBoxW (0, x, L"gcov_open couldn't open file", 0);
 	      }
 #endif
 	      continue;

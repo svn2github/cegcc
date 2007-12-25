@@ -1,5 +1,10 @@
 2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* libgcov.c (gcov_exit) [UNDER_CE]: Fix mbstowcs/wcstombs
+	confusion.  Always null terminate strings.  Fix formatting.
+
+2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* config.gcc: Remove redundant arm-wince-mingw32ce,arm-*-mingw32ce
 	and arm-wince-cegcc,arm-*-cegcc copies.
 
