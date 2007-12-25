@@ -1,5 +1,10 @@
 2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* configure.in: Use $target_alias instead of $target.
+	* configure: Regenerate.
+
+2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* configure.in: Fix arm*-*-cegcc* and arm*-*-mingw32ce* addition,
 	and collapse redundant CE targets support.
 	* configure: Regenerate.

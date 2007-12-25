@@ -3209,7 +3209,7 @@ case " $target_configdirs " in
    *-cygwin*)
      FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -L$$r/$(TARGET_SUBDIR)/winsup -L$$r/$(TARGET_SUBDIR)/winsup/cygwin -L$$r/$(TARGET_SUBDIR)/winsup/w32api/lib -isystem $$s/winsup/include -isystem $$s/winsup/cygwin/include -isystem $$s/winsup/w32api/include' ;;
    arm-wince-pe | arm-*-cegcc* | arm-*-mingw32ce*)
-     FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -mwin32 -static -idirafter ${prefix}/${target}/include/w32api' ;;
+     FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -mwin32 -static -idirafter ${prefix}/${target_alias}/include/w32api' ;;
    esac
 
    # If we're not building GCC, don't discard standard headers.
