@@ -644,6 +644,21 @@ arc-*-elf*)
 	extra_parts="crtinit.o crtfini.o"
 	use_fixproto=yes
 	;;
+arm*-*-cegcc*)
+	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h arm/wince-pe.h arm/wince-cegcc.h"
+	tmake_file="arm/t-arm arm/t-wince-pe arm/t-wince-cegcc"
+	extra_options="${extra_options} arm/pe.opt arm/cegcc.opt"
+	extra_objs="pe.o pe-stubs.o"
+	extra_gcc_objs=cegcc1.o
+	cxx_target_objs=pe-cxx.o
+	target_gtfiles="\$(srcdir)/config/arm/pe.c"
+	case ${enable_threads} in
+	  "" | yes | win32)
+	  thread_file='win32'
+	  tmake_file="${tmake_file} arm/t-gthr-win32"
+	  ;;
+	esac
+	;;
 arm-*-coff* | armel-*-coff*)
 	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h"
 	tmake_file="arm/t-arm arm/t-arm-coff"
@@ -659,6 +674,21 @@ arm-wrs-vxworks)
 arm*-*-freebsd*|strongarm*-*-freebsd*)
 	tm_file="dbxelf.h elfos.h ${fbsd_tm_file} arm/elf.h arm/aout.h arm/freebsd.h arm/arm.h"
 	tmake_file="${tmake_file} arm/t-arm arm/t-strongarm-elf"
+	;;
+arm*-*-mingw32ce*)
+	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h arm/wince-pe.h arm/mingw32.h"
+	xm_file=arm/xm-mingw32.h
+	tmake_file="arm/t-arm arm/t-wince-pe arm/t-cygming arm/t-mingw32"
+	target_gtfiles="\$(srcdir)/config/arm/pe.c"
+	extra_options="${extra_options} arm/pe.opt arm/cygming.opt"
+	extra_objs="pe.o pe-stubs.o"
+	cxx_target_objs=pe-cxx.o
+	case ${enable_threads} in
+	  "" | yes | win32)
+	  thread_file='win32'
+	  tmake_file="${tmake_file} arm/t-gthr-win32"
+	  ;;
+	esac
 	;;
 arm*-*-netbsdelf*)
 	tm_file="dbxelf.h elfos.h netbsd.h netbsd-elf.h arm/elf.h arm/aout.h arm/arm.h arm/netbsd-elf.h"
@@ -730,36 +760,6 @@ arm*-*-elf | ep9312-*-elf)
 arm*-wince-pe*)
 	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h arm/wince-pe.h"
 	tmake_file="arm/t-arm arm/t-wince-pe"
-	extra_options="${extra_options} arm/pe.opt arm/cegcc.opt"
-	extra_objs="pe.o pe-stubs.o"
-	extra_gcc_objs=cegcc1.o
-	cxx_target_objs=pe-cxx.o
-	target_gtfiles="\$(srcdir)/config/arm/pe.c"
-	case ${enable_threads} in
-	  "" | yes | win32)
-	  thread_file='win32'
-	  tmake_file="${tmake_file} arm/t-gthr-win32"
-	  ;;
-	esac
-	;;
-arm*-wince-cegcc*)
-	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h arm/wince-pe.h arm/wince-cegcc.h"
-	tmake_file="arm/t-arm arm/t-wince-pe arm/t-wince-cegcc"
-	extra_options="${extra_options} arm/pe.opt arm/cegcc.opt"
-	extra_objs="pe.o pe-stubs.o"
-	extra_gcc_objs=cegcc1.o
-	cxx_target_objs=pe-cxx.o
-	target_gtfiles="\$(srcdir)/config/arm/pe.c"
-	case ${enable_threads} in
-	  "" | yes | win32)
-	  thread_file='win32'
-	  tmake_file="${tmake_file} arm/t-gthr-win32"
-	  ;;
-	esac
-	;;
-arm-*-cegcc*)
-	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h arm/wince-pe.h arm/wince-cegcc.h"
-	tmake_file="arm/t-arm arm/t-wince-pe arm/t-wince-cegcc"
 	extra_options="${extra_options} arm/pe.opt arm/cegcc.opt"
 	extra_objs="pe.o pe-stubs.o"
 	extra_gcc_objs=cegcc1.o
@@ -1269,36 +1269,6 @@ i[34567]86-*-pe | i[34567]86-*-cygwin*)
 	if test x$enable_threads = xyes; then
 		thread_file='posix'
 	fi
-	;;
-arm-*-mingw32*)
-	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h arm/wince-pe.h arm/mingw32.h"
-	xm_file=arm/xm-mingw32.h
-	tmake_file="arm/t-arm arm/t-wince-pe arm/t-cygming arm/t-mingw32"
-	target_gtfiles="\$(srcdir)/config/arm/pe.c"
-	extra_options="${extra_options} arm/pe.opt arm/cygming.opt"
-	extra_objs="pe.o pe-stubs.o"
-	cxx_target_objs=pe-cxx.o
-	case ${enable_threads} in
-	  "" | yes | win32)
-	  thread_file='win32'
-	  tmake_file="${tmake_file} arm/t-gthr-win32"
-	  ;;
-	esac
-	;;
-arm-wince-mingw32*)
-	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h arm/wince-pe.h arm/mingw32.h"
-	xm_file=arm/xm-mingw32.h
-	tmake_file="arm/t-arm arm/t-wince-pe arm/t-cygming arm/t-mingw32"
-	target_gtfiles="\$(srcdir)/config/arm/pe.c"
-	extra_options="${extra_options} arm/pe.opt arm/cygming.opt"
-	extra_objs="pe.o pe-stubs.o"
-	cxx_target_objs=pe-cxx.o
-	case ${enable_threads} in
-	  "" | yes | win32)
-	  thread_file='win32'
-	  tmake_file="${tmake_file} arm/t-gthr-win32"
-	  ;;
-	esac
 	;;
 i[34567]86-*-mingw32*)
 	tm_file="${tm_file} i386/unix.h i386/bsd.h i386/gas.h dbxcoff.h i386/cygming.h i386/mingw32.h"

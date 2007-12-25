@@ -1,3 +1,8 @@
+2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config.gcc: Remove redundant arm-wince-mingw32ce,arm-*-mingw32ce
+	and arm-wince-cegcc,arm-*-cegcc copies.
+
 2007-11-29  Danny Backx  <danny.backx@users.sourceforge.net>
 
 	* config/arm/mingw32.h, config/arm/wince-cegcc.h : Define
