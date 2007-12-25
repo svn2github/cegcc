@@ -1,3 +1,7 @@
+2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* configure.tgt: Add arm*-*-cegcc* target.
+
 2007-12-17  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* configure.tgt: Add arm-*-mingw32ce* target.
