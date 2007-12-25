@@ -3,14 +3,14 @@
 # Based on script from:
 # http://cygwin.com/ml/cygwin-apps/2006-05/msg00044.html
 
-TARGET=arm-unknown-mingw32ce
+TARGET=arm-mingw32ce
 PREFIX=/opt/mingw32ce
 GCC_VERSION=4.1.0
 
 export PATH=${PREFIX}/bin:${PATH}
 
-srcdir=`readlink -f ./gcc`
-builddir=`readlink -f build-mingw32ce`
+srcdir=`cd gcc; pwd`
+builddir=`cd build-mingw32ce; pwd`
 
 pushd ${PREFIX}/${TARGET}/lib
 

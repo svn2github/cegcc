@@ -1,5 +1,10 @@
 2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* build-mingw32ce-dlls.sh: Change default target to arm-mingw32ce.
+	Remove dependency on readlink.
+
+2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* build-mingw32ce.sh: Change default target to arm-mingw32ce.
 
 2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
