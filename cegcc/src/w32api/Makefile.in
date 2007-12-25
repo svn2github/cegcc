@@ -14,6 +14,8 @@ SHELL = @SHELL@
 srcdir = @srcdir@
 VPATH = @srcdir@
 
+SUBDIRS = @SUBDIRS@
+
 build_alias = @build@
 host_alias = @host@
 target_alias = @target@
@@ -86,12 +88,6 @@ FLAGS_TO_PASS = \
 	WINDRES="$(WINDRES)"
 
 # end config section
-
-ifneq (,$(findstring wince,$(target_alias)))
-  SUBDIRS = libce
-else
-  SUBDIRS = lib
-endif
 
 PACKAGE = w32api
 VERSION = 3.8

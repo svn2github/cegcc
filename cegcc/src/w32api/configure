@@ -272,7 +272,7 @@ PACKAGE_STRING=
 PACKAGE_BUGREPORT=
 
 ac_unique_file="lib/scrnsave.c"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CC ac_ct_CC CFLAGS with_cross_host AR ac_ct_AR AS ac_ct_AS RANLIB ac_ct_RANLIB LD ac_ct_LD DLLTOOL ac_ct_DLLTOOL WINDRES ac_ct_WINDRES BUILDENV LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CC ac_ct_CC CFLAGS with_cross_host AR ac_ct_AR AS ac_ct_AS RANLIB ac_ct_RANLIB LD ac_ct_LD DLLTOOL ac_ct_DLLTOOL WINDRES ac_ct_WINDRES BUILDENV SUBDIRS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1998,6 +1998,16 @@ echo "${ECHO_T}$BUILDENV" >&6
 fi
 
 
+case "${host}" in
+    *-mingw32ce* | *-cegcc*)
+        SUBDIRS="libce"
+        ;;
+    *)
+        SUBDIRS="lib"
+        ;;
+esac
+
+
                                                   ac_config_files="$ac_config_files Makefile lib/Makefile lib/ddk/Makefile lib/directx/Makefile libce/Makefile"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -2670,6 +2680,7 @@ s,@ac_ct_DLLTOOL@,$ac_ct_DLLTOOL,;t t
 s,@WINDRES@,$WINDRES,;t t
 s,@ac_ct_WINDRES@,$ac_ct_WINDRES,;t t
 s,@BUILDENV@,$BUILDENV,;t t
+s,@SUBDIRS@,$SUBDIRS,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF

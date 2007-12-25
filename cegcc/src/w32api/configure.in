@@ -50,4 +50,14 @@ else
 fi
 AC_SUBST(BUILDENV)
 
+case "${host}" in
+    *-mingw32ce* | *-cegcc*)
+        SUBDIRS="libce"
+        ;;
+    *)
+        SUBDIRS="lib"
+        ;;
+esac
+AC_SUBST(SUBDIRS)
+
 AC_OUTPUT(Makefile lib/Makefile lib/ddk/Makefile lib/directx/Makefile libce/Makefile)
