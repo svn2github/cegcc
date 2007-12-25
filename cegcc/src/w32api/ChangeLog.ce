@@ -1,5 +1,18 @@
 2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
 
+	* configure.in (SUBDIRS): Set depending on $host_alias instead of
+	on $host.
+	* Makefile.in: Capture $build_alias, $host_alias, $target_alias
+	verbatim from config.  Capture $build, $host, $target from config.
+	Set $tooldir using $host_alias, not $target_alias.
+	* libce/Makefile.in: Get $build, $build_alias, $host, $host_alias,
+	$target and $target_alias from config.  Use $build, $host, $target
+	instead of the aliases to detect a native build.  Use $host_alias
+	instead of $target_alias to set the $tooldir.
+	* configure: Regenerate.
+
+2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
 	* configure.in (SUBDIRS): Set depending on host, and pass it to
 	the Makefile.
 	* Makefile.in (SUBDIRS): Get from configure.

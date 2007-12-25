@@ -16,9 +16,13 @@ VPATH = @srcdir@
 
 SUBDIRS = @SUBDIRS@
 
-build_alias = @build@
-host_alias = @host@
-target_alias = @target@
+build = @build@
+build_alias = @build_alias@
+host = @host@
+host_alias = @host_alias@
+target = @target@
+target_alias = @target_alias@
+
 with_cross_host = @with_cross_host@
 prefix = @prefix@
 conf_prefix = @prefix@
@@ -27,7 +31,7 @@ program_transform_name = @program_transform_name@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
 libdir = @libdir@
-tooldir = $(exec_prefix)/$(target_alias)
+tooldir = $(exec_prefix)/$(host_alias)
 datadir = @datadir@
 infodir = @infodir@
 includedir = @includedir@
@@ -81,6 +85,11 @@ FLAGS_TO_PASS = \
 	inst_libdir="$(inst_libdir)" \
 	inst_docdir="$(inst_docdir)" \
 	prefix="$(prefix)" \
+	build="$(build)" \
+	build_alias="$(build_alias)" \
+	host="$(host)" \
+	host_alias="$(host_alias)" \
+	target="$(target)" \
 	target_alias="$(target_alias)" \
 	TAR="$(TAR)" \
 	TARFLAGS="$(TARFLAGS)" \

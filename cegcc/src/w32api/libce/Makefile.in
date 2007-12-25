@@ -18,9 +18,13 @@ VPATH = @srcdir@
 SUBDIRS := 
 subdirs := 
 
-host_alias = @host@
-build_alias = @build@
-target_alias = @target@
+build = @build@
+build_alias = @build_alias@
+host = @host@
+host_alias = @host_alias@
+target = @target@
+target_alias = @target_alias@
+
 prefix = @prefix@
 includedir:=@includedir@
 
@@ -28,14 +32,14 @@ program_transform_name = @program_transform_name@
 exec_prefix = @exec_prefix@
 libdir:=@libdir@
 bindir = @bindir@
-ifeq ($(target_alias),$(host_alias))
-ifeq ($(build_alias),$(host_alias))
+ifeq ($(target),$(host))
+ifeq ($(build),$(host))
 tooldir:=$(exec_prefix)
 else
-tooldir:=$(exec_prefix)/$(target_alias)
+tooldir:=$(exec_prefix)/$(host_alias)
 endif
 else
-tooldir:=$(exec_prefix)/$(target_alias)
+tooldir:=$(exec_prefix)/$(host_alias)
 endif
 datadir = @datadir@
 infodir = @infodir@

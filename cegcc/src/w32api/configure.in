@@ -50,7 +50,7 @@ else
 fi
 AC_SUBST(BUILDENV)
 
-case "${host}" in
+case "${host_alias}" in
     *-mingw32ce* | *-cegcc*)
         SUBDIRS="libce"
         ;;
