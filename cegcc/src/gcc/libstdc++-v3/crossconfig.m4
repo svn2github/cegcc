@@ -234,14 +234,7 @@ case "${host}" in
       AC_DEFINE(HAVE_TANHL)
     fi
     ;;
-  *-mingw32*)
-    AC_CHECK_HEADERS([sys/types.h errno.h unistd.h signal.h locale.h float.h fcntl.h])
-    GLIBCXX_CHECK_LINKER_FEATURES
-    GLIBCXX_CHECK_COMPLEX_MATH_SUPPORT
-    GLIBCXX_CHECK_ICONV_SUPPORT
-    GLIBCXX_CHECK_STDLIB_SUPPORT
-    ;;
-  arm-wince-pe | arm-*-cegcc* | arm-unknown-mingw32ce* )
+  arm-wince-pe | arm*-*-cegcc* | arm*-*-mingw32ce*)
     AC_CHECK_HEADERS([sys/types.h locale.h float.h errno.h signal.h unistd.h fcntl.h])
 #    AC_DEFINE(_GLIBCXX_HAVE_SYS_IOCTL_H)
 #   AC_DEFINE(HAVE_SYS_IOCTL_H)
@@ -249,6 +242,13 @@ case "${host}" in
     GLIBCXX_CHECK_COMPLEX_MATH_SUPPORT
     GLIBCXX_CHECK_STDLIB_SUPPORT
     #GLIBCXX_CHECK_WCHAR_T_SUPPORT
+    ;;
+  *-mingw32*)
+    AC_CHECK_HEADERS([sys/types.h errno.h unistd.h signal.h locale.h float.h fcntl.h])
+    GLIBCXX_CHECK_LINKER_FEATURES
+    GLIBCXX_CHECK_COMPLEX_MATH_SUPPORT
+    GLIBCXX_CHECK_ICONV_SUPPORT
+    GLIBCXX_CHECK_STDLIB_SUPPORT
     ;;
   *-netbsd*)
     AC_CHECK_HEADERS([nan.h ieeefp.h endian.h sys/isa_defs.h \
