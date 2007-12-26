@@ -367,6 +367,24 @@ build_profile()
     cd ${BUILD_DIR}
 }
 
+build_dlls()
+{
+    echo ""
+    echo "BUILDING DLL libraries --------------------------"
+    echo ""
+    echo ""
+
+    cd ${BUILD_DIR}
+
+    mkdir -p dll || exit 1
+    cd dll
+
+    cd ${BASE_DIRECTORY} || exit 1
+    ${BASE_DIRECTORY}/build-mingw32ce-dlls.sh || exit 1
+
+    cd ${BUILD_DIR}
+}
+
 build_all()
 {
     build_binutils
@@ -378,6 +396,7 @@ build_all()
     build_profile
     build_gdb
     build_gdbstub
+    build_dlls
 }
 
 split_components=`echo "${components}" | sed -e 's/,/ /g'`
@@ -388,7 +407,7 @@ while [ -n "$1" ]; do
     case $1 in
 	binutils | bootstrapgcc | w32api | \
 	    mingw | gcc | gdb | gdbstub | \
-	    docs | profile | all) 
+	    docs | profile | dlls | all) 
 	    ;;
 	*)
 	    echo "Please enter a valid build option."
@@ -424,6 +443,7 @@ while [ -n "$1" ]; do
 	gdbstub) build_gdbstub ;;
 	docs) build_docs ;;
 	profile) build_profile ;;
+	dlls) build_dlls ;;
 	all) build_all ;;
     esac
     shift
