@@ -9,7 +9,7 @@ SRCDIR=${TOP_SRCDIR}/src/cegcc/libstdc++
 
 DLLNAME=libstdc++.dll
 IMPLIB=$(DLLNAME).a
-TARGET=arm-wince-cegcc
+TARGET?=arm-wince-cegcc
 
 AR=$(TARGET)-ar
 CC=$(TARGET)-gcc

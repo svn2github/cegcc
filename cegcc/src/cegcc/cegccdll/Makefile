@@ -15,7 +15,7 @@ MY_DIR=${BUILD_DIR}/cegccdll
 TOP_SRCDIR?=../../..
 SRCDIR=${TOP_SRCDIR}/src/cegcc/cegccdll
 
-TARGET=arm-wince-cegcc
+TARGET?=arm-wince-cegcc
 DLLNAME=cegcc.dll
 IMPLIB=lib$(DLLNAME).a
 

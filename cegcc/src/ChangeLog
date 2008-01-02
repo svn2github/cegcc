@@ -1,3 +1,9 @@
+2008-01-02  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* cegcc/cegccdll/Makefile, cegcc/libstdc++/Makefile: Use "?=" to
+	assign to the TARGET variable so make picks up the value from the
+	environment if it is there.
+
 2007-12-26  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* build-mingw32ce.sh: add call to build-mingw32-dlls.sh.
