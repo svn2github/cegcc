@@ -80,6 +80,18 @@ extern BOOL SHInvokeContextMenuCommand(HWND,UINT,HANDLE);
 extern BOOL SHHandleWMSettingChange(HWND, WPARAM, LPARAM, SHACTIVATEINFO *);
 extern BOOL SHHandleWMActivate(HWND, WPARAM, LPARAM, SHACTIVATEINFO *, DWORD);
 
+/*
+ * Query the SIP state
+ */
+typedef	struct SIPINFO {
+	DWORD		cbSize;
+	DWORD		fdwFlags;
+	RECT		rcVisibleDesktop;
+	RECT		rcSipRect;
+	DWORD		dwImDataSize;
+	void		*pvImData;
+} SIPINFO, *PSIPINFO;
+
 #define	SPI_SETCOMPLETIONINFO	223
 #define	SPI_SETSIPINFO		224
 #define	SPI_GETSIPINFO		225
@@ -93,6 +105,19 @@ extern BOOL SHHandleWMActivate(HWND, WPARAM, LPARAM, SHACTIVATEINFO *, DWORD);
 #define	SIPF_ON		1
 #define	SIPF_DOCKED	2
 #define	SIPF_LOCKED	4
+
+#if (_WIN32_WCE >= 0x0300)
+typedef enum
+{
+	SIP_UP = 0,
+	SIP_DOWN,
+	SIP_FORCEDOWN,
+	SIP_UNCHANGED,
+	SIP_INPUTDIALOG
+} SIPSTATE;
+
+WINSHELLAPI BOOL WINAPI SHSipPreference (HWND hWnd, SIPSTATE st);
+#endif /* _WIN32_WCE >= 0x0300 */
 
 /*
  * Work with the PocketPC "New" menu.
@@ -220,7 +245,9 @@ WINSHELLAPI DWORD SHRecognizeGesture(SHRGINFO *shrg);
 /*
  * http://www.docjar.com/html/api/org/eclipse/swt/internal/win32/OS.java.html
  */
+#define	SHCMBM_SETSUBMENU	0x0590
 #define	SHCMBM_GETSUBMENU	0x0591
+#define	SHCMBM_GETMENU		0x0592
 #endif /* _WIN32_WCE */
 
 #if (_WIN32_WCE >= 0x0400)
