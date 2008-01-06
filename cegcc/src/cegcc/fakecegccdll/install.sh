@@ -9,18 +9,21 @@ if [ "x$PREFIX" = "x" ]; then
 	PREFIX=$1
 fi
 
-TARGET=arm-wince-cegcc
+if [ x$TARGET = x ]; then
+	TARGET=arm-wince-cegcc
+fi
 LIBDIR=${PREFIX}/${TARGET}/lib
 
 AS=${TARGET}-as
 AR=${TARGET}-ar
 
-${AS} cegcc.s -o cegcc.o
+${AS} cegcc.s -o cegcc.o || exit 1
 
-mkdir -p ${LIBDIR}
+mkdir -p ${LIBDIR} || exit 1
 CEGCCLIB=${LIBDIR}/libcegcc.dll.a
 
-rm -fv ${CEGCCLIB}
-${TARGET}-ar q ${CEGCCLIB} cegcc.o
+rm -fv ${CEGCCLIB} || exit 1
+${TARGET}-ar q ${CEGCCLIB} cegcc.o || exit 1
 
 rm -fv cegcc.o
+exit 0
