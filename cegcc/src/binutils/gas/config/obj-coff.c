@@ -1,13 +1,13 @@
 /* coff object file format
    Copyright 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005
+   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007
    Free Software Foundation, Inc.
 
    This file is part of GAS.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -497,7 +497,7 @@ obj_coff_ident (int ignore ATTRIBUTE_UNUSED)
   subseg_new (".comment", 0);
 #endif
 
-  stringer (1);
+  stringer (8 + 1);
   subseg_set (current_seg, current_subseg);
 }
 
@@ -777,7 +777,6 @@ obj_coff_endef (int ignore ATTRIBUTE_UNUSED)
 
   if (SF_GET_FUNCTION (def_symbol_in_progress))
     {
-      know (sizeof (def_symbol_in_progress) <= sizeof (long));
       set_function (def_symbol_in_progress);
       SF_SET_PROCESS (def_symbol_in_progress);
 

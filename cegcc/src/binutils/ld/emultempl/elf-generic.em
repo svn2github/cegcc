@@ -1,11 +1,11 @@
 # This shell script emits a C file. -*- C -*-
-#   Copyright 2006 Free Software Foundation, Inc.
+#   Copyright 2006, 2007 Free Software Foundation, Inc.
 #
-# This file is part of GLD, the Gnu Linker.
+# This file is part of the GNU Binutils.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -14,14 +14,15 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+# MA 02110-1301, USA.
 #
 
 # This file is sourced from elf32.em and from ELF targets that use
 # generic.em.
 #
-cat >>e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 
 static void
 gld${EMULATION_NAME}_map_segments (bfd_boolean need_layout)
@@ -60,7 +61,17 @@ gld${EMULATION_NAME}_map_segments (bfd_boolean need_layout)
 	    einfo ("%F%P: map sections to segments failed: %E\n");
 
 	  if (phdr_size != elf_tdata (output_bfd)->program_header_size)
-	    need_layout = TRUE;
+	    {
+	      if (tries > 6)
+		/* The first few times we allow any change to
+		   phdr_size .  */
+		need_layout = TRUE;
+	      else if (phdr_size < elf_tdata (output_bfd)->program_header_size)
+		/* After that we only allow the size to grow.  */
+		need_layout = TRUE;
+	      else
+		elf_tdata (output_bfd)->program_header_size = phdr_size;
+	    }
 	}
     }
   while (need_layout && --tries);

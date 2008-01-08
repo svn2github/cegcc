@@ -1,12 +1,12 @@
 /* OR32-specific support for 32-bit ELF
-   Copyright 2002, 2004, 2005 Free Software Foundation, Inc.
+   Copyright 2002, 2004, 2005, 2007 Free Software Foundation, Inc.
    Contributed by Ivan Guzvinec  <ivang@opencores.org>
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -16,10 +16,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "elf-bfd.h"
 #include "elf/or32.h"
@@ -462,6 +463,22 @@ bfd_elf32_bfd_reloc_type_lookup (bfd *abfd ATTRIBUTE_UNUSED,
   for (i = ARRAY_SIZE (or32_reloc_map); i--;)
     if (or32_reloc_map[i].bfd_reloc_val == code)
       return &elf_or32_howto_table[or32_reloc_map[i].elf_reloc_val];
+
+  return NULL;
+}
+
+static reloc_howto_type *
+bfd_elf32_bfd_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+				 const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0;
+       i < sizeof (elf_or32_howto_table) / sizeof (elf_or32_howto_table[0]);
+       i++)
+    if (elf_or32_howto_table[i].name != NULL
+	&& strcasecmp (elf_or32_howto_table[i].name, r_name) == 0)
+      return &elf_or32_howto_table[i];
 
   return NULL;
 }

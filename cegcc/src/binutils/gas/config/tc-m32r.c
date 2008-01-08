@@ -1,12 +1,12 @@
 /* tc-m32r.c -- Assembler for the Renesas M32R.
    Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-   2006 Free Software Foundation, Inc.
+   2006, 2007 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -713,6 +713,7 @@ md_begin (void)
 
   /* The sbss section is for local .scomm symbols.  */
   sbss_section = subseg_new (".sbss", 0);
+  seg_info (sbss_section)->bss = 1;
 
   /* This is copied from perform_an_assembly_pass.  */
   applicable = bfd_applicable_section_flags (stdoutput);
@@ -2113,60 +2114,7 @@ md_number_to_chars (char *buf, valueT val, int n)
 char *
 md_atof (int type, char *litP, int *sizeP)
 {
-  int i;
-  int prec;
-  LITTLENUM_TYPE words[MAX_LITTLENUMS];
-  char *t;
-
-  switch (type)
-    {
-    case 'f':
-    case 'F':
-    case 's':
-    case 'S':
-      prec = 2;
-      break;
-
-    case 'd':
-    case 'D':
-    case 'r':
-    case 'R':
-      prec = 4;
-      break;
-
-      /* FIXME: Some targets allow other format chars for bigger sizes
-         here.  */
-
-    default:
-      *sizeP = 0;
-      return _("Bad call to md_atof()");
-    }
-
-  t = atof_ieee (input_line_pointer, type, words);
-  if (t)
-    input_line_pointer = t;
-  *sizeP = prec * sizeof (LITTLENUM_TYPE);
-
-  if (target_big_endian)
-    {
-      for (i = 0; i < prec; i++)
-	{
-	  md_number_to_chars (litP, (valueT) words[i],
-			      sizeof (LITTLENUM_TYPE));
-	  litP += sizeof (LITTLENUM_TYPE);
-	}
-    }
-  else
-    {
-      for (i = prec - 1; i >= 0; i--)
-	{
-	  md_number_to_chars (litP, (valueT) words[i],
-			      sizeof (LITTLENUM_TYPE));
-	  litP += sizeof (LITTLENUM_TYPE);
-	}
-    }
-
-  return 0;
+  return ieee_md_atof (type, litP, sizeP, target_big_endian);
 }
 
 void

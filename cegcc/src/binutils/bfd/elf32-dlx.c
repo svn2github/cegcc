@@ -1,11 +1,12 @@
 /* DLX specific support for 32-bit ELF
-   Copyright 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
+   Copyright 2002, 2003, 2004, 2005, 2007
+   Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -18,8 +19,8 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
    MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "elf-bfd.h"
 #include "elf/dlx.h"
@@ -27,6 +28,7 @@
 #define USE_REL 1
 
 #define bfd_elf32_bfd_reloc_type_lookup elf32_dlx_reloc_type_lookup
+#define bfd_elf32_bfd_reloc_name_lookup elf32_dlx_reloc_name_lookup
 #define elf_info_to_howto               elf32_dlx_info_to_howto
 #define elf_info_to_howto_rel           elf32_dlx_info_to_howto_rel
 #define elf_backend_check_relocs        elf32_dlx_check_relocs
@@ -426,7 +428,7 @@ elf32_dlx_check_relocs (bfd *abfd,
 			const Elf_Internal_Rela *relocs)
 {
   Elf_Internal_Shdr *symtab_hdr;
-  struct elf_link_hash_entry **sym_hashes, **sym_hashes_end;
+  struct elf_link_hash_entry **sym_hashes;
   const Elf_Internal_Rela *rel;
   const Elf_Internal_Rela *rel_end;
 
@@ -435,9 +437,6 @@ elf32_dlx_check_relocs (bfd *abfd,
 
   symtab_hdr = &elf_tdata (abfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (abfd);
-  sym_hashes_end = sym_hashes + symtab_hdr->sh_size / sizeof (Elf32_External_Sym);
-  if (!elf_bad_symtab (abfd))
-    sym_hashes_end -= symtab_hdr->sh_info;
 
   rel_end = relocs + sec->reloc_count;
   for (rel = relocs; rel < rel_end; rel++)
@@ -468,7 +467,9 @@ elf32_dlx_check_relocs (bfd *abfd,
         /* This relocation describes which C++ vtable entries are actually
            used.  Record for later use during GC.  */
         case R_DLX_GNU_VTENTRY:
-          if (!bfd_elf_gc_record_vtentry (abfd, sec, h, rel->r_addend))
+          BFD_ASSERT (h != NULL);
+          if (h != NULL
+              && !bfd_elf_gc_record_vtentry (abfd, sec, h, rel->r_addend))
             return FALSE;
           break;
         }
@@ -503,6 +504,31 @@ elf32_dlx_reloc_type_lookup (bfd *abfd ATTRIBUTE_UNUSED,
     case BFD_RELOC_LO16:
       return &elf_dlx_reloc_16_lo;
     }
+}
+
+static reloc_howto_type *
+elf32_dlx_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+			     const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0;
+       i < sizeof (dlx_elf_howto_table) / sizeof (dlx_elf_howto_table[0]);
+       i++)
+    if (dlx_elf_howto_table[i].name != NULL
+	&& strcasecmp (dlx_elf_howto_table[i].name, r_name) == 0)
+      return &dlx_elf_howto_table[i];
+
+  if (strcasecmp (elf_dlx_gnu_rel16_s2.name, r_name) == 0)
+    return &elf_dlx_gnu_rel16_s2;
+  if (strcasecmp (elf_dlx_gnu_rel26_s2.name, r_name) == 0)
+    return &elf_dlx_gnu_rel26_s2;
+  if (strcasecmp (elf_dlx_reloc_16_hi.name, r_name) == 0)
+    return &elf_dlx_reloc_16_hi;
+  if (strcasecmp (elf_dlx_reloc_16_lo.name, r_name) == 0)
+    return &elf_dlx_reloc_16_lo;
+
+  return NULL;
 }
 
 static reloc_howto_type *

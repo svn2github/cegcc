@@ -16,7 +16,10 @@ gas_test "p2425.s" ""   "" "pcrel values in assignment"
 # The ".space" directive is taken care of in the C54x-specific tests, so fail
 #  here 
 #
-if { [istarget hppa*-*-*] || [istarget *c54x*-*-*] } then {
+# The test also doesn't work on mep targets, since they use RELC, and it
+# will avoid simplifying the expression since it conservatively assumes
+# ugly expressions can be saved until link-time.
+if { [istarget hppa*-*-*] || [istarget *c54x*-*-*] || [istarget mep*-*-*]} then {
     setup_xfail *-*-*
     fail "simplifiable double subtraction"
 } else {
@@ -31,7 +34,12 @@ if { ![istarget cris-*-*] && ![istarget crisv32-*-*]
 
 # This test is meaningless for the PA; the difference of two undefined
 # symbols is something that is (and must be) supported on the PA.
-if ![istarget hppa*-*-*] then {
+#
+# The MN10300 port supports link time relaxation which in turn allows
+# for link time resolution of the differneces of two symbols which are
+# undefined at assembly time.  Hence this test will not pass for the
+# MN10300.
+if { ![istarget hppa*-*-*] && ![istarget mn10300-*-*] && ![istarget am3*-*-*] } then {
     gas_test_error "diff1.s" "" "difference of two undefined symbols"
 }
 
@@ -57,6 +65,7 @@ gas_test_error "assign-bad.s" "" "== assignment for symbol already set"
 # .equ works differently on some targets.
 # linkrelax-ing prevents most forward references from working.
 case $target_triplet in {
+    { cr16*-*-* } { }
     { crx*-*-* } { }
     { h8300*-*-* } { }
     { hppa*-*-* } { }
@@ -80,13 +89,18 @@ case $target_triplet in {
     default {
 	setup_xfail "*c30*-*-*" "*c4x*-*-*" "pdp11-*-*"
 	run_dump_test redef
+	# The next two tests can fail if the target does not convert fixups
+	# against ordinary symbols into relocations against section symbols.
+	# This is usually revealed by the error message:
+	#  symbol `sym' required but not present
 	setup_xfail "*c30*-*-*" "*c4x*-*-*" "*arm*-*-*aout*" "*arm*-*-*coff" \
 	    "*arm*-*-pe" "crx*-*-*" "h8300*-*-*" "m68hc*-*-*" "maxq-*-*" \
-	    "pdp11-*-*" "vax*-*-*" "z8k-*-*"
+	    "mn10300-*-*" "pdp11-*-*" "vax*-*-*" "z8k-*-*" "cr16-*-*"
 	run_dump_test redef2
 	setup_xfail "*-*-aix*" "*-*-coff" "*-*-cygwin" "*-*-mingw*" "*-*-pe*" \
 	    "bfin-*-*" "*c4x*-*-*" "crx*-*-*" "h8300*-*-*" "hppa*-*-hpux*" \
-	    "m68hc*-*-*" "maxq-*-*" "or32-*-*" "pdp11-*-*" "vax*-*-*" "z8k-*-*"
+	    "m68hc*-*-*" "maxq-*-*" "mn10300-*-*" "or32-*-*" "pdp11-*-*" \
+	    "vax*-*-*" "z8k-*-*" "cr16-*-*"
 	run_dump_test redef3
 	setup_xfail "*c4x*-*-*"
 	gas_test_error "redef4.s" "" ".set for symbol already used as label"
@@ -108,7 +122,7 @@ proc do_comment {} {
 	expect {
 	    -re "^ +1\[ \t\]+# This\[^\n\]*\n"		{ set x1 1 }
 	    -re "^ +2\[ \t\]+# correctly\[^\n\]*\n"	{ set x2 1 }
-	    -re "^ +3\[ \t\]+/. C comments too. ./\r?\n" { set x3 1 }
+	    -re "^ +3\[ \t\]+/. C comments too. ./\r?\r?\n" { set x3 1 }
 	    -re "\[^\n\]*\n"				{ }
 	    timeout				{ perror "timeout\n"; break }
 	    eof					{ break }
@@ -146,12 +160,13 @@ proc do_930509a {} {
     if !$x then { fail $testname }
 }
 
-# This test is meaningless for the PA and CRX; the difference of two symbols
-# must not be resolved by the assembler.
+# This test is meaningless for the PA and CR16/CRX: the difference of two
+# symbols cannot be resolved by the assembler.
 # C54x assembler (for compatibility) does not allow differences between
-# forward references
+# forward references.
 # C30 counts a four byte offset as a difference of one.
 if { ![istarget hppa*-*-*] &&
+     ![istarget cr16*-*-*] &&
      ![istarget  crx*-*-*] &&
      ![istarget *c30*-*-*] &&
      ![istarget *c4x*-*-*] &&
@@ -207,7 +222,7 @@ if {   ([istarget *-*-coff*] && ![istarget *arm*-*-coff] && ![istarget thumb*-*-
      || [istarget i*86-*-isc*] \
      || [istarget i*86-*-go32*] \
      || [istarget i*86-*-cygwin*] \
-     || [istarget x86_64-*-mingw64*] \
+     || [istarget x86_64-*-mingw*] \
      || [istarget i*86-*-*nt] \
      || [istarget i*86-*-interix*] \
      || ([istarget i960-*-vxworks5.*] && ![istarget i960-*-vxworks5.0*]) } {
@@ -244,6 +259,7 @@ case $target_triplet in {
     { *c54x*-*-* } { }
     default {
         test_cond
+	remote_download host "$srcdir/$subdir/incbin.dat"
         run_dump_test incbin
     }
 }
@@ -256,6 +272,12 @@ if {  ([istarget "i*86-*-*pe*"] && ![istarget "i*86-*-openbsd*"]) \
 
 run_dump_test assign
 run_dump_test sleb128
+
+# .byte is 32 bits on tic4x, and .p2align isn't supported on tic54x
+# .space is different on hppa*-hpux.
+if { ![istarget "tic4x*-*-*"] && ![istarget "tic54x*-*-*"] && ![istarget "hppa*-*-hpux*"] } {
+    run_dump_test relax
+}
 
 # .quad is 16 bytes on i960.
 if { ![istarget "i960-*-*"] } {
@@ -280,6 +302,8 @@ case $target_triplet in {
 gas_test_error "weakref2.s" "" "e: would close weakref loop: e => a => b => c => d => e"
 gas_test_error "weakref3.s" "" "a: would close weakref loop: a => b => c => d => e => a"
 gas_test_error "weakref4.s" "" "is already defined"
+
+run_dump_test string
 
 load_lib gas-dg.exp
 dg-init

@@ -1,6 +1,6 @@
 /* tc-mips.h -- header file for tc-mips.c.
    Copyright 1993, 1994, 1995, 1996, 1997, 2000, 2001, 2002, 2003, 2004,
-   2005, 2006 Free Software Foundation, Inc.
+   2005, 2006, 2007  Free Software Foundation, Inc.
    Contributed by the OSF and Ralph Campbell.
    Written by Keith Knowles and Ralph Campbell, working independently.
    Modified for ECOFF support by Ian Lance Taylor of Cygnus Support.
@@ -9,7 +9,7 @@
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -53,13 +53,23 @@ extern int mips_relax_frag (asection *, struct frag *, long);
 #define md_undefined_symbol(name)	(0)
 #define md_operand(x)
 
+extern char mips_nop_opcode (void);
+#define NOP_OPCODE (mips_nop_opcode ())
+
 extern void mips_handle_align (struct frag *);
 #define HANDLE_ALIGN(fragp)  mips_handle_align (fragp)
 
 #define MAX_MEM_FOR_RS_ALIGN_CODE  (1 + 2)
 
 struct insn_label_list;
-#define TC_SEGMENT_INFO_TYPE struct insn_label_list *
+struct mips_segment_info {
+  struct insn_label_list *labels;
+  unsigned int mips16 : 1;
+};
+#define TC_SEGMENT_INFO_TYPE struct mips_segment_info
+
+/* This field is nonzero if the symbol is the target of a MIPS16 jump.  */
+#define TC_SYMFIELD_TYPE int
 
 /* Tell assembler that we have an itbl_mips.h header file to include.  */
 #define HAVE_ITBL_CPU

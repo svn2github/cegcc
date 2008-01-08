@@ -37,25 +37,32 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-LIBOBJDIR =
 noinst_PROGRAMS = ld-new$(EXEEXT)
+
+# Automake 1.9 will only build info files in the objdir if they are
+# mentioned in DISTCLEANFILES.  It doesn't have to be unconditional,
+# though, so we use a bogus condition.
+@GENINSRC_NEVER_TRUE@am__append_1 = ld.info
 DIST_COMMON = $(srcdir)/../config.guess $(srcdir)/../config.sub NEWS \
 	README ChangeLog $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
 	$(srcdir)/config.in $(srcdir)/../mkinstalldirs \
 	$(top_srcdir)/po/Make-in ldgram.h ldgram.c ldlex.c deffilep.h \
 	deffilep.c $(srcdir)/../ylwrap $(srcdir)/../ltmain.sh \
-	$(srcdir)/../config.guess $(srcdir)/../config.sub
+	$(srcdir)/../config.guess $(srcdir)/../config.sub \
+	$(ld_TEXINFOS)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
-	$(top_srcdir)/../bfd/acinclude.m4 \
-	$(top_srcdir)/../config/acx.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/../bfd/acinclude.m4 \
+	$(top_srcdir)/../bfd/warning.m4 \
+	$(top_srcdir)/../config/depstand.m4 \
 	$(top_srcdir)/../config/gettext-sister.m4 \
+	$(top_srcdir)/../config/lead-dot.m4 \
 	$(top_srcdir)/../config/nls.m4 $(top_srcdir)/../config/po.m4 \
 	$(top_srcdir)/../config/progtest.m4 \
-	$(top_srcdir)/../bfd/bfd.m4 $(top_srcdir)/../bfd/warning.m4 \
-	$(top_srcdir)/../libtool.m4 $(top_srcdir)/configure.in
+	$(top_srcdir)/../libtool.m4 $(top_srcdir)/../ltoptions.m4 \
+	$(top_srcdir)/../ltsugar.m4 $(top_srcdir)/../ltversion.m4 \
+	$(top_srcdir)/configure.in
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -68,7 +75,7 @@ am_ld_new_OBJECTS = ldgram.$(OBJEXT) ldlex.$(OBJEXT) lexsup.$(OBJEXT) \
 	ldlang.$(OBJEXT) mri.$(OBJEXT) ldctor.$(OBJEXT) \
 	ldmain.$(OBJEXT) ldwrite.$(OBJEXT) ldexp.$(OBJEXT) \
 	ldemul.$(OBJEXT) ldver.$(OBJEXT) ldmisc.$(OBJEXT) \
-	ldfile.$(OBJEXT) ldcref.$(OBJEXT)
+	ldfile.$(OBJEXT) ldcref.$(OBJEXT) sha1.$(OBJEXT)
 ld_new_OBJECTS = $(am_ld_new_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = ../bfd/libbfd.la
@@ -78,11 +85,11 @@ depcomp =
 am__depfiles_maybe =
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) \
+LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 	$(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
-LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 LEXCOMPILE = $(LEX) $(LFLAGS) $(AM_LFLAGS)
 LTLEXCOMPILE = $(LIBTOOL) --mode=compile $(LEX) $(LFLAGS) $(AM_LFLAGS)
@@ -91,7 +98,7 @@ LTYACCCOMPILE = $(LIBTOOL) --mode=compile $(YACC) $(YFLAGS) \
 	$(AM_YFLAGS)
 YLWRAP = $(top_srcdir)/../ylwrap
 SOURCES = $(ld_new_SOURCES) $(EXTRA_ld_new_SOURCES)
-INFO_DEPS = $(srcdir)/ld.info
+INFO_DEPS = ld.info
 TEXINFO_TEX = $(top_srcdir)/../texinfo/texinfo.tex
 am__TEXINFO_TEX_DIR = $(top_srcdir)/../texinfo
 DVIS = ld.dvi
@@ -122,6 +129,7 @@ ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
+AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
@@ -137,6 +145,7 @@ CYGPATH_W = @CYGPATH_W@
 DATADIRNAME = @DATADIRNAME@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
@@ -146,8 +155,12 @@ EMULATION_LIBPATH = @EMULATION_LIBPATH@
 EMULATION_OFILES = @EMULATION_OFILES@
 EMUL_EXTRA_OFILES = @EMUL_EXTRA_OFILES@
 EXEEXT = @EXEEXT@
+FGREP = @FGREP@
 GENCAT = @GENCAT@
+GENINSRC_NEVER_FALSE = @GENINSRC_NEVER_FALSE@
+GENINSRC_NEVER_TRUE = @GENINSRC_NEVER_TRUE@
 GMSGFMT = @GMSGFMT@
+GREP = @GREP@
 HDEFINES = @HDEFINES@
 
 #stuff for self hosting (can be overridden in config file).
@@ -159,6 +172,7 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 INSTOBJEXT = @INSTOBJEXT@
+LD = @LD@
 LDFLAGS = @LDFLAGS@
 LEX = `if [ -f ../flex/flex ]; then echo ../flex/flex; else echo @LEX@; fi`
 LEXLIB = @LEXLIB@
@@ -187,6 +201,7 @@ MKINSTALLDIRS = @MKINSTALLDIRS@
 MSGFMT = @MSGFMT@
 MSGMERGE = @MSGMERGE@
 NATIVE_LIB_DIRS = @NATIVE_LIB_DIRS@
+NM = @NM@
 NO_WERROR = @NO_WERROR@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
@@ -198,6 +213,7 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 POSUB = @POSUB@
 RANLIB = @RANLIB@
+SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRINGIFY = @STRINGIFY@
@@ -212,7 +228,9 @@ VERSION = @VERSION@
 WARN_CFLAGS = @WARN_CFLAGS@
 XGETTEXT = @XGETTEXT@
 YACC = `if [ -f ../bison/bison ]; then echo ../bison/bison -y -L$(srcdir)/../bison/; else echo @YACC@; fi`
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
+ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
@@ -244,6 +262,7 @@ install_sh = @install_sh@
 libdir = @libdir@
 libexecdir = @libexecdir@
 localstatedir = @localstatedir@
+lt_ECHO = @lt_ECHO@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
@@ -259,6 +278,7 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 use_sysroot = @use_sysroot@
 AUTOMAKE_OPTIONS = cygnus dejagnu
+ACLOCAL_AMFLAGS = -I .. -I ../config -I ../bfd
 SUBDIRS = po
 tooldir = $(exec_prefix)/$(target_alias)
 YFLAGS = -d
@@ -320,11 +340,19 @@ CXX_FOR_TARGET = ` \
   fi`
 
 info_TEXINFOS = ld.texinfo
+ld_TEXINFOS = configdoc.texi
 noinst_TEXINFOS = ldint.texinfo
 man_MANS = ld.1
-AM_MAKEINFOFLAGS = -I $(srcdir) -I $(BFDDIR)/doc -I $(top_srcdir)/../libiberty
-TEXI2DVI = texi2dvi -I $(srcdir) -I $(BFDDIR)/doc -I $(top_srcdir)/../libiberty
-INCLUDES = -D_GNU_SOURCE -I. -I$(srcdir) -I../bfd -I$(BFDDIR) -I$(INCDIR) @INCINTL@ $(HDEFINES) $(CFLAGS) -DLOCALEDIR="\"$(datadir)/locale\""
+AM_MAKEINFOFLAGS = -I $(srcdir) -I $(BFDDIR)/doc -I ../bfd/doc \
+		   -I $(top_srcdir)/../libiberty
+
+TEXI2DVI = texi2dvi -I $(srcdir) -I $(BFDDIR)/doc -I ../bfd/doc \
+		    -I $(top_srcdir)/../libiberty
+
+INCLUDES = -I. -I$(srcdir) -I../bfd -I$(BFDDIR) -I$(INCDIR) \
+	@INCINTL@ $(HDEFINES) $(CFLAGS) \
+	-DLOCALEDIR="\"$(datadir)/locale\""
+
 BFDLIB = ../bfd/libbfd.la
 LIBIBERTY = ../libiberty/libiberty.a
 ALL_EMULATIONS = \
@@ -359,6 +387,7 @@ ALL_EMULATIONS = \
 	eavr6.o \
 	ecoff_i860.o \
 	ecoff_sparc.o \
+	eelf32_spu.o \
 	ecrisaout.o \
 	ecriself.o \
 	ecrislinux.o \
@@ -375,6 +404,7 @@ ALL_EMULATIONS = \
 	eelf32b4300.o \
 	eelf32bfin.o \
 	eelf32bfinfd.o \
+	eelf32cr16.o \
 	eelf32cr16c.o \
 	eelf32bmip.o \
 	eelf32bmipn32.o \
@@ -400,6 +430,7 @@ ALL_EMULATIONS = \
 	eelf32lppcsim.o \
 	eelf32m32c.o \
 	eelf32mcore.o \
+	eelf32mep.o \
 	eelf32mipswindiss.o \
 	eelf32mt.o \
 	eelf32openrisc.o \
@@ -581,6 +612,7 @@ ALL_EMULATIONS = \
 	eshlelf_nbsd.o \
 	eshelf_nto.o \
 	eshlelf_nto.o \
+	eshelf_uclinux.o \
 	eshelf_vxworks.o \
 	eshlelf_vxworks.o \
 	eshl.o \
@@ -643,17 +675,17 @@ ALL_EMUL_EXTRA_OFILES = \
 
 CFILES = ldctor.c ldemul.c ldexp.c ldfile.c ldlang.c \
 	ldmain.c ldmisc.c ldver.c ldwrite.c lexsup.c \
-	mri.c ldcref.c pe-dll.c pep-dll.c
+	mri.c ldcref.c pe-dll.c pep-dll.c sha1.c
 
 HFILES = ld.h ldctor.h ldemul.h ldexp.h ldfile.h \
 	ldlang.h ldlex.h ldmain.h ldmisc.h ldver.h \
-	ldwrite.h mri.h deffile.h pe-dll.h pep-dll.h elf-hints-local.h
+	ldwrite.h mri.h deffile.h pe-dll.h pep-dll.h elf-hints-local.h sha1.h
 
 GENERATED_CFILES = ldgram.c ldlex.c deffilep.c
 GENERATED_HFILES = ldgram.h ldemul-list.h deffilep.h
 OFILES = ldgram.o ldlex.o lexsup.o ldlang.o mri.o ldctor.o ldmain.o \
 	ldwrite.o ldexp.o  ldemul.o ldver.o ldmisc.o \
-	ldfile.o ldcref.o ${EMULATION_OFILES} ${EMUL_EXTRA_OFILES}
+	ldfile.o ldcref.o sha1.o ${EMULATION_OFILES} ${EMUL_EXTRA_OFILES}
 
 STAGESTUFF = *.o ldscripts/* e*.c
 
@@ -671,11 +703,11 @@ ELF_GEN_DEPS = $(srcdir)/emultempl/generic.em $(srcdir)/emultempl/elf-generic.em
 # We need this for automake to use YLWRAP.
 EXTRA_ld_new_SOURCES = deffilep.y
 ld_new_SOURCES = ldgram.y ldlex.l lexsup.c ldlang.c mri.c ldctor.c ldmain.c \
-	ldwrite.c ldexp.c ldemul.c ldver.c ldmisc.c ldfile.c ldcref.c
+	ldwrite.c ldexp.c ldemul.c ldver.c ldmisc.c ldfile.c ldcref.c sha1.c
 
 ld_new_DEPENDENCIES = $(EMULATION_OFILES) $(EMUL_EXTRA_OFILES) $(BFDLIB) $(LIBIBERTY) $(LIBINTL_DEP)
 ld_new_LDADD = $(EMULATION_OFILES) $(EMUL_EXTRA_OFILES) $(BFDLIB) $(LIBIBERTY) $(LIBINTL)
-MAINTAINERCLEANFILES = ldver.texi configdoc.texi
+MAINTAINERCLEANFILES = configdoc.texi ld.info
 
 # We want to reconfigure if configure.host or configure.tgt changes.  We
 # extract version from bfd/configure.in, so we must depend on that also.
@@ -685,33 +717,33 @@ CONFIG_STATUS_DEPENDENCIES = $(srcdir)/configure.host $(srcdir)/configure.tgt \
 MOSTLYCLEANFILES = $(STAGESTUFF) ld1$(EXEEXT) ld2$(EXEEXT) ld3$(EXEEXT) \
 	ldemul-list.h crtbegin.o crtend.o ld.log ld.sum
 
-CLEANFILES = dep.sed DEP DEPA DEP1 DEP2
+CLEANFILES = dep.sed DEP DEPA DEP1 DEP2 spu_ovl.s
 html__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 
 # Stuff that should be included in a distribution.  The diststuff
 # target is run by the taz target in ../Makefile.in.
-EXTRA_DIST = ldgram.c ldgram.h ldlex.c $(man_MANS)
-DISTCLEANFILES = tdirs site.exp site.bak stringify.sed
+EXTRA_DIST = ldgram.c ldgram.h ldlex.c emultempl/spu_ovl.o $(man_MANS)
+DISTCLEANFILES = tdirs site.exp site.bak stringify.sed $(am__append_1)
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .c .dvi .html .info .l .lo .o .obj .pdf .ps .texinfo .y
+.SUFFIXES: .c .dvi .l .lo .o .obj .ps .y
 am--refresh:
 	@:
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
-	      echo ' cd $(srcdir) && $(AUTOMAKE) --foreign '; \
-	      cd $(srcdir) && $(AUTOMAKE) --foreign  \
+	      echo ' cd $(srcdir) && $(AUTOMAKE) --cygnus '; \
+	      cd $(srcdir) && $(AUTOMAKE) --cygnus  \
 		&& exit 0; \
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --cygnus  Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  Makefile
+	  $(AUTOMAKE) --cygnus  Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -802,42 +834,38 @@ clean-libtool:
 distclean-libtool:
 	-rm -f libtool
 
-.texinfo.info:
+ld.info: ld.texinfo $(ld_TEXINFOS)
 	restore=: && backupdir="$(am__leading_dot)am$$$$" && \
-	am__cwd=`pwd` && cd $(srcdir) && \
 	rm -rf $$backupdir && mkdir $$backupdir && \
 	if ($(MAKEINFO) --version) >/dev/null 2>&1; then \
 	  for f in $@ $@-[0-9] $@-[0-9][0-9] $(@:.info=).i[0-9] $(@:.info=).i[0-9][0-9]; do \
 	    if test -f $$f; then mv $$f $$backupdir; restore=mv; else :; fi; \
 	  done; \
 	else :; fi && \
-	cd "$$am__cwd"; \
 	if $(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I $(srcdir) \
-	 -o $@ $<; \
+	 -o $@ `test -f 'ld.texinfo' || echo '$(srcdir)/'`ld.texinfo; \
 	then \
 	  rc=0; \
-	  cd $(srcdir); \
 	else \
 	  rc=$$?; \
-	  cd $(srcdir) && \
 	  $$restore $$backupdir/* `echo "./$@" | sed 's|[^/]*$$||'`; \
 	fi; \
 	rm -rf $$backupdir; exit $$rc
 
-.texinfo.dvi:
+ld.dvi: ld.texinfo $(ld_TEXINFOS) 
 	TEXINPUTS="$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
 	MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I $(srcdir)' \
-	$(TEXI2DVI) $<
+	$(TEXI2DVI) -o $@ `test -f 'ld.texinfo' || echo '$(srcdir)/'`ld.texinfo
 
-.texinfo.pdf:
+ld.pdf: ld.texinfo $(ld_TEXINFOS) 
 	TEXINPUTS="$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
 	MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I $(srcdir)' \
-	$(TEXI2PDF) $<
+	$(TEXI2PDF) -o $@ `test -f 'ld.texinfo' || echo '$(srcdir)/'`ld.texinfo
 
-.texinfo.html:
+ld.html: ld.texinfo $(ld_TEXINFOS) 
 	rm -rf $(@:.html=.htp)
 	if $(MAKEINFOHTML) $(AM_MAKEINFOHTMLFLAGS) $(MAKEINFOFLAGS) -I $(srcdir) \
-	 -o $(@:.html=.htp) $<; \
+	 -o $(@:.html=.htp) `test -f 'ld.texinfo' || echo '$(srcdir)/'`ld.texinfo; \
 	then \
 	  rm -rf $@; \
 	  if test ! -d $(@:.html=.htp) && test -d $(@:.html=); then \
@@ -847,10 +875,6 @@ distclean-libtool:
 	    rm -rf $(@:.html=); else rm -Rf $(@:.html=.htp) $@; fi; \
 	  exit 1; \
 	fi
-$(srcdir)/ld.info: ld.texinfo 
-ld.dvi: ld.texinfo 
-ld.pdf: ld.texinfo 
-ld.html: ld.texinfo 
 .dvi.ps:
 	TEXINPUTS="$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
 	$(DVIPS) -o $@ $<
@@ -1259,7 +1283,7 @@ uninstall-man: uninstall-man1
 
 
 # Disable -Werror, if it has been enabled, since old versions of bison/
-# yacc will produce working code which contain compile time warnings. 
+# yacc will produce working code which contain compile time warnings.
 ldgram.o:
 	$(COMPILE) -c $< $(NO_WERROR)
 ldlex.o:
@@ -1277,6 +1301,10 @@ ldmain.o: ldmain.c config.status
 	  -DTOOLBINDIR='"$(tooldir)/bin"' \
 	  -DTARGET='"@target@"' @TARGET_SYSTEM_ROOT_DEFINE@ \
 	  $(srcdir)/ldmain.c
+
+eelf32_spu.o: eelf32_spu.c
+	$(COMPILE) -c -DEMBEDSPU="\"`echo embedspu | sed '$(transform)'`\"" \
+	  eelf32_spu.c
 
 ldemul-list.h: Makefile
 	(echo "/* This file is automatically generated.  DO NOT EDIT! */";\
@@ -1472,7 +1500,7 @@ eelf32xc16xl.c: $(srcdir)/emulparams/elf32xc16xl.sh \
 eelf32xc16xs.c: $(srcdir)/emulparams/elf32xc16xs.sh \
   $(ELF_DEPS) $(srcdir)/emultempl/needrelax.em \
   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
-	${GENSCRIPTS} elf32xc16xs "$(tdir_xc16xs)"		
+	${GENSCRIPTS} elf32xc16xs "$(tdir_xc16xs)"
 eelf32xstormy16.c: $(srcdir)/emulparams/elf32xstormy16.sh \
   $(ELF_DEPS) $(srcdir)/emultempl/needrelax.em \
   $(srcdir)/scripttempl/xstormy16.sc ${GEN_DEPENDS}
@@ -1483,8 +1511,7 @@ eelf32am33lin.c: $(srcdir)/emulparams/elf32am33lin.sh \
 eelf32vax.c: $(srcdir)/emulparams/elf32vax.sh \
   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32vax "$(tdir_elf32vax)"
-eelf32xtensa.c: $(srcdir)/emulparams/elf32xtensa.sh \
-  $(srcdir)/emulparams/xtensa-config.sh $(ELF_DEPS) \
+eelf32xtensa.c: $(srcdir)/emulparams/elf32xtensa.sh $(ELF_DEPS) \
   $(srcdir)/emultempl/xtensaelf.em $(INCDIR)/xtensa-config.h \
   $(BFDDIR)/elf-bfd.h $(BFDDIR)/libbfd.h $(INCDIR)/elf/xtensa.h \
   $(srcdir)/scripttempl/elfxtensa.sc ${GEN_DEPENDS}
@@ -1502,6 +1529,9 @@ eelf32frvfd.c: $(srcdir)/emulparams/elf32frvfd.sh \
 eelf32mcore.c: $(srcdir)/emulparams/elf32mcore.sh \
   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32mcore "$(tdir_mcore)"
+eelf32mep.c: $(srcdir)/emulparams/elf32mep.sh \
+  $(srcdir)/emultempl/elf32.em $(srcdir)/scripttempl/mep.sc ${GEN_DEPENDS}
+	${GENSCRIPTS} elf32mep "$(tdir_mep)"
 em32relf.c: $(srcdir)/emulparams/m32relf.sh \
   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} m32relf "$(tdir_m32r)"
@@ -1522,6 +1552,17 @@ eelf32_sparc_vxworks.c: $(srcdir)/emulparams/elf32_sparc_vxworks.sh \
   $(srcdir)/emultempl/vxworks.em $(ELF_DEPS) \
   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32_sparc_vxworks "$(tdir_elf32_sparc_vxworks)"
+eelf32_spu.c: $(srcdir)/emulparams/elf32_spu.sh $(srcdir)/emultempl/spuelf.em \
+  $(srcdir)/emultempl/spu_ovl.o \
+  ldemul-list.h \
+  $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
+	${GENSCRIPTS} elf32_spu "$(tdir_elf32_spu)"
+$(srcdir)/emultempl/spu_ovl.o: @MAINT@ $(srcdir)/emultempl/spu_ovl.S
+	cpp -DOVLY_IRQ_SAVE $(srcdir)/emultempl/spu_ovl.S spu_ovl.s
+	if ../gas/as-new --version \
+		| grep 'target.*spu' >/dev/null 2>/dev/null; then \
+	  ../gas/as-new -o $@ spu_ovl.s; \
+	fi
 eelf32_i860.c: $(srcdir)/emulparams/elf32_i860.sh \
   $(ELF_GEN_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32_i860 "$(tdir_elf32_i860)"
@@ -1532,6 +1573,10 @@ eelf32b4300.c: $(srcdir)/emulparams/elf32b4300.sh \
   $(srcdir)/emulparams/elf32bmip.sh $(ELF_DEPS) \
   $(srcdir)/emultempl/mipself.em $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32b4300 "$(tdir_elf32b4300)"
+eelf32cr16.c: $(srcdir)/emulparams/elf32cr16.sh \
+  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/cr16elf.em \
+  $(srcdir)/scripttempl/elf32cr16.sc ${GEN_DEPENDS}
+	${GENSCRIPTS} elf32cr16 "$(tdir_elf32crx)"
 eelf32cr16c.c: $(srcdir)/emulparams/elf32cr16c.sh \
   $(ELF_DEPS) \
   $(srcdir)/scripttempl/elf32cr16c.sc ${GEN_DEPENDS}
@@ -1549,7 +1594,7 @@ eelf32btsmip.c: $(srcdir)/emulparams/elf32btsmip.sh \
 	${GENSCRIPTS} elf32btsmip "$(tdir_elf32btsmip)"
 eelf32crx.c: $(srcdir)/emulparams/elf32crx.sh \
   $(ELF_DEPS) $(srcdir)/emultempl/crxelf.em \
-  $(srcdir)/scripttempl/elf32crx.sc ${GEN_DEPENDS} 
+  $(srcdir)/scripttempl/elf32crx.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32crx "$(tdir_elf32crx)"
 eelf32btsmipn32.c: $(srcdir)/emulparams/elf32btsmipn32.sh \
   $(srcdir)/emulparams/elf32bmipn32-defs.sh $(ELF_DEPS) \
@@ -1611,21 +1656,25 @@ eelf32mt.c: $(srcdir)/emulparams/elf32mt.sh \
 eelf32lppc.c: $(srcdir)/emulparams/elf32lppc.sh \
   $(srcdir)/emulparams/elf32ppccommon.sh \
   $(srcdir)/emulparams/elf32ppc.sh $(srcdir)/emultempl/ppc32elf.em \
+  ldemul-list.h \
   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32lppc "$(tdir_elf32lppc)"
 eelf32lppcnto.c: $(srcdir)/emulparams/elf32lppcnto.sh \
   $(srcdir)/emulparams/elf32ppc.sh $(srcdir)/emulparams/elf32ppccommon.sh \
   $(srcdir)/emultempl/ppc32elf.em $(ELF_DEPS) \
+  ldemul-list.h \
   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32lppcnto "$(tdir_elf32lppcnto)"
 eelf32lppcsim.c: $(srcdir)/emulparams/elf32lppcsim.sh \
   $(srcdir)/emulparams/elf32lppc.sh $(srcdir)/emulparams/elf32ppc.sh \
   $(srcdir)/emulparams/elf32ppccommon.sh $(srcdir)/emultempl/ppc32elf.em \
+  ldemul-list.h \
   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32lppcsim "$(tdir_elf32lppcsim)"
 eelf32ppcnto.c: $(srcdir)/emulparams/elf32ppcnto.sh \
   $(srcdir)/emulparams/elf32ppc.sh $(srcdir)/emulparams/elf32ppccommon.sh \
   $(srcdir)/emultempl/ppc32elf.em $(ELF_DEPS) \
+  ldemul-list.h \
   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32ppcnto "$(tdir_elf32ppcnto)"
 eelf32ppcwindiss.c: $(srcdir)/emulparams/elf32ppcwindiss.sh \
@@ -1646,28 +1695,34 @@ eelf32openrisc.c: $(srcdir)/emulparams/elf32openrisc.sh \
 	${GENSCRIPTS} elf32openrisc "$(tdir_openrisc)"
 eelf32ppc.c: $(srcdir)/emulparams/elf32ppc.sh \
   $(srcdir)/emulparams/elf32ppccommon.sh $(srcdir)/emultempl/ppc32elf.em \
+  ldemul-list.h \
   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32ppc "$(tdir_elf32ppc)"
 eelf32ppc_fbsd.c: $(srcdir)/emulparams/elf32ppc_fbsd.sh \
   $(srcdir)/emulparams/elf32ppc.sh $(srcdir)/emulparams/elf32ppccommon.sh \
   $(srcdir)/emultempl/ppc32elf.em $(ELF_DEPS) \
+  ldemul-list.h \
   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32ppc_fbsd "$(tdir_elf32ppc_fbsd)"
 eelf32ppcsim.c: $(srcdir)/emulparams/elf32ppcsim.sh \
   $(srcdir)/emulparams/elf32ppc.sh $(srcdir)/emulparams/elf32ppccommon.sh \
   $(srcdir)/emultempl/ppc32elf.em $(ELF_DEPS) \
+  ldemul-list.h \
   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32ppcsim "$(tdir_elf32ppcsim)"
 eelf32ppclinux.c: $(srcdir)/emulparams/elf32ppclinux.sh \
   $(srcdir)/emulparams/elf32ppc.sh $(srcdir)/emulparams/elf32ppccommon.sh \
   $(srcdir)/emultempl/ppc32elf.em $(ELF_DEPS) \
+  ldemul-list.h \
   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32ppclinux "$(tdir_elf32ppclinux)"
 eelf64ppc.c: $(srcdir)/emulparams/elf64ppc.sh $(srcdir)/emultempl/ppc64elf.em \
+  ldemul-list.h \
   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf64ppc "$(tdir_elf64ppc)"
 eelf64lppc.c: $(srcdir)/emulparams/elf64lppc.sh \
   $(srcdir)/emulparams/elf64ppc.sh $(srcdir)/emultempl/ppc64elf.em \
+  ldemul-list.h \
   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf64lppc "$(tdir_elf64lppc)"
 eelf32i370.c: $(srcdir)/emulparams/elf32i370.sh \
@@ -1725,6 +1780,7 @@ eelf64_sparc_fbsd.c: $(srcdir)/emulparams/elf64_sparc_fbsd.sh \
   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf64_sparc_fbsd "$(tdir_elf64_sparc_fbsd)"
 eelf64bmip.c: $(srcdir)/emulparams/elf64bmip.sh \
+  $(srcdir)/emulparams/elf64bmip-defs.sh \
   $(srcdir)/emulparams/elf32bmipn32-defs.sh $(ELF_DEPS) \
   $(srcdir)/emultempl/irix.em $(srcdir)/emultempl/mipself.em \
   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
@@ -1739,11 +1795,12 @@ emmo.c: $(srcdir)/emulparams/mmo.sh $(srcdir)/emultempl/mmix-elfnmmo.em \
   $(srcdir)/scripttempl/mmo.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} mmo "$(tdir_mmo)"
 eelf64btsmip.c: $(srcdir)/emulparams/elf64btsmip.sh \
+  $(srcdir)/emulparams/elf64bmip-defs.sh \
   $(srcdir)/emulparams/elf32bmipn32-defs.sh $(ELF_DEPS) \
   $(srcdir)/emultempl/mipself.em $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf64btsmip "$(tdir_elf64btsmip)"
 eelf64ltsmip.c: $(srcdir)/emulparams/elf64ltsmip.sh \
-  $(srcdir)/emulparams/elf64btsmip.sh \
+  $(srcdir)/emulparams/elf64btsmip.sh $(srcdir)/emulparams/elf64bmip-defs.sh \
   $(srcdir)/emulparams/elf32bmipn32-defs.sh $(ELF_DEPS) \
   $(srcdir)/emultempl/mipself.em $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf64ltsmip "$(tdir_elf64ltsmip)"
@@ -2349,6 +2406,9 @@ eshlelf_vxworks.c: $(srcdir)/emulparams/shlelf_vxworks.sh \
   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc $(srcdir)/emultempl/vxworks.em \
   ${GEN_DEPENDS}
 	${GENSCRIPTS} shlelf_vxworks "$(tdir_shlelf_vxworks)"
+eshelf_uclinux.c: $(srcdir)/emulparams/shelf_uclinux.sh \
+  $(srcdir)/emultempl/elf32.em $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
+	${GENSCRIPTS} shelf_uclinux "$(tdir_shelf_uclinux)"
 eshlelf.c: $(srcdir)/emulparams/shlelf.sh \
   $(srcdir)/emulparams/shelf.sh \
   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
@@ -2542,17 +2602,10 @@ configdoc.texi:	${DOCVER}-doc.texi
 	cp ${srcdir}/${DOCVER}-doc.texi ./configdoc.texi
 	chmod u+w ./configdoc.texi
 
-ldver.texi: $(srcdir)/../bfd/configure
-	rm -f $@
-	eval `grep '^ *VERSION=' $(srcdir)/../bfd/configure`; \
-	  echo "@set VERSION $$VERSION" > $@
-
-$(srcdir)/ld.info ld.dvi ld.html: $(srcdir)/ld.texinfo configdoc.texi ldver.texi
-
 # Build the man page from the texinfo file
 # The sed command removes the no-adjust Nroff command so that
 # the man output looks standard.
-ld.1: $(srcdir)/ld.texinfo configdoc.texi ldver.texi
+ld.1: $(srcdir)/ld.texinfo configdoc.texi
 	touch $@
 	-$(TEXI2POD) $(MANCONF) < $(srcdir)/ld.texinfo > ld.pod
 	-($(POD2MAN) ld.pod | \
@@ -2638,7 +2691,7 @@ install-data-local: install-info
 diststuff: info $(EXTRA_DIST)
 all: info ld.1
 
-# Both info (ld.info) and ld.1 depend on configdoc.texi and ldver.texi.
+# Both info (ld.info) and ld.1 depend on configdoc.texi.
 # But info isn't a direct target. Make info-recursive to depend on
 # ld.1 to support parallel build.
 info-recursive: ld.1
@@ -2692,91 +2745,96 @@ dep-am: DEP
 
 # DO NOT DELETE THIS LINE -- mkdep uses it.
 # DO NOT PUT ANYTHING AFTER THIS LINE, IT WILL GO AWAY.
-ldctor.o: ldctor.c ../bfd/bfd.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/symcat.h sysdep.h config.h $(INCDIR)/fopen-same.h \
-  $(INCDIR)/bfdlink.h $(INCDIR)/safe-ctype.h ld.h $(INCDIR)/bin-bugs.h \
-  ldexp.h ldlang.h ldmisc.h ldgram.h ldmain.h ldctor.h
-ldemul.o: ldemul.c config.h ../bfd/bfd.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/symcat.h sysdep.h $(INCDIR)/fopen-same.h \
-  $(INCDIR)/bfdlink.h ld.h $(INCDIR)/bin-bugs.h ldmisc.h \
-  ldexp.h ldlang.h ldfile.h ldemul.h ldmain.h ldemul-list.h
-ldexp.o: ldexp.c ../bfd/bfd.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/symcat.h sysdep.h config.h $(INCDIR)/fopen-same.h \
-  $(INCDIR)/bfdlink.h ld.h $(INCDIR)/bin-bugs.h ldmain.h \
-  ldmisc.h ldexp.h ldgram.h ldlang.h $(INCDIR)/libiberty.h \
+ldctor.o: ldctor.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  $(INCDIR)/bfdlink.h $(INCDIR)/safe-ctype.h ld.h ldexp.h \
+  ldlang.h ldmisc.h ldgram.h ldmain.h ldctor.h
+ldemul.o: ldemul.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  $(INCDIR)/bfdlink.h ld.h ldmisc.h ldexp.h ldlang.h \
+  ldfile.h ldemul.h ldmain.h ldemul-list.h
+ldexp.o: ldexp.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  $(INCDIR)/bfdlink.h ld.h ldmain.h ldmisc.h ldexp.h \
+  ldlex.h ldgram.h ldlang.h $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h \
   $(INCDIR)/safe-ctype.h
-ldfile.o: ldfile.c ../bfd/bfd.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/symcat.h sysdep.h config.h $(INCDIR)/fopen-same.h \
-  $(INCDIR)/bfdlink.h $(INCDIR)/safe-ctype.h ld.h $(INCDIR)/bin-bugs.h \
-  ldmisc.h ldexp.h ldlang.h ldfile.h ldmain.h ldgram.h \
-  ldlex.h ldemul.h $(INCDIR)/libiberty.h $(INCDIR)/filenames.h
-ldlang.o: ldlang.c ../bfd/bfd.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/symcat.h sysdep.h config.h $(INCDIR)/fopen-same.h \
-  $(INCDIR)/libiberty.h $(INCDIR)/safe-ctype.h $(INCDIR)/obstack.h \
-  $(INCDIR)/bfdlink.h ld.h $(INCDIR)/bin-bugs.h ldmain.h \
+ldfile.o: ldfile.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  $(INCDIR)/bfdlink.h $(INCDIR)/safe-ctype.h ld.h ldmisc.h \
+  ldexp.h ldlang.h ldfile.h ldmain.h ldgram.h ldlex.h \
+  ldemul.h $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h \
+  $(INCDIR)/filenames.h
+ldlang.o: ldlang.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h $(INCDIR)/safe-ctype.h \
+  $(INCDIR)/obstack.h $(INCDIR)/bfdlink.h ld.h ldmain.h \
   ldexp.h ldlang.h ldgram.h ldlex.h ldmisc.h ldctor.h \
   ldfile.h ldemul.h $(INCDIR)/fnmatch.h $(INCDIR)/demangle.h \
-  $(INCDIR)/hashtab.h
-ldmain.o: ldmain.c ../bfd/bfd.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/symcat.h sysdep.h config.h $(INCDIR)/fopen-same.h \
-  $(INCDIR)/safe-ctype.h $(INCDIR)/libiberty.h $(INCDIR)/progress.h \
-  $(INCDIR)/bfdlink.h $(INCDIR)/filenames.h ld.h $(INCDIR)/bin-bugs.h \
-  ldmain.h ldmisc.h ldwrite.h ldexp.h ldlang.h ldgram.h \
+  $(INCDIR)/libiberty.h $(INCDIR)/hashtab.h
+ldmain.o: ldmain.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  $(INCDIR)/safe-ctype.h $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h \
+  $(INCDIR)/progress.h $(INCDIR)/bfdlink.h $(INCDIR)/filenames.h \
+  ld.h ldmain.h ldmisc.h ldwrite.h ldexp.h ldlang.h ldgram.h \
   ldlex.h ldfile.h ldemul.h ldctor.h
-ldmisc.o: ldmisc.c ../bfd/bfd.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/symcat.h $(INCDIR)/bfdlink.h sysdep.h config.h \
-  $(INCDIR)/fopen-same.h $(INCDIR)/libiberty.h $(INCDIR)/demangle.h \
-  ld.h $(INCDIR)/bin-bugs.h ldmisc.h ldexp.h ldlang.h \
-  ldgram.h ldlex.h ldmain.h ldfile.h $(BFDDIR)/elf-bfd.h \
-  $(INCDIR)/elf/common.h $(INCDIR)/elf/internal.h $(INCDIR)/elf/external.h
-ldver.o: ldver.c ../bfd/bfd.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/symcat.h ../bfd/bfdver.h sysdep.h config.h \
-  $(INCDIR)/fopen-same.h ld.h $(INCDIR)/bin-bugs.h ldver.h \
-  ldexp.h ldlang.h ldfile.h ldemul.h ldmain.h
-ldwrite.o: ldwrite.c ../bfd/bfd.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/symcat.h sysdep.h config.h $(INCDIR)/fopen-same.h \
-  $(INCDIR)/bfdlink.h $(INCDIR)/libiberty.h $(INCDIR)/safe-ctype.h \
-  ld.h $(INCDIR)/bin-bugs.h ldexp.h ldlang.h ldwrite.h \
+ldmisc.o: ldmisc.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  $(INCDIR)/bfdlink.h $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h \
+  $(INCDIR)/demangle.h $(INCDIR)/libiberty.h ld.h ldmisc.h \
+  ldexp.h ldlang.h ldgram.h ldlex.h ldmain.h ldfile.h \
+  $(BFDDIR)/elf-bfd.h $(INCDIR)/elf/common.h $(INCDIR)/elf/internal.h \
+  $(INCDIR)/elf/external.h $(INCDIR)/bfdlink.h
+ldver.o: ldver.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  ../bfd/bfdver.h ld.h ldver.h ldexp.h ldlang.h ldfile.h \
+  ldemul.h ldmain.h
+ldwrite.o: ldwrite.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  $(INCDIR)/bfdlink.h $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h \
+  $(INCDIR)/safe-ctype.h ld.h ldexp.h ldlang.h ldwrite.h \
   ldmisc.h ldgram.h ldmain.h
-lexsup.o: lexsup.c config.h ../bfd/bfd.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/symcat.h sysdep.h $(INCDIR)/fopen-same.h \
-  $(INCDIR)/libiberty.h $(INCDIR)/safe-ctype.h $(INCDIR)/bfdlink.h \
-  ld.h $(INCDIR)/bin-bugs.h ldmain.h ldmisc.h ldexp.h \
-  ldlang.h ldgram.h ldlex.h ldfile.h ldver.h ldemul.h \
-  $(INCDIR)/demangle.h
-mri.o: mri.c ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
-  sysdep.h config.h $(INCDIR)/fopen-same.h ld.h $(INCDIR)/bin-bugs.h \
-  ldexp.h ldlang.h ldmisc.h mri.h ldgram.h $(INCDIR)/libiberty.h
-ldcref.o: ldcref.c ../bfd/bfd.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/symcat.h sysdep.h config.h $(INCDIR)/fopen-same.h \
-  $(INCDIR)/bfdlink.h $(INCDIR)/libiberty.h ld.h $(INCDIR)/bin-bugs.h \
-  ldmain.h ldmisc.h ldexp.h ldlang.h
-pe-dll.o: pe-dll.c ../bfd/bfd.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/symcat.h sysdep.h config.h $(INCDIR)/fopen-same.h \
-  $(INCDIR)/bfdlink.h $(INCDIR)/libiberty.h $(INCDIR)/safe-ctype.h \
-  ld.h $(INCDIR)/bin-bugs.h ldexp.h ldlang.h ldwrite.h \
+lexsup.o: lexsup.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  ../bfd/bfdver.h $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h \
+  $(INCDIR)/safe-ctype.h $(INCDIR)/bfdlink.h ld.h ldmain.h \
+  ldmisc.h ldexp.h ldlang.h ldgram.h ldlex.h ldfile.h \
+  ldver.h ldemul.h $(INCDIR)/demangle.h $(INCDIR)/libiberty.h
+mri.o: mri.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  ld.h ldexp.h ldlang.h ldmisc.h mri.h ldgram.h $(INCDIR)/libiberty.h \
+  $(INCDIR)/ansidecl.h
+ldcref.o: ldcref.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  $(INCDIR)/bfdlink.h $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h \
+  $(INCDIR)/demangle.h $(INCDIR)/libiberty.h $(INCDIR)/objalloc.h \
+  ld.h ldmain.h ldmisc.h ldexp.h ldlang.h
+pe-dll.o: pe-dll.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  $(INCDIR)/bfdlink.h $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h \
+  $(INCDIR)/safe-ctype.h ld.h ldexp.h ldlang.h ldwrite.h \
   ldmisc.h ldgram.h ldmain.h ldfile.h ldemul.h $(INCDIR)/coff/internal.h \
-  $(BFDDIR)/libcoff.h deffile.h pe-dll.h
-pep-dll.o: pep-dll.c ../bfd/bfd.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/symcat.h sysdep.h config.h $(INCDIR)/fopen-same.h \
-  $(INCDIR)/bfdlink.h $(INCDIR)/libiberty.h $(INCDIR)/safe-ctype.h \
-  ld.h $(INCDIR)/bin-bugs.h ldexp.h ldlang.h ldwrite.h \
+  $(BFDDIR)/libcoff.h $(INCDIR)/bfdlink.h deffile.h pe-dll.h
+pep-dll.o: pep-dll.c pe-dll.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  $(INCDIR)/bfdlink.h $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h \
+  $(INCDIR)/safe-ctype.h ld.h ldexp.h ldlang.h ldwrite.h \
   ldmisc.h ldgram.h ldmain.h ldfile.h ldemul.h $(INCDIR)/coff/internal.h \
-  $(BFDDIR)/libcoff.h deffile.h pep-dll.h
-ldgram.o: ldgram.c ../bfd/bfd.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/symcat.h sysdep.h config.h $(INCDIR)/fopen-same.h \
-  $(INCDIR)/bfdlink.h ld.h $(INCDIR)/bin-bugs.h ldexp.h \
-  ldver.h ldlang.h ldfile.h ldemul.h ldmisc.h ldmain.h \
-  mri.h ldctor.h ldlex.h
-ldlex.o: ldlex.c ../bfd/bfd.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/symcat.h sysdep.h config.h $(INCDIR)/fopen-same.h \
-  $(INCDIR)/safe-ctype.h $(INCDIR)/bfdlink.h ld.h $(INCDIR)/bin-bugs.h \
-  ldmisc.h ldexp.h ldlang.h ldgram.h ldfile.h ldlex.h \
-  ldmain.h $(INCDIR)/libiberty.h
-deffilep.o: deffilep.c $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h \
-  $(INCDIR)/safe-ctype.h ../bfd/bfd.h $(INCDIR)/symcat.h \
-  sysdep.h config.h $(INCDIR)/fopen-same.h ld.h $(INCDIR)/bin-bugs.h \
-  ldmisc.h deffile.h
+  $(BFDDIR)/libcoff.h $(INCDIR)/bfdlink.h deffile.h pe-dll.h \
+  pep-dll.h
+sha1.o: sha1.c config.h sha1.h ../bfd/bfd_stdint.h
+ldgram.o: ldgram.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  $(INCDIR)/bfdlink.h ld.h ldexp.h ldver.h ldlang.h ldfile.h \
+  ldemul.h ldmisc.h ldmain.h mri.h ldctor.h ldlex.h
+ldlex.o: ldlex.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  $(INCDIR)/safe-ctype.h $(INCDIR)/bfdlink.h ld.h ldmisc.h \
+  ldexp.h ldlang.h ldgram.h ldfile.h ldlex.h ldmain.h \
+  $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h
+deffilep.o: deffilep.c sysdep.h config.h $(INCDIR)/fopen-same.h \
+  $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h $(INCDIR)/safe-ctype.h \
+  ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
+  ld.h ldmisc.h deffile.h
 # IF YOU PUT ANYTHING HERE IT WILL GO AWAY
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

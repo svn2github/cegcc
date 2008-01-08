@@ -1,13 +1,13 @@
 /* A YACC grammar to parse a superset of the AT&T linker scripting language.
    Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005, 2006 Free Software Foundation, Inc.
+   2001, 2002, 2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
    Written by Steve Chamberlain of Cygnus Support (steve@cygnus.com).
 
-   This file is part of GNU ld.
+   This file is part of the GNU Binutils.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -17,7 +17,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 %{
 /*
@@ -26,8 +27,8 @@
 
 #define DONTDECLARE_MALLOC
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "bfdlink.h"
 #include "ld.h"
 #include "ldexp.h"
@@ -131,14 +132,13 @@ static int error_index;
 %token '{' '}'
 %token SIZEOF_HEADERS OUTPUT_FORMAT FORCE_COMMON_ALLOCATION OUTPUT_ARCH
 %token INHIBIT_COMMON_ALLOCATION
-%token SIZEOF_HEADERS
 %token SEGMENT_START
 %token INCLUDE
-%token MEMORY DEFSYMEND
+%token MEMORY
 %token NOLOAD DSECT COPY INFO OVERLAY
-%token NAME LNAME DEFINED TARGET_K SEARCH_DIR MAP ENTRY
+%token DEFINED TARGET_K SEARCH_DIR MAP ENTRY
 %token <integer> NEXT
-%token SIZEOF ADDR LOADADDR MAX_K MIN_K
+%token SIZEOF ALIGNOF ADDR LOADADDR MAX_K MIN_K
 %token STARTUP HLL SYSLIB FLOAT NOFLOAT NOCROSSREFS
 %token ORIGIN FILL
 %token LENGTH CREATE_OBJECT_SYMBOLS INPUT GROUP OUTPUT CONSTRUCTORS
@@ -281,31 +281,31 @@ casesymlist:
 	| casesymlist ',' NAME
 	;
 
+/* Parsed as expressions so that commas separate entries */
 extern_name_list:
+	{ ldlex_expression (); }
+	extern_name_list_body
+	{ ldlex_popstate (); }
+
+extern_name_list_body:
 	  NAME
 			{ ldlang_add_undef ($1); }
-	| extern_name_list NAME
+	| extern_name_list_body NAME
 			{ ldlang_add_undef ($2); }
-	| extern_name_list ',' NAME
+	| extern_name_list_body ',' NAME
 			{ ldlang_add_undef ($3); }
 	;
 
 script_file:
-	{
-	 ldlex_both();
-	}
-       ifile_list
-	{
-	ldlex_popstate();
-	}
+	{ ldlex_both(); }
+	ifile_list
+	{ ldlex_popstate(); }
         ;
 
-
 ifile_list:
-       ifile_list ifile_p1
+	ifile_list ifile_p1
         |
 	;
-
 
 
 ifile_p1:
@@ -574,6 +574,9 @@ statement:
 			{
 			  lang_add_fill ($3);
 			}
+	| ASSERT_K  {ldlex_expression ();} '(' exp ',' NAME ')' end
+			{ ldlex_popstate ();
+			  lang_add_assignment (exp_assert ($4, $6)); }
 	;
 
 statement_list:
@@ -838,6 +841,8 @@ exp	:
         |	SIZEOF_HEADERS
 			{ $$ = exp_nameop (SIZEOF_HEADERS,0); }
 
+	|	ALIGNOF '(' NAME ')'
+			{ $$ = exp_nameop (ALIGNOF,$3); }
 	|	SIZEOF '(' NAME ')'
 			{ $$ = exp_nameop (SIZEOF,$3); }
 	|	ADDR '(' NAME ')'

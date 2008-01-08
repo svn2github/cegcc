@@ -1,6 +1,6 @@
 /* BFD back-end for PowerPC Microsoft Portable Executable files.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2006
+   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    Original version pieced together by Kim Knuttila (krk@cygnus.com)
@@ -13,7 +13,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -33,9 +33,8 @@
    - dlltool will not produce correct output in some .reloc cases, and will
      not produce the right glue code for dll function calls.  */
 
-#include "bfd.h"
 #include "sysdep.h"
-
+#include "bfd.h"
 #include "libbfd.h"
 
 #include "coff/powerpc.h"
@@ -983,6 +982,18 @@ static bfd_boolean in_reloc_p(abfd, howto)
       && (howto->type != IMAGE_REL_PPC_TOCREL16_DEFN) ;
 }
 
+static bfd_boolean
+write_base_file_entry (bfd *obfd, struct bfd_link_info *info, bfd_vma addr)
+{
+  if (coff_data (obfd)->pe)
+     addr -= pe_data (obfd)->pe_opthdr.ImageBase;
+  if (fwrite (&addr, sizeof (addr), 1, (FILE *) info->base_file) == 1)
+    return TRUE;
+
+  bfd_set_error (bfd_error_system_call);
+  return FALSE;
+}
+
 /* The reloc processing routine for the optimized COFF linker.  */
 
 static bfd_boolean
@@ -1238,10 +1249,8 @@ coff_ppc_relocate_section (output_bfd, info, input_bfd, input_section,
 		bfd_vma addr = (toc_section->output_section->vma
 				+ toc_section->output_offset + our_toc_offset);
 
-		if (coff_data (output_bfd)->pe)
-		  addr -= pe_data(output_bfd)->pe_opthdr.ImageBase;
-
-		fwrite (&addr, 1,4, (FILE *) info->base_file);
+		if (!write_base_file_entry (output_bfd, info, addr))
+		  return FALSE;
 	      }
 
 	    /* FIXME: this test is conservative.  */
@@ -1454,15 +1463,13 @@ coff_ppc_relocate_section (output_bfd, info, input_bfd, input_section,
 	      /* Relocation to a symbol in a section which
 		 isn't absolute - we output the address here
 		 to a file.  */
-	      bfd_vma addr = rel->r_vaddr
-		- input_section->vma
-		+ input_section->output_offset
-		  + input_section->output_section->vma;
+	      bfd_vma addr = (rel->r_vaddr
+			      - input_section->vma
+			      + input_section->output_offset
+			      + input_section->output_section->vma);
 
-	      if (coff_data (output_bfd)->pe)
-		addr -= pe_data (output_bfd)->pe_opthdr.ImageBase;
-
-	      fwrite (&addr, 1,4, (FILE *) info->base_file);
+	      if (!write_base_file_entry (output_bfd, info, addr))
+		return FALSE;
 	    }
 	}
 
@@ -1961,8 +1968,23 @@ ppc_coff_reloc_type_lookup (abfd, code)
       return NULL;
     }
 }
-
 #undef HOW2MAP
+
+static reloc_howto_type *
+ppc_coff_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+			    const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0;
+       i < sizeof (ppc_coff_howto_table) / sizeof (ppc_coff_howto_table[0]);
+       i++)
+    if (ppc_coff_howto_table[i].name != NULL
+	&& strcasecmp (ppc_coff_howto_table[i].name, r_name) == 0)
+      return &ppc_coff_howto_table[i];
+
+  return NULL;
+}
 
 /* Tailor coffcode.h -- macro heaven.  */
 
@@ -1971,6 +1993,7 @@ ppc_coff_reloc_type_lookup (abfd, code)
 /* We use the special COFF backend linker, with our own special touch.  */
 
 #define coff_bfd_reloc_type_lookup   ppc_coff_reloc_type_lookup
+#define coff_bfd_reloc_name_lookup ppc_coff_reloc_name_lookup
 #define coff_rtype_to_howto          coff_ppc_rtype_to_howto
 #define coff_relocate_section        coff_ppc_relocate_section
 #define coff_bfd_final_link          ppc_bfd_coff_final_link

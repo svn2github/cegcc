@@ -8,14 +8,15 @@ else
 fi
 rm -f e${EMULATION_NAME}.c
 (echo;echo;echo;echo;echo)>e${EMULATION_NAME}.c # there, now line numbers match ;-)
-cat >>e${EMULATION_NAME}.c <<EOF
-/* This file is part of GLD, the Gnu Linker.
-   Copyright 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
-   2005, 2006 Free Software Foundation, Inc.
+fragment <<EOF
+/* Copyright 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
+   2005, 2006, 2007 Free Software Foundation, Inc.
+
+   This file is part of the GNU Binutils.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -25,7 +26,9 @@ cat >>e${EMULATION_NAME}.c <<EOF
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
+
 
 /* For WINDOWS_NT */
 /* The original file generated returned different default scripts depending
@@ -48,9 +51,9 @@ cat >>e${EMULATION_NAME}.c <<EOF
 #define bfd_arm_process_before_allocation \
 	bfd_${EMULATION_NAME}_process_before_allocation
 #endif
- 
-#include "bfd.h"
+
 #include "sysdep.h"
+#include "bfd.h"
 #include "bfdlink.h"
 #include "getopt.h"
 #include "libiberty.h"
@@ -290,6 +293,8 @@ static definfo init[] =
   D(ImageBase,"__image_base__", NT_EXE_IMAGE_BASE),
 #define DLLOFF 1
   {&dll, sizeof(dll), 0, "__dll__", 0},
+#define MSIMAGEBASEOFF	2
+  D(ImageBase, U ("__ImageBase"), NT_EXE_IMAGE_BASE),
   D(SectionAlignment,"__section_alignment__", PE_DEF_SECTION_ALIGNMENT),
   D(FileAlignment,"__file_alignment__", PE_DEF_FILE_ALIGNMENT),
   D(MajorOperatingSystemVersion,"__major_os_version__", 4),
@@ -378,6 +383,8 @@ set_pe_name (char *name, long val)
 	{
 	  init[i].value = val;
 	  init[i].inited = 1;
+	  if (strcmp (name,"__image_base__") == 0)
+	    set_pe_name (U ("__ImageBase"), val);
 	  return;
 	}
     }
@@ -712,6 +719,7 @@ gld_${EMULATION_NAME}_set_symbols (void)
 #endif
       else
 	init[IMAGEBASEOFF].value = NT_EXE_IMAGE_BASE;
+      init[MSIMAGEBASEOFF].value = init[IMAGEBASEOFF].value;
     }
 
   /* Don't do any symbol assignments if this is a relocatable link.  */
@@ -924,8 +932,20 @@ pe_find_data_imports (void)
 	      int nsyms, symsize, i;
 
 	      if (link_info.pei386_auto_import == -1)
-		info_msg (_("Info: resolving %s by linking to %s (auto-import)\n"),
-			  undef->root.string, buf);
+		{
+		  static bfd_boolean warned = FALSE;
+
+		  info_msg (_("Info: resolving %s by linking to %s (auto-import)\n"),
+			    undef->root.string, buf);
+
+		  /* PR linker/4844.  */
+		  if (! warned)
+		    {
+		      warned = TRUE;
+		      einfo (_("%P: warning: auto-importing has been activated without --enable-auto-import specified on the command line.\n\
+This should work unless it involves constant data structures referencing symbols from auto-imported DLLs."));
+		    }
+		}
 
 	      symsize = bfd_get_symtab_upper_bound (b);
 	      symbols = (asymbol **) xmalloc (symsize);
@@ -1257,6 +1277,74 @@ gld_${EMULATION_NAME}_after_open (void)
 	  }
       }
   }
+
+  {
+    /* The following chunk of code tries to identify jump stubs in
+       import libraries which are dead code and eliminates them
+       from the final link. For each exported symbol <sym>, there
+       is a object file in the import library with a .text section
+       and several .idata$* sections. The .text section contains the
+       symbol definition for <sym> which is a jump stub of the form
+       jmp *__imp_<sym>. The .idata$5 contains the symbol definition
+       for __imp_<sym> which is the address of the slot for <sym> in
+       the import address table. When a symbol is imported explicitly
+       using __declspec(dllimport) declaration, the compiler generates
+       a reference to __imp_<sym> which directly resolves to the
+       symbol in .idata$5, in which case the jump stub code is not
+       needed. The following code tries to identify jump stub sections
+       in import libraries which are not referred to by anyone and
+       marks them for exclusion from the final link.  */
+    LANG_FOR_EACH_INPUT_STATEMENT (is)
+      {
+	if (is->the_bfd->my_archive)
+	  {
+	    int is_imp = 0;
+	    asection *sec, *stub_sec = NULL;
+
+	    /* See if this is an import library thunk.  */
+	    for (sec = is->the_bfd->sections; sec; sec = sec->next)
+	      {
+		if (strncmp (sec->name, ".idata\$", 7) == 0)
+		  is_imp = 1;
+		/* The section containing the jmp stub has code
+		   and has a reloc.  */
+		if ((sec->flags & SEC_CODE) && sec->reloc_count)
+		  stub_sec = sec;
+	      }
+
+	    if (is_imp && stub_sec)
+	      {
+		long symsize;
+		asymbol **symbols;
+		long src_count;
+		struct bfd_link_hash_entry * blhe;
+
+		symsize = bfd_get_symtab_upper_bound (is->the_bfd);
+		symbols = xmalloc (symsize);
+		symsize = bfd_canonicalize_symtab (is->the_bfd, symbols);
+
+		for (src_count = 0; src_count < symsize; src_count++)
+		  {
+		    if (symbols[src_count]->section->id == stub_sec->id)
+		      {
+			/* This symbol belongs to the section containing
+			   the stub.  */
+			blhe = bfd_link_hash_lookup (link_info.hash,
+						     symbols[src_count]->name,
+						     FALSE, FALSE, TRUE);
+			/* If the symbol in the stub section has no other
+			   undefined references, exclude the stub section
+			   from the final link.  */
+			if (blhe && (blhe->type == bfd_link_hash_defined)
+			    && (blhe->u.undef.next == NULL))
+			  stub_sec->flags |= SEC_EXCLUDE;
+		      }
+		  }
+		free (symbols);
+	      }
+	  }
+      }
+  }
 }
 
 static void
@@ -1422,19 +1510,8 @@ gld_${EMULATION_NAME}_recognized_file (lang_input_statement_type *entry ATTRIBUT
 #ifdef TARGET_IS_arm_wince_pe
   pe_dll_id_target ("pei-arm-wince-little");
 #endif
-  if (bfd_get_format (entry->the_bfd) == bfd_object)
-    {
-      char fbuf[LD_PATHMAX + 1];
-      const char *ext;
-
-      if (REALPATH (entry->filename, fbuf) == NULL)
-	strncpy (fbuf, entry->filename, sizeof (fbuf));
-
-      ext = fbuf + strlen (fbuf) - 4;
-
-      if (strcmp (ext, ".dll") == 0 || strcmp (ext, ".DLL") == 0)
-	return pe_implied_import_dll (fbuf);
-    }
+  if (pe_bfd_is_dll (entry->the_bfd))
+    return pe_implied_import_dll (entry->filename);
 #endif
   return FALSE;
 }
@@ -1480,7 +1557,7 @@ gld_${EMULATION_NAME}_finish (void)
 	  entry_symbol.name = buffer;
 	}
       else
-	einfo (_("%P: warning: connot find thumb start symbol %s\n"), thumb_entry_symbol);
+	einfo (_("%P: warning: cannot find thumb start symbol %s\n"), thumb_entry_symbol);
     }
 #endif /* defined(TARGET_IS_armpe) || defined(TARGET_IS_arm_epoc_pe) || defined(TARGET_IS_arm_wince_pe) */
 
@@ -1727,7 +1804,7 @@ gld_${EMULATION_NAME}_open_dynamic_archive
           For backwards compatibility, libfoo.a needs to precede
           libfoo.dll and foo.dll in the search.  */
       { "lib%s.a", FALSE },
-      /* The 'native' spelling of an import lib name is "foo.lib".  */  	
+      /* The 'native' spelling of an import lib name is "foo.lib".  */
       { "%s.lib", FALSE },
 #ifdef DLL_SUPPORT
       /* Try "<prefix>foo.dll" (preferred dll name, if specified).  */
@@ -1784,7 +1861,7 @@ gld_${EMULATION_NAME}_open_dynamic_archive
 
   for (i = 0; libname_fmt[i].format; i++)
     {
-#ifdef DLL_SUPPORT 
+#ifdef DLL_SUPPORT
       if (libname_fmt[i].use_prefix)
 	{
 	  if (!pe_dll_search_prefix)
@@ -1824,7 +1901,7 @@ EOF
 # sed commands to quote an ld script as a C string.
 sc="-f stringify.sed"
 
-cat >>e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 {
   *isfile = 0;
 
@@ -1838,11 +1915,15 @@ echo '  ; else if (!config.text_read_only) return'	>> e${EMULATION_NAME}.c
 sed $sc ldscripts/${EMULATION_NAME}.xbn			>> e${EMULATION_NAME}.c
 echo '  ; else if (!config.magic_demand_paged) return'	>> e${EMULATION_NAME}.c
 sed $sc ldscripts/${EMULATION_NAME}.xn			>> e${EMULATION_NAME}.c
+if test -n "$GENERATE_AUTO_IMPORT_SCRIPT" ; then
+echo '  ; else if (link_info.pei386_auto_import == 1) return'	>> e${EMULATION_NAME}.c
+sed $sc ldscripts/${EMULATION_NAME}.xa			>> e${EMULATION_NAME}.c
+fi
 echo '  ; else return'					>> e${EMULATION_NAME}.c
 sed $sc ldscripts/${EMULATION_NAME}.x			>> e${EMULATION_NAME}.c
 echo '; }'						>> e${EMULATION_NAME}.c
 
-cat >>e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 
 
 struct ld_emulation_xfer_struct ld_${EMULATION_NAME}_emulation =

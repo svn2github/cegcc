@@ -1045,6 +1045,16 @@ pointer, for any expression that can not be recognized.  When the function
 is called, @code{input_line_pointer} will point to the start of the
 expression.
 
+@item md_register_arithmetic
+@cindex md_register_arithmetic
+If this macro is defined and evaluates to zero then GAS will not fold
+expressions that add or subtract a constant to/from a register to give
+another register.  For example GAS's default behaviour is to fold the
+expression "r8 + 1" into "r9", which is probably not the result
+intended by the programmer.  The default is to allow such folding,
+since this maintains backwards compatibility with earlier releases of
+GAS.
+
 @item tc_unrecognized_line
 @cindex tc_unrecognized_line
 If you define this macro, GAS will call it when it finds a line that it can not
@@ -1134,17 +1144,25 @@ simple macro.
 @cindex md_atof
 This function is called to convert an ASCII string into a floating point value
 in format used by the CPU.  It takes three arguments.  The first is @var{type}
-which is a byte describing the type of floating point number to be created.
-Possible values are @var{'f'} or @var{'s'} for single precision, @var{'d'} or
-@var{'r'} for double precision and @var{'x'} or @var{'p'} for extended
-precision.  Either lower or upper case versions of these letters can be used.
+which is a byte describing the type of floating point number to be created.  It
+is one of the characters defined in the @xref{FLT_CHARS} macro.  Possible
+values are @var{'f'} or @var{'s'} for single precision, @var{'d'} or @var{'r'}
+for double precision and @var{'x'} or @var{'p'} for extended precision.  Either
+lower or upper case versions of these letters can be used.  Note: some targets
+do not support all of these types, and some targets may also support other
+types not mentioned here.
 
 The second parameter is @var{litP} which is a pointer to a byte array where the
-converted value should be stored.  The third argument is @var{sizeP}, which is
-a pointer to a integer that should be filled in with the number of
-@var{LITTLENUM}s emitted into the byte array.  (@var{LITTLENUM} is defined in
-gas/bignum.h).  The function should return NULL upon success or an error string
-upon failure.
+converted value should be stored.  The value is converted into LITTLENUMs and
+is stored in the target's endian-ness order.  (@var{LITTLENUM} is defined in
+gas/bignum.h).  Single precision values occupy 2 littlenums.  Double precision
+values occupy 4 littlenums and extended precision values occupy either 5 or 6
+littlenums, depending upon the target.
+
+The third argument is @var{sizeP}, which is a pointer to a integer that should
+be filled in with the number of chars emitted into the byte array.
+
+The function should return NULL upon success or an error string upon failure.
 
 @item TC_LARGEST_EXPONENT_IS_NORMAL
 @cindex TC_LARGEST_EXPONENT_IS_NORMAL (@var{precision})
@@ -1279,7 +1297,7 @@ absolute symbol.  If undefined, @code{TC_FORCE_RELOCATION} will be used.
 @cindex TC_FORCE_RELOCATION_LOCAL
 Like @code{TC_FORCE_RELOCATION}, but used only for fixup expressions against a
 symbol in the current section.  If undefined, fixups that are not
-@code{fx_pcrel} or @code{fx_plt} or for which @code{TC_FORCE_RELOCATION}
+@code{fx_pcrel} or for which @code{TC_FORCE_RELOCATION}
 returns non-zero, will emit relocs.
 
 @item TC_FORCE_RELOCATION_SUB_SAME (@var{fix}, @var{seg})
@@ -1517,6 +1535,23 @@ The function should return the debug format that is preferred by the CPU
 backend.  This format will be used when generating assembler specific debug
 information.
 
+@item md_allow_local_subtract (@var{left}, @var{right}, @var{section})
+If defined, GAS will call this macro when evaluating an expression which is the
+difference of two symbols defined in the same section.  It takes three
+arguments: @code{expressioS * @var{left}} which is the symbolic expression on
+the left hand side of the subtraction operation, @code{expressionS *
+@var{right}} which is the symbolic expression on the right hand side of the
+subtraction, and @code{segT @var{section}} which is the section containing the two
+symbols.  The macro should return a non-zero value if the expression should be
+evaluated.  Targets which implement link time relaxation which may change the
+position of the two symbols relative to each other should ensure that this
+macro returns zero in situations where this can occur.
+
+@item md_allow_eh_opt
+If defined, GAS will check this macro before performing any optimizations on
+the DWARF call frame debug information that is emitted.  Targets which
+implement link time relaxation may need to define this macro and set it to zero
+if it is possible to change the size of a function's prologue.
 @end table
 
 @node Object format backend

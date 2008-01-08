@@ -1,12 +1,12 @@
 /* Support for HPPA 64-bit ELF
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -16,16 +16,43 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "alloca-conf.h"
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "elf-bfd.h"
 #include "elf/hppa.h"
 #include "libhppa.h"
 #include "elf64-hppa.h"
+
+/* This is the code recommended in the autoconf documentation, almost
+   verbatim.  */
+#ifndef __GNUC__
+# if HAVE_ALLOCA_H
+#  include <alloca.h>
+# else
+#  ifdef _AIX
+/* Indented so that pre-ansi C compilers will ignore it, rather than
+   choke on it.  Some versions of AIX require this to be the first
+   thing in the file.  */
+ #pragma alloca
+#  else
+#   ifndef alloca /* predefined by HP cc +Olibcalls */
+#    if !defined (__STDC__) && !defined (__hpux)
+extern char *alloca ();
+#    else
+extern void *alloca ();
+#    endif /* __STDC__, __hpux */
+#   endif /* alloca */
+#  endif /* _AIX */
+# endif /* HAVE_ALLOCA_H */
+#else
+extern void *alloca (size_t);
+#endif /* __GNUC__ */
+
+
 #define ARCH_SIZE	       64
 
 #define PLT_ENTRY_SIZE 0x10
@@ -1198,16 +1225,9 @@ elf64_hppa_post_process_headers (abfd, link_info)
   Elf_Internal_Ehdr * i_ehdrp;
 
   i_ehdrp = elf_elfheader (abfd);
-
-  if (strcmp (bfd_get_target (abfd), "elf64-hppa-linux") == 0)
-    {
-      i_ehdrp->e_ident[EI_OSABI] = ELFOSABI_LINUX;
-    }
-  else
-    {
-      i_ehdrp->e_ident[EI_OSABI] = ELFOSABI_HPUX;
-      i_ehdrp->e_ident[EI_ABIVERSION] = 1;
-    }
+  
+  i_ehdrp->e_ident[EI_OSABI] = get_elf_backend_data (abfd)->elf_osabi;
+  i_ehdrp->e_ident[EI_ABIVERSION] = 1;
 }
 
 /* Create function descriptor section (.opd).  This section is called .opd
@@ -2780,6 +2800,7 @@ const struct elf_size_info hppa64_elf_size_info =
   ELFCLASS64, EV_CURRENT,
   bfd_elf64_write_out_phdrs,
   bfd_elf64_write_shdrs_and_ehdr,
+  bfd_elf64_checksum_contents,
   bfd_elf64_write_relocs,
   bfd_elf64_swap_symbol_in,
   bfd_elf64_swap_symbol_out,
@@ -2800,7 +2821,10 @@ const struct elf_size_info hppa64_elf_size_info =
 /* This is not strictly correct.  The maximum page size for PA2.0 is
    64M.  But everything still uses 4k.  */
 #define ELF_MAXPAGESIZE			0x1000
+#define ELF_OSABI			ELFOSABI_HPUX
+
 #define bfd_elf64_bfd_reloc_type_lookup elf_hppa_reloc_type_lookup
+#define bfd_elf64_bfd_reloc_name_lookup elf_hppa_reloc_name_lookup
 #define bfd_elf64_bfd_is_local_label_name       elf_hppa_is_local_label_name
 #define elf_info_to_howto		elf_hppa_info_to_howto
 #define elf_info_to_howto_rel		elf_hppa_info_to_howto_rel
@@ -2820,6 +2844,8 @@ const struct elf_size_info hppa64_elf_size_info =
 					elf64_hppa_create_dynamic_sections
 #define elf_backend_post_process_headers	elf64_hppa_post_process_headers
 
+#define elf_backend_omit_section_dynsym \
+  ((bfd_boolean (*) (bfd *, struct bfd_link_info *, asection *)) bfd_true)
 #define elf_backend_adjust_dynamic_symbol \
 					elf64_hppa_adjust_dynamic_symbol
 
@@ -2864,12 +2890,19 @@ const struct elf_size_info hppa64_elf_size_info =
 #define elf_backend_action_discarded	elf_hppa_action_discarded
 #define elf_backend_section_from_phdr   elf64_hppa_section_from_phdr
 
+#define elf64_bed			elf64_hppa_hpux_bed
+
 #include "elf64-target.h"
 
 #undef TARGET_BIG_SYM
 #define TARGET_BIG_SYM			bfd_elf64_hppa_linux_vec
 #undef TARGET_BIG_NAME
 #define TARGET_BIG_NAME			"elf64-hppa-linux"
+#undef ELF_OSABI
+#define ELF_OSABI			ELFOSABI_LINUX
+#undef elf_backend_post_process_headers
+#define elf_backend_post_process_headers _bfd_elf_set_osabi
+#undef elf64_bed
+#define elf64_bed			elf64_hppa_linux_bed
 
-#define INCLUDED_TARGET_FILE 1
 #include "elf64-target.h"

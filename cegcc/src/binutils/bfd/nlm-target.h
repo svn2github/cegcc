@@ -1,12 +1,12 @@
 /* Target definitions for 32/64-bit NLM (NetWare Loadable Module)
    Copyright 1993, 1994, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
-   2005 Free Software Foundation, Inc.
+   2005, 2007 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -16,7 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 #define nlm_core_file_p _bfd_dummy_target
 
@@ -37,6 +38,7 @@
 #define nlm_get_reloc_upper_bound               nlmNAME (get_reloc_upper_bound)
 #define nlm_canonicalize_reloc                  nlmNAME (canonicalize_reloc)
 #define nlm_bfd_reloc_type_lookup               bfd_default_reloc_type_lookup
+#define nlm_bfd_reloc_name_lookup         _bfd_norelocs_bfd_reloc_name_lookup
 #define nlm_set_section_contents                nlmNAME (set_section_contents)
 
 #define nlm_sizeof_headers                      _bfd_nolink_sizeof_headers

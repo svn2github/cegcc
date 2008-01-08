@@ -1,3 +1,43 @@
+2007-10-15  Alan Modra  <amodra@bigpond.net.au>
+
+	* chew.c (write_buffer): Check fwrite return value.
+
+2007-09-14  Alan Modra  <amodra@bigpond.net.au>
+
+	* Makefile.in: Regenerate.
+
+2007-07-02  Alan Modra  <amodra@bigpond.net.au>
+
+	* Makefile.in: Regenerate.
+
+2007-06-30  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* Makefile.in: Likewise.
+
+2007-06-14  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* Makefile.in: Regenerated.
+
+2007-05-22  Nick Clifton  <nickc@redhat.com>
+
+	* bfd.texinfo: Use @copying around the copyright notice.
+	* bfdint.texi: Likewise.
+
+2007-05-21  Nick Clifton  <nickc@redhat.com>
+
+	* bfdint.texi: Add GNU Free Documentation License notice.
+
+2007-04-24  Alan Modra  <amodra@bigpond.net.au>
+
+	* Makefile.in: Regenerate.
+
+2007-02-17  Mark Mitchell  <mark@codesourcery.com>
+	    Nathan Sidwell  <nathan@codesourcery.com>
+	    Vladimir Prus  <vladimir@codesourcery.com
+	    Joseph Myers  <joseph@codesourcery.com>
+
+	* Makefile.in: Regenerate.
+
 2006-07-24  Ralk Wildenhues  <Ralf.Wildenhues@gmx.de>
 
 	* bfd..texinfo: Fix spelling mistakes.

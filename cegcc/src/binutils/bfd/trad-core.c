@@ -1,27 +1,28 @@
 /* BFD back end for traditional Unix core files (U-area and raw sections)
    Copyright 1988, 1989, 1991, 1992, 1993, 1994, 1995, 1996, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2006
+   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Written by John Gilmore of Cygnus Support.
 
-This file is part of BFD, the Binary File Descriptor library.
+   This file is part of BFD, the Binary File Descriptor library.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "libaout.h"           /* BFD a.out internal data structures */
 
@@ -45,6 +46,10 @@ Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA. 
 
 #ifdef TRAD_HEADER
 #include TRAD_HEADER
+#endif
+
+#ifndef NBPG
+# define NBPG getpagesize()
 #endif
 
 struct trad_core_struct
@@ -114,24 +119,24 @@ trad_unix_core_file_p (abfd)
     if (bfd_stat (abfd, &statbuf) < 0)
       return 0;
 
-    if ((unsigned long) (NBPG * (UPAGES + u.u_dsize
+    if ((ufile_ptr) NBPG * (UPAGES + u.u_dsize
 #ifdef TRAD_CORE_DSIZE_INCLUDES_TSIZE
-				 - u.u_tsize
+			    - u.u_tsize
 #endif
-				 + u.u_ssize))
-	> (unsigned long) statbuf.st_size)
+			    + u.u_ssize)
+	> (ufile_ptr) statbuf.st_size)
       {
 	bfd_set_error (bfd_error_wrong_format);
 	return 0;
       }
 #ifndef TRAD_CORE_ALLOW_ANY_EXTRA_SIZE
-    if ((unsigned long) (NBPG * (UPAGES + u.u_dsize + u.u_ssize)
+    if (((ufile_ptr) NBPG * (UPAGES + u.u_dsize + u.u_ssize)
 #ifdef TRAD_CORE_EXTRA_SIZE_ALLOWED
 	/* Some systems write the file too big.  */
-			 + TRAD_CORE_EXTRA_SIZE_ALLOWED
+	 + TRAD_CORE_EXTRA_SIZE_ALLOWED
 #endif
-			 )
-	< (unsigned long) statbuf.st_size)
+	 )
+	< (ufile_ptr) statbuf.st_size)
       {
 	/* The file is too big.  Maybe it's not a core file
 	   or we otherwise have bad values for u_dsize and u_ssize).  */

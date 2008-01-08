@@ -1,27 +1,27 @@
 /* Routines to help build PEI-format DLLs (Win32 etc)
-   Copyright 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   Copyright 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Written by DJ Delorie <dj@cygnus.com>
 
-   This file is part of GLD, the Gnu Linker.
+   This file is part of the GNU Binutils.
 
-   GLD is free software; you can redistribute it and/or modify
+   This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
-   any later version.
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
 
-   GLD is distributed in the hope that it will be useful,
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with GLD; see the file COPYING.  If not, write to the Free
-   Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA
-   02110-1301, USA.  */
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "bfdlink.h"
 #include "libiberty.h"
 #include "safe-ctype.h"
@@ -40,6 +40,7 @@
 #include "coff/internal.h"
 #include "../bfd/libcoff.h"
 #include "deffile.h"
+#include "pe-dll.h"
 
 #ifdef pe_use_x86_64
 
@@ -167,24 +168,24 @@ static int runtime_pseudo_relocs_created = 0;
 
 typedef struct
 {
-  char *name;
+  const char *name;
   int len;
 }
 autofilter_entry_type;
 
 typedef struct
 {
-  char *target_name;
-  char *object_target;
+  const char *target_name;
+  const char *object_target;
   unsigned int imagebase_reloc;
   int pe_arch;
   int bfd_arch;
   bfd_boolean underscored;
-  autofilter_entry_type* autofilter_symbollist; 
+  const autofilter_entry_type* autofilter_symbollist; 
 }
 pe_details_type;
 
-static autofilter_entry_type autofilter_symbollist_generic[] =
+static const autofilter_entry_type autofilter_symbollist_generic[] =
 {
   { STRING_COMMA_LEN (".text") },
   /* Entry point symbols.  */
@@ -194,14 +195,22 @@ static autofilter_entry_type autofilter_symbollist_generic[] =
   /* Runtime pseudo-reloc.  */
   { STRING_COMMA_LEN ("_pei386_runtime_relocator") },
   { STRING_COMMA_LEN ("do_pseudo_reloc") },
-  { STRING_COMMA_LEN (NULL) }
+  { NULL, 0 }
 };
 
-static autofilter_entry_type autofilter_symbollist_i386[] =
+static const autofilter_entry_type autofilter_symbollist_i386[] =
 {
   { STRING_COMMA_LEN (".text") },
   /* Entry point symbols, and entry hooks.  */
   { STRING_COMMA_LEN ("cygwin_crt0") },
+#ifdef pe_use_x86_64
+  { STRING_COMMA_LEN ("DllMain") },
+  { STRING_COMMA_LEN ("DllEntryPoint") },
+  { STRING_COMMA_LEN ("DllMainCRTStartup") },
+  { STRING_COMMA_LEN ("_cygwin_dll_entry") },
+  { STRING_COMMA_LEN ("_cygwin_crt0_common") },
+  { STRING_COMMA_LEN ("_cygwin_noncygwin_dll_entry") },
+#else
   { STRING_COMMA_LEN ("DllMain@12") },
   { STRING_COMMA_LEN ("DllEntryPoint@0") },
   { STRING_COMMA_LEN ("DllMainCRTStartup@12") },
@@ -209,6 +218,7 @@ static autofilter_entry_type autofilter_symbollist_i386[] =
   { STRING_COMMA_LEN ("_cygwin_crt0_common@8") },
   { STRING_COMMA_LEN ("_cygwin_noncygwin_dll_entry@12") },
   { STRING_COMMA_LEN ("cygwin_attach_dll") },
+#endif  
   { STRING_COMMA_LEN ("cygwin_premain0") },
   { STRING_COMMA_LEN ("cygwin_premain1") },
   { STRING_COMMA_LEN ("cygwin_premain2") },
@@ -221,7 +231,7 @@ static autofilter_entry_type autofilter_symbollist_i386[] =
   { STRING_COMMA_LEN ("_impure_ptr") },
   { STRING_COMMA_LEN ("_fmode") },
   { STRING_COMMA_LEN ("environ") },
-  { STRING_COMMA_LEN (NULL) }
+  { NULL, 0 }
 };
 
 #define PE_ARCH_i386	 1
@@ -231,7 +241,7 @@ static autofilter_entry_type autofilter_symbollist_i386[] =
 #define PE_ARCH_arm_epoc 5
 #define PE_ARCH_arm_wince 6
 
-static pe_details_type pe_detail_list[] =
+static const pe_details_type pe_detail_list[] =
 {
   {
 #ifdef pe_use_x86_64
@@ -296,10 +306,10 @@ static pe_details_type pe_detail_list[] =
   { NULL, NULL, 0, 0, 0, FALSE, NULL }
 };
 
-static pe_details_type *pe_details;
+static const pe_details_type *pe_details;
 
 /* Do not specify library suffix explicitly, to allow for dllized versions.  */
-static autofilter_entry_type autofilter_liblist[] =
+static const autofilter_entry_type autofilter_liblist[] =
 {
   { STRING_COMMA_LEN ("libcegcc") },
   { STRING_COMMA_LEN ("libcygwin") },
@@ -311,10 +321,10 @@ static autofilter_entry_type autofilter_liblist[] =
   { STRING_COMMA_LEN ("libsupc++") },
   { STRING_COMMA_LEN ("libobjc") },
   { STRING_COMMA_LEN ("libgcj") },
-  { STRING_COMMA_LEN (NULL) }
+  { NULL, 0 }
 };
 
-static autofilter_entry_type autofilter_objlist[] =
+static const autofilter_entry_type autofilter_objlist[] =
 {
   { STRING_COMMA_LEN ("crt0.o") },
   { STRING_COMMA_LEN ("crt1.o") },
@@ -329,10 +339,10 @@ static autofilter_entry_type autofilter_objlist[] =
   { STRING_COMMA_LEN ("gcrt3.o") },
   { STRING_COMMA_LEN ("crtbegin.o") },
   { STRING_COMMA_LEN ("crtend.o") },
-  { STRING_COMMA_LEN (NULL) }
+  { NULL, 0 }
 };
 
-static autofilter_entry_type autofilter_symbolprefixlist[] =
+static const autofilter_entry_type autofilter_symbolprefixlist[] =
 {
   /* _imp_ is treated specially, as it is always underscored.  */
   /* { STRING_COMMA_LEN ("_imp_") },  */
@@ -343,13 +353,13 @@ static autofilter_entry_type autofilter_symbolprefixlist[] =
   { STRING_COMMA_LEN ("_nm_") },
   /* Don't export symbols specifying internal DLL layout.  */
   { STRING_COMMA_LEN ("_head_") },
-  { STRING_COMMA_LEN (NULL) }
+  { NULL, 0 }
 };
 
-static autofilter_entry_type autofilter_symbolsuffixlist[] =
+static const autofilter_entry_type autofilter_symbolsuffixlist[] =
 {
   { STRING_COMMA_LEN ("_iname") },
-  { STRING_COMMA_LEN (NULL) }
+  { NULL, 0 }
 };
 
 #define U(str) (pe_details->underscored ? "_" str : str)
@@ -452,7 +462,7 @@ pe_dll_add_excludes (const char *new_excludes, const int type)
 static bfd_boolean
 is_import (const char* n)
 {
-	return (CONST_STRNEQ (n, "__imp_"));
+  return (CONST_STRNEQ (n, "__imp_"));
 }
 
 /* abfd is a bfd containing n (or NULL)
@@ -463,7 +473,7 @@ auto_export (bfd *abfd, def_file *d, const char *n)
 {
   int i;
   struct exclude_list_struct *ex;
-  autofilter_entry_type *afptr;
+  const autofilter_entry_type *afptr;
   const char * libname = 0;
   if (abfd && abfd->my_archive)
     libname = lbasename (abfd->my_archive->filename);
@@ -622,10 +632,11 @@ process_def_file (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
 
 		  /* We should not re-export imported stuff.  */
 		  {
+		    char *name;
 		    if (is_import (sn))
 			  continue;
 
-		    char *name = xmalloc (strlen ("__imp_") + strlen (sn) + 1);
+		    name = xmalloc (strlen ("__imp_") + strlen (sn) + 1);
 		    sprintf (name, "%s%s", "__imp_", sn);
 
 		    blhe = bfd_link_hash_lookup (info->hash, name,
@@ -1800,6 +1811,10 @@ make_tail (bfd *parent)
   d7 = xmalloc (len);
   id7->contents = d7;
   strcpy ((char *) d7, dll_filename);
+  /* If len was odd, the above
+     strcpy leaves behind an undefined byte. That is harmless,
+     but we set it to 0 just so the binary dumps are pretty.  */
+  d7[len - 1] = 0;
 
   bfd_set_symtab (abfd, symtab, symptr);
 
@@ -1832,7 +1847,7 @@ make_tail (bfd *parent)
  	.short		<hint>
  	.asciz		"function" xlate? (add underscore, kill at)  */
 
-static unsigned char jmp_ix86_bytes[] =
+static const unsigned char jmp_ix86_bytes[] =
 {
   0xff, 0x25, 0x00, 0x00, 0x00, 0x00, 0x90, 0x90
 };
@@ -1844,7 +1859,7 @@ static unsigned char jmp_ix86_bytes[] =
  	nop
  	.dw	__imp_function   */
 
-static unsigned char jmp_sh_bytes[] =
+static const unsigned char jmp_sh_bytes[] =
 {
   0x01, 0xd0, 0x02, 0x60, 0x2b, 0x40, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00
 };
@@ -1855,13 +1870,13 @@ static unsigned char jmp_sh_bytes[] =
  	jr	$t0
  	nop                              */
 
-static unsigned char jmp_mips_bytes[] =
+static const unsigned char jmp_mips_bytes[] =
 {
   0x00, 0x00, 0x08, 0x3c,  0x00, 0x00, 0x08, 0x8d,
   0x08, 0x00, 0x00, 0x01,  0x00, 0x00, 0x00, 0x00
 };
 
-static unsigned char jmp_arm_bytes[] =
+static const unsigned char jmp_arm_bytes[] =
 {
   0x00, 0xc0, 0x9f, 0xe5,	/* ldr  ip, [pc] */
   0x00, 0xf0, 0x9c, 0xe5,	/* ldr  pc, [ip] */
@@ -1870,38 +1885,47 @@ static unsigned char jmp_arm_bytes[] =
 
 
 static bfd *
-make_one (def_file_export *exp, bfd *parent)
+make_one (def_file_export *exp, bfd *parent, bfd_boolean include_jmp_stub)
 {
   asection *tx, *id7, *id5, *id4, *id6;
   unsigned char *td = NULL, *d7, *d5, *d4, *d6 = NULL;
   int len;
   char *oname;
   bfd *abfd;
-  unsigned char *jmp_bytes = NULL;
+  const unsigned char *jmp_bytes = NULL;
   int jmp_byte_count = 0;
 
-  switch (pe_details->pe_arch)
+  /* Include the jump stub section only if it is needed. A jump
+     stub is needed if the symbol being imported <sym> is a function
+     symbol and there is at least one undefined reference to that
+     symbol. In other words, if all the import references to <sym> are
+     explicitly through _declspec(dllimport) then the jump stub is not
+     needed.  */
+  if (include_jmp_stub)
     {
-    case PE_ARCH_i386:
-      jmp_bytes = jmp_ix86_bytes;
-      jmp_byte_count = sizeof (jmp_ix86_bytes);
-      break;
-    case PE_ARCH_sh:
-      jmp_bytes = jmp_sh_bytes;
-      jmp_byte_count = sizeof (jmp_sh_bytes);
-      break;
-    case PE_ARCH_mips:
-      jmp_bytes = jmp_mips_bytes;
-      jmp_byte_count = sizeof (jmp_mips_bytes);
-      break;
-    case PE_ARCH_arm:
-    case PE_ARCH_arm_epoc:
-    case PE_ARCH_arm_wince:
-      jmp_bytes = jmp_arm_bytes;
-      jmp_byte_count = sizeof (jmp_arm_bytes);
-      break;
-    default:
-      abort ();
+      switch (pe_details->pe_arch)
+	{
+	case PE_ARCH_i386:
+	  jmp_bytes = jmp_ix86_bytes;
+	  jmp_byte_count = sizeof (jmp_ix86_bytes);
+	  break;
+	case PE_ARCH_sh:
+	  jmp_bytes = jmp_sh_bytes;
+	  jmp_byte_count = sizeof (jmp_sh_bytes);
+	  break;
+	case PE_ARCH_mips:
+	  jmp_bytes = jmp_mips_bytes;
+	  jmp_byte_count = sizeof (jmp_mips_bytes);
+	  break;
+	case PE_ARCH_arm:
+	case PE_ARCH_arm_epoc:
+	case PE_ARCH_arm_wince:
+	  jmp_bytes = jmp_arm_bytes;
+	  jmp_byte_count = sizeof (jmp_arm_bytes);
+	  break;
+	default:
+	  abort ();
+	}
     }
 
   oname = xmalloc (20);
@@ -1927,7 +1951,7 @@ make_one (def_file_export *exp, bfd *parent)
     {
       quick_symbol (abfd, U ("_head_"), dll_symname, "", UNDSEC,
 		    BSF_GLOBAL, 0);
-      if (! exp->flag_data)
+      if (include_jmp_stub)
 	quick_symbol (abfd, "", exp->internal_name, "", tx, BSF_GLOBAL, 0);
       quick_symbol (abfd, "__imp_", exp->internal_name, "", id5,
 		    BSF_GLOBAL, 0);
@@ -1938,7 +1962,7 @@ make_one (def_file_export *exp, bfd *parent)
     {
       quick_symbol (abfd, U ("_head_"), dll_symname, "", UNDSEC,
 		    BSF_GLOBAL, 0);
-      if (! exp->flag_data)
+      if (include_jmp_stub)
 	quick_symbol (abfd, U (""), exp->internal_name, "", tx,
 		      BSF_GLOBAL, 0);
       quick_symbol (abfd, "__imp_", U (""), exp->internal_name, id5,
@@ -1953,7 +1977,7 @@ make_one (def_file_export *exp, bfd *parent)
     quick_symbol (abfd, U ("__imp_"), exp->internal_name, "", id5,
 		  BSF_GLOBAL, 0);
 
-  if (! exp->flag_data)
+  if (include_jmp_stub)
     {
       bfd_set_section_size (abfd, tx, jmp_byte_count);
       td = xmalloc (jmp_byte_count);
@@ -1963,7 +1987,11 @@ make_one (def_file_export *exp, bfd *parent)
       switch (pe_details->pe_arch)
 	{
 	case PE_ARCH_i386:
-	  quick_reloc (abfd, 2, BFD_RELOC_32, 2);
+#ifdef pe_use_x86_64
+	  quick_reloc (abfd, 2, BFD_RELOC_32_PCREL, 2);
+#else
+          quick_reloc (abfd, 2, BFD_RELOC_32, 2);
+#endif
 	  break;
 	case PE_ARCH_sh:
 	  quick_reloc (abfd, 8, BFD_RELOC_32, 2);
@@ -1983,6 +2011,8 @@ make_one (def_file_export *exp, bfd *parent)
 	}
       save_relocs (tx);
     }
+  else
+    bfd_set_section_size (abfd, tx, 0);
 
   bfd_set_section_size (abfd, id7, 4);
   d7 = xmalloc (4);
@@ -2032,7 +2062,8 @@ make_one (def_file_export *exp, bfd *parent)
     }
   else
     {
-      len = strlen (exp->name) + 3;
+      /* { short, asciz }  */
+      len = 2 + strlen (exp->name) + 1;
       if (len & 1)
 	len++;
       bfd_set_section_size (abfd, id6, len);
@@ -2046,7 +2077,8 @@ make_one (def_file_export *exp, bfd *parent)
 
   bfd_set_symtab (abfd, symtab, symptr);
 
-  bfd_set_section_contents (abfd, tx, td, 0, jmp_byte_count);
+  if (include_jmp_stub)
+    bfd_set_section_contents (abfd, tx, td, 0, jmp_byte_count);
   bfd_set_section_contents (abfd, id7, d7, 0, 4);
   bfd_set_section_contents (abfd, id5, d5, 0, PE_IDATA5_SIZE);
   bfd_set_section_contents (abfd, id4, d4, 0, PE_IDATA4_SIZE);
@@ -2394,8 +2426,9 @@ pe_dll_generate_implib (def_file *def, const char *impfilename)
       if (pe_def_file->exports[i].flag_private)
 	continue;
       def->exports[i].internal_name = def->exports[i].name;
-      n = make_one (def->exports + i, outarch);
-      n->next = head;
+      n = make_one (def->exports + i, outarch,
+		    ! (def->exports + i)->flag_data);
+      n->archive_next = head;
       head = n;
       def->exports[i].internal_name = internal;
     }
@@ -2406,8 +2439,8 @@ pe_dll_generate_implib (def_file *def, const char *impfilename)
     return;
 
   /* Now stick them all into the archive.  */
-  ar_head->next = head;
-  ar_tail->next = ar_head;
+  ar_head->archive_next = head;
+  ar_tail->archive_next = ar_head;
   head = ar_tail;
 
   if (! bfd_set_archive_head (outarch, head))
@@ -2418,7 +2451,7 @@ pe_dll_generate_implib (def_file *def, const char *impfilename)
 
   while (head != NULL)
     {
-      bfd *n = head->next;
+      bfd *n = head->archive_next;
       bfd_close (head);
       head = n;
     }
@@ -2470,6 +2503,7 @@ pe_process_import_defs (bfd *output_bfd, struct bfd_link_info *link_info)
 	    /* See if we need this import.  */
 	    size_t len = strlen (pe_def_file->imports[i].internal_name);
 	    char *name = xmalloc (len + 2 + 6);
+	    bfd_boolean include_jmp_stub = FALSE;
 
  	    if (lead_at)
 	      sprintf (name, "%s",
@@ -2481,6 +2515,8 @@ pe_process_import_defs (bfd *output_bfd, struct bfd_link_info *link_info)
 	    blhe = bfd_link_hash_lookup (link_info->hash, name,
 					 FALSE, FALSE, FALSE);
 
+	    /* Include the jump stub for <sym> only if the <sym>
+	       is undefined.  */
 	    if (!blhe || (blhe && blhe->type != bfd_link_hash_undefined))
 	      {
 		if (lead_at)
@@ -2493,6 +2529,9 @@ pe_process_import_defs (bfd *output_bfd, struct bfd_link_info *link_info)
 		blhe = bfd_link_hash_lookup (link_info->hash, name,
 					     FALSE, FALSE, FALSE);
 	      }
+	    else
+	      include_jmp_stub = TRUE;
+
 	    free (name);
 
 	    if (blhe && blhe->type == bfd_link_hash_undefined)
@@ -2513,7 +2552,7 @@ pe_process_import_defs (bfd *output_bfd, struct bfd_link_info *link_info)
 		exp.flag_constant = 0;
 		exp.flag_data = pe_def_file->imports[i].data;
 		exp.flag_noname = exp.name ? 0 : 1;
-		one = make_one (&exp, output_bfd);
+		one = make_one (&exp, output_bfd, (! exp.flag_data) && include_jmp_stub);
 		add_bfd_to_link (one, one->filename, link_info);
 	      }
 	  }
@@ -2826,4 +2865,12 @@ pe_exe_fill_sections (bfd *abfd, struct bfd_link_info *info)
       lang_do_assignments ();
     }
   reloc_s->contents = reloc_d;
+}
+
+bfd_boolean
+pe_bfd_is_dll (bfd *abfd)
+{
+  return (bfd_get_format (abfd) == bfd_object
+          && obj_pe (abfd)
+          && pe_data (abfd)->dll);
 }

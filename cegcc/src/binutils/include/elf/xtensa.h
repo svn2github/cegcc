@@ -1,5 +1,5 @@
 /* Xtensa ELF support for BFD.
-   Copyright 2003, 2004 Free Software Foundation, Inc.
+   Copyright 2003, 2004, 2007 Free Software Foundation, Inc.
    Contributed by Bob Wilson (bwilson@tensilica.com) at Tensilica.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -40,6 +40,7 @@ START_RELOC_NUMBERS (elf_xtensa_reloc_type)
      RELOC_NUMBER (R_XTENSA_OP2, 10) 
      RELOC_NUMBER (R_XTENSA_ASM_EXPAND, 11)
      RELOC_NUMBER (R_XTENSA_ASM_SIMPLIFY, 12)
+     RELOC_NUMBER (R_XTENSA_32_PCREL, 14)
      RELOC_NUMBER (R_XTENSA_GNU_VTINHERIT, 15)
      RELOC_NUMBER (R_XTENSA_GNU_VTENTRY, 16)
      RELOC_NUMBER (R_XTENSA_DIFF8, 17)
@@ -140,7 +141,9 @@ typedef struct property_table_entry_t
 /* Instruction-only properties about code. */
 #define XTENSA_PROP_INSN_NO_DENSITY	0x00000040
 #define XTENSA_PROP_INSN_NO_REORDER	0x00000080
-#define XTENSA_PROP_INSN_NO_TRANSFORM	0x00000100
+/* Historically, NO_TRANSFORM was a property of instructions, 
+   but it should apply to literals under certain circumstances.  */
+#define XTENSA_PROP_NO_TRANSFORM	0x00000100
 
 /*  Branch target alignment information.  This transmits information
     to the linker optimization about the priority of aligning a

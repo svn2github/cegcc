@@ -1,11 +1,11 @@
 /* ADI Blackfin BFD support for 32-bit ELF.
-   Copyright 2005, 2006 Free Software Foundation, Inc.
+   Copyright 2005, 2006, 2007 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -15,11 +15,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301,
-   USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "elf-bfd.h"
 #include "elf/bfin.h"
@@ -716,7 +716,7 @@ static reloc_howto_type bfin_howto_table [] =
 	 0,			/* bitpos */
 	 complain_overflow_signed, /* complain_on_overflow */
 	 bfd_elf_generic_reloc,	/* special_function */
-	 "R_BFIN_GOT12",		/* name */
+	 "R_BFIN_GOT17M4",	/* name */
 	 FALSE,			/* partial_inplace */
 	 0xffff,	        /* src_mask */
 	 0xffff,	        /* dst_mask */
@@ -1057,8 +1057,8 @@ bfin_info_to_howto (bfd *abfd ATTRIBUTE_UNUSED,
 
   else
     cache_ptr->howto = (reloc_howto_type *) NULL;
-
 }
+
 /* Given a BFD reloc type, return the howto.  */
 static reloc_howto_type *
 bfin_bfd_reloc_type_lookup (bfd * abfd ATTRIBUTE_UNUSED,
@@ -1078,8 +1078,33 @@ bfin_bfd_reloc_type_lookup (bfd * abfd ATTRIBUTE_UNUSED,
    return &bfin_gnuext_howto_table [r_type - BFIN_GNUEXT_RELOC_MIN];
 
   return (reloc_howto_type *) NULL;
-
 }
+
+static reloc_howto_type *
+bfin_bfd_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+			    const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0;
+       i < (sizeof (bfin_howto_table)
+	    / sizeof (bfin_howto_table[0]));
+       i++)
+    if (bfin_howto_table[i].name != NULL
+	&& strcasecmp (bfin_howto_table[i].name, r_name) == 0)
+      return &bfin_howto_table[i];
+
+  for (i = 0;
+       i < (sizeof (bfin_gnuext_howto_table)
+	    / sizeof (bfin_gnuext_howto_table[0]));
+       i++)
+    if (bfin_gnuext_howto_table[i].name != NULL
+	&& strcasecmp (bfin_gnuext_howto_table[i].name, r_name) == 0)
+      return &bfin_gnuext_howto_table[i];
+
+  return NULL;
+}
+
 /* Given a bfin relocation type, return the howto.  */
 static reloc_howto_type *
 bfin_reloc_type_lookup (bfd * abfd ATTRIBUTE_UNUSED,
@@ -1092,7 +1117,6 @@ bfin_reloc_type_lookup (bfd * abfd ATTRIBUTE_UNUSED,
    return &bfin_gnuext_howto_table [r_type - BFIN_GNUEXT_RELOC_MIN];
 
   return (reloc_howto_type *) NULL;
-
 }
 
 /* Return TRUE if the name is a local label.
@@ -1473,26 +1497,9 @@ _bfinfdpic_add_rofixup (bfd *output_bfd, asection *rofixup, bfd_vma offset,
 static unsigned
 _bfinfdpic_osec_to_segment (bfd *output_bfd, asection *osec)
 {
-  struct elf_segment_map *m;
-  Elf_Internal_Phdr *p;
+  Elf_Internal_Phdr *p = _bfd_elf_find_segment_containing_section (output_bfd, osec);
 
-  /* Find the segment that contains the output_section.  */
-  for (m = elf_tdata (output_bfd)->segment_map,
-	 p = elf_tdata (output_bfd)->phdr;
-       m != NULL;
-       m = m->next, p++)
-    {
-      int i;
-
-      for (i = m->count - 1; i >= 0; i--)
-	if (m->sections[i] == osec)
-	  break;
-
-      if (i >= 0)
-	break;
-    }
-
-  return p - elf_tdata (output_bfd)->phdr;
+  return (p != NULL) ? p - elf_tdata (output_bfd)->phdr : -1;
 }
 
 inline static bfd_boolean
@@ -1955,7 +1962,9 @@ bfin_check_relocs (bfd * abfd,
         /* This relocation describes which C++ vtable entries
            are actually used.  Record for later use during GC.  */
         case R_BFIN_GNU_VTENTRY:
-          if (!bfd_elf_gc_record_vtentry (abfd, sec, h, rel->r_addend))
+          BFD_ASSERT (h != NULL);
+          if (h != NULL
+              && !bfd_elf_gc_record_vtentry (abfd, sec, h, rel->r_addend))
             return FALSE;
           break;
 
@@ -2109,9 +2118,6 @@ bfinfdpic_relocate_section (bfd * output_bfd,
     check_segment[2];
   int silence_segment_error = !(info->shared || info->pie);
 
-  if (info->relocatable)
-    return TRUE;
-
   symtab_hdr = & elf_tdata (input_bfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (input_bfd);
   relend     = relocs + input_section->reloc_count;
@@ -2152,7 +2158,6 @@ bfinfdpic_relocate_section (bfd * output_bfd,
 	  || r_type == R_BFIN_GNU_VTENTRY)
 	continue;
 
-      /* This is a final link.  */
       r_symndx = ELF32_R_SYM (rel->r_info);
       howto = bfin_reloc_type_lookup (input_bfd, r_type);
       if (howto == NULL)
@@ -2177,48 +2182,37 @@ bfinfdpic_relocate_section (bfd * output_bfd,
 	}
       else
 	{
-	  h = sym_hashes [r_symndx - symtab_hdr->sh_info];
+	  bfd_boolean warned;
+	  bfd_boolean unresolved_reloc;
 
-	  while (h->root.type == bfd_link_hash_indirect
-		 || h->root.type == bfd_link_hash_warning)
-	    h = (struct elf_link_hash_entry *) h->root.u.i.link;
-
-	  name = h->root.root.string;
-
-	  if ((h->root.type == bfd_link_hash_defined
-	       || h->root.type == bfd_link_hash_defweak)
-	      && ! BFINFDPIC_SYM_LOCAL (info, h))
-	    {
-	      sec = NULL;
-	      relocation = 0;
-	    }
-	  else
-	    if (h->root.type == bfd_link_hash_defined
-		|| h->root.type == bfd_link_hash_defweak)
-	      {
-		sec = h->root.u.def.section;
-		relocation = (h->root.u.def.value
-			      + sec->output_section->vma
-			      + sec->output_offset);
-	      }
-	    else if (h->root.type == bfd_link_hash_undefweak)
-	      {
-		relocation = 0;
-	      }
-	    else if (info->unresolved_syms_in_objects == RM_IGNORE
-		     && ELF_ST_VISIBILITY (h->other) == STV_DEFAULT)
-	      relocation = 0;
-	    else
-	      {
-		if (! ((*info->callbacks->undefined_symbol)
-		       (info, h->root.root.string, input_bfd,
-			input_section, rel->r_offset,
-			(info->unresolved_syms_in_objects == RM_GENERATE_ERROR
-			 || ELF_ST_VISIBILITY (h->other)))))
-		  return FALSE;
-		relocation = 0;
-	      }
+	  RELOC_FOR_GLOBAL_SYMBOL (info, input_bfd, input_section, rel,
+				   r_symndx, symtab_hdr, sym_hashes,
+				   h, sec, relocation,
+				   unresolved_reloc, warned);
 	  osec = sec;
+	}
+
+      if (sec != NULL && elf_discarded_section (sec))
+	{
+	  /* For relocs against symbols from removed linkonce sections,
+	     or sections discarded by a linker script, we just want the
+	     section contents zeroed.  Avoid any special processing.  */
+	  _bfd_clear_contents (howto, input_bfd, contents + rel->r_offset);
+	  rel->r_info = 0;
+	  rel->r_addend = 0;
+	  continue;
+	}
+
+      if (info->relocatable)
+	continue;
+
+      if (h != NULL
+	  && (h->root.type == bfd_link_hash_defined
+	      || h->root.type == bfd_link_hash_defweak)
+	  && !BFINFDPIC_SYM_LOCAL (info, h))
+	{
+	  osec = sec = NULL;
+	  relocation = 0;
 	}
 
       switch (r_type)
@@ -2831,9 +2825,6 @@ bfin_relocate_section (bfd * output_bfd,
   Elf_Internal_Rela *relend;
   int i = 0;
 
-  if (info->relocatable)
-    return TRUE;
-
   dynobj = elf_hash_table (info)->dynobj;
   symtab_hdr = &elf_tdata (input_bfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (input_bfd);
@@ -2890,12 +2881,26 @@ bfin_relocate_section (bfd * output_bfd,
       else
 	{
 	  bfd_boolean warned;
-	  h = NULL;
+
 	  RELOC_FOR_GLOBAL_SYMBOL (info, input_bfd, input_section, rel,
 				   r_symndx, symtab_hdr, sym_hashes,
 				   h, sec, relocation,
 				   unresolved_reloc, warned);
 	}
+
+      if (sec != NULL && elf_discarded_section (sec))
+	{
+	  /* For relocs against symbols from removed linkonce sections,
+	     or sections discarded by a linker script, we just want the
+	     section contents zeroed.  Avoid any special processing.  */
+	  _bfd_clear_contents (howto, input_bfd, contents + rel->r_offset);
+	  rel->r_info = 0;
+	  rel->r_addend = 0;
+	  continue;
+	}
+
+      if (info->relocatable)
+	continue;
 
       address = rel->r_offset;
 
@@ -4489,7 +4494,7 @@ bfinfdpic_check_relocs (bfd *abfd, struct bfd_link_info *info,
 			asection *sec, const Elf_Internal_Rela *relocs)
 {
   Elf_Internal_Shdr *symtab_hdr;
-  struct elf_link_hash_entry **sym_hashes, **sym_hashes_end;
+  struct elf_link_hash_entry **sym_hashes;
   const Elf_Internal_Rela *rel;
   const Elf_Internal_Rela *rel_end;
   bfd *dynobj;
@@ -4500,9 +4505,6 @@ bfinfdpic_check_relocs (bfd *abfd, struct bfd_link_info *info,
 
   symtab_hdr = &elf_tdata (abfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (abfd);
-  sym_hashes_end = sym_hashes + symtab_hdr->sh_size/sizeof(Elf32_External_Sym);
-  if (!elf_bad_symtab (abfd))
-    sym_hashes_end -= symtab_hdr->sh_info;
 
   dynobj = elf_hash_table (info)->dynobj;
   rel_end = relocs + sec->reloc_count;
@@ -4651,7 +4653,9 @@ bfinfdpic_check_relocs (bfd *abfd, struct bfd_link_info *info,
         /* This relocation describes which C++ vtable entries are actually
            used.  Record for later use during GC.  */
         case R_BFIN_GNU_VTENTRY:
-          if (!bfd_elf_gc_record_vtentry (abfd, sec, h, rel->r_addend))
+          BFD_ASSERT (h != NULL);
+          if (h != NULL
+              && !bfd_elf_gc_record_vtentry (abfd, sec, h, rel->r_addend))
             return FALSE;
           break;
 
@@ -4705,6 +4709,10 @@ bfin_elf_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
 
   elf_elfheader (obfd)->e_flags = elf_elfheader (ibfd)->e_flags;
   elf_flags_init (obfd) = TRUE;
+
+  /* Copy object attributes.  */
+  _bfd_elf_copy_obj_attributes (ibfd, obfd);
+
   return TRUE;
 }
 
@@ -5479,6 +5487,8 @@ error_return:
 #define elf_symbol_leading_char		'_'
 
 #define bfd_elf32_bfd_reloc_type_lookup	bfin_bfd_reloc_type_lookup
+#define bfd_elf32_bfd_reloc_name_lookup \
+					bfin_bfd_reloc_name_lookup
 #define elf_info_to_howto		bfin_info_to_howto
 #define elf_info_to_howto_rel		0
 #define elf_backend_object_p		elf32_bfin_object_p

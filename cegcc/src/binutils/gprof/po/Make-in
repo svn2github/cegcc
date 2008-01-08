@@ -73,7 +73,7 @@ INSTOBJEXT = @INSTOBJEXT@
 	$(MSGFMT) -o $@ $<
 
 .po.gmo:
-	file=$(srcdir)/`echo $* | sed 's,.*/,,'`.gmo \
+	file=`echo $* | sed 's,.*/,,'`.gmo \
 	  && rm -f $$file && $(GMSGFMT) -o $$file $<
 
 .po.cat:
@@ -89,6 +89,7 @@ all-no:
 $(srcdir)/$(PACKAGE).pot: $(POTFILES)
 	$(XGETTEXT) --default-domain=$(PACKAGE) --directory=$(top_srcdir) \
 	  --add-comments --keyword=_ --keyword=N_ \
+	  --msgid-bugs-address=bug-binutils@gnu.org \
 	  --files-from=$(srcdir)/POTFILES.in
 	rm -f $(srcdir)/$(PACKAGE).pot
 	mv $(PACKAGE).po $(srcdir)/$(PACKAGE).pot

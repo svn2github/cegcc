@@ -1,12 +1,12 @@
 # This shell script emits a C file. -*- C -*-
 #   Copyright 1991, 1993, 1994, 1997, 1999, 2000, 2001, 2002, 2003, 2004,
-#   2005 Free Software Foundation, Inc.
+#   2005, 2007 Free Software Foundation, Inc.
 #
-# This file is part of GLD, the Gnu Linker.
+# This file is part of the GNU Binutils.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -16,13 +16,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+# MA 02110-1301, USA.
 #
 
 # This file is sourced from elf32.em, and defines extra hppa-elf
 # specific routines.
 #
-cat >>e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 
 #include "ldctor.h"
 #include "elf32-hppa.h"
@@ -348,17 +349,18 @@ PARSE_AND_LIST_LONGOPTS='
 
 PARSE_AND_LIST_OPTIONS='
   fprintf (file, _("\
-  --multi-subspace      Generate import and export stubs to support\n\
-                          multiple sub-space shared libraries\n"
+  --multi-subspace            Generate import and export stubs to support\n\
+                                multiple sub-space shared libraries\n"
 		   ));
   fprintf (file, _("\
-  --stub-group-size=N   Maximum size of a group of input sections that can be\n\
-                          handled by one stub section.  A negative value\n\
-                          locates all stubs before their branches (with a\n\
-                          group size of -N), while a positive value allows\n\
-                          two groups of input sections, one before, and one\n\
-                          after each stub section.  Values of +/-1 indicate\n\
-                          the linker should choose suitable defaults.\n"
+  --stub-group-size=N         Maximum size of a group of input sections that\n\
+                                can be handled by one stub section.  A negative\n\
+                                value locates all stubs before their branches\n\
+                                (with a group size of -N), while a positive\n\
+                                value allows two groups of input sections, one\n\
+                                before, and one after each stub section.\n\
+                                Values of +/-1 indicate the linker should\n\
+                                choose suitable defaults.\n"
 		   ));
 '
 

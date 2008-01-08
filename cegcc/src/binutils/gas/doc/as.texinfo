@@ -1,6 +1,6 @@
 \input texinfo @c                               -*-Texinfo-*-
 @c  Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-@c  2001, 2002, 2003, 2004, 2005, 2006
+@c  2001, 2002, 2003, 2004, 2005, 2006, 2007
 @c  Free Software Foundation, Inc.
 @c UPDATE!!  On future updates--
 @c   (1)   check for new machine-dep cmdline options in
@@ -22,7 +22,7 @@
 @c man begin NAME
 @c ---
 @include asconfig.texi
-@include gasver.texi
+@include bfdver.texi
 @c ---
 @c man end
 @c ---
@@ -96,11 +96,12 @@ END-INFO-DIR-ENTRY
 @finalout
 @syncodeindex ky cp
 
-@ifinfo
+@copying
 This file documents the GNU Assembler "@value{AS}".
 
 @c man begin COPYRIGHT
-Copyright (C) 1991, 92, 93, 94, 95, 96, 97, 98, 99, 2000, 2001, 2002, 2006 Free Software Foundation, Inc.
+Copyright @copyright{} 1991, 92, 93, 94, 95, 96, 97, 98, 99, 2000, 2001, 2002,
+2006, 2007 Free Software Foundation, Inc.
 
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.1
@@ -110,15 +111,7 @@ Back-Cover Texts.  A copy of the license is included in the
 section entitled ``GNU Free Documentation License''.
 
 @c man end
-
-@ignore
-Permission is granted to process this file through Tex and print the
-results, provided the printed document carries copying permission
-notice identical to this one except for the removal of this paragraph
-(this paragraph not being relevant to the printed manual).
-
-@end ignore
-@end ifinfo
+@end copying
 
 @titlepage
 @title Using @value{AS}
@@ -126,6 +119,10 @@ notice identical to this one except for the removal of this paragraph
 @ifclear GENERIC
 @subtitle for the @value{TARGET} family
 @end ifclear
+@ifset VERSION_PACKAGE
+@sp 1
+@subtitle @value{VERSION_PACKAGE}
+@end ifset
 @sp 1
 @subtitle Version @value{VERSION}
 @sp 1
@@ -153,7 +150,8 @@ done.
 @end tex
 
 @vskip 0pt plus 1filll
-Copyright @copyright{} 1991, 92, 93, 94, 95, 96, 97, 98, 99, 2000, 2001, 2002, 2006 Free Software Foundation, Inc.
+Copyright @copyright{} 1991, 92, 93, 94, 95, 96, 97, 98, 99, 2000, 2001, 2002,
+2006, 2007 Free Software Foundation, Inc.
 
       Permission is granted to copy, distribute and/or modify this document
       under the terms of the GNU Free Documentation License, Version 1.1
@@ -163,13 +161,17 @@ Copyright @copyright{} 1991, 92, 93, 94, 95, 96, 97, 98, 99, 2000, 2001, 2002, 2
       section entitled ``GNU Free Documentation License''.
 
 @end titlepage
+@contents
 
 @ifnottex
 @node Top
 @top Using @value{AS}
 
-This file is a user guide to the @sc{gnu} assembler @command{@value{AS}} version
-@value{VERSION}.
+This file is a user guide to the @sc{gnu} assembler @command{@value{AS}}
+@ifset VERSION_PACKAGE
+@value{VERSION_PACKAGE}
+@end ifset
+version @value{VERSION}.
 @ifclear GENERIC
 This version of the file describes @command{@value{AS}} configured to generate
 code for @value{TARGET} architectures.
@@ -187,6 +189,9 @@ section entitled ``GNU Free Documentation License''.
 * Symbols::                     Symbols
 * Expressions::                 Expressions
 * Pseudo Ops::                  Assembler Directives
+@ifset ELF
+* Object Attributes::           Object Attributes
+@end ifset
 * Machine Dependencies::        Machine Dependent Features
 * Reporting Bugs::              Reporting Bugs
 * Acknowledgements::            Who Did What
@@ -224,6 +229,7 @@ gcc(1), ld(1), and the Info entries for @file{binutils} and @file{ld}.
 @smallexample
 @c man begin SYNOPSIS
 @value{AS} [@b{-a}[@b{cdhlns}][=@var{file}]] [@b{--alternate}] [@b{-D}]
+ [@b{--debug-prefix-map} @var{old}=@var{new}]
  [@b{--defsym} @var{sym}=@var{val}] [@b{-f}] [@b{-g}] [@b{--gstabs}]
  [@b{--gstabs+}] [@b{--gdwarf-2}] [@b{--help}] [@b{-I} @var{dir}] [@b{-J}]
  [@b{-K}] [@b{-L}] [@b{--listing-lhs-width}=@var{NUM}]
@@ -359,7 +365,7 @@ gcc(1), ld(1), and the Info entries for @file{binutils} and @file{ld}.
 @emph{Target MIPS options:}
    [@b{-nocpp}] [@b{-EL}] [@b{-EB}] [@b{-O}[@var{optimization level}]]
    [@b{-g}[@var{debug level}]] [@b{-G} @var{num}] [@b{-KPIC}] [@b{-call_shared}]
-   [@b{-non_shared}] [@b{-xgot}]
+   [@b{-non_shared}] [@b{-xgot} [@b{-mvxworks-pic}]
    [@b{-mabi}=@var{ABI}] [@b{-32}] [@b{-n32}] [@b{-64}] [@b{-mfp32}] [@b{-mgp32}]
    [@b{-march}=@var{CPU}] [@b{-mtune}=@var{CPU}] [@b{-mips1}] [@b{-mips2}]
    [@b{-mips3}] [@b{-mips4}] [@b{-mips5}] [@b{-mips32}] [@b{-mips32r2}]
@@ -372,6 +378,7 @@ gcc(1), ld(1), and the Info entries for @file{binutils} and @file{ld}.
    [@b{-mips3d}] [@b{-no-mips3d}]
    [@b{-mdmx}] [@b{-no-mdmx}]
    [@b{-mdsp}] [@b{-mno-dsp}]
+   [@b{-mdspr2}] [@b{-mno-dspr2}]
    [@b{-mmt}] [@b{-mno-mt}]
    [@b{-mdebug}] [@b{-no-mdebug}]
    [@b{-mpdr}] [@b{-mno-pdr}]
@@ -498,10 +505,16 @@ Begin in alternate macro mode.
 Ignored.  This option is accepted for script compatibility with calls to
 other assemblers.
 
+@item --debug-prefix-map @var{old}=@var{new}
+When assembling files in directory @file{@var{old}}, record debugging
+information describing them as in @file{@var{new}} instead.
+
 @item --defsym @var{sym}=@var{value}
 Define the symbol @var{sym} to be @var{value} before assembling the input file.
 @var{value} must be an integer constant.  As in C, a leading @samp{0x}
-indicates a hexadecimal value, and a leading @samp{0} indicates an octal value.
+indicates a hexadecimal value, and a leading @samp{0} indicates an octal
+value.  The value of the symbol can be overridden inside a source file via the
+use of a @code{.set} pseudo-op.
 
 @item -f
 ``fast''---skip whitespace and comment preprocessing (assume source is
@@ -1034,9 +1047,16 @@ This tells the assembler to accept MDMX instructions.
 
 @item -mdsp
 @itemx -mno-dsp
-Generate code for the DSP Application Specific Extension.
-This tells the assembler to accept DSP instructions.
+Generate code for the DSP Release 1 Application Specific Extension.
+This tells the assembler to accept DSP Release 1 instructions.
 @samp{-mno-dsp} turns off this option.
+
+@item -mdspr2
+@itemx -mno-dspr2
+Generate code for the DSP Release 2 Application Specific Extension.
+This option implies -mdsp.
+This tells the assembler to accept DSP Release 2 instructions.
+@samp{-mno-dspr2} turns off this option.
 
 @item -mmt
 @itemx -mno-mt
@@ -1165,6 +1185,10 @@ Enable or disable all assembler transformations of Xtensa instructions.
 The default is @option{--transform};
 @option{--no-transform} should be used only in the rare cases when the
 instructions must be exactly as specified in the assembly source.
+
+@item --rename-section @var{oldname}=@var{newname}
+When generating output sections, rename the @var{oldname} section to
+@var{newname}.
 @end table
 @end ifset
 
@@ -3759,7 +3783,7 @@ Some machine configurations provide additional directives.
 @menu
 * Abort::                       @code{.abort}
 @ifset COFF
-* ABORT (COFF)::                       @code{.ABORT}
+* ABORT (COFF)::                @code{.ABORT}
 @end ifset
 
 * Align::                       @code{.align @var{abs-expr} , @var{abs-expr}}
@@ -3770,7 +3794,7 @@ Some machine configurations provide additional directives.
 * Byte::                        @code{.byte @var{expressions}}
 * Comm::                        @code{.comm @var{symbol} , @var{length} }
 
-* CFI directives::		@code{.cfi_startproc}, @code{.cfi_endproc}, etc.
+* CFI directives::		@code{.cfi_startproc [simple]}, @code{.cfi_endproc}, etc.
 
 * Data::                        @code{.data @var{subsection}}
 @ifset COFF
@@ -3811,6 +3835,7 @@ Some machine configurations provide additional directives.
 * Func::                        @code{.func}  
 * Global::                      @code{.global @var{symbol}}, @code{.globl @var{symbol}}
 @ifset ELF
+* Gnu_attribute::               @code{.gnu_attribute @var{tag},@var{value}}
 * Hidden::                      @code{.hidden @var{names}}
 @end ifset
 
@@ -3867,13 +3892,14 @@ Some machine configurations provide additional directives.
 @end ifset
 
 * Quad::                        @code{.quad @var{bignums}}
+* Reloc::			@code{.reloc @var{offset}, @var{reloc_name}[, @var{expression}]}
 * Rept::			@code{.rept @var{count}}
 * Sbttl::                       @code{.sbttl "@var{subheading}"}
 @ifset COFF
 * Scl::                         @code{.scl @var{class}}
 @end ifset
 @ifset COFF-ELF
-* Section::                     @code{.section @var{name}}
+* Section::                     @code{.section @var{name}[, @var{flags}]}
 @end ifset
 
 * Set::                         @code{.set @var{symbol}, @var{expression}}
@@ -3890,7 +3916,7 @@ Some machine configurations provide additional directives.
 * Stab::                        @code{.stabd, .stabn, .stabs}
 @end ifset
 
-* String::                      @code{.string "@var{str}"}
+* String::                      @code{.string "@var{str}"}, @code{.string8 "@var{str}"}, @code{.string16 "@var{str}"}, @code{.string32 "@var{str}"}, @code{.string64 "@var{str}"}
 * Struct::			@code{.struct @var{expression}}
 @ifset ELF
 * SubSection::                  @code{.subsection}
@@ -4088,19 +4114,40 @@ The syntax for @code{.comm} differs slightly on the HPPA.  The syntax is
 @end ifset
 
 @node CFI directives
-@section @code{.cfi_startproc}
+@section @code{.cfi_startproc [simple]}
 @cindex @code{cfi_startproc} directive
 @code{.cfi_startproc} is used at the beginning of each function that
 should have an entry in @code{.eh_frame}. It initializes some internal
-data structures and emits architecture dependent initial CFI instructions.
-Don't forget to close the function by 
+data structures. Don't forget to close the function by
 @code{.cfi_endproc}.
 
+Unless @code{.cfi_startproc} is used along with parameter @code{simple} 
+it also emits some architecture dependent initial CFI instructions.
+ 
 @section @code{.cfi_endproc}
 @cindex @code{cfi_endproc} directive
 @code{.cfi_endproc} is used at the end of a function where it closes its
 unwind entry previously opened by
 @code{.cfi_startproc}, and emits it to @code{.eh_frame}.
+
+@section @code{.cfi_personality @var{encoding} [, @var{exp}]}
+@code{.cfi_personality} defines personality routine and its encoding.
+@var{encoding} must be a constant determining how the personality
+should be encoded.  If it is 255 (@code{DW_EH_PE_omit}), second
+argument is not present, otherwise second argument should be
+a constant or a symbol name.  When using indirect encodings,
+the symbol provided should be the location where personality
+can be loaded from, not the personality routine itself.
+The default after @code{.cfi_startproc} is @code{.cfi_personality 0xff},
+no personality routine.
+
+@section @code{.cfi_lsda @var{encoding} [, @var{exp}]}
+@code{.cfi_lsda} defines LSDA and its encoding.
+@var{encoding} must be a constant determining how the LSDA
+should be encoded.  If it is 255 (@code{DW_EH_PE_omit}), second
+argument is not present, otherwise second argument should be a constant
+or a symbol name.  The default after @code{.cfi_startproc} is @code{.cfi_lsda 0xff},
+no LSDA.
 
 @section @code{.cfi_def_cfa @var{register}, @var{offset}}
 @code{.cfi_def_cfa} defines a rule for computing CFA as: @i{take 
@@ -4131,6 +4178,31 @@ the current CFA register.  This is transformed to @code{.cfi_offset}
 using the known displacement of the CFA register from the CFA.
 This is often easier to use, because the number will match the
 code it's annotating.
+
+@section @code{.cfi_register @var{register1}, @var{register2}}
+Previous value of @var{register1} is saved in register @var{register2}.
+
+@section @code{.cfi_restore @var{register}}
+@code{.cfi_restore} says that the rule for @var{register} is now the 
+same as it was at the beginning of the function, after all initial 
+instruction added by @code{.cfi_startproc} were executed.
+
+@section @code{.cfi_undefined @var{register}}
+From now on the previous value of @var{register} can't be restored anymore.
+
+@section @code{.cfi_same_value @var{register}}
+Current value of @var{register} is the same like in the previous frame, 
+i.e. no restoration needed.
+
+@section @code{.cfi_remember_state}, 
+First save all current rules for all registers by @code{.cfi_remember_state}, 
+then totally screw them up by subsequent @code{.cfi_*} directives and when 
+everything is hopelessly bad, use @code{.cfi_restore_state} to restore 
+the previous saved state.
+
+@section @code{.cfi_return_column @var{register}}
+Change return column @var{register}, i.e. the return address is either 
+directly in @var{register} or can be accessed by rules for @var{register}.
 
 @section @code{.cfi_signal_frame}
 Mark current function as signal trampoline.
@@ -4190,9 +4262,9 @@ state machine to @var{value}, which must be an unsigned integer.
 
 @end table
 
-@section @code{.loc_mark_blocks @var{enable}}
-@cindex @code{loc_mark_blocks} directive
-The @code{.loc_mark_blocks} directive makes the assembler emit an entry
+@section @code{.loc_mark_labels @var{enable}}
+@cindex @code{loc_mark_labels} directive
+The @code{.loc_mark_labels} directive makes the assembler emit an entry
 to the @code{.debug_line} line number matrix with the @code{basic_block}
 register in the state machine set whenever a code label is seen.
 The @var{enable} argument should be either 1 or 0, to enable or disable
@@ -4518,6 +4590,10 @@ partial programs.  You may need the HPPA-only @code{.EXPORT} directive as well.
 @end ifset
 
 @ifset ELF
+@node Gnu_attribute
+@section @code{.gnu_attribute @var{tag},@var{value}}
+Record a @sc{gnu} object attribute for this file.  @xref{Object Attributes}.
+
 @node Hidden
 @section @code{.hidden @var{names}}
 
@@ -5282,9 +5358,42 @@ This is one of the ELF section stack manipulation directives.  The others are
 (@pxref{PopSection}).
 
 This directive swaps the current section (and subsection) with most recently
-referenced section (and subsection) prior to this one.  Multiple
+referenced section/subsection pair prior to this one.  Multiple
 @code{.previous} directives in a row will flip between two sections (and their
-subsections).
+subsections).  For example:
+
+@smallexample
+.section A
+ .subsection 1
+  .word 0x1234
+ .subsection 2
+  .word 0x5678
+.previous
+ .word 0x9abc
+@end smallexample
+
+Will place 0x1234 and 0x9abc into subsection 1 and 0x5678 into subsection 2 of
+section A.  Whilst:
+
+@smallexample
+.section A
+.subsection 1
+  # Now in section A subsection 1
+  .word 0x1234
+.section B
+.subsection 0
+  # Now in section B subsection 0
+  .word 0x5678
+.subsection 1
+  # Now in section B subsection 1
+  .word 0x9abc
+.previous
+  # Now in section B subsection 0
+  .word 0xdef0
+@end smallexample
+
+Will place 0x1234 into section A, 0x5678 and 0xdef0 into subsection 0 of
+section B and 0x9abc into subsection 1 of section B.
 
 In terms of the section stack, this directive swaps the current section with
 the top section on the section stack.
@@ -5359,7 +5468,7 @@ expanded.  @xref{Macro}.
 
 @ifset ELF
 @node PushSection
-@section @code{.pushsection @var{name} , @var{subsection}}
+@section @code{.pushsection @var{name} [, @var{subsection}] [, "@var{flags}"[, @@@var{type}[,@var{arguments}]]]}
 
 @cindex @code{pushsection} directive
 @cindex Section Stack
@@ -5370,7 +5479,9 @@ This is one of the ELF section stack manipulation directives.  The others are
 
 This directive pushes the current section (and subsection) onto the
 top of the section stack, and then replaces the current section and
-subsection with @code{name} and @code{subsection}.
+subsection with @code{name} and @code{subsection}. The optional
+@code{flags}, @code{type} and @code{arguments} are treated the same
+as in the @code{.section} (@pxref{Section}) directive.
 @end ifset
 
 @node Quad
@@ -5394,6 +5505,20 @@ warning message; and just takes the lowest order 16 bytes of the bignum.
 @cindex sixteen-byte integer
 @cindex integer, 16-byte
 @end ifset
+
+@node Reloc
+@section @code{.reloc @var{offset}, @var{reloc_name}[, @var{expression}]}
+
+@cindex @code{reloc} directive
+Generate a relocation at @var{offset} of type @var{reloc_name} with value
+@var{expression}.  If @var{offset} is a number, the relocation is generated in
+the current section.  If @var{offset} is an expression that resolves to a
+symbol plus offset, the relocation is generated in the given symbol's section.
+@var{expression}, if present, must resolve to a symbol plus addend or to an
+absolute value, but note that not all targets support an addend.  e.g. ELF REL
+targets such as i386 store an addend in the section contents rather than in the
+relocation.  This low level interface does not support addends stored in the
+section.
 
 @node Rept
 @section @code{.rept @var{count}}
@@ -5473,7 +5598,7 @@ ways:
 
 @smallexample
 .section @var{name}[, "@var{flags}"]
-.section @var{name}[, @var{subsegment}]
+.section @var{name}[, @var{subsection}]
 @end smallexample
 
 If the optional argument is quoted, it is taken as flags to use for the
@@ -5504,7 +5629,7 @@ from the section, rather than adding them, so if they are used on their own it
 will be as if no flags had been specified at all.
 
 If the optional argument to the @code{.section} directive is not quoted, it is
-taken as a subsegment number (@pxref{Sub-Sections}).
+taken as a subsection number (@pxref{Sub-Sections}).
 @end ifset
 
 @ifset ELF
@@ -5854,15 +5979,38 @@ All five fields are specified.
 @c end     have-stabs
 
 @node String
-@section @code{.string} "@var{str}"
+@section @code{.string} "@var{str}", @code{.string8} "@var{str}", @code{.string16}
+"@var{str}", @code{.string32} "@var{str}", @code{.string64} "@var{str}" 
 
 @cindex string, copying to object file
+@cindex string8, copying to object file
+@cindex string16, copying to object file
+@cindex string32, copying to object file
+@cindex string64, copying to object file
 @cindex @code{string} directive
+@cindex @code{string8} directive
+@cindex @code{string16} directive
+@cindex @code{string32} directive
+@cindex @code{string64} directive
 
 Copy the characters in @var{str} to the object file.  You may specify more than
 one string to copy, separated by commas.  Unless otherwise specified for a
 particular machine, the assembler marks the end of each string with a 0 byte.
 You can use any of the escape sequences described in @ref{Strings,,Strings}.
+
+The variants @code{string16}, @code{string32} and @code{string64} differ from 
+the @code{string} pseudo opcode in that each 8-bit character from @var{str} is
+copied and expanded to 16, 32 or 64 bits respectively.  The expanded characters
+are stored in target endianness byte order.
+
+Example:
+@smallexample
+	.string32 "BYE"
+expands to:
+	.string   "B\0\0\0Y\0\0\0E\0\0\0"  /* On little endian targets.  */
+	.string   "\0\0\0B\0\0\0Y\0\0\0E"  /* On big endian targets.  */
+@end smallexample
+
 
 @node Struct
 @section @code{.struct @var{expression}}
@@ -6057,21 +6205,35 @@ assemblers.
 The syntaxes supported are:
 
 @smallexample
-  .type <name> STT_FUNCTION
-  .type <name> STT_OBJECT
-
-  .type <name>,#function
-  .type <name>,#object
-
-  .type <name>,@@function
-  .type <name>,@@object
-
-  .type <name>,%function
-  .type <name>,%object
-  
-  .type <name>,"function"
-  .type <name>,"object"
+  .type <name> STT_<TYPE_IN_UPPER_CASE>
+  .type <name>,#<type>
+  .type <name>,@@<type>
+  .type <name>,%>type>
+  .type <name>,"<type>"
 @end smallexample
+
+The types supported are:
+
+@table @gcctabopt
+@item STT_FUNC
+@itemx function
+Mark the symbol as being a function name.
+
+@item STT_OBJECT
+@itemx object
+Mark the symbol as being a data object.
+
+@item STT_TLS
+@itemx tls_object
+Mark the symbol as being a thead-local data object.
+
+@item STT_COMMON
+@itemx common
+Mark the symbol as being a common data object.
+@end table
+
+Note: Some targets support extra types in addition to those listed above.
+
 @end ifset
 @end ifset
 
@@ -6245,6 +6407,144 @@ They are included for compatibility with older assemblers.
 @item .line
 @end table
 
+@ifset ELF
+@node Object Attributes
+@chapter Object Attributes
+@cindex object attributes
+
+@command{@value{AS}} assembles source files written for a specific architecture
+into object files for that architecture.  But not all object files are alike.
+Many architectures support incompatible variations.  For instance, floating
+point arguments might be passed in floating point registers if the object file
+requires hardware floating point support---or floating point arguments might be
+passed in integer registers if the object file supports processors with no
+hardware floating point unit.  Or, if two objects are built for different
+generations of the same architecture, the combination may require the
+newer generation at run-time.
+
+This information is useful during and after linking.  At link time,
+@command{@value{LD}} can warn about incompatible object files.  After link
+time, tools like @command{gdb} can use it to process the linked file
+correctly.
+
+Compatibility information is recorded as a series of object attributes.  Each
+attribute has a @dfn{vendor}, @dfn{tag}, and @dfn{value}.  The vendor is a
+string, and indicates who sets the meaning of the tag.  The tag is an integer,
+and indicates what property the attribute describes.  The value may be a string
+or an integer, and indicates how the property affects this object.  Missing
+attributes are the same as attributes with a zero value or empty string value.
+
+Object attributes were developed as part of the ABI for the ARM Architecture.
+The file format is documented in @cite{ELF for the ARM Architecture}.
+
+@menu
+* GNU Object Attributes::               @sc{gnu} Object Attributes
+* Defining New Object Attributes::      Defining New Object Attributes
+@end menu
+
+@node GNU Object Attributes
+@section @sc{gnu} Object Attributes
+
+The @code{.gnu_attribute} directive records an object attribute
+with vendor @samp{gnu}.
+
+Except for @samp{Tag_compatibility}, which has both an integer and a string for
+its value, @sc{gnu} attributes have a string value if the tag number is odd and
+an integer value if the tag number is even.  The second bit (@code{@var{tag} &
+2} is set for architecture-independent attributes and clear for
+architecture-dependent ones.
+
+@subsection Common @sc{gnu} attributes
+
+These attributes are valid on all architectures.
+
+@table @r
+@item Tag_compatibility (32)
+The compatibility attribute takes an integer flag value and a vendor name.  If
+the flag value is 0, the file is compatible with other toolchains.  If it is 1,
+then the file is only compatible with the named toolchain.  If it is greater
+than 1, the file can only be processed by other toolchains under some private
+arrangement indicated by the flag value and the vendor name.
+@end table
+
+@subsection MIPS Attributes
+
+@table @r
+@item Tag_GNU_MIPS_ABI_FP (4)
+The floating-point ABI used by this object file.  The value will be:
+
+@itemize @bullet
+@item
+0 for files not affected by the floating-point ABI.
+@item
+1 for files using the hardware floating-point with a standard double-precision
+FPU.
+@item
+2 for files using the hardware floating-point ABI with a single-precision FPU.
+@item
+3 for files using the software floating-point ABI.
+@item
+4 for files using the hardware floating-point ABI with 64-bit wide
+double-precision floating-point registers and 32-bit wide general
+purpose registers.
+@end itemize
+@end table
+
+@subsection PowerPC Attributes
+
+@table @r
+@item Tag_GNU_Power_ABI_FP (4)
+The floating-point ABI used by this object file.  The value will be:
+
+@itemize @bullet
+@item
+0 for files not affected by the floating-point ABI.
+@item
+1 for files using the hardware floating-point ABI.
+@item
+2 for files using the software floating-point ABI.
+@end itemize
+
+@item Tag_GNU_Power_ABI_Vector (8)
+The vector ABI used by this object file.  The value will be:
+
+@itemize @bullet
+@item
+0 for files not affected by the vector ABI.
+@item
+1 for files using general purpose registers to pass vectors.
+@item
+2 for files using AltiVec registers to pass vectors.
+@item
+3 for files using SPE registers to pass vectors.
+@end itemize
+@end table
+
+@node Defining New Object Attributes
+@section Defining New Object Attributes
+
+If you want to define a new @sc{gnu} object attribute, here are the places you
+will need to modify.  New attributes should be discussed on the @samp{binutils}
+mailing list.
+
+@itemize @bullet
+@item
+This manual, which is the official register of attributes.
+@item
+The header for your architecture @file{include/elf}, to define the tag.
+@item
+The @file{bfd} support file for your architecture, to merge the attribute
+and issue any appropriate link warnings.
+@item
+Test cases in @file{ld/testsuite} for merging and link warnings.
+@item
+@file{binutils/readelf.c} to display your attribute.
+@item
+GCC, if you want the compiler to mark the attribute automatically.
+@end itemize
+
+@end ifset
+
 @ifset GENERIC
 @node Machine Dependencies
 @chapter Machine Dependent Features
@@ -6277,6 +6577,9 @@ subject, see the hardware manufacturer's manual.
 @end ifset
 @ifset BFIN
 * BFIN-Dependent::		BFIN Dependent Features
+@end ifset
+@ifset CR16
+* CR16-Dependent::              CR16 Dependent Features
 @end ifset
 @ifset CRIS
 * CRIS-Dependent::              CRIS Dependent Features
@@ -6397,6 +6700,10 @@ subject, see the hardware manufacturer's manual.
 
 @ifset BFIN
 @include c-bfin.texi
+@end ifset
+
+@ifset CR16
+@include c-cr16.texi
 @end ifset
 
 @ifset CRIS
@@ -6605,8 +6912,10 @@ You can find contact information for many support companies and
 individuals in the file @file{etc/SERVICE} in the @sc{gnu} Emacs
 distribution.
 
+@ifset BUGURL
 In any event, we also recommend that you send bug reports for @command{@value{AS}}
-to @samp{bug-binutils@@gnu.org}.
+to @value{BUGURL}.
+@end ifset
 
 The fundamental principle of reporting bugs usefully is this:
 @strong{report all the facts}.  If you are not sure whether to state a
@@ -6850,7 +7159,6 @@ intentionally leaving anyone out.
 
 @printindex cp
 
-@contents
 @bye
 @c Local Variables:
 @c fill-column: 79

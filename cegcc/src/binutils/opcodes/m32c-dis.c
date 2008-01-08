@@ -4,20 +4,20 @@
    THIS FILE IS MACHINE GENERATED WITH CGEN.
    - the resultant file is machine generated, cgen-dis.in isn't
 
-   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2005
+   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2005, 2007
    Free Software Foundation, Inc.
 
-   This file is part of the GNU Binutils and GDB, the GNU debugger.
+   This file is part of libopcodes.
 
-   This program is free software; you can redistribute it and/or modify
+   This library is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   It is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+   License for more details.
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software Foundation, Inc.,
@@ -453,6 +453,9 @@ m32c_cgen_print_operand (CGEN_CPU_DESC cd,
     case M32C_OPERAND_DSP_40_U16 :
       print_normal (cd, info, fields->f_dsp_40_u16, 0, pc, length);
       break;
+    case M32C_OPERAND_DSP_40_U20 :
+      print_normal (cd, info, fields->f_dsp_40_u20, 0, pc, length);
+      break;
     case M32C_OPERAND_DSP_40_U24 :
       print_normal (cd, info, fields->f_dsp_40_u24, 0, pc, length);
       break;
@@ -467,6 +470,9 @@ m32c_cgen_print_operand (CGEN_CPU_DESC cd,
       break;
     case M32C_OPERAND_DSP_48_U16 :
       print_normal (cd, info, fields->f_dsp_48_u16, 0, pc, length);
+      break;
+    case M32C_OPERAND_DSP_48_U20 :
+      print_normal (cd, info, fields->f_dsp_48_u20, 0|(1<<CGEN_OPERAND_VIRTUAL), pc, length);
       break;
     case M32C_OPERAND_DSP_48_U24 :
       print_normal (cd, info, fields->f_dsp_48_u24, 0|(1<<CGEN_OPERAND_VIRTUAL), pc, length);
@@ -661,7 +667,7 @@ m32c_cgen_print_operand (CGEN_CPU_DESC cd,
       print_normal (cd, info, fields->f_imm_8_s4, 0|(1<<CGEN_OPERAND_SIGNED), pc, length);
       break;
     case M32C_OPERAND_IMM_8_S4N :
-      print_normal (cd, info, fields->f_imm_8_s4, 0|(1<<CGEN_OPERAND_SIGNED), pc, length);
+      print_signed4n (cd, info, fields->f_imm_8_s4, 0|(1<<CGEN_OPERAND_SIGNED), pc, length);
       break;
     case M32C_OPERAND_IMM_SH_12_S4 :
       print_keyword (cd, info, & m32c_cgen_opval_h_shimm, fields->f_imm_12_s4, 0);
@@ -682,13 +688,13 @@ m32c_cgen_print_operand (CGEN_CPU_DESC cd,
       print_address (cd, info, fields->f_lab_16_8, 0|(1<<CGEN_OPERAND_RELAX)|(1<<CGEN_OPERAND_PCREL_ADDR), pc, length);
       break;
     case M32C_OPERAND_LAB_24_8 :
-      print_address (cd, info, fields->f_lab_24_8, 0|(1<<CGEN_OPERAND_PCREL_ADDR), pc, length);
+      print_address (cd, info, fields->f_lab_24_8, 0|(1<<CGEN_OPERAND_RELAX)|(1<<CGEN_OPERAND_PCREL_ADDR), pc, length);
       break;
     case M32C_OPERAND_LAB_32_8 :
-      print_address (cd, info, fields->f_lab_32_8, 0|(1<<CGEN_OPERAND_PCREL_ADDR), pc, length);
+      print_address (cd, info, fields->f_lab_32_8, 0|(1<<CGEN_OPERAND_RELAX)|(1<<CGEN_OPERAND_PCREL_ADDR), pc, length);
       break;
     case M32C_OPERAND_LAB_40_8 :
-      print_address (cd, info, fields->f_lab_40_8, 0|(1<<CGEN_OPERAND_PCREL_ADDR), pc, length);
+      print_address (cd, info, fields->f_lab_40_8, 0|(1<<CGEN_OPERAND_RELAX)|(1<<CGEN_OPERAND_PCREL_ADDR), pc, length);
       break;
     case M32C_OPERAND_LAB_5_3 :
       print_address (cd, info, fields->f_lab_5_3, 0|(1<<CGEN_OPERAND_RELAX)|(1<<CGEN_OPERAND_PCREL_ADDR), pc, length);

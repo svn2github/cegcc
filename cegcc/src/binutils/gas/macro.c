@@ -1,6 +1,6 @@
 /* macro.c - macro support for gas
    Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-   2004, 2005, 2006 Free Software Foundation, Inc.
+   2004, 2005, 2006, 2007 Free Software Foundation, Inc.
 
    Written by Steve and Judy Chamberlain of Cygnus Support,
       sac@cygnus.com
@@ -9,7 +9,7 @@
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -1325,8 +1325,14 @@ expand_irp (int irpc, int idx, sb *in, sb *out, int (*get_line) (sb *))
     }
   else
     {
+      bfd_boolean in_quotes = FALSE;
+
       if (irpc && in->ptr[idx] == '"')
-	++idx;
+	{
+	  in_quotes = TRUE;
+	  ++idx;
+	}
+
       while (idx < in->len)
 	{
 	  if (!irpc)
@@ -1337,6 +1343,9 @@ expand_irp (int irpc, int idx, sb *in, sb *out, int (*get_line) (sb *))
 		{
 		  int nxt;
 
+		  if (irpc)
+		    in_quotes = ! in_quotes;
+	  
 		  nxt = sb_skip_white (idx + 1, in);
 		  if (nxt >= in->len)
 		    {
@@ -1348,12 +1357,13 @@ expand_irp (int irpc, int idx, sb *in, sb *out, int (*get_line) (sb *))
 	      sb_add_char (&f.actual, in->ptr[idx]);
 	      ++idx;
 	    }
+
 	  err = macro_expand_body (&sub, out, &f, h, 0);
 	  if (err != NULL)
 	    break;
 	  if (!irpc)
 	    idx = sb_skip_comma (idx, in);
-	  else
+	  else if (! in_quotes)
 	    idx = sb_skip_white (idx, in);
 	}
     }

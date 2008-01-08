@@ -1,5 +1,5 @@
 /* addr2line.c -- convert addresses to line number and function name
-   Copyright 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2006
+   Copyright 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2006, 2007
    Free Software Foundation, Inc.
    Contributed by Ulrich Lauther <Ulrich.Lauther@mchp.siemens.de>
 
@@ -7,7 +7,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -17,7 +17,9 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
+
 
 /* Derived from objdump.c and nm.c by Ulrich.Lauther@mchp.siemens.de
 
@@ -29,15 +31,12 @@
    both forms write results to stdout, the second form reads addresses
    to be converted from stdin.  */
 
-#include "config.h"
-#include <string.h>
-
+#include "sysdep.h"
 #include "bfd.h"
 #include "getopt.h"
 #include "libiberty.h"
 #include "demangle.h"
 #include "bucomm.h"
-#include "budemang.h"
 
 static bfd_boolean unwind_inlines;	/* -i, unwind inlined functions. */
 static bfd_boolean with_functions;	/* -f, show function names.  */
@@ -91,7 +90,7 @@ usage (FILE *stream, int status)
 \n"));
 
   list_supported_targets (program_name, stream);
-  if (status == 0)
+  if (REPORT_BUGS_TO[0] && status == 0)
     fprintf (stream, _("Report bugs to %s\n"), REPORT_BUGS_TO);
   exit (status);
 }
@@ -224,8 +223,9 @@ translate_addresses (bfd *abfd, asection *section)
 		  name = "??";
 		else if (do_demangle)
 		  {
-		    alloc = demangle (abfd, name);
-		    name = alloc;
+		    alloc = bfd_demangle (abfd, name, DMGL_ANSI | DMGL_PARAMS);
+		    if (alloc != NULL)
+		      name = alloc;
 		  }
 
 		printf ("%s\n", name);

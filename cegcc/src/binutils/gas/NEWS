@@ -1,7 +1,23 @@
 -*- text -*-
+* Support for generating wide character strings has been added via the new
+  pseudo ops: .string16, .string32 and .string64.
+
+* Support for SSE5 has been added to the i386 port.
+
+Changes in 2.18:
+
+* The GAS sources are now released under the GPLv3.
+
+* Support for the National Semiconductor CR16 target has been added.
+
+* Added gas .reloc pseudo.  This is a low-level interface for creating
+  relocations.
+
 * Add support for x86_64 PE+ target.
 
 * Add support for Score target.
+
+Changes in 2.17:
 
 * Support for the Infineon XC16X has been added by KPIT Cummins Infosystems.
 

@@ -1,17 +1,19 @@
 /* Opcode table for the ARC.
-   Copyright 1994, 1995, 1997, 1998, 2000, 2001, 2002, 2004, 2005
+   Copyright 1994, 1995, 1997, 1998, 2000, 2001, 2002, 2004, 2005, 2007
    Free Software Foundation, Inc.
    Contributed by Doug Evans (dje@cygnus.com).
 
-   This program is free software; you can redistribute it and/or modify
+   This file is part of libopcodes.
+
+   This library is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   It is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+   License for more details.
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software Foundation,
@@ -663,7 +665,7 @@ insert_offset (arc_insn insn,
 		 before we lose info about them.  */
 	      if ((insn & I(-1)) == I(1))
 		{
-		  *errmsg = _("to many shimms in load");
+		  *errmsg = _("too many shimms in load");
 		  goto out;
 		}
 	      if (limm_p && operand->flags & ARC_OPERAND_LOAD)

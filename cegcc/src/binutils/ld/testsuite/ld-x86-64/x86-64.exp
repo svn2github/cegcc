@@ -1,9 +1,11 @@
 # Expect script for ld-x86_64 tests
-#   Copyright (C) 2002, 2005, 2006 Free Software Foundation
+#   Copyright (C) 2002, 2005, 2006, 2007 Free Software Foundation
 #
-# This file is free software; you can redistribute it and/or modify
+# This file is part of the GNU Binutils.
+#
+# This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -13,7 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+# MA 02110-1301, USA.
 #
 
 # Test x86_64 linking; all types of relocs.  This tests the assembler and
@@ -63,6 +66,15 @@ set x86_64tests {
     {"TLS in debug sections" "-melf_x86_64"
      "--64" {tlsg.s}
      {{objdump -sj.debug_foobar tlsg.sd}} "tlsg"}
+    {"TLS GD->LE transition" "-melf_x86_64"
+     "--64" {tlsgd1.s}
+     {{objdump -dwr tlsgd1.dd}} "tlsgd1"}
+    {"TLS LD->LE transition" "-melf_x86_64"
+     "--64" {tlsld1.s}
+     {{objdump -dwr tlsld1.dd}} "tlsld1"}
+    {"TLS IE->LE transition" "-melf_x86_64"
+     "--64" {tlsie1.s}
+     {{objdump -dwr tlsie1.dd}} "tlsie1"}
 }
 
 run_ld_link_tests $x86_64tests
@@ -70,3 +82,7 @@ run_ld_link_tests $x86_64tests
 run_dump_test "abs"
 run_dump_test "pcrel8"
 run_dump_test "pcrel16"
+run_dump_test "tlsgd2"
+run_dump_test "tlsgd3"
+run_dump_test "tlsie2"
+run_dump_test "tlsie3"

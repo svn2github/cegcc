@@ -1,12 +1,12 @@
 /* itbl-ops.c
-   Copyright 1997, 1999, 2000, 2001, 2002, 2003, 2005, 2006
+   Copyright 1997, 1999, 2000, 2001, 2002, 2003, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -145,12 +145,7 @@ struct itbl_entry {
 
 static int itbl_num_opcodes = 0;
 /* Array of entries for each processor and entry type */
-static struct itbl_entry *entries[e_nprocs][e_ntypes] = {
-  {0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0}
-};
+static struct itbl_entry *entries[e_nprocs][e_ntypes];
 
 /* local prototypes */
 static unsigned long build_opcode (struct itbl_entry *e);

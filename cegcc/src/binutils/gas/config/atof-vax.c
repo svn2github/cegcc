@@ -1,12 +1,12 @@
 /* atof_vax.c - turn a Flonum into a VAX floating point number
-   Copyright 1987, 1992, 1993, 1995, 1997, 1999, 2000, 2005
+   Copyright 1987, 1992, 1993, 1995, 1997, 1999, 2000, 2005, 2007
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -35,7 +35,7 @@ int flonum_gen2vax (int, FLONUM_TYPE *, LITTLENUM_TYPE *);
 
 /* Number of chars in flonum type 'letter'.  */
 
-static int
+static unsigned int
 atof_vax_sizeof (int letter)
 {
   int return_value;
@@ -389,13 +389,13 @@ flonum_gen2vax (int format_letter,	/* One of 'd' 'f' 'g' 'h'.  */
 #define MAXIMUM_NUMBER_OF_LITTLENUMS  8 	/* For .hfloats.  */
 
 char *
-md_atof (int what_statement_type,
-	 char *literalP,
-	 int *sizeP)
+vax_md_atof (int what_statement_type,
+	     char *literalP,
+	     int *sizeP)
 {
   LITTLENUM_TYPE words[MAXIMUM_NUMBER_OF_LITTLENUMS];
   char kind_of_float;
-  int number_of_chars;
+  unsigned int number_of_chars;
   LITTLENUM_TYPE *littlenumP;
 
   switch (what_statement_type)
@@ -447,5 +447,5 @@ md_atof (int what_statement_type,
     number_of_chars = 0;
 
   *sizeP = number_of_chars;
-  return kind_of_float ? NULL : _("Bad call to md_atof()");
+  return kind_of_float ? NULL : _("Unrecognized or unsupported floating point constant");
 }

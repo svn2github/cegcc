@@ -1,13 +1,13 @@
 /* subsegs.c - subsegments -
    Copyright 1987, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -65,13 +65,9 @@ subseg_change (register segT seg, register int subseg)
 
   if (! seginfo)
     {
-      seginfo = (segment_info_type *) xmalloc (sizeof (*seginfo));
-      memset ((PTR) seginfo, 0, sizeof (*seginfo));
-      seginfo->fix_root = NULL;
-      seginfo->fix_tail = NULL;
+      seginfo = xcalloc (1, sizeof (*seginfo));
       seginfo->bfd_section = seg;
-      seginfo->sym = 0;
-      bfd_set_section_userdata (stdoutput, seg, (PTR) seginfo);
+      bfd_set_section_userdata (stdoutput, seg, seginfo);
     }
 }
 
@@ -107,7 +103,7 @@ subseg_set_rest (segT seg, subsegT subseg)
     {
       /* This should be the only code that creates a frchainS.  */
 
-      newP = (frchainS *) obstack_alloc (&frchains, sizeof (frchainS));
+      newP = obstack_alloc (&frchains, sizeof (frchainS));
       newP->frch_subseg = subseg;
       newP->fix_root = NULL;
       newP->fix_tail = NULL;
@@ -117,6 +113,7 @@ subseg_set_rest (segT seg, subsegT subseg)
 #endif
       newP->frch_frag_now = frag_alloc (&newP->frch_obstack);
       newP->frch_frag_now->fr_type = rs_fill;
+      newP->frch_cfi_data = NULL;
 
       newP->frch_root = newP->frch_last = newP->frch_frag_now;
 
@@ -170,16 +167,9 @@ subseg_get (const char *segname, int force_new)
   if (! seginfo)
     {
       secptr->output_section = secptr;
-      seginfo = (segment_info_type *) xmalloc (sizeof (*seginfo));
-      memset ((PTR) seginfo, 0, sizeof (*seginfo));
-      seginfo->fix_root = NULL;
-      seginfo->fix_tail = NULL;
+      seginfo = xcalloc (1, sizeof (*seginfo));
       seginfo->bfd_section = secptr;
-      bfd_set_section_userdata (stdoutput, secptr, (PTR) seginfo);
-      seginfo->frchainP = NULL;
-      seginfo->lineno_list_head = seginfo->lineno_list_tail = NULL;
-      seginfo->sym = NULL;
-      seginfo->dot = NULL;
+      bfd_set_section_userdata (stdoutput, secptr, seginfo);
     }
   return secptr;
 }

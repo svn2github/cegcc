@@ -1,12 +1,12 @@
 /* tc-bfin.c -- Assembler for the ADI Blackfin.
-   Copyright 2005, 2006
+   Copyright 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -246,7 +246,7 @@ bfin_pic_ptr (int nbytes)
 	  if (*input_line_pointer == ')')
 	    input_line_pointer++;
 	  else
-	    as_bad ("missing ')'");
+	    as_bad (_("missing ')'"));
 	}
       else
 	error ("missing funcdesc in picptr");
@@ -348,7 +348,7 @@ md_begin ()
 
   /* Set the default machine type. */
   if (!bfd_set_arch_mach (stdoutput, bfd_arch_bfin, 0))
-    as_warn ("Could not set architecture and machine.");
+    as_warn (_("Could not set architecture and machine."));
 
   /* Ensure that lines can begin with '(', for multiple
      register stack pops. */
@@ -493,7 +493,7 @@ parse (char *line)
   state = yyparse ();
   if (state == SEMANTIC_ERROR)
     {
-      as_bad ("Parse failed.");
+      as_bad (_("Parse failed."));
       insn = 0;
     }
 
@@ -568,7 +568,7 @@ md_apply_fix (fixS *fixP, valueT *valueP, segT seg ATTRIBUTE_UNUSED)
 	break;
       if (value < -1024 || value > 1022)
 	as_bad_where (fixP->fx_file, fixP->fx_line,
-                      "pcrel too far BFD_RELOC_BFIN_10");
+                      _("pcrel too far BFD_RELOC_BFIN_10"));
 
       /* 11 bit offset even numbered, so we remove right bit.  */
       value = value >> 1;
@@ -584,7 +584,7 @@ md_apply_fix (fixS *fixP, valueT *valueP, segT seg ATTRIBUTE_UNUSED)
 	break;
 
       if (value < -4096 || value > 4094)
-	as_bad_where (fixP->fx_file, fixP->fx_line, "pcrel too far BFD_RELOC_BFIN_12");
+	as_bad_where (fixP->fx_file, fixP->fx_line, _("pcrel too far BFD_RELOC_BFIN_12"));
       /* 13 bit offset even numbered, so we remove right bit.  */
       value = value >> 1;
       newval = md_chars_to_number (where, 2);
@@ -604,7 +604,7 @@ md_apply_fix (fixS *fixP, valueT *valueP, segT seg ATTRIBUTE_UNUSED)
 	break;
 
       if (value < -16777216 || value > 16777214)
-	as_bad_where (fixP->fx_file, fixP->fx_line, "pcrel too far BFD_RELOC_BFIN_24");
+	as_bad_where (fixP->fx_file, fixP->fx_line, _("pcrel too far BFD_RELOC_BFIN_24"));
 
       /* 25 bit offset even numbered, so we remove right bit.  */
       value = value >> 1;
@@ -619,7 +619,7 @@ md_apply_fix (fixS *fixP, valueT *valueP, segT seg ATTRIBUTE_UNUSED)
       if (!value)
 	break;
       if (value < 4 || value > 30)
-	as_bad_where (fixP->fx_file, fixP->fx_line, "pcrel too far BFD_RELOC_BFIN_5");
+	as_bad_where (fixP->fx_file, fixP->fx_line, _("pcrel too far BFD_RELOC_BFIN_5"));
       value = value >> 1;
       newval = md_chars_to_number (where, 1);
       newval = (newval & 0xf0) | (value & 0xf);
@@ -631,7 +631,7 @@ md_apply_fix (fixS *fixP, valueT *valueP, segT seg ATTRIBUTE_UNUSED)
 	break;
       value += 2;
       if (value < 4 || value > 2046)
-	as_bad_where (fixP->fx_file, fixP->fx_line, "pcrel too far BFD_RELOC_BFIN_11_PCREL");
+	as_bad_where (fixP->fx_file, fixP->fx_line, _("pcrel too far BFD_RELOC_BFIN_11_PCREL"));
       /* 11 bit unsigned even, so we remove right bit.  */
       value = value >> 1;
       newval = md_chars_to_number (where, 2);
@@ -641,14 +641,14 @@ md_apply_fix (fixS *fixP, valueT *valueP, segT seg ATTRIBUTE_UNUSED)
 
     case BFD_RELOC_8:
       if (value < -0x80 || value >= 0x7f)
-	as_bad_where (fixP->fx_file, fixP->fx_line, "rel too far BFD_RELOC_8");
+	as_bad_where (fixP->fx_file, fixP->fx_line, _("rel too far BFD_RELOC_8"));
       md_number_to_chars (where, value, 1);
       break;
 
     case BFD_RELOC_BFIN_16_IMM:
     case BFD_RELOC_16:
       if (value < -0x8000 || value >= 0x7fff)
-	as_bad_where (fixP->fx_file, fixP->fx_line, "rel too far BFD_RELOC_8");
+	as_bad_where (fixP->fx_file, fixP->fx_line, _("rel too far BFD_RELOC_16"));
       md_number_to_chars (where, value, 2);
       break;
 
@@ -690,59 +690,10 @@ md_section_align (segment, size)
 }
 
 
-/* Turn a string in input_line_pointer into a floating point
-   constant of type type, and store the appropriate bytes in
-   *litP.  The number of LITTLENUMS emitted is stored in *sizeP.
-   An error message is returned, or NULL on OK.  */
-
-/* Equal to MAX_PRECISION in atof-ieee.c.  */
-#define MAX_LITTLENUMS 6
-
 char *
-md_atof (type, litP, sizeP)
-     char   type;
-     char * litP;
-     int *  sizeP;
+md_atof (int type, char * litP, int * sizeP)
 {
-  int              prec;
-  LITTLENUM_TYPE   words [MAX_LITTLENUMS];
-  LITTLENUM_TYPE   *wordP;
-  char *           t;
-
-  switch (type)
-    {
-    case 'f':
-    case 'F':
-      prec = 2;
-      break;
-
-    case 'd':
-    case 'D':
-      prec = 4;
-      break;
-
-   /* FIXME: Some targets allow other format chars for bigger sizes here.  */
-
-    default:
-      *sizeP = 0;
-      return _("Bad call to md_atof()");
-    }
-
-  t = atof_ieee (input_line_pointer, type, words);
-  if (t)
-    input_line_pointer = t;
-  *sizeP = prec * sizeof (LITTLENUM_TYPE);
-
-  *sizeP = prec * sizeof (LITTLENUM_TYPE);
-  /* This loops outputs the LITTLENUMs in REVERSE order; in accord with
-     the littleendianness of the processor.  */
-  for (wordP = words + prec - 1; prec--;)
-    {
-      md_number_to_chars (litP, (valueT) (*wordP--), sizeof (LITTLENUM_TYPE));
-      litP += sizeof (LITTLENUM_TYPE);
-    }
-
-  return 0;
+  return ieee_md_atof (type, litP, sizeP, FALSE);
 }
 
 
@@ -1178,7 +1129,7 @@ Expr_Node_Gen_Reloc_R (Expr_Node * head)
 	  note = conctcode (note1, conscode (note_reloc1 (gencode (0), op, BFD_ARELOC_BFIN_LOR, 0), NULL_CODE));
 	  break;
 	default:
-	  fprintf (stderr, "%s:%d:Unkonwn operator found for arithmetic" " relocation", __FILE__, __LINE__);
+	  fprintf (stderr, "%s:%d:Unknown operator found for arithmetic" " relocation", __FILE__, __LINE__);
 
 
 	}
@@ -1194,7 +1145,7 @@ Expr_Node_Gen_Reloc_R (Expr_Node * head)
 	  note = conctcode (note1, conscode (note_reloc1 (gencode (0), op, BFD_ARELOC_BFIN_COMP, 0), NULL_CODE));
 	  break;
 	default:
-	  fprintf (stderr, "%s:%d:Unkonwn operator found for arithmetic" " relocation", __FILE__, __LINE__);
+	  fprintf (stderr, "%s:%d:Unknown operator found for arithmetic" " relocation", __FILE__, __LINE__);
 	}
       break;
     default:

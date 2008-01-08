@@ -1,24 +1,25 @@
 /* Object file "section" support for the BFD library.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2006
+   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Written by Cygnus Support.
 
-This file is part of BFD, the Binary File Descriptor library.
+   This file is part of BFD, the Binary File Descriptor library.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 /*
 SECTION
@@ -133,8 +134,8 @@ SUBSECTION
 
 */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "bfdlink.h"
 
@@ -294,7 +295,9 @@ CODE_FRAGMENT
 .     else up the line will take care of it later.  *}
 .#define SEC_LINKER_CREATED 0x200000
 .
-.  {* This section should not be subject to garbage collection.  *}
+.  {* This section should not be subject to garbage collection.
+.     Also set to inform the linker that this section should not be
+.     listed in the link map as discarded.  *}
 .#define SEC_KEEP 0x400000
 .
 .  {* This section contains "short" data, and should be placed
@@ -354,9 +357,8 @@ CODE_FRAGMENT
 .     output sections that have an input section.  *}
 .  unsigned int linker_has_input : 1;
 .
-.  {* Mark flags used by some linker backends for garbage collection.  *}
+.  {* Mark flag used by some linker backends for garbage collection.  *}
 .  unsigned int gc_mark : 1;
-.  unsigned int gc_mark_from_eh : 1;
 .
 .  {* The following flags are used by the ELF linker. *}
 .
@@ -410,13 +412,13 @@ CODE_FRAGMENT
 .  bfd_size_type size;
 .
 .  {* For input sections, the original size on disk of the section, in
-.     octets.  This field is used by the linker relaxation code.  It is
-.     currently only set for sections where the linker relaxation scheme
-.     doesn't cache altered section and reloc contents (stabs, eh_frame,
-.     SEC_MERGE, some coff relaxing targets), and thus the original size
-.     needs to be kept to read the section multiple times.
-.     For output sections, rawsize holds the section size calculated on
-.     a previous linker relaxation pass.  *}
+.     octets.  This field should be set for any section whose size is
+.     changed by linker relaxation.  It is required for sections where
+.     the linker relaxation scheme doesn't cache altered section and
+.     reloc contents (stabs, eh_frame, SEC_MERGE, some coff relaxing
+.     targets), and thus the original size needs to be kept to read the
+.     section multiple times.  For output sections, rawsize holds the
+.     section size calculated on a previous linker relaxation pass.  *}
 .  bfd_size_type rawsize;
 .
 .  {* If this section is going to be output, then this value is the
@@ -634,8 +636,8 @@ CODE_FRAGMENT
 .  {* name, id,  index, next, prev, flags, user_set_vma,            *}	\
 .  { NAME,  IDX, 0,     NULL, NULL, FLAGS, 0,				\
 .									\
-.  {* linker_mark, linker_has_input, gc_mark, gc_mark_from_eh,      *}	\
-.     0,           0,                1,       0,			\
+.  {* linker_mark, linker_has_input, gc_mark,                       *}	\
+.     0,           0,                1,         			\
 .									\
 .  {* segment_mark, sec_info_type, use_rela_p, has_tls_reloc,       *}	\
 .     0,            0,             0,          0,			\

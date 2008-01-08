@@ -1,11 +1,12 @@
 /* tc-ip2k.c -- Assembler for the Scenix IP2xxx.
-   Copyright (C) 2000, 2002, 2003, 2005, 2006 Free Software Foundation.
+   Copyright (C) 2000, 2002, 2003, 2005, 2006, 2007
+   Free Software Foundation. Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -245,7 +246,7 @@ int
 md_estimate_size_before_relax (fragS * fragP ATTRIBUTE_UNUSED,
 			       segT    segment ATTRIBUTE_UNUSED)
 {
-  as_fatal (_("md_estimate_size_before_relax\n"));
+  as_fatal (_("relaxation not supported\n"));
   return 1;
 } 
 
@@ -268,12 +269,9 @@ md_convert_frag (bfd   * abfd  ATTRIBUTE_UNUSED,
 /* Functions concerning relocs.  */
 
 long
-md_pcrel_from (fixS *fixP)
+md_pcrel_from (fixS *fixP ATTRIBUTE_UNUSED)
 {
-  as_fatal (_("md_pcrel_from\n"));
-
-  /* Return the address of the delay slot. */
-  return fixP->fx_size + fixP->fx_where + fixP->fx_frag->fr_address;
+  abort ();
 }
 
 
@@ -331,59 +329,10 @@ md_number_to_chars (char * buf, valueT val, int n)
   number_to_chars_bigendian (buf, val, n);
 }
 
-/* Turn a string in input_line_pointer into a floating point constant of type
-   type, and store the appropriate bytes in *litP.  The number of LITTLENUMS
-   emitted is stored in *sizeP .  An error message is returned, or NULL on
-   OK.  */
-
-/* Equal to MAX_PRECISION in atof-ieee.c  */
-#define MAX_LITTLENUMS 6
-
 char *
 md_atof (int type, char * litP, int *  sizeP)
 {
-  int              prec;
-  LITTLENUM_TYPE   words [MAX_LITTLENUMS];
-  LITTLENUM_TYPE  *wordP;
-  char *           t;
-
-  switch (type)
-    {
-    case 'f':
-    case 'F':
-    case 's':
-    case 'S':
-      prec = 2;
-      break;
-
-    case 'd':
-    case 'D':
-    case 'r':
-    case 'R':
-      prec = 4;
-      break;
-
-   /* FIXME: Some targets allow other format chars for bigger sizes here.  */
-
-    default:
-      * sizeP = 0;
-      return _("Bad call to md_atof()");
-    }
-
-  t = atof_ieee (input_line_pointer, type, words);
-  if (t)
-    input_line_pointer = t;
-  * sizeP = prec * sizeof (LITTLENUM_TYPE);
-
-  /* This loops outputs the LITTLENUMs in REVERSE order; in accord with
-     the ip2k endianness.  */
-  for (wordP = words; prec--;)
-    {
-      md_number_to_chars (litP, (valueT) (*wordP++), sizeof (LITTLENUM_TYPE));
-      litP += sizeof (LITTLENUM_TYPE);
-    }
-     
-  return 0;
+  return ieee_md_atof (type, litP, sizeP, TRUE);
 }
 
 

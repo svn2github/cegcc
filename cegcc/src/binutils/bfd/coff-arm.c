@@ -1,6 +1,6 @@
 /* BFD back-end for ARM COFF files.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2006
+   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Written by Cygnus Support.
 
@@ -8,7 +8,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -18,10 +18,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "coff/arm.h"
 #include "coff/internal.h"
@@ -853,6 +854,23 @@ coff_arm_reloc_type_lookup (bfd * abfd, bfd_reloc_code_real_type code)
     }
 }
 
+static reloc_howto_type *
+coff_arm_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+			    const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0;
+       i < (sizeof (aoutarm_std_reloc_howto)
+	    / sizeof (aoutarm_std_reloc_howto[0]));
+       i++)
+    if (aoutarm_std_reloc_howto[i].name != NULL
+	&& strcasecmp (aoutarm_std_reloc_howto[i].name, r_name) == 0)
+      return &aoutarm_std_reloc_howto[i];
+
+  return NULL;
+}
+
 #define COFF_DEFAULT_SECTION_ALIGNMENT_POWER  2
 #define COFF_PAGE_SIZE                        0x1000
 
@@ -921,21 +939,24 @@ coff_arm_link_hash_table_create (bfd * abfd)
   return & ret->root.root;
 }
 
-static void
+static bfd_boolean
 arm_emit_base_file_entry (struct bfd_link_info *info,
 			  bfd *output_bfd,
 			  asection *input_section,
 			  bfd_vma reloc_offset)
 {
-  bfd_vma addr = reloc_offset
-                - input_section->vma
-                + input_section->output_offset
-                  + input_section->output_section->vma;
+  bfd_vma addr = (reloc_offset
+		  - input_section->vma
+		  + input_section->output_offset
+		  + input_section->output_section->vma);
 
   if (coff_data (output_bfd)->pe)
      addr -= pe_data (output_bfd)->pe_opthdr.ImageBase;
-  fwrite (& addr, 1, sizeof (addr), (FILE *) info->base_file);
+  if (fwrite (&addr, sizeof (addr), 1, (FILE *) info->base_file) == 1)
+    return TRUE;
 
+  bfd_set_error (bfd_error_system_call);
+  return FALSE;
 }
 
 #ifndef ARM_WINCE
@@ -1363,10 +1384,10 @@ coff_arm_relocate_section (bfd *output_bfd,
 			  bfd_put_32 (output_bfd, h_val | a2t3_func_addr_insn,
 				      s->contents + my_offset + 8);
 
-                          if (info->base_file)
-                            arm_emit_base_file_entry (info, output_bfd, s,
-                                                      my_offset + 8);
-
+                          if (info->base_file
+			      && !arm_emit_base_file_entry (info, output_bfd,
+							    s, my_offset + 8))
+			    return FALSE;
 			}
 
 		      BFD_ASSERT (my_offset <= globals->arm_glue_size);
@@ -1468,9 +1489,11 @@ coff_arm_relocate_section (bfd *output_bfd,
 			      bfd_put_32 (output_bfd, h_val,
 					  s->contents + my_offset + 16);
 
-                              if (info->base_file)
-                                arm_emit_base_file_entry (info, output_bfd, s,
-							  my_offset + 16);
+                              if (info->base_file
+				  && !arm_emit_base_file_entry (info,
+								output_bfd, s,
+								my_offset + 16))
+				return FALSE;
 			    }
 			  else
 			    {
@@ -1554,13 +1577,13 @@ coff_arm_relocate_section (bfd *output_bfd,
 	    }
 	}
 
-      if (info->base_file)
-	{
-	  /* Emit a reloc if the backend thinks it needs it.  */
-	  if (sym && pe_data(output_bfd)->in_reloc_p(output_bfd, howto))
-            arm_emit_base_file_entry (info, output_bfd, input_section,
-				      rel->r_vaddr);
-	}
+      /* Emit a reloc if the backend thinks it needs it.  */
+      if (info->base_file
+	  && sym
+	  && pe_data(output_bfd)->in_reloc_p(output_bfd, howto)
+	  && !arm_emit_base_file_entry (info, output_bfd, input_section,
+					rel->r_vaddr))
+	return FALSE;
 
       if (done)
 	rstat = bfd_reloc_ok;
@@ -2112,6 +2135,7 @@ bfd_arm_process_before_allocation (bfd *                   abfd,
 #endif /* ! defined (COFF_IMAGE_WITH_PE) */
 
 #define coff_bfd_reloc_type_lookup 		coff_arm_reloc_type_lookup
+#define coff_bfd_reloc_name_lookup	coff_arm_reloc_name_lookup
 #define coff_relocate_section 			coff_arm_relocate_section
 #define coff_bfd_is_local_label_name 		coff_arm_is_local_label_name
 #define coff_adjust_symndx			coff_arm_adjust_symndx

@@ -4,24 +4,25 @@
    THIS FILE IS MACHINE GENERATED WITH CGEN.
    - the resultant file is machine generated, cgen-asm.in isn't
 
-   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2005
+   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2005, 2007
    Free Software Foundation, Inc.
 
-   This file is part of the GNU Binutils and GDB, the GNU debugger.
+   This file is part of libopcodes.
 
-   This program is free software; you can redistribute it and/or modify
+   This library is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   It is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+   License for more details.
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software Foundation, Inc.,
    51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+
 
 /* ??? Eventually more and more of this stuff can go to cpu-independent files.
    Keep that in mind.  */
@@ -88,7 +89,7 @@ parse_hi16 (CGEN_CPU_DESC cd,
 	return MISSING_CLOSING_PARENTHESIS;
       ++*strp;
       if (errmsg == NULL
-  	  && result_type == CGEN_PARSE_OPERAND_RESULT_NUMBER)
+	  && result_type == CGEN_PARSE_OPERAND_RESULT_NUMBER)
 	{
 	  value >>= 16;
 	  value &= 0xffff;
@@ -100,17 +101,17 @@ parse_hi16 (CGEN_CPU_DESC cd,
     {
       *strp += 6;
       errmsg = cgen_parse_address (cd, strp, opindex, BFD_RELOC_M32R_HI16_SLO,
- 				   & result_type, & value);
+				   & result_type, & value);
       if (**strp != ')')
 	return MISSING_CLOSING_PARENTHESIS;
       ++*strp;
       if (errmsg == NULL
 	  && result_type == CGEN_PARSE_OPERAND_RESULT_NUMBER)
-        {
-          value += 0x8000;
-          value >>= 16;
+	{
+	  value += 0x8000;
+	  value >>= 16;
 	  value &= 0xffff;
-        }
+	}
       *valuep = value;
       return errmsg;
     }
@@ -145,7 +146,7 @@ parse_slo16 (CGEN_CPU_DESC cd,
       ++*strp;
       if (errmsg == NULL
 	  && result_type == CGEN_PARSE_OPERAND_RESULT_NUMBER)
-	value = ((value & 0xffff) ^ 0x8000) - 0x8000;    
+	value = ((value & 0xffff) ^ 0x8000) - 0x8000;
       *valuep = value;
       return errmsg;
     }
@@ -343,6 +344,9 @@ m32r_cgen_init_asm (CGEN_CPU_DESC cd)
   m32r_cgen_init_ibld_table (cd);
   cd->parse_handlers = & m32r_cgen_parse_handlers[0];
   cd->parse_operand = m32r_cgen_parse_operand;
+#ifdef CGEN_ASM_INIT_HOOK
+CGEN_ASM_INIT_HOOK
+#endif
 }
 
 

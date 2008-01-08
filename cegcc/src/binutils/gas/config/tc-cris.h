@@ -1,5 +1,5 @@
 /* tc-cris.h -- Header file for tc-cris.c, the CRIS GAS port.
-   Copyright 2000, 2001, 2002, 2003, 2004, 2005
+   Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2007
    Free Software Foundation, Inc.
 
    Contributed by Axis Communications AB, Lund, Sweden.
@@ -10,7 +10,7 @@
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -99,10 +99,9 @@ extern int md_cris_force_relocation (struct fix *);
    || (RTYPE) == BFD_RELOC_CRIS_32_PLT_PCREL)
 
 /* Make sure we don't resolve fixups for which we want to emit dynamic
-   relocations.  FIXME: Set fx_plt instead of using IS_CRIS_PIC_RELOC.  */
+   relocations.  */
 #define TC_FORCE_RELOCATION_LOCAL(FIX)			\
   (!(FIX)->fx_pcrel					\
-   || (FIX)->fx_plt					\
    || IS_CRIS_PIC_RELOC ((FIX)->fx_r_type)		\
    || TC_FORCE_RELOCATION (FIX))
 

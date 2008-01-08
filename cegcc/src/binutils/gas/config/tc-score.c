@@ -1,5 +1,5 @@
 /* tc-score.c -- Assembler for Score
-   Copyright 2006 Free Software Foundation, Inc.
+   Copyright 2006, 2007 Free Software Foundation, Inc.
    Contributed by:
    Mei Ligang (ligang@sunnorth.com.cn)
    Pei-Lin Tsai (pltsai@sunplus.com)
@@ -8,7 +8,7 @@
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -42,7 +42,6 @@
 #define INSN_SIZE       4
 #define INSN16_SIZE     2
 #define RELAX_INST_NUM  3
-#define Insn_PIC        123
 
 /* For score5u : div/mul will pop warning message, mmu/alw/asw will pop error message.  */
 #define BAD_ARGS 	          _("bad arguments to instruction")
@@ -103,6 +102,9 @@ const char line_separator_chars[] = ";";
 /* Chars that can be used to separate mant from exp in floating point numbers.  */
 const char EXP_CHARS[] = "eE";
 const char FLT_CHARS[] = "rRsSfFdDxXeEpP";
+
+/* Used to contain constructed error messages.  */
+static char err_msg[255];
 
 fragS *score_fragp = 0;
 static int fix_data_dependency = 0;
@@ -178,11 +180,6 @@ struct score_it dependency_vector[SCORE7_PIPELINE];
 
 /* Relax will need some padding for alignment.  */
 #define RELAX_PAD_BYTE 3
-
-/* Number of littlenums required to hold an extended precision number.  For md_atof.  */
-#define NUM_FLOAT_VALS 8
-#define MAX_LITTLENUMS 6
-LITTLENUM_TYPE fp_values[NUM_FLOAT_VALS][MAX_LITTLENUMS];
 
 /* Structure for a hash table entry for a register.  */
 struct reg_entry
@@ -279,7 +276,6 @@ static void do_rdrsrs (char *);
 static void do_rdsi16 (char *);
 static void do_rdrssi14 (char *);
 static void do_sub_rdsi16 (char *);
-static void do_sub_rdi16 (char *);
 static void do_sub_rdrssi14 (char *);
 static void do_rdrsi5 (char *);
 static void do_rdrsi14 (char *);
@@ -363,8 +359,6 @@ static const struct asm_opcode score_insns[] =
   {"addei!",    0x6000    , 0x7087,     0x02000001, Rd_I4,                do16_rdi4},
   {"subi",      0x02000000, 0x3e0e0001, 0x8000,     Rd_SI16,              do_sub_rdsi16},
   {"subi.c",    0x02000001, 0x3e0e0001, 0x8000,     Rd_SI16,              do_sub_rdsi16},
-  {"subis",     0x0a000000, 0x3e0e0001, 0x8000,     Rd_SI16,              do_sub_rdi16},
-  {"subis.c",   0x0a000001, 0x3e0e0001, 0x8000,     Rd_SI16,              do_sub_rdi16},
   {"subri",     0x10000000, 0x3e000001, 0x8000,     Rd_Rs_SI14,           do_sub_rdrssi14},
   {"subri.c",   0x10000001, 0x3e000001, 0x8000,     Rd_Rs_SI14,           do_sub_rdrssi14},
   {"and",       0x00000020, 0x3e0003ff, 0x8000,     Rd_Rs_Rs,             do_rdrsrs},
@@ -376,21 +370,21 @@ static const struct asm_opcode score_insns[] =
   {"andri",     0x18000000, 0x3e000001, 0x8000,     Rd_Rs_I14,            do_rdrsi14},
   {"andri.c",   0x18000001, 0x3e000001, 0x8000,     Rd_Rs_I14,            do_rdrsi14},
   {"and!",      0x2004,     0x700f,     0x00000021, Rd_Rs,                do16_rdrs},
-  {"bcs",       0x08000000, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
-  {"bcc",       0x08000400, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
-  {"bcnz",      0x08003800, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
+  {"bcs",       0x08000000, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
+  {"bcc",       0x08000400, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
+  {"bcnz",      0x08003800, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
   {"bcsl",      0x08000001, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
   {"bccl",      0x08000401, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
   {"bcnzl",     0x08003801, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
   {"bcs!",      0x4000,     0x7f00,     0x08000000, PC_DISP8div2,         do16_branch},
   {"bcc!",      0x4100,     0x7f00,     0x08000400, PC_DISP8div2,         do16_branch},
   {"bcnz!",     0x4e00,     0x7f00,     0x08003800, PC_DISP8div2,         do16_branch},
-  {"beq",       0x08001000, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
+  {"beq",       0x08001000, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
   {"beql",      0x08001001, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
   {"beq!",      0x4400,     0x7f00,     0x08001000, PC_DISP8div2,         do16_branch},
-  {"bgtu",      0x08000800, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
-  {"bgt",       0x08001800, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
-  {"bge",       0x08002000, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
+  {"bgtu",      0x08000800, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
+  {"bgt",       0x08001800, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
+  {"bge",       0x08002000, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
   {"bgtul",     0x08000801, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
   {"bgtl",      0x08001801, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
   {"bgel",      0x08002001, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
@@ -406,9 +400,9 @@ static const struct asm_opcode score_insns[] =
   {"bitset!",   0x6005,     0x7007,     0x0000002b, Rd_I5,                do16_rdi5},
   {"bittst!",   0x6006,     0x7007,     0x0000002d, Rd_I5,                do16_rdi5},
   {"bittgl!",   0x6007,     0x7007,     0x0000002f, Rd_I5,                do16_rdi5},
-  {"bleu",      0x08000c00, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
-  {"ble",       0x08001c00, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
-  {"blt",       0x08002400, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
+  {"bleu",      0x08000c00, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
+  {"ble",       0x08001c00, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
+  {"blt",       0x08002400, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
   {"bleul",     0x08000c01, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
   {"blel",      0x08001c01, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
   {"bltl",      0x08002401, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
@@ -416,13 +410,13 @@ static const struct asm_opcode score_insns[] =
   {"bleu!",     0x4300,     0x7f00,     0x08000c00, PC_DISP8div2,         do16_branch},
   {"ble!",      0x4700,     0x7f00,     0x08001c00, PC_DISP8div2,         do16_branch},
   {"blt!",      0x4900,     0x7f00,     0x08002400, PC_DISP8div2,         do16_branch},
-  {"bmi",       0x08002800, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
+  {"bmi",       0x08002800, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
   {"bmil",      0x08002801, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
   {"bmi!",      0x00004a00, 0x00007f00, 0x08002800, PC_DISP8div2,         do16_branch},
-  {"bne",       0x08001400, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
+  {"bne",       0x08001400, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
   {"bnel",      0x08001401, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
   {"bne!",      0x4500,     0x7f00,     0x08001400, PC_DISP8div2,         do16_branch},
-  {"bpl",       0x08002c00, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
+  {"bpl",       0x08002c00, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
   {"bpll",      0x08002c01, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
   {"bpl!",      0x4b00,     0x7f00,     0x08002c00, PC_DISP8div2,         do16_branch},
   {"brcs",      0x00000008, 0x3e007fff, 0x0004,     x_Rs_x,               do_rs},
@@ -489,14 +483,14 @@ static const struct asm_opcode score_insns[] =
   {"brvcl!",    0x0d0c,     0x7f0f,     0x00003409, x_Rs,                 do16_xrs},
   {"brcnzl!",   0x0e0c,     0x7f0f,     0x00003809, x_Rs,                 do16_xrs},
   {"brl!",      0x0f0c,     0x7f0f,     0x00003c09, x_Rs,                 do16_xrs},
-  {"bvs",       0x08003000, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
-  {"bvc",       0x08003400, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
+  {"bvs",       0x08003000, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
+  {"bvc",       0x08003400, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
   {"bvsl",      0x08003001, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
   {"bvcl",      0x08003401, 0x3e007c01, 0x8000,     PC_DISP19div2,        do_branch},
   {"bvs!",      0x4c00,     0x7f00,     0x08003000, PC_DISP8div2,         do16_branch},
   {"bvc!",      0x4d00,     0x7f00,     0x08003400, PC_DISP8div2,         do16_branch},
   {"b!",        0x4f00,     0x7f00,     0x08003c00, PC_DISP8div2,         do16_branch},
-  {"b",         0x08003c00, 0x3e007c01, 0x08003c00, PC_DISP19div2,        do_branch},
+  {"b",         0x08003c00, 0x3e007c01, 0x4000,     PC_DISP19div2,        do_branch},
   {"cache",     0x30000000, 0x3ff00000, 0x8000,     OP5_rvalueRs_SI15,    do_cache},
   {"ceinst",    0x38000000, 0x3e000000, 0x8000,     I5_Rs_Rs_I5_OP5,      do_ceinst},
   {"clz",       0x3800000d, 0x3e007fff, 0x8000,     Rd_Rs_x,              do_rdrs},
@@ -536,7 +530,7 @@ static const struct asm_opcode score_insns[] =
   {"lh!",       0x2009,     0x700f,     0x22000000, Rd_rvalueRs,          do16_ldst_insn},
   {"lhp!",      0x7001,     0x7007,     0x22000000, Rd_rvalueBP_I5,       do16_ldst_imm_insn},
   {"ldi",       0x020c0000, 0x3e0e0000, 0x5000,     Rd_SI16,              do_rdsi16},
-  {"ldis",      0x0a0c0000, 0x3e0e0000, 0x5000,     Rd_I16,               do_rdi16},
+  {"ldis",      0x0a0c0000, 0x3e0e0000, 0x8000,     Rd_I16,               do_rdi16},
   {"ldiu!",     0x5000,     0x7000,     0x020c0000, Rd_I8,                do16_ldst_imm_insn},
   {"lw!",       0x2008,     0x700f,     0x20000000, Rd_rvalueRs,          do16_ldst_insn},
   {"lwp!",      0x7000,     0x7007,     0x20000000, Rd_rvalueBP_I5,       do16_ldst_imm_insn},
@@ -779,12 +773,12 @@ static const struct asm_opcode score_insns[] =
   {"sh",        INSN_SH,    0x00000000, 0x200d,     Insn_Type_SYN,        do_macro_ldst_label},
   {"sw",        INSN_SW,    0x00000000, 0x200c,     Insn_Type_SYN,        do_macro_ldst_label},
   /* Assembler use internal.  */
-  {"ld_i32hi",  0x0a0c0000, 0x3e0e0000, 0x8000,     Rd_I16,               do_macro_rdi32hi},
-  {"ld_i32lo",  0x020a0000, 0x3e0e0001, 0x8000,     Rd_I16,               do_macro_rdi32lo},
-  {"ldis_pic",  0x0a0c0000, 0x3e0e0000, 0x5000,     Rd_I16,               do_rdi16_pic},
-  {"addi_s_pic",0x02000000, 0x3e0e0001, 0x8000,     Rd_SI16,              do_addi_s_pic},
-  {"addi_u_pic",0x02000000, 0x3e0e0001, 0x8000,     Rd_SI16,              do_addi_u_pic},
-  {"lw_pic",    0x20000000, 0x3e000000, 0x2008,     Rd_rvalueRs_SI15,     do_lw_pic},
+  {"ld_i32hi",  0x0a0c0000, 0x3e0e0000, 0x8000,     Insn_internal, do_macro_rdi32hi},
+  {"ld_i32lo",  0x020a0000, 0x3e0e0001, 0x8000,     Insn_internal, do_macro_rdi32lo},
+  {"ldis_pic",  0x0a0c0000, 0x3e0e0000, 0x5000,     Insn_internal, do_rdi16_pic},
+  {"addi_s_pic",0x02000000, 0x3e0e0001, 0x8000,     Insn_internal, do_addi_s_pic},
+  {"addi_u_pic",0x02000000, 0x3e0e0001, 0x8000,     Insn_internal, do_addi_u_pic},
+  {"lw_pic",    0x20000000, 0x3e000000, 0x8000,     Insn_internal, do_lw_pic},
 };
 
 /* Next free entry in the pool.  */
@@ -793,6 +787,7 @@ int next_literal_pool_place = 0;
 /* Next literal pool number.  */
 int lit_pool_num = 1;
 symbolS *current_poolP = NULL;
+
 
 static int
 end_of_line (char *str)
@@ -805,8 +800,7 @@ end_of_line (char *str)
       retval = (int) FAIL;
 
       if (!inst.error)
-        {
-        inst.error = BAD_GARBAGE}
+        inst.error = BAD_GARBAGE;
     }
 
   return retval;
@@ -856,7 +850,7 @@ reg_required_here (char **str, int shift, enum score_reg_type reg_type)
         {
           if ((reg == 1) && (nor1 == 1) && (inst.bwarn == 0))
             {
-              as_warn ("Using temp register(r1)");
+              as_warn (_("Using temp register(r1)"));
               inst.bwarn = 1;
             }
         }
@@ -989,6 +983,22 @@ my_get_expression (expressionS * ep, char **str)
       return (int) FAIL;
     }
 
+  if ((ep->X_add_symbol != NULL)
+      && (inst.type != PC_DISP19div2)
+      && (inst.type != PC_DISP8div2)
+      && (inst.type != PC_DISP24div2)
+      && (inst.type != PC_DISP11div2)
+      && (inst.type != Insn_Type_SYN)
+      && (inst.type != Rd_rvalueRs_SI15)
+      && (inst.type != Rd_lvalueRs_SI15)
+      && (inst.type != Insn_internal))
+    {
+      inst.error = BAD_ARGS;
+      *str = input_line_pointer;
+      input_line_pointer = save_in;
+      return (int) FAIL;
+    }
+
   *str = input_line_pointer;
   input_line_pointer = save_in;
   return SUCCESS;
@@ -997,7 +1007,7 @@ my_get_expression (expressionS * ep, char **str)
 /* Check if an immediate is valid.  If so, convert it to the right format.  */
 
 static int
-validate_immediate (int val, unsigned int data_type)
+validate_immediate (int val, unsigned int data_type, int hex_p)
 {
   switch (data_type)
     {
@@ -1025,8 +1035,47 @@ validate_immediate (int val, unsigned int data_type)
       return val;
       break;
 
+    case _SIMM14:
+      if (hex_p == 1)
+        {
+          if (!(val >= -0x2000 && val <= 0x3fff))
+            {
+              return (int) FAIL;
+            }
+        }
+      else
+        {
+          if (!(val >= -8192 && val <= 8191))
+            {
+              return (int) FAIL;
+            }
+        }
+
+      return val;
+      break;
+
+    case _SIMM16_NEG:
+      if (hex_p == 1)
+        {
+          if (!(val >= -0x7fff && val <= 0xffff && val != 0x8000))
+            {
+              return (int) FAIL;
+            }
+        }
+      else
+        {
+          if (!(val >= -32767 && val <= 32768))
+            {
+              return (int) FAIL;
+            }
+        }
+
+      val = -val;
+      return val;
+      break;
+
     default:
-      if (data_type == _SIMM14_NEG || data_type == _SIMM16_NEG || data_type == _IMM16_NEG)
+      if (data_type == _SIMM14_NEG || data_type == _IMM16_NEG)
 	val = -val;
 
       if (score_df_range[data_type].range[0] <= val
@@ -1051,6 +1100,9 @@ data_op2 (char **str, int shift, enum score_data_type data_type)
   skip_whitespace (*str);
   inst.error = NULL;
   dataptr = * str;
+
+  /* Set hex_p to zero.  */
+  int hex_p = 0;
 
   while ((*dataptr != '\0') && (*dataptr != '|') && (cnt <= MAX_LITERAL_POOL_SIZE))     /* 0x7c = ='|' */
     {
@@ -1087,23 +1139,44 @@ data_op2 (char **str, int shift, enum score_data_type data_type)
         }
       dataptr = (char *)data_exp;
 
-      if ((*dataptr == '0') && (*(dataptr + 1) == 'x')
-          && (data_type != _SIMM16_LA)
-          && (data_type != _VALUE_HI16)
-          && (data_type != _VALUE_LO16)
-          && (data_type != _IMM16)
-          && (data_type != _IMM15)
-          && (data_type != _IMM14)
-          && (data_type != _IMM4)
-          && (data_type != _IMM5)
-          && (data_type != _IMM8)
-          && (data_type != _IMM5_RSHIFT_1)
-          && (data_type != _IMM5_RSHIFT_2)
-          && (data_type != _SIMM14_NEG)
-          && (data_type != _IMM10_RSHIFT_2)
-          && (data_type != _GP_IMM15))
+      if ((dataptr != NULL)
+          && (((strstr (dataptr, "0x")) != NULL)
+              || ((strstr (dataptr, "0X")) != NULL)))
         {
-          data_type += 24;
+          hex_p = 1;
+          if ((data_type != _SIMM16_LA)
+              && (data_type != _VALUE_HI16)
+              && (data_type != _VALUE_LO16)
+              && (data_type != _IMM16)
+              && (data_type != _IMM15)
+              && (data_type != _IMM14)
+              && (data_type != _IMM4)
+              && (data_type != _IMM5)
+              && (data_type != _IMM8)
+              && (data_type != _IMM5_RSHIFT_1)
+              && (data_type != _IMM5_RSHIFT_2)
+              && (data_type != _SIMM14)
+              && (data_type != _SIMM14_NEG)
+              && (data_type != _SIMM16_NEG)
+              && (data_type != _IMM10_RSHIFT_2)
+              && (data_type != _GP_IMM15))
+            {
+              data_type += 24;
+            }
+        }
+
+      if ((inst.reloc.exp.X_add_number == 0)
+          && (inst.type != Insn_Type_SYN)
+          && (inst.type != Rd_rvalueRs_SI15)
+          && (inst.type != Rd_lvalueRs_SI15)
+          && (inst.type != Insn_internal)
+          && (((*dataptr >= 'a') && (*dataptr <= 'z'))
+             || ((*dataptr == '0') && (*(dataptr + 1) == 'x') && (*(dataptr + 2) != '0'))
+             || ((*dataptr == '+') && (*(dataptr + 1) != '0'))
+             || ((*dataptr == '-') && (*(dataptr + 1) != '0'))))
+        {
+          inst.error = BAD_ARGS;
+          return (int) FAIL;
         }
     }
 
@@ -1163,7 +1236,7 @@ data_op2 (char **str, int shift, enum score_data_type data_type)
 
       if (data_type == _SIMM16_LA && inst.reloc.exp.X_unsigned == 1)
         {
-          value = validate_immediate (inst.reloc.exp.X_add_number, _SIMM16_LA_POS);
+          value = validate_immediate (inst.reloc.exp.X_add_number, _SIMM16_LA_POS, hex_p);
           if (value == (int) FAIL)       /* for advance to check if this is ldis */
             if ((inst.reloc.exp.X_add_number & 0xffff) == 0)
               {
@@ -1174,29 +1247,27 @@ data_op2 (char **str, int shift, enum score_data_type data_type)
         }
       else
         {
-          value = validate_immediate (inst.reloc.exp.X_add_number, data_type);
+          value = validate_immediate (inst.reloc.exp.X_add_number, data_type, hex_p);
         }
 
       if (value == (int) FAIL)
         {
-          char err_msg[100];
-
           if ((data_type != _SIMM14_NEG) && (data_type != _SIMM16_NEG) && (data_type != _IMM16_NEG))
             {
               sprintf (err_msg,
-                       "invalid constant: %d bit expression not in range %d..%d",
+                       _("invalid constant: %d bit expression not in range %d..%d"),
                        score_df_range[data_type].bits,
                        score_df_range[data_type].range[0], score_df_range[data_type].range[1]);
             }
           else
             {
               sprintf (err_msg,
-                       "invalid constant: %d bit expression not in range %d..%d",
+                       _("invalid constant: %d bit expression not in range %d..%d"),
                        score_df_range[data_type].bits,
                        -score_df_range[data_type].range[1], -score_df_range[data_type].range[0]);
             }
 
-          inst.error = _(err_msg);
+          inst.error = err_msg;
           return (int) FAIL;
         }
 
@@ -1231,10 +1302,7 @@ data_op2 (char **str, int shift, enum score_data_type data_type)
           && (((inst.instruction >> 20) & 0x1F) != 0x1e)
           && (((inst.instruction >> 20) & 0x1F) != 0x1f))
         {
-          char err_msg[100];
-
-          sprintf (err_msg, "invalid constant: bit expression not defined");
-          inst.error = _(err_msg);
+          inst.error = _("invalid constant: bit expression not defined");
           return (int) FAIL;
         }
     }
@@ -1285,19 +1353,6 @@ do_sub_rdsi16 (char *str)
   if (reg_required_here (&str, 20, REG_TYPE_SCORE) != (int) FAIL
       && skip_past_comma (&str) != (int) FAIL
       && data_op2 (&str, 1, _SIMM16_NEG) != (int) FAIL)
-    end_of_line (str);
-}
-
-/* Handle subis/subis.c.  */
-
-static void
-do_sub_rdi16 (char *str)
-{
-  skip_whitespace (str);
-
-  if (reg_required_here (&str, 20, REG_TYPE_SCORE) != (int) FAIL
-      && skip_past_comma (&str) != (int) FAIL
-      && data_op2 (&str, 1, _IMM16_NEG) != (int) FAIL)
     end_of_line (str);
 }
 
@@ -1389,7 +1444,7 @@ do_xrsi5 (char *str)
     inst.relax_inst = 0x8000;
 }
 
-/* Handle andi/ori/andis/oris/ldis.  */
+/* Handle addis/andi/ori/andis/oris/ldis.  */
 static void
 do_rdi16 (char *str)
 {
@@ -1400,11 +1455,12 @@ do_rdi16 (char *str)
       || data_op2 (&str, 1, _IMM16) == (int) FAIL
       || end_of_line (str) == (int) FAIL)
     return;
-
+  /*
   if (((inst.instruction & 0xa0dfffe) != 0xa0c0000) || ((((inst.instruction >> 20) & 0x1f) & 0x10) == 0x10))
     inst.relax_inst = 0x8000;
   else
     inst.relax_size = 2;
+  */
 }
 
 static void
@@ -1694,7 +1750,7 @@ reglow_required_here (char **str, int shift)
     {
       if ((reg == 1) && (nor1 == 1) && (inst.bwarn == 0))
         {
-          as_warn ("Using temp register(r1)");
+          as_warn (_("Using temp register(r1)"));
           inst.bwarn = 1;
         }
       if (reg < 16)
@@ -1733,6 +1789,11 @@ do16_rdrs (char *str)
           inst.relax_inst |= (((inst.instruction >> 8) & 0xf) << 15)
             | (((inst.instruction >> 4) & 0xf) << 10);
         }
+      else if ((inst.instruction & 0x700f) == 0x2006)   /* not!  */
+	{
+	  inst.relax_inst |= (((inst.instruction >> 8) & 0xf) << 20)
+	    | (((inst.instruction >> 4) & 0xf) << 15);
+	}
       else
         {
           inst.relax_inst |= (((inst.instruction >> 8) & 0xf) << 20)
@@ -2030,7 +2091,7 @@ handle_dependency (struct score_it *theinst)
 	      if (remainder_bubbles <= 2)
 		{
 		  if (warn_fix_data_dependency)
-		    as_warn ("Fix data dependency: %s %s -- %s %s  (insert %d nop!/%d)",
+		    as_warn (_("Fix data dependency: %s %s -- %s %s  (insert %d nop!/%d)"),
 			     dependency_vector[i].name, dependency_vector[i].reg,
 			     dependency_vector[0].name, dependency_vector[0].reg,
 			     remainder_bubbles, bubbles);
@@ -2049,7 +2110,7 @@ handle_dependency (struct score_it *theinst)
 	      else
 		{
 		  if (warn_fix_data_dependency)
-		    as_warn ("Fix data dependency: %s %s -- %s %s  (insert 1 pflush/%d)",
+		    as_warn (_("Fix data dependency: %s %s -- %s %s  (insert 1 pflush/%d)"),
 			     dependency_vector[i].name, dependency_vector[i].reg,
 			     dependency_vector[0].name, dependency_vector[0].reg,
 			     bubbles);
@@ -2065,14 +2126,14 @@ handle_dependency (struct score_it *theinst)
             {
 	      if (warn_or_error)
 		{
-                  as_bad ("data dependency: %s %s -- %s %s  (%d/%d bubble)",
+                  as_bad (_("data dependency: %s %s -- %s %s  (%d/%d bubble)"),
                            dependency_vector[i].name, dependency_vector[i].reg,
                            dependency_vector[0].name, dependency_vector[0].reg,
                            remainder_bubbles, bubbles);
 		}
 	      else
 		{
-                  as_warn ("data dependency: %s %s -- %s %s  (%d/%d bubble)",
+                  as_warn (_("data dependency: %s %s -- %s %s  (%d/%d bubble)"),
                            dependency_vector[i].name, dependency_vector[i].reg,
                            dependency_vector[0].name, dependency_vector[0].reg,
                            remainder_bubbles, bubbles);
@@ -2142,6 +2203,7 @@ get_insn_class_from_type (enum score_insn_type type)
     case Rd_rvalue32Rs:
     case Insn_GP:
     case Insn_PIC:
+    case Insn_internal:
       retval = INSN_CLASS_32;
       break;
     case Insn_Type_PCE:
@@ -2361,7 +2423,7 @@ append_insn (char *str, bfd_boolean gen_frag_p)
   if (inst.error)
     {
       retval = (int) FAIL;
-      as_bad ("%s -- `%s'", inst.error, inst.str);
+      as_bad (_("%s -- `%s'"), inst.error, inst.str);
       inst.error = NULL;
     }
 
@@ -2570,22 +2632,20 @@ exp_ldst_offset (char **str, int shift, unsigned int data_type)
       if (value == (int) FAIL)
 	return (int) FAIL;
 
-      value = validate_immediate (inst.reloc.exp.X_add_number, data_type);
+      value = validate_immediate (inst.reloc.exp.X_add_number, data_type, 0);
       if (value == (int) FAIL)
         {
-          char err_msg[255];
-
           if (data_type < 30)
             sprintf (err_msg,
-                     "invalid constant: %d bit expression not in range %d..%d",
+                     _("invalid constant: %d bit expression not in range %d..%d"),
                      score_df_range[data_type].bits,
                      score_df_range[data_type].range[0], score_df_range[data_type].range[1]);
           else
             sprintf (err_msg,
-                     "invalid constant: %d bit expression not in range %d..%d",
+                     _("invalid constant: %d bit expression not in range %d..%d"),
                      score_df_range[data_type - 24].bits,
                      score_df_range[data_type - 24].range[0], score_df_range[data_type - 24].range[1]);
-          inst.error = _(err_msg);
+          inst.error = err_msg;
           return (int) FAIL;
         }
 
@@ -2715,7 +2775,7 @@ do_ldst_insn (char *str)
                     }
 
                   pre_inc = 1;
-                  value = validate_immediate (inst.reloc.exp.X_add_number, _SIMM12);
+                  value = validate_immediate (inst.reloc.exp.X_add_number, _SIMM12, 0);
                   value &= (1 << score_df_range[_SIMM12].bits) - 1;
                   ldst_idx = inst.instruction & OPC_PSEUDOLDST_MASK;
                   inst.instruction &= ~OPC_PSEUDOLDST_MASK;
@@ -2855,23 +2915,21 @@ do_ldst_insn (char *str)
                   data_type += 24;
                 }
 
-              value = validate_immediate (inst.reloc.exp.X_add_number, data_type);
+              value = validate_immediate (inst.reloc.exp.X_add_number, data_type, 0);
               if (value == (int) FAIL)
                 {
-                  char err_msg[255];
-
-                  if (data_type < 27)
+                  if (data_type < 30)
                     sprintf (err_msg,
-                             "invalid constant: %d bit expression not in range %d..%d",
+                             _("invalid constant: %d bit expression not in range %d..%d"),
                              score_df_range[data_type].bits,
                              score_df_range[data_type].range[0], score_df_range[data_type].range[1]);
                   else
                     sprintf (err_msg,
-                             "invalid constant: %d bit expression not in range %d..%d",
-                             score_df_range[data_type - 21].bits,
-                             score_df_range[data_type - 21].range[0],
-                             score_df_range[data_type - 21].range[1]);
-                  inst.error = _(err_msg);
+                             _("invalid constant: %d bit expression not in range %d..%d"),
+                             score_df_range[data_type - 24].bits,
+                             score_df_range[data_type - 24].range[0],
+                             score_df_range[data_type - 24].range[1]);
+                  inst.error = err_msg;
                   return;
                 }
 
@@ -3602,7 +3660,7 @@ build_relax_frag (struct score_it fix_insts[RELAX_INST_NUM], int fix_num ATTRIBU
   int i;
   char *p;
   fixS *fixp = NULL;
-  fixS *head_fixp = NULL;
+  fixS *cur_fixp = NULL;
   long where;
   struct score_it inst_main;
 
@@ -3638,19 +3696,11 @@ build_relax_frag (struct score_it fix_insts[RELAX_INST_NUM], int fix_num ATTRIBU
   md_number_to_chars (p, inst_main.instruction, inst_main.size);
 
   if (inst_main.reloc.type != BFD_RELOC_NONE)
-    {
-      fixp = fix_new_score (frag_now, p - frag_now->fr_literal, inst_main.size,
-                            &inst_main.reloc.exp, inst_main.reloc.pc_rel, inst_main.reloc.type);
-    }
+    fixp = fix_new_score (frag_now, p - frag_now->fr_literal, inst_main.size,
+			  &inst_main.reloc.exp, inst_main.reloc.pc_rel, inst_main.reloc.type);
 
-  head_fixp = xmalloc (sizeof (fixS *));
-  frag_now->tc_frag_data.fixp = head_fixp;
-
-  if (fixp)
-    {
-      head_fixp->fx_next = fixp;
-      head_fixp = head_fixp->fx_next;
-    }
+  frag_now->tc_frag_data.fixp = fixp;
+  cur_fixp = frag_now->tc_frag_data.fixp;
 
 #ifdef OBJ_ELF
   dwarf2_emit_insn (inst_main.size);
@@ -3669,15 +3719,19 @@ build_relax_frag (struct score_it fix_insts[RELAX_INST_NUM], int fix_num ATTRIBU
                                 var_insts[i].reloc.type);
           if (fixp)
             {
-              head_fixp->fx_next = fixp;
-              head_fixp = head_fixp->fx_next;
+              if (cur_fixp)
+                {
+                  cur_fixp->fx_next = fixp;
+                  cur_fixp = cur_fixp->fx_next;
+                }
+              else
+                {
+                  frag_now->tc_frag_data.fixp = fixp;
+                  cur_fixp = frag_now->tc_frag_data.fixp;
+                }
 	    }
         }
     }
-
-  head_fixp = frag_now->tc_frag_data.fixp;
-  frag_now->tc_frag_data.fixp = head_fixp->fx_next;
-  free (head_fixp);
 
   p = frag_var (rs_machine_dependent, inst_main.relax_size + RELAX_PAD_BYTE, 0,
                 RELAX_ENCODE (inst_main.size, inst_main.relax_size, inst_main.type,
@@ -3717,9 +3771,10 @@ build_la_pic (int reg_rd, expressionS exp)
       fix_num = 1;
       var_num = 2;
 
-      /* Insn 1 and Insn 2  */
+      /* For an external symbol, only one insn is generated; 
+         For a local symbol, two insns are generated.  */
       /* Fix part
-	 For an external symbol: lw rD, <sym>($gp)
+         For an external symbol: lw rD, <sym>($gp)
                                  (BFD_RELOC_SCORE_GOT15 or BFD_RELOC_SCORE_CALL15)  */
       sprintf (tmp, "lw_pic r%d, %s", reg_rd, add_symbol->bsym->name);
       if (append_insn (tmp, FALSE) == (int) FAIL)
@@ -3784,7 +3839,7 @@ build_la_pic (int reg_rd, expressionS exp)
       var_num = 1;
       /* Fix part
 	 For an external symbol: ldis r1, HI%<constant>  */
-      sprintf (tmp, "ldis %s, %d", "r1", hi);
+      sprintf (tmp, "ldis r1, %d", hi);
       if (append_insn (tmp, FALSE) == (int) FAIL)
 	return;
 
@@ -3797,7 +3852,7 @@ build_la_pic (int reg_rd, expressionS exp)
 	{
 	  hi += 1;
 	}
-      sprintf (tmp, "ldis_pic %s, %d", "r1", hi);
+      sprintf (tmp, "ldis_pic r1, %d", hi);
       if (append_insn (tmp, FALSE) == (int) FAIL)
 	return;
 
@@ -3809,7 +3864,7 @@ build_la_pic (int reg_rd, expressionS exp)
       var_num = 1;
       /* Fix part
 	 For an external symbol: ori r1, LO%<constant>  */
-      sprintf (tmp, "ori %s, %d", "r1", lo);
+      sprintf (tmp, "ori r1, %d", lo);
       if (append_insn (tmp, FALSE) == (int) FAIL)
 	return;
 
@@ -3817,7 +3872,7 @@ build_la_pic (int reg_rd, expressionS exp)
 
       /* Var part
   	 For a local symbol: addi r1, <sym>+LO%<constant>    (BFD_RELOC_GOT_LO16)  */
-      sprintf (tmp, "addi_u_pic %s, %s + %d", "r1", add_symbol->bsym->name, lo);
+      sprintf (tmp, "addi_u_pic r1, %s + %d", add_symbol->bsym->name, lo);
       if (append_insn (tmp, FALSE) == (int) FAIL)
 	return;
 
@@ -3825,7 +3880,7 @@ build_la_pic (int reg_rd, expressionS exp)
       build_relax_frag (fix_insts, fix_num, var_insts, var_num, add_symbol);
 
       /* Insn 4: add rD, rD, r1  */
-      sprintf (tmp, "add r%d, r%d, %s", reg_rd, reg_rd, "r1");
+      sprintf (tmp, "add r%d, r%d, r1", reg_rd, reg_rd);
       if (append_insn (tmp, TRUE) == (int) FAIL)
 	return;
 
@@ -3872,13 +3927,13 @@ do_macro_la_rdi32 (char *str)
           else
             {
               if ((score_pic == NO_PIC) || (!inst.reloc.exp.X_add_symbol))
-		{
+                {
                   sprintf (append_str, "ld_i32hi r%d, %s", reg_rd, keep_data);
-	          if (append_insn (append_str, TRUE) == (int) FAIL)
+                  if (append_insn (append_str, TRUE) == (int) FAIL)
 		    return;
 
-	          sprintf (append_str, "ld_i32lo r%d, %s", reg_rd, keep_data);
-	          if (append_insn (append_str, TRUE) == (int) FAIL)
+                  sprintf (append_str, "ld_i32lo r%d, %s", reg_rd, keep_data);
+                  if (append_insn (append_str, TRUE) == (int) FAIL)
 		    return;
 		}
 	      else
@@ -4005,12 +4060,12 @@ do_macro_mul_rdrsrs (char *str)
 
           if (strcmp (inst.name, "rem") == 0)
             {
-              sprintf (append_str, "%s r%d, r%d", "mul", reg_rs1, reg_rs2);
+              sprintf (append_str, "mul r%d, r%d", reg_rs1, reg_rs2);
               sprintf (append_str1, "mfceh  r%d", reg_rd);
             }
           else if (strcmp (inst.name, "remu") == 0)
             {
-              sprintf (append_str, "%s r%d, r%d", "mulu", reg_rs1, reg_rs2);
+              sprintf (append_str, "mulu r%d, r%d", reg_rs1, reg_rs2);
               sprintf (append_str1, "mfceh  r%d", reg_rd);
             }
           else
@@ -4119,11 +4174,11 @@ nopic_need_relax (symbolS * sym, int before_relaxing)
     return 1;
 }
 
-/* Build a relax frag for lw instruction when generating PIC,
+/* Build a relax frag for lw/st instruction when generating PIC,
    external symbol first and local symbol second.  */
 
 static void
-build_lw_pic (int reg_rd, expressionS exp)
+build_lwst_pic (int reg_rd, expressionS exp, const char *insn_name)
 {
   symbolS *add_symbol = exp.X_add_symbol;
   int add_number = exp.X_add_number;
@@ -4142,13 +4197,14 @@ build_lw_pic (int reg_rd, expressionS exp)
       fix_num = 1;
       var_num = 2;
 
-      /* Insn 1 and Insn 2  */
+      /* For an external symbol, two insns are generated;
+         For a local symbol, three insns are generated.  */
       /* Fix part
-	 For an external symbol: lw rD, <sym>($gp)
+         For an external symbol: lw rD, <sym>($gp)
                                  (BFD_RELOC_SCORE_GOT15)  */
-      sprintf (tmp, "lw_pic r%d, %s", reg_rd, add_symbol->bsym->name);
+      sprintf (tmp, "lw_pic r1, %s", add_symbol->bsym->name);
       if (append_insn (tmp, FALSE) == (int) FAIL)
-	return;
+        return;
 
       memcpy (&fix_insts[0], &inst, sizeof (struct score_it));
 
@@ -4158,91 +4214,25 @@ build_lw_pic (int reg_rd, expressionS exp)
 	 addi rD, <sym>       (BFD_RELOC_GOT_LO16) */
       inst.reloc.type = BFD_RELOC_SCORE_GOT15;
       memcpy (&var_insts[0], &inst, sizeof (struct score_it));
-      sprintf (tmp, "addi_s_pic r%d, %s", reg_rd, add_symbol->bsym->name);
+      sprintf (tmp, "addi_s_pic r1, %s", add_symbol->bsym->name);
       if (append_insn (tmp, FALSE) == (int) FAIL)
-	return;
+        return;
 
       memcpy (&var_insts[1], &inst, sizeof (struct score_it));
       build_relax_frag (fix_insts, fix_num, var_insts, var_num, add_symbol);
 
-      /* Insn 2: lw rD, [rD, constant]  */
-      sprintf (tmp, "lw r%d, [r%d, %d]", reg_rd, reg_rd, add_number);
+      /* Insn 2 or Insn 3: lw/st rD, [r1, constant]  */
+      sprintf (tmp, "%s r%d, [r1, %d]", insn_name, reg_rd, add_number);
       if (append_insn (tmp, TRUE) == (int) FAIL)
-	return;
+        return;
 
-     /* Set bwarn as -1, so macro instruction itself will not be generated frag.  */
-     inst.bwarn = -1;
+      /* Set bwarn as -1, so macro instruction itself will not be generated frag.  */
+      inst.bwarn = -1;
     }
   else
     {
-      int hi = (add_number >> 16) & 0x0000FFFF;
-      int lo = add_number & 0x0000FFFF;
-
-      /* Insn 1: lw rD, <sym>($gp)    (BFD_RELOC_SCORE_GOT15)  */
-      sprintf (tmp, "lw_pic r%d, %s", reg_rd, add_symbol->bsym->name);
-      if (append_insn (tmp, TRUE) == (int) FAIL)
-	return;
-
-      /* Insn 2  */
-      fix_num = 1;
-      var_num = 1;
-      /* Fix part
-	 For an external symbol: ldis r1, HI%<constant>  */
-      sprintf (tmp, "ldis %s, %d", "r1", hi);
-      if (append_insn (tmp, FALSE) == (int) FAIL)
-	return;
-
-      memcpy (&fix_insts[0], &inst, sizeof (struct score_it));
-
-      /* Var part
-	 For a local symbol: ldis r1, HI%<constant>
-         but, if lo is outof 16 bit, make hi plus 1  */
-      if ((lo < -0x8000) || (lo > 0x7fff))
-	{
-	  hi += 1;
-	}
-      sprintf (tmp, "ldis_pic %s, %d", "r1", hi);
-      if (append_insn (tmp, FALSE) == (int) FAIL)
-	return;
-
-      memcpy (&var_insts[0], &inst, sizeof (struct score_it));
-      build_relax_frag (fix_insts, fix_num, var_insts, var_num, add_symbol);
-
-      /* Insn 3  */
-      fix_num = 1;
-      var_num = 1;
-      /* Fix part
-	 For an external symbol: ori r1, LO%<constant>  */
-      sprintf (tmp, "ori %s, %d", "r1", lo);
-      if (append_insn (tmp, FALSE) == (int) FAIL)
-	return;
-
-      memcpy (&fix_insts[0], &inst, sizeof (struct score_it));
-
-      /* Var part
-  	 For a local symbol: addi r1, <sym>+LO%<constant>    (BFD_RELOC_GOT_LO16)  */
-      sprintf (tmp, "addi_u_pic %s, %s + %d", "r1", add_symbol->bsym->name, lo);
-      if (append_insn (tmp, FALSE) == (int) FAIL)
-	return;
-
-      memcpy (&var_insts[0], &inst, sizeof (struct score_it));
-      build_relax_frag (fix_insts, fix_num, var_insts, var_num, add_symbol);
-
-      /* Insn 4: add rD, rD, r1  */
-      sprintf (tmp, "add r%d, r%d, %s", reg_rd, reg_rd, "r1");
-      if (append_insn (tmp, TRUE) == (int) FAIL)
-	return;
-
-     /* Set bwarn as -1, so macro instruction itself will not be generated frag.  */
-     inst.bwarn = -1;
-
-      /* Insn 5: lw rD, [rD, 0]  */
-      sprintf (tmp, "lw r%d, [r%d, 0]", reg_rd, reg_rd);
-      if (append_insn (tmp, TRUE) == (int) FAIL)
-	return;
-
-     /* Set bwarn as -1, so macro instruction itself will not be generated frag.  */
-     inst.bwarn = -1;
+      inst.error = _("PIC code offset overflow (max 16 signed bits)");
+      return;
     }
 
   nor1 = r1_bak;
@@ -4280,14 +4270,16 @@ do_macro_ldst_label (char *str)
   /* Ld/st rD, [rA, imm]      ld/st rD, [rA]+, imm      ld/st rD, [rA, imm]+.  */
   if (*backup_str == '[')
     {
+      inst.type = Rd_rvalueRs_preSI12;
       do_ldst_insn (str);
       return;
     }
 
   /* Ld/st rD, imm.  */
   absolute_value = backup_str;
+  inst.type = Rd_rvalueRs_SI15;
   if ((my_get_expression (&inst.reloc.exp, &backup_str) == (int) FAIL)
-      || (validate_immediate (inst.reloc.exp.X_add_number, _VALUE) == (int) FAIL)
+      || (validate_immediate (inst.reloc.exp.X_add_number, _VALUE, 0) == (int) FAIL)
       || (end_of_line (backup_str) == (int) FAIL))
     {
       return;
@@ -4303,6 +4295,7 @@ do_macro_ldst_label (char *str)
     }
 
   /* Ld/st rD, label.  */
+  inst.type = Rd_rvalueRs_SI15;
   backup_str = absolute_value;
   if ((data_op2 (&backup_str, 1, _GP_IMM15) == (int) FAIL)
       || (end_of_line (backup_str) == (int) FAIL))
@@ -4321,8 +4314,10 @@ do_macro_ldst_label (char *str)
 
       if (score_pic == PIC)
         {
-	  build_lw_pic (reg_rd, inst.reloc.exp);
-	  return;
+          int ldst_idx = 0;
+          ldst_idx = inst.instruction & OPC_PSEUDOLDST_MASK;
+          build_lwst_pic (reg_rd, inst.reloc.exp, score_ldst_insns[ldst_idx * 3 + 0].template);
+          return;
         }
       else
 	{
@@ -4495,7 +4490,6 @@ static void
 do_jump (char *str)
 {
   char *save_in;
-  char err_msg[100];
 
   skip_whitespace (str);
   if (my_get_expression (&inst.reloc.exp, &str) == (int) FAIL
@@ -4511,8 +4505,7 @@ do_jump (char *str)
   if (((inst.reloc.exp.X_add_number & 0xff000000) != 0)
       && ((inst.reloc.exp.X_add_number & 0xff000000) != 0xff000000))
     {
-      sprintf (err_msg, "invalid constant: 25 bit expression not in range -2^24..2^24");
-      inst.error = _(err_msg);
+      inst.error = _("invalid constant: 25 bit expression not in range -2^24..2^24");
       return;
     }
 
@@ -4566,7 +4559,7 @@ do_branch (char *str)
   else if (((inst.reloc.exp.X_add_number & 0xff000000) != 0)
            && ((inst.reloc.exp.X_add_number & 0xff000000) != 0xff000000))
     {
-      inst.error = "invalid constant: 20 bit expression not in range -2^19..2^19";
+      inst.error = _("invalid constant: 20 bit expression not in range -2^19..2^19");
       return;
     }
 
@@ -4576,11 +4569,10 @@ do_branch (char *str)
   /* Branch 32  offset field : 20 bit, 16 bit branch offset field : 8 bit.  */
   inst.instruction |= (inst.reloc.exp.X_add_number & 0x3fe) | ((inst.reloc.exp.X_add_number & 0xffc00) << 5);
 
-  /* Take the branch condition code.  */
-  inst.relax_inst = 0x4000 | (((inst.instruction >> 10) & 0xf) << 8);
-
-  if ((abs_value & 0xfffffe00) == 0)
+  /* Compute 16 bit branch instruction.  */
+  if ((inst.relax_inst != 0x8000) && (abs_value & 0xfffffe00) == 0)
     {
+      inst.relax_inst |= (((inst.instruction >> 10) & 0xf) << 8);
       inst.relax_inst |= ((inst.reloc.exp.X_add_number >> 1) & 0xff);
       inst.relax_size = 2;
     }
@@ -4588,9 +4580,6 @@ do_branch (char *str)
     {
       inst.relax_inst = 0x8000;
     }
-
-  if (inst.instruction & 1)
-    inst.relax_inst = 0x8000;
 }
 
 static void
@@ -4710,75 +4699,10 @@ md_chars_to_number (char *buf, int n)
   return result;
 }
 
-/* Turn a string in input_line_pointer into a floating point constant
-   of type TYPE, and store the appropriate bytes in *LITP.  The number
-   of LITTLENUMS emitted is stored in *SIZEP.  An error message is
-   returned, or NULL on OK.
-
-   Note that fp constants aren't represent in the normal way on the ARM.
-   In big endian mode, things are as expected.  However, in little endian
-   mode fp constants are big-endian word-wise, and little-endian byte-wise
-   within the words.  For example, (double) 1.1 in big endian mode is
-   the byte sequence 3f f1 99 99 99 99 99 9a, and in little endian mode is
-   the byte sequence 99 99 f1 3f 9a 99 99 99.  */
-
 char *
 md_atof (int type, char *litP, int *sizeP)
 {
-  int prec;
-  LITTLENUM_TYPE words[MAX_LITTLENUMS];
-  char *t;
-  int i;
-
-  switch (type)
-    {
-    case 'f':
-    case 'F':
-    case 's':
-    case 'S':
-      prec = 2;
-      break;
-    case 'd':
-    case 'D':
-    case 'r':
-    case 'R':
-      prec = 4;
-      break;
-    case 'x':
-    case 'X':
-    case 'p':
-    case 'P':
-      prec = 6;
-      break;
-    default:
-      *sizeP = 0;
-      return _("bad call to MD_ATOF()");
-    }
-
-  t = atof_ieee (input_line_pointer, type, words);
-  if (t)
-    input_line_pointer = t;
-  *sizeP = prec * 2;
-
-  if (target_big_endian)
-    {
-      for (i = 0; i < prec; i++)
-        {
-          md_number_to_chars (litP, (valueT) words[i], 2);
-          litP += 2;
-        }
-    }
-  else
-    {
-      for (i = 0; i < prec; i += 2)
-        {
-          md_number_to_chars (litP, (valueT) words[i + 1], 2);
-          md_number_to_chars (litP + 2, (valueT) words[i], 2);
-          litP += 4;
-        }
-    }
-
-  return 0;
+  return ieee_md_atof (type, litP, sizeP, target_big_endian);
 }
 
 /* Return true if the given symbol should be considered local for PIC.  */
@@ -4977,9 +4901,17 @@ score_relax_frag (asection * sec ATTRIBUTE_UNUSED, fragS * fragp, long stretch A
     {
       if (!word_align_p)
         {
-          fragp->insn_addr += 2;
-          grows += 2;
-	}
+          if (fragp->insn_addr < 2)
+            {
+              fragp->insn_addr += 2;
+              grows += 2;
+            }
+          else
+            {
+              fragp->insn_addr -= 2;
+              grows -= 2;
+            }
+        }
 
       if (fragp->fr_opcode)
 	fragp->fr_fix = RELAX_NEW (fragp->fr_subtype) + fragp->insn_addr;
@@ -5012,7 +4944,9 @@ score_relax_frag (asection * sec ATTRIBUTE_UNUSED, fragS * fragp, long stretch A
               n_insn_size = RELAX_OLD (next_fragp->fr_subtype);
             }
 
-	  n_relaxable_p = RELAX_OPT (next_fragp->fr_subtype);
+          if (RELAX_TYPE (next_fragp->fr_subtype) == PC_DISP19div2)
+            b32_relax_to_b16 (next_fragp);
+          n_relaxable_p = RELAX_OPT (next_fragp->fr_subtype);
 
           if (word_align_p)
             {
@@ -5028,7 +4962,7 @@ score_relax_frag (asection * sec ATTRIBUTE_UNUSED, fragS * fragp, long stretch A
               else if (insn_size == 2)
                 {
                   /* 16 -> 32.  */
-                  if (relaxable_p && ((n_insn_size == 4) && !n_relaxable_p))
+                  if (relaxable_p && (((n_insn_size == 4) && !n_relaxable_p) || (n_insn_size > 4)))
                     {
                       grows += 2;
                       do_relax_p = 1;
@@ -5257,17 +5191,6 @@ valueT
 md_section_align (segT segment ATTRIBUTE_UNUSED, valueT size)
 {
   int align = bfd_get_section_alignment (stdoutput, segment);
-
-#ifdef OBJ_ELF
-  /* We don't need to align ELF sections to the full alignment.
-     However, Irix 5 may prefer that we align them at least to a 16
-     byte boundary.  We don't bother to align the sections if we are
-     targeted for an embedded system.  */
-  if (strcmp (TARGET_OS, "elf") == 0)
-    return size;
-  if (align > 4)
-    align = 4;
-#endif
 
   return ((size + (1 << align) - 1) & (-1 << align));
 }
@@ -5645,7 +5568,7 @@ parse_pce_inst (char *insnstr)
       || ((pec_part_1.size == INSN16_SIZE) && (inst.size == INSN_SIZE)))
     {
       inst.error = _("pce instruction error (16 bit || 16 bit)'");
-      sprintf (inst.str, "%s", insnstr);
+      sprintf (inst.str, insnstr);
       return;
     }
 
@@ -5666,7 +5589,7 @@ md_assemble (char *str)
     parse_16_32_inst (str, TRUE);
 
   if (inst.error)
-    as_bad ("%s -- `%s'", inst.error, inst.str);
+    as_bad (_("%s -- `%s'"), inst.error, inst.str);
 }
 
 /* We handle all bad expressions here, so that we can report the faulty
@@ -5814,9 +5737,11 @@ md_show_usage (FILE * fp)
   fprintf (fp, _("\
         -USE_R1\t\tassemble code for no warning message when using temp register r1\n"));
   fprintf (fp, _("\
-        -O0\t\tassemble will not any optimization \n"));
+        -KPIC\t\tassemble code for PIC\n"));
   fprintf (fp, _("\
-        -G gpnum\tassemble code for setting gpsize and default is 8 byte \n"));
+        -O0\t\tassembler will not perform any optimizations\n"));
+  fprintf (fp, _("\
+        -G gpnum\tassemble code for setting gpsize and default is 8 byte\n"));
   fprintf (fp, _("\
         -V \t\tSunplus release version \n"));
 }
@@ -6258,7 +6183,7 @@ s_score_cpload (int ignore ATTRIBUTE_UNUSED)
 static void
 s_score_cprestore (int ignore ATTRIBUTE_UNUSED)
 {
-#define SCORE_BP_REG  2
+  int reg;
   int cprestore_offset;
   char insn_str[MAX_LITERAL_POOL_SIZE];
 
@@ -6269,11 +6194,43 @@ s_score_cprestore (int ignore ATTRIBUTE_UNUSED)
       return;
     }
 
+  if ((reg = reg_required_here (&input_line_pointer, -1, REG_TYPE_SCORE)) == (int) FAIL
+      || skip_past_comma (&input_line_pointer) == (int) FAIL)
+    {
+      return;
+    }
+
   cprestore_offset = get_absolute_expression ();
 
-  sprintf (insn_str, "sw r%d, [r%d, %d]", GP, SCORE_BP_REG, cprestore_offset);
-  if (append_insn (insn_str, TRUE) == (int) FAIL)
-    return;
+  if (cprestore_offset <= 0x3fff)
+    {
+      sprintf (insn_str, "sw r%d, [r%d, %d]", GP, reg, cprestore_offset);
+      if (append_insn (insn_str, TRUE) == (int) FAIL)
+        return;
+    }
+  else
+    {
+      int r1_bak;
+
+      r1_bak = nor1;
+      nor1 = 0;
+
+      sprintf (insn_str, "li r1, %d", cprestore_offset);
+      if (append_insn (insn_str, TRUE) == (int) FAIL)
+        return;
+
+      sprintf (insn_str, "add r1, r1, r%d", reg);
+      if (append_insn (insn_str, TRUE) == (int) FAIL)
+        return;
+
+      sprintf (insn_str, "sw r%d, [r1]", GP);
+      if (append_insn (insn_str, TRUE) == (int) FAIL)
+        return;
+
+      nor1 = r1_bak;
+    }
+
+  demand_empty_rest_of_line ();
 }
 
 /* Handle the .gpword pseudo-op.  This is used when generating PIC

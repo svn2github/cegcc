@@ -1,6 +1,6 @@
 /* BFD back-end for Renesas Super-H COFF binaries.
    Copyright 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005 Free Software Foundation, Inc.
+   2003, 2004, 2005, 2007 Free Software Foundation, Inc.
    Contributed by Cygnus Support.
    Written by Steve Chamberlain, <sac@cygnus.com>.
    Relaxing code written by Ian Lance Taylor, <ian@cygnus.com>.
@@ -9,7 +9,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -19,10 +19,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libiberty.h"
 #include "libbfd.h"
 #include "bfdlink.h"
@@ -494,6 +495,7 @@ static const struct shcoff_reloc_map sh_reloc_map[] =
 /* Given a BFD reloc code, return the howto structure for the
    corresponding SH PE reloc.  */
 #define coff_bfd_reloc_type_lookup	sh_coff_reloc_type_lookup
+#define coff_bfd_reloc_name_lookup sh_coff_reloc_name_lookup
 
 static reloc_howto_type *
 sh_coff_reloc_type_lookup (abfd, code)
@@ -507,6 +509,20 @@ sh_coff_reloc_type_lookup (abfd, code)
       return &sh_coff_howtos[(int) sh_reloc_map[i].shcoff_reloc_val];
 
   fprintf (stderr, "SH Error: unknown reloc type %d\n", code);
+  return NULL;
+}
+
+static reloc_howto_type *
+sh_coff_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+			   const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0; i < sizeof (sh_coff_howtos) / sizeof (sh_coff_howtos[0]); i++)
+    if (sh_coff_howtos[i].name != NULL
+	&& strcasecmp (sh_coff_howtos[i].name, r_name) == 0)
+      return &sh_coff_howtos[i];
+
   return NULL;
 }
 

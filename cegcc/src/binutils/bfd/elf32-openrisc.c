@@ -1,5 +1,5 @@
 /* OpenRISC-specific support for 32-bit ELF.
-   Copyright 2001, 2002, 2003, 2004, 2005, 2006
+   Copyright 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Contributed by Johan Rydberg, jrydberg@opencores.org
 
@@ -7,7 +7,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -17,11 +17,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301,
-   USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "elf-bfd.h"
 #include "elf/openrisc.h"
@@ -192,9 +192,9 @@ static const struct openrisc_reloc_map openrisc_reloc_map[] =
   { BFD_RELOC_32, 		R_OPENRISC_32 },
   { BFD_RELOC_16, 		R_OPENRISC_16 },
   { BFD_RELOC_8, 		R_OPENRISC_8 },
-  { BFD_RELOC_OPENRISC_REL_26,R_OPENRISC_INSN_REL_26 },
-  { BFD_RELOC_OPENRISC_ABS_26,R_OPENRISC_INSN_ABS_26 },
-    { BFD_RELOC_HI16, 		R_OPENRISC_HI_16_IN_INSN },
+  { BFD_RELOC_OPENRISC_REL_26,	R_OPENRISC_INSN_REL_26 },
+  { BFD_RELOC_OPENRISC_ABS_26,	R_OPENRISC_INSN_ABS_26 },
+  { BFD_RELOC_HI16, 		R_OPENRISC_HI_16_IN_INSN },
   { BFD_RELOC_LO16, 		R_OPENRISC_LO_16_IN_INSN },
   { BFD_RELOC_VTABLE_INHERIT,	R_OPENRISC_GNU_VTINHERIT },
   { BFD_RELOC_VTABLE_ENTRY, 	R_OPENRISC_GNU_VTENTRY }
@@ -210,6 +210,23 @@ openrisc_reloc_type_lookup (bfd * abfd ATTRIBUTE_UNUSED,
     if (openrisc_reloc_map[i].bfd_reloc_val == code)
       return & openrisc_elf_howto_table[openrisc_reloc_map[i].
 				       openrisc_reloc_val];
+
+  return NULL;
+}
+
+static reloc_howto_type *
+openrisc_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+			    const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0;
+       i < (sizeof (openrisc_elf_howto_table)
+	    / sizeof (openrisc_elf_howto_table[0]));
+       i++)
+    if (openrisc_elf_howto_table[i].name != NULL
+	&& strcasecmp (openrisc_elf_howto_table[i].name, r_name) == 0)
+      return &openrisc_elf_howto_table[i];
 
   return NULL;
 }
@@ -304,9 +321,6 @@ openrisc_elf_relocate_section (bfd *output_bfd,
   Elf_Internal_Rela *rel;
   Elf_Internal_Rela *relend;
 
-  if (info->relocatable)
-    return TRUE;
-
   symtab_hdr = &elf_tdata (input_bfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (input_bfd);
   relend = relocs + input_section->reloc_count;
@@ -334,7 +348,6 @@ openrisc_elf_relocate_section (bfd *output_bfd,
 	  (sizeof openrisc_elf_howto_table / sizeof (reloc_howto_type)))
 	abort ();
 
-      /* This is a final link.  */
       howto = openrisc_elf_howto_table + ELF32_R_TYPE (rel->r_info);
       h = NULL;
       sym = NULL;
@@ -359,6 +372,20 @@ openrisc_elf_relocate_section (bfd *output_bfd,
 				   h, sec, relocation,
 				   unresolved_reloc, warned);
 	}
+
+      if (sec != NULL && elf_discarded_section (sec))
+	{
+	  /* For relocs against symbols from removed linkonce sections,
+	     or sections discarded by a linker script, we just want the
+	     section contents zeroed.  Avoid any special processing.  */
+	  _bfd_clear_contents (howto, input_bfd, contents + rel->r_offset);
+	  rel->r_info = 0;
+	  rel->r_addend = 0;
+	  continue;
+	}
+
+      if (info->relocatable)
+	continue;
 
       r = openrisc_final_link_relocate (howto, input_bfd, input_section,
 					contents, rel, relocation);
@@ -441,7 +468,7 @@ openrisc_elf_check_relocs (bfd *abfd,
 			   const Elf_Internal_Rela *relocs)
 {
   Elf_Internal_Shdr *symtab_hdr;
-  struct elf_link_hash_entry **sym_hashes, **sym_hashes_end;
+  struct elf_link_hash_entry **sym_hashes;
   const Elf_Internal_Rela *rel;
   const Elf_Internal_Rela *rel_end;
 
@@ -450,10 +477,6 @@ openrisc_elf_check_relocs (bfd *abfd,
 
   symtab_hdr = &elf_tdata (abfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (abfd);
-  sym_hashes_end =
-    sym_hashes + symtab_hdr->sh_size / sizeof (Elf32_External_Sym);
-  if (!elf_bad_symtab (abfd))
-    sym_hashes_end -= symtab_hdr->sh_info;
 
   rel_end = relocs + sec->reloc_count;
   for (rel = relocs; rel < rel_end; rel++)
@@ -484,7 +507,9 @@ openrisc_elf_check_relocs (bfd *abfd,
 	  /* This relocation describes which C++ vtable entries are actually
 	     used.  Record for later use during GC.  */
 	case R_OPENRISC_GNU_VTENTRY:
-	  if (!bfd_elf_gc_record_vtentry (abfd, sec, h, rel->r_addend))
+	  BFD_ASSERT (h != NULL);
+	  if (h != NULL
+	      && !bfd_elf_gc_record_vtentry (abfd, sec, h, rel->r_addend))
 	    return FALSE;
 	  break;
 	}
@@ -540,6 +565,7 @@ openrisc_elf_final_write_processing (bfd *abfd,
 #define elf_backend_rela_normal		1
 
 #define bfd_elf32_bfd_reloc_type_lookup openrisc_reloc_type_lookup
+#define bfd_elf32_bfd_reloc_name_lookup openrisc_reloc_name_lookup
 
 #define elf_backend_object_p                openrisc_elf_object_p
 #define elf_backend_final_write_processing  openrisc_elf_final_write_processing

@@ -1,5 +1,5 @@
 /* wrstabs.c -- Output stabs debugging information
-   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2006
+   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2006, 2007
    Free Software Foundation, Inc.
    Written by Ian Lance Taylor <ian@cygnus.com>.
 
@@ -7,7 +7,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -23,13 +23,12 @@
 /* This file contains code which writes out stabs debugging
    information.  */
 
-#include <stdio.h>
+#include "sysdep.h"
 #include <assert.h>
-
 #include "bfd.h"
-#include "bucomm.h"
 #include "libiberty.h"
 #include "safe-ctype.h"
+#include "bucomm.h"
 #include "debug.h"
 #include "budbg.h"
 #include "aout/aout64.h"

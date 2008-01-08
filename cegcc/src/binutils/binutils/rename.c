@@ -1,11 +1,11 @@
 /* rename.c -- rename a file, preserving symlinks.
-   Copyright 1999, 2002, 2003 Free Software Foundation, Inc.
+   Copyright 1999, 2002, 2003, 2007 Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -18,6 +18,7 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA
    02110-1301, USA.  */
 
+#include "sysdep.h"
 #include "bfd.h"
 #include "bucomm.h"
 

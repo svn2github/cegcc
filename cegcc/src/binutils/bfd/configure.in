@@ -8,7 +8,7 @@ AC_CONFIG_SRCDIR([libbfd.c])
 AC_CANONICAL_TARGET
 AC_ISC_POSIX
 
-AM_INIT_AUTOMAKE(bfd, 2.17.50)
+AM_INIT_AUTOMAKE(bfd, 2.18.50)
 
 dnl These must be called before AM_PROG_LIBTOOL, because it may want
 dnl to call AC_CHECK_PROG.
@@ -19,7 +19,10 @@ dnl Default to a non shared library.  This may be overridden by the
 dnl configure option --enable-shared.
 AM_DISABLE_SHARED
 
-AM_PROG_LIBTOOL
+AC_PROG_CC
+AC_GNU_SOURCE
+
+AC_PROG_LIBTOOL
 
 AC_ARG_ENABLE(64-bit-bfd,
 [  --enable-64-bit-bfd     64-bit support (on hosts with narrower word sizes)],
@@ -28,6 +31,7 @@ AC_ARG_ENABLE(64-bit-bfd,
   no)   want64=false ;;
   *)    AC_MSG_ERROR(bad value ${enableval} for 64-bit-bfd option) ;;
 esac],[want64=false])dnl
+
 AC_ARG_ENABLE(targets,
 [  --enable-targets        alternative target configurations],
 [case "${enableval}" in
@@ -36,6 +40,7 @@ AC_ARG_ENABLE(targets,
   no)       enable_targets= ;;
   *)        enable_targets=$enableval ;;
 esac])dnl
+
 AC_ARG_ENABLE(commonbfdlib,
 [  --enable-commonbfdlib   build shared BFD/opcodes/libiberty library],
 [case "${enableval}" in
@@ -43,6 +48,7 @@ AC_ARG_ENABLE(commonbfdlib,
   no)  commonbfdlib=false ;;
   *)   AC_MSG_ERROR([bad value ${enableval} for BFD commonbfdlib option]) ;;
 esac])dnl
+
 AC_ARG_WITH(mmap,
 [  --with-mmap             try using mmap for BFD input files if available],
 [case "${withval}" in
@@ -63,6 +69,36 @@ if test $use_secureplt = true; then
     [Define if we should default to creating read-only plt entries])
 fi
 
+DEBUGDIR=${libdir}/debug
+AC_ARG_WITH(separate-debug-dir,
+  AS_HELP_STRING([--with-separate-debug-dir=DIR],
+                 [Look for global separate debug info in DIR [[default=LIBDIR/debug]]]),
+[DEBUGDIR="${withval}"])
+AC_SUBST(DEBUGDIR)
+
+# Check to see if we should allow the generation of
+# symbols with the ELF standard's STT_COMMON type.
+AC_ARG_ENABLE(elf-stt-common,
+[  --enable-elf-stt-common Allow the generation of ELF symbols with the STT_COMMON type],
+[case "${enableval}" in
+  yes) want_elf_stt_common=true ;;
+  no)  want_elf_stt_common=false ;;
+  *)   AC_MSG_ERROR(bad value ${enableval} for ELF STT_COMMON option) ;;
+ esac],
+# We have to choose a default behaviour.  For native builds we could
+# test whether the loader supports the STT_COMMON type, but that would
+# mean that built binaries could not be exported to older systems where
+# the loader does not support it. So by default we always choose to
+# disable this feature.
+  want_elf_stt_common=false)dnl
+if test $want_elf_stt_common = true; then
+  AC_DEFINE(USE_STT_COMMON, 1,
+    [Define if we may generate symbols with ELF's STT_COMMON type])
+fi
+	 
+ACX_PKGVERSION([GNU Binutils])
+ACX_BUGURL([http://www.sourceware.org/bugzilla/])
+
 AM_BINUTILS_WARNINGS
 
 AM_CONFIG_HEADER(config.h:config.in)
@@ -72,6 +108,7 @@ if test -z "$target" ; then
 fi
 
 AM_MAINTAINER_MODE
+AM_CONDITIONAL(GENINSRC_NEVER, false)
 AM_INSTALL_LIBBFD
 AC_EXEEXT
 
@@ -81,10 +118,7 @@ bfd_default_target_size=32
 
 # host stuff:
 
-AC_PROG_CC
-AC_GNU_SOURCE
-
-ALL_LINGUAS="fr tr ja es sv da zh_CN ro rw vi"
+ALL_LINGUAS="fr tr ja es sv da zh_CN ro rw vi fi"
 ZW_GNU_GETTEXT_SISTER_DIR
 AM_PO_SUBDIRS
 
@@ -95,29 +129,31 @@ AC_SUBST(HDEFINES)
 AC_PROG_INSTALL
 
 BFD_HOST_64BIT_LONG=0
-BFD_HOST_LONG_LONG=0
+BFD_HOST_64BIT_LONG_LONG=0
 BFD_HOST_64_BIT_DEFINED=0
 BFD_HOST_64_BIT=
 BFD_HOST_U_64_BIT=
+BFD_HOSTPTR_T="unsigned long"
 
-AC_MSG_CHECKING([for long long])
-AC_CACHE_VAL(bfd_cv_has_long_long,
-[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[unsigned long long ll = 18446744073709551615ULL;]])],[bfd_cv_has_long_long=yes],[bfd_cv_has_long_long=no])])
-AC_MSG_RESULT($bfd_cv_has_long_long)
-if test $bfd_cv_has_long_long = yes; then
-  BFD_HOST_LONG_LONG=1
-  AC_CHECK_SIZEOF(long long)
+AC_CHECK_SIZEOF(long long)
+AC_CHECK_SIZEOF(void *)
+AC_CHECK_SIZEOF(long)
+
+if test "x${ac_cv_sizeof_void_p}" = "x8"; then
+  host64=true
 fi
 
-AC_CHECK_SIZEOF(long)
 if test "x${ac_cv_sizeof_long}" = "x8"; then
-  host64=true
   BFD_HOST_64BIT_LONG=1
   test -n "${HOST_64BIT_TYPE}" || HOST_64BIT_TYPE="long"
   test -n "${HOST_U_64BIT_TYPE}" || HOST_U_64BIT_TYPE="unsigned long"
 elif test "x${ac_cv_sizeof_long_long}" = "x8"; then
+  BFD_HOST_64BIT_LONG_LONG=1
   test -n "${HOST_64BIT_TYPE}" || HOST_64BIT_TYPE="long long"
   test -n "${HOST_U_64BIT_TYPE}" || HOST_U_64BIT_TYPE="unsigned long long"
+  if test "x${ac_cv_sizeof_void_p}" = "x8"; then
+    BFD_HOSTPTR_T="unsigned long long"
+  fi
 fi
 
 if test -n "${HOST_64BIT_TYPE}" -a -n "${HOST_U_64BIT_TYPE}"; then
@@ -127,15 +163,17 @@ if test -n "${HOST_64BIT_TYPE}" -a -n "${HOST_U_64BIT_TYPE}"; then
 fi
 
 AC_SUBST(BFD_HOST_64BIT_LONG)
-AC_SUBST(BFD_HOST_LONG_LONG)
+AC_SUBST(BFD_HOST_64BIT_LONG_LONG)
 AC_SUBST(BFD_HOST_64_BIT_DEFINED)
 AC_SUBST(BFD_HOST_64_BIT)
 AC_SUBST(BFD_HOST_U_64_BIT)
+AC_SUBST(BFD_HOSTPTR_T)
 
 BFD_CC_FOR_BUILD
 
-AC_CHECK_HEADERS(stddef.h string.h strings.h stdlib.h time.h unistd.h)
+AC_CHECK_HEADERS(alloca.h stddef.h string.h strings.h stdlib.h time.h unistd.h)
 AC_CHECK_HEADERS(fcntl.h sys/file.h sys/time.h)
+GCC_HEADER_STDINT(bfd_stdint.h)
 AC_HEADER_TIME
 AC_HEADER_DIRENT
 ACX_HEADER_STRING
@@ -222,7 +260,7 @@ changequote([,])dnl
 	TRAD_HEADER='"hosts/i386bsd.h"'
 	;;
 changequote(,)dnl
-  i[3-7]86-*-freebsd* | i[3-7]86-*-kfreebsd*-gnu)
+  i[3-7]86-*-freebsd* | i[3-7]86-*-kfreebsd*-gnu | i[3-7]86-*-dragonfly*)
 changequote([,])dnl
 	COREFILE=''
 	TRAD_HEADER='"hosts/i386bsd.h"'
@@ -364,7 +402,9 @@ changequote([,])dnl
   powerpc-*-netbsd*)	COREFILE=netbsd-core.lo ;;
   powerpc-*-*bsd*)	COREFILE=netbsd-core.lo ;;
   s390*-*-*)            COREFILE=trad-core.lo ;;
-  sh*-*-netbsd*)	COREFILE=netbsd-core.lo ;;
+  sh*-*-netbsd* | sh*-*-openbsd*)
+	COREFILE=netbsd-core.lo
+	;;
   sparc-*-netbsd* | sparc*-*-openbsd*)
 	COREFILE=netbsd-core.lo
 	;;
@@ -554,7 +594,7 @@ selarchs="$f"
 # Target backend .o files.
 tb=
 
-elf="elf.lo elflink.lo elf-strtab.lo elf-eh-frame.lo dwarf1.lo"
+elf="elf.lo elflink.lo elf-attrs.lo elf-strtab.lo elf-eh-frame.lo dwarf1.lo"
 
 for vec in $selvecs
 do
@@ -587,6 +627,7 @@ do
     b_out_vec_big_host)		tb="$tb bout.lo aout32.lo" ;;
     b_out_vec_little_host)	tb="$tb bout.lo aout32.lo" ;;
     bfd_efi_app_ia32_vec)	tb="$tb efi-app-ia32.lo peigen.lo cofflink.lo" ;;
+    bfd_efi_app_x86_64_vec)	tb="$tb efi-app-x86_64.lo pex64igen.lo cofflink.lo" ;target_size=64;;
     bfd_efi_app_ia64_vec)	tb="$tb efi-app-ia64.lo pepigen.lo cofflink.lo"; target_size=64 ;;
     bfd_elf32_am33lin_vec)	tb="$tb elf32-am33lin.lo elf32.lo $elf" ;;
     bfd_elf32_avr_vec)		tb="$tb elf32-avr.lo elf32.lo $elf" ;;
@@ -602,6 +643,7 @@ do
     bfd_elf32_bigmips_vec) 	tb="$tb elf32-mips.lo elfxx-mips.lo elf-vxworks.lo elf32.lo $elf ecofflink.lo" ;;
     bfd_elf32_bigmips_vxworks_vec)
 			 	tb="$tb elf32-mips.lo elfxx-mips.lo elf-vxworks.lo elf32.lo $elf ecofflink.lo" ;;
+    bfd_elf32_cr16_vec)		tb="$tb elf32-cr16.lo elf32.lo $elf" ;;
     bfd_elf32_cr16c_vec)	tb="$tb elf32-cr16c.lo elf32.lo $elf" ;;
     bfd_elf32_cris_vec)		tb="$tb elf32-cris.lo elf32.lo $elf" ;;
     bfd_elf32_crx_vec)          tb="$tb elf32-crx.lo elf32.lo $elf" ;;    
@@ -616,6 +658,8 @@ do
     bfd_elf32_hppa_nbsd_vec)	tb="$tb elf32-hppa.lo elf32.lo $elf" ;;
     bfd_elf32_hppa_vec)		tb="$tb elf32-hppa.lo elf32.lo $elf" ;;
     bfd_elf32_i370_vec)		tb="$tb elf32-i370.lo elf32.lo $elf" ;;
+    bfd_elf32_i386_dragonfly_vec)
+				tb="$tb elf32-i386.lo elf-vxworks.lo elf32.lo $elf" ;;
     bfd_elf32_i386_freebsd_vec)	tb="$tb elf32-i386.lo elf-vxworks.lo elf32.lo $elf" ;;
     bfd_elf32_i386_vxworks_vec)	tb="$tb elf32-i386.lo elf-vxworks.lo elf32.lo $elf" ;;
     bfd_elf32_i386_vec)		tb="$tb elf32-i386.lo elf-vxworks.lo elf32.lo $elf" ;;
@@ -647,6 +691,8 @@ do
     bfd_elf32_m88k_vec)		tb="$tb elf32-m88k.lo elf32.lo $elf" ;;
     bfd_elf32_mcore_big_vec)	tb="$tb elf32-mcore.lo elf32.lo $elf" ;;
     bfd_elf32_mcore_little_vec)	tb="$tb elf32-mcore.lo elf32.lo $elf" ;;
+    bfd_elf32_mep_vec)		tb="$tb elf32-mep.lo elf32.lo $elf" ;;
+    bfd_elf32_mep_little_vec)	tb="$tb elf32-mep.lo elf32.lo $elf" ;;
     bfd_elf32_mn10200_vec)	tb="$tb elf-m10200.lo elf32.lo $elf" ;;
     bfd_elf32_mn10300_vec)	tb="$tb elf-m10300.lo elf32.lo $elf" ;;
     bfd_elf32_mt_vec)           tb="$tb elf32-mt.lo elf32.lo $elf" ;;
@@ -685,6 +731,7 @@ do
     bfd_elf32_shvxworks_vec)	tb="$tb elf32-sh.lo elf-vxworks.lo elf32.lo $elf coff-sh.lo" ;;
     bfd_elf32_sparc_vec)	tb="$tb elf32-sparc.lo elfxx-sparc.lo elf-vxworks.lo elf32.lo $elf" ;;
     bfd_elf32_sparc_vxworks_vec) tb="$tb elf32-sparc.lo elfxx-sparc.lo elf-vxworks.lo elf32.lo $elf" ;;
+    bfd_elf32_spu_vec)		tb="$tb elf32-spu.lo elf32.lo $elf" ;;
     bfd_elf32_tradbigmips_vec)  tb="$tb elf32-mips.lo elfxx-mips.lo elf-vxworks.lo elf32.lo $elf ecofflink.lo" ;;
     bfd_elf32_tradlittlemips_vec) tb="$tb elf32-mips.lo elfxx-mips.lo elf-vxworks.lo elf32.lo $elf ecofflink.lo" ;;
     bfd_elf32_us_cris_vec)	tb="$tb elf32-cris.lo elf32.lo $elf" ;;
@@ -716,6 +763,7 @@ do
     bfd_elf64_sh64lnbsd_vec)	tb="$tb elf64-sh64.lo elf64.lo $elf" target_size=64 ;;
     bfd_elf64_sh64nbsd_vec)	tb="$tb elf64-sh64.lo elf64.lo $elf" target_size=64 ;;
     bfd_elf64_sparc_vec)	tb="$tb elf64-sparc.lo elfxx-sparc.lo elf-vxworks.lo elf64.lo $elf"; target_size=64 ;;
+    bfd_elf64_sparc_freebsd_vec) tb="$tb elf64-sparc.lo elfxx-sparc.lo elf-vxworks.lo elf64.lo $elf"; target_size=64 ;;
     bfd_elf64_tradbigmips_vec)	tb="$tb elf64-mips.lo elf64.lo elfxx-mips.lo elf-vxworks.lo elf32.lo $elf ecofflink.lo"; target_size=64 ;;
     bfd_elf64_tradlittlemips_vec) tb="$tb elf64-mips.lo elf64.lo elfxx-mips.lo elf-vxworks.lo elf32.lo $elf ecofflink.lo"; target_size=64 ;;
     bfd_elf64_x86_64_freebsd_vec) tb="$tb elf64-x86-64.lo elf64.lo $elf"; target_size=64 ;;
@@ -905,7 +953,7 @@ fi	# all_targets is true
 case ${host64}-${target64}-${want64} in
   *true*)
     wordsize=64
-    bfd_libs='$(BFD64_LIBS) $(BFD32_LIBS)'
+    bfd64_libs='$(BFD64_LIBS)'
     all_backends='$(BFD64_BACKENDS) $(BFD32_BACKENDS)'
     if test $BFD_HOST_64_BIT_DEFINED = 0; then
       AC_MSG_WARN([You have requested a 64 bit BFD configuration, but])
@@ -926,13 +974,12 @@ case ${host64}-${target64}-${want64} in
     ;;
   false-false-false)
     wordsize=32
-    bfd_libs='$(BFD32_LIBS)'
     all_backends='$(BFD32_BACKENDS)'
     ;;
 esac
 
 AC_SUBST(wordsize)
-AC_SUBST(bfd_libs)
+AC_SUBST(bfd64_libs)
 AC_SUBST(all_backends)
 AC_SUBST(bfd_backends)
 AC_SUBST(bfd_machines)

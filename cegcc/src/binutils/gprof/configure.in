@@ -11,8 +11,6 @@ BFD_VERSION=`sed -n -e 's/^.._INIT_AUTOMAKE.*,[ 	]*\([^ 	]*\)[ 	]*).*/\1/p' < ${
 changequote([,])dnl
 AM_INIT_AUTOMAKE(gprof, ${BFD_VERSION})
 
-AM_PROG_LIBTOOL
-
 dnl For simplicity, we use the BFD configuration file for most
 dnl things.  However, we also need our own configuration file for
 dnl the automake PACKAGE and VERSION macros.  We don't name it
@@ -20,15 +18,19 @@ dnl config.h, to avoid any possible confusion with the bfd config.h.
 AC_CONFIG_HEADERS([gconfig.h:gconfig.in])
 
 AC_PROG_CC
+AC_GNU_SOURCE
 AC_PROG_INSTALL
+
+AM_PROG_LIBTOOL
 
 AC_CHECK_FUNCS(setmode)
 
-ALL_LINGUAS="fr tr sv es id da pt_BR de vi rw ga"
+ALL_LINGUAS="fr tr sv es id da pt_BR de vi rw ga ms fi"
 ZW_GNU_GETTEXT_SISTER_DIR
 AM_PO_SUBDIRS
 
 AM_MAINTAINER_MODE
+AM_CONDITIONAL(GENINSRC_NEVER, false)
 AC_EXEEXT
 
 AC_CHECK_HEADERS(sys/gmon_out.h)
@@ -42,6 +44,9 @@ if test $gprof_cv_decl_getopt_unistd_h = yes; then
   AC_DEFINE([HAVE_DECL_GETOPT], 1,
 	    [Is the prototype for getopt in <unistd.h> in the expected format?])
 fi
+
+# Some systems have fabs only in -lm, not in -lc.
+AC_SEARCH_LIBS(fabs, m)
 
 AM_BINUTILS_WARNINGS
 

@@ -5,26 +5,26 @@ Disassembly of section .text:
 
 .* <__start>:
   .*:	3c1c0fc0 	lui	gp,0xfc0
-  .*:	279c7b70 	addiu	gp,gp,31600
+  .*:	279c7b80 	addiu	gp,gp,31616
   .*:	0399e021 	addu	gp,gp,t9
   .*:	27bdfff0 	addiu	sp,sp,-16
   .*:	afbe0008 	sw	s8,8\(sp\)
   .*:	03a0f021 	move	s8,sp
   .*:	afbc0000 	sw	gp,0\(sp\)
-  .*:	8f998030 	lw	t9,-32720\(gp\)
-  .*:	27848048 	addiu	a0,gp,-32696
+  .*:	8f998018 	lw	t9,-32744\(gp\)
+  .*:	27848030 	addiu	a0,gp,-32720
   .*:	0320f809 	jalr	t9
   .*:	00000000 	nop
   .*:	8fdc0000 	lw	gp,0\(s8\)
   .*:	00000000 	nop
-  .*:	8f998030 	lw	t9,-32720\(gp\)
-  .*:	2784803c 	addiu	a0,gp,-32708
+  .*:	8f998018 	lw	t9,-32744\(gp\)
+  .*:	27848024 	addiu	a0,gp,-32732
   .*:	0320f809 	jalr	t9
   .*:	00000000 	nop
   .*:	8fdc0000 	lw	gp,0\(s8\)
   .*:	00000000 	nop
-  .*:	8f998030 	lw	t9,-32720\(gp\)
-  .*:	27848034 	addiu	a0,gp,-32716
+  .*:	8f998018 	lw	t9,-32744\(gp\)
+  .*:	2784801c 	addiu	a0,gp,-32740
   .*:	0320f809 	jalr	t9
   .*:	00000000 	nop
   .*:	8fdc0000 	lw	gp,0\(s8\)
@@ -33,10 +33,10 @@ Disassembly of section .text:
   .*:	24638000 	addiu	v1,v1,-32768
   .*:	00621821 	addu	v1,v1,v0
   .*:	7c02283b 	rdhwr	v0,\$5
-  .*:	8f838050 	lw	v1,-32688\(gp\)
+  .*:	8f838038 	lw	v1,-32712\(gp\)
   .*:	00000000 	nop
   .*:	00621821 	addu	v1,v1,v0
-  .*:	8f838044 	lw	v1,-32700\(gp\)
+  .*:	8f83802c 	lw	v1,-32724\(gp\)
   .*:	00000000 	nop
   .*:	00621821 	addu	v1,v1,v0
   .*:	7c02283b 	rdhwr	v0,\$5
@@ -55,26 +55,26 @@ Disassembly of section .text:
 
 .* <other>:
   .*:	3c1c0fc0 	lui	gp,0xfc0
-  .*:	279c7ab0 	addiu	gp,gp,31408
+  .*:	279c7ac0 	addiu	gp,gp,31424
   .*:	0399e021 	addu	gp,gp,t9
   .*:	27bdfff0 	addiu	sp,sp,-16
   .*:	afbe0008 	sw	s8,8\(sp\)
   .*:	03a0f021 	move	s8,sp
   .*:	afbc0000 	sw	gp,0\(sp\)
-  .*:	8f998030 	lw	t9,-32720\(gp\)
-  .*:	27848048 	addiu	a0,gp,-32696
+  .*:	8f998018 	lw	t9,-32744\(gp\)
+  .*:	27848030 	addiu	a0,gp,-32720
   .*:	0320f809 	jalr	t9
   .*:	00000000 	nop
   .*:	8fdc0000 	lw	gp,0\(s8\)
   .*:	00000000 	nop
-  .*:	8f998030 	lw	t9,-32720\(gp\)
-  .*:	2784803c 	addiu	a0,gp,-32708
+  .*:	8f998018 	lw	t9,-32744\(gp\)
+  .*:	27848024 	addiu	a0,gp,-32732
   .*:	0320f809 	jalr	t9
   .*:	00000000 	nop
   .*:	8fdc0000 	lw	gp,0\(s8\)
   .*:	00000000 	nop
-  .*:	8f998030 	lw	t9,-32720\(gp\)
-  .*:	27848034 	addiu	a0,gp,-32716
+  .*:	8f998018 	lw	t9,-32744\(gp\)
+  .*:	2784801c 	addiu	a0,gp,-32740
   .*:	0320f809 	jalr	t9
   .*:	00000000 	nop
   .*:	8fdc0000 	lw	gp,0\(s8\)
@@ -83,10 +83,10 @@ Disassembly of section .text:
   .*:	24638000 	addiu	v1,v1,-32768
   .*:	00621821 	addu	v1,v1,v0
   .*:	7c02283b 	rdhwr	v0,\$5
-  .*:	8f838050 	lw	v1,-32688\(gp\)
+  .*:	8f838038 	lw	v1,-32712\(gp\)
   .*:	00000000 	nop
   .*:	00621821 	addu	v1,v1,v0
-  .*:	8f838044 	lw	v1,-32700\(gp\)
+  .*:	8f83802c 	lw	v1,-32724\(gp\)
   .*:	00000000 	nop
   .*:	00621821 	addu	v1,v1,v0
   .*:	7c02283b 	rdhwr	v0,\$5

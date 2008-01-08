@@ -1,5 +1,5 @@
 /* tc-m68hc11.c -- Assembler code for the Motorola 68HC11 & 68HC12.
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Written by Stephane Carrez (stcarrez@nerim.fr)
 
@@ -7,7 +7,7 @@
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -263,7 +263,7 @@ const pseudo_typeS md_pseudo_table[] = {
   /* The following pseudo-ops are supported for MRI compatibility.  */
   {"fcb", cons, 1},
   {"fdb", cons, 2},
-  {"fcc", stringer, 1},
+  {"fcc", stringer, 8 + 1},
   {"rmb", s_space, 0},
 
   /* Motorola ALIS.  */
@@ -514,62 +514,10 @@ md_undefined_symbol (char *name ATTRIBUTE_UNUSED)
   return 0;
 }
 
-/* Equal to MAX_PRECISION in atof-ieee.c.  */
-#define MAX_LITTLENUMS 6
-
-/* Turn a string in input_line_pointer into a floating point constant
-   of type TYPE, and store the appropriate bytes in *LITP.  The number
-   of LITTLENUMS emitted is stored in *SIZEP.  An error message is
-   returned, or NULL on OK.  */
 char *
 md_atof (int type, char *litP, int *sizeP)
 {
-  int prec;
-  LITTLENUM_TYPE words[MAX_LITTLENUMS];
-  LITTLENUM_TYPE *wordP;
-  char *t;
-
-  switch (type)
-    {
-    case 'f':
-    case 'F':
-    case 's':
-    case 'S':
-      prec = 2;
-      break;
-
-    case 'd':
-    case 'D':
-    case 'r':
-    case 'R':
-      prec = 4;
-      break;
-
-    case 'x':
-    case 'X':
-      prec = 6;
-      break;
-
-    case 'p':
-    case 'P':
-      prec = 6;
-      break;
-
-    default:
-      *sizeP = 0;
-      return _("Bad call to MD_ATOF()");
-    }
-  t = atof_ieee (input_line_pointer, type, words);
-  if (t)
-    input_line_pointer = t;
-
-  *sizeP = prec * sizeof (LITTLENUM_TYPE);
-  for (wordP = words; prec--;)
-    {
-      md_number_to_chars (litP, (long) (*wordP++), sizeof (LITTLENUM_TYPE));
-      litP += sizeof (LITTLENUM_TYPE);
-    }
-  return 0;
+  return ieee_md_atof (type, litP, sizeP, TRUE);
 }
 
 valueT
@@ -1518,7 +1466,7 @@ fixup24 (expressionS *oper, int mode, int opmode ATTRIBUTE_UNUSED)
       fixS *fixp;
 
       /* Now create a 24-bit fixup.  */
-      fixp = fix_new_exp (frag_now, f - frag_now->fr_literal, 2,
+      fixp = fix_new_exp (frag_now, f - frag_now->fr_literal, 3,
 			  oper, FALSE, BFD_RELOC_M68HC11_24);
       number_to_chars_bigendian (f, 0, 3);
     }
@@ -1594,7 +1542,7 @@ build_jump_insn (struct m68hc11_opcode *opcode, operand operands[],
       frag = frag_now;
       where = frag_now_fix ();
 
-      fix_new (frag_now, frag_now_fix (), 1,
+      fix_new (frag_now, frag_now_fix (), 0,
                &abs_symbol, 0, 1, BFD_RELOC_M68HC11_RL_JUMP);
 
       if (code == M6811_BSR || code == M6811_BRA || code == M6812_BSR)
@@ -1654,7 +1602,7 @@ build_jump_insn (struct m68hc11_opcode *opcode, operand operands[],
       frag = frag_now;
       where = frag_now_fix ();
 
-      fix_new (frag_now, frag_now_fix (), 1,
+      fix_new (frag_now, frag_now_fix (), 0,
                &abs_symbol, 0, 1, BFD_RELOC_M68HC11_RL_JUMP);
 
       f = m68hc11_new_insn (2);
@@ -1669,7 +1617,7 @@ build_jump_insn (struct m68hc11_opcode *opcode, operand operands[],
       frag = frag_now;
       where = frag_now_fix ();
       
-      fix_new (frag_now, frag_now_fix (), 1,
+      fix_new (frag_now, frag_now_fix (), 0,
                &abs_symbol, 0, 1, BFD_RELOC_M68HC11_RL_JUMP);
 
       /* Branch offset must fit in 8-bits, don't do some relax.  */
@@ -2102,7 +2050,7 @@ build_insn (struct m68hc11_opcode *opcode, operand operands[],
   format = opcode->format;
 
   if (format & M6811_OP_BRANCH)
-    fix_new (frag_now, frag_now_fix (), 1,
+    fix_new (frag_now, frag_now_fix (), 0,
              &abs_symbol, 0, 1, BFD_RELOC_M68HC11_RL_JUMP);
 
   if (format & OP_EXTENDED)
@@ -2457,7 +2405,7 @@ md_assemble (char *str)
   char name[20];
   int nlen = 0;
   operand operands[M6811_MAX_OPERANDS];
-  int nb_operands;
+  int nb_operands = 0;
   int branch_optimize = 0;
   int alias_id = -1;
 
@@ -2704,7 +2652,7 @@ s_m68hc11_relax (int ignore ATTRIBUTE_UNUSED)
       return;
     }
 
-  fix_new_exp (frag_now, frag_now_fix (), 2, &ex, 1,
+  fix_new_exp (frag_now, frag_now_fix (), 0, &ex, 1,
                BFD_RELOC_M68HC11_RL_GROUP);
 
   demand_empty_rest_of_line ();

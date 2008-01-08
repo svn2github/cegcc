@@ -46,7 +46,13 @@ D/ld-xc16x////
 D/ld-xstormy16////
 D/ld-xtensa////
 D/lib////
-/ChangeLog/1.696/Wed Oct  4 19:16:07 2006//
-/ChangeLog-2004/1.1/Sat Sep  2 19:27:03 2006//
-/ChangeLog-2005/1.1/Sat Sep  2 19:27:03 2006//
-/ChangeLog-9303/1.1/Sat Sep  2 19:27:03 2006//
+/ChangeLog/1.884/Sat Jan  5 22:20:26 2008//
+/ChangeLog-2004/1.1/Wed Dec 12 00:12:39 2007//
+/ChangeLog-2005/1.1/Wed Dec 12 00:12:39 2007//
+/ChangeLog-2006/1.1/Tue Jan  9 17:30:59 2007//
+/ChangeLog-9303/1.1/Wed Dec 12 00:12:39 2007//
+D/ld-libs////
+D/ld-mep////
+D/ld-mn10300////
+D/ld-spu////
+D/ld-vxworks////

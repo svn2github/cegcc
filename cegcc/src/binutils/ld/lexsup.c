@@ -1,28 +1,28 @@
 /* Parse options for the GNU linker.
    Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005
+   2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
-   This file is part of GLD, the Gnu Linker.
+   This file is part of the GNU Binutils.
 
-   GLD is free software; you can redistribute it and/or modify
+   This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
-   any later version.
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
 
-   GLD is distributed in the hope that it will be useful,
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with GLD; see the file COPYING.  If not, write to the Free
-   Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA
-   02110-1301, USA.  */
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "config.h"
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
+#include "bfdver.h"
 #include "libiberty.h"
 #include <stdio.h>
 #include <string.h>
@@ -83,6 +83,7 @@ enum option_values
   OPTION_NO_DEMANGLE,
   OPTION_NO_KEEP_MEMORY,
   OPTION_NO_WARN_MISMATCH,
+  OPTION_NO_WARN_SEARCH_MISMATCH,
   OPTION_NOINHIBIT_EXEC,
   OPTION_NON_SHARED,
   OPTION_NO_WHOLE_ARCHIVE,
@@ -97,6 +98,7 @@ enum option_values
   OPTION_SORT_SECTION,
   OPTION_STATS,
   OPTION_SYMBOLIC,
+  OPTION_SYMBOLIC_FUNCTIONS,
   OPTION_TASK_LINK,
   OPTION_TBSS,
   OPTION_TDATA,
@@ -108,7 +110,9 @@ enum option_values
   OPTION_VERSION_SCRIPT,
   OPTION_VERSION_EXPORTS_SECTION,
   OPTION_DYNAMIC_LIST,
+  OPTION_DYNAMIC_LIST_CPP_NEW,
   OPTION_DYNAMIC_LIST_CPP_TYPEINFO,
+  OPTION_DYNAMIC_LIST_DATA,
   OPTION_WARN_COMMON,
   OPTION_WARN_CONSTRUCTORS,
   OPTION_WARN_FATAL,
@@ -157,7 +161,8 @@ enum option_values
   OPTION_WARN_UNRESOLVED_SYMBOLS,
   OPTION_ERROR_UNRESOLVED_SYMBOLS,
   OPTION_WARN_SHARED_TEXTREL,
-  OPTION_REDUCE_MEMORY_OVERHEADS
+  OPTION_REDUCE_MEMORY_OVERHEADS,
+  OPTION_DEFAULT_SCRIPT
 };
 
 /* The long options.  This structure is used for both the option
@@ -280,6 +285,10 @@ static const struct ld_option ld_options[] =
     't', NULL, N_("Trace file opens"), TWO_DASHES },
   { {"script", required_argument, NULL, 'T'},
     'T', N_("FILE"), N_("Read linker script"), TWO_DASHES },
+  { {"default-script", required_argument, NULL, OPTION_DEFAULT_SCRIPT},
+    '\0', N_("FILE"), N_("Read default linker script"), TWO_DASHES },
+  { {"dT", required_argument, NULL, OPTION_DEFAULT_SCRIPT},
+    '\0', NULL, NULL, ONE_DASH },
   { {"undefined", required_argument, NULL, 'u'},
     'u', N_("SYMBOL"), N_("Start with undefined reference to SYMBOL"),
     TWO_DASHES },
@@ -318,10 +327,12 @@ static const struct ld_option ld_options[] =
     TWO_DASHES },
   { {"add-needed", no_argument, NULL, OPTION_ADD_NEEDED},
     '\0', NULL, N_("Set DT_NEEDED tags for DT_NEEDED entries in\n"
-		   "\t\t\t\tfollowing dynamic libs"), TWO_DASHES },
+		   "                                following dynamic libs"),
+    TWO_DASHES },
   { {"no-add-needed", no_argument, NULL, OPTION_NO_ADD_NEEDED},
     '\0', NULL, N_("Do not set DT_NEEDED tags for DT_NEEDED entries\n"
-		   "\t\t\t\tin following dynamic libs"), TWO_DASHES },
+		   "                                in following dynamic libs"),
+    TWO_DASHES },
   { {"as-needed", no_argument, NULL, OPTION_AS_NEEDED},
     '\0', NULL, N_("Only set DT_NEEDED for following dynamic libs if used"),
     TWO_DASHES },
@@ -346,6 +357,8 @@ static const struct ld_option ld_options[] =
     '\0', NULL, NULL, ONE_DASH },
   { {"Bsymbolic", no_argument, NULL, OPTION_SYMBOLIC},
     '\0', NULL, N_("Bind global references locally"), ONE_DASH },
+  { {"Bsymbolic-functions", no_argument, NULL, OPTION_SYMBOLIC_FUNCTIONS},
+    '\0', NULL, N_("Bind global function references locally"), ONE_DASH },
   { {"check-sections", no_argument, NULL, OPTION_CHECK_SECTIONS},
     '\0', NULL, N_("Check section addresses for overlaps (default)"),
     TWO_DASHES },
@@ -418,6 +431,10 @@ static const struct ld_option ld_options[] =
     TWO_DASHES },
   { {"no-warn-mismatch", no_argument, NULL, OPTION_NO_WARN_MISMATCH},
     '\0', NULL, N_("Don't warn about mismatched input files"), TWO_DASHES},
+  { {"no-warn-search-mismatch", no_argument, NULL,
+     OPTION_NO_WARN_SEARCH_MISMATCH},
+    '\0', NULL, N_("Don't warn on finding an incompatible library"),
+    TWO_DASHES},
   { {"no-whole-archive", no_argument, NULL, OPTION_NO_WHOLE_ARCHIVE},
     '\0', NULL, N_("Turn off --whole-archive"), TWO_DASHES },
   { {"noinhibit-exec", no_argument, NULL, OPTION_NOINHIBIT_EXEC},
@@ -427,7 +444,8 @@ static const struct ld_option ld_options[] =
     '\0', NULL, NULL, NO_HELP },
   { {"nostdlib", no_argument, NULL, OPTION_NOSTDLIB},
     '\0', NULL, N_("Only use library directories specified on\n"
-		   "\t\t\t\tthe command line"), ONE_DASH },
+		   "                                the command line"),
+    ONE_DASH },
   { {"oformat", required_argument, NULL, OPTION_OFORMAT},
     '\0', N_("TARGET"), N_("Specify target of output file"),
     EXACTLY_TWO_DASHES },
@@ -491,8 +509,9 @@ static const struct ld_option ld_options[] =
   { {"unresolved-symbols=<method>", required_argument, NULL,
      OPTION_UNRESOLVED_SYMBOLS},
     '\0', NULL, N_("How to handle unresolved symbols.  <method> is:\n"
-		   "\t\t\t\tignore-all, report-all, ignore-in-object-files,\n"
-		   "\t\t\t\tignore-in-shared-libs"), TWO_DASHES },
+		   "                                ignore-all, report-all, ignore-in-object-files,\n"
+		   "                                ignore-in-shared-libs"),
+    TWO_DASHES },
   { {"verbose", no_argument, NULL, OPTION_VERBOSE},
     '\0', NULL, N_("Output lots of information during link"), TWO_DASHES },
   { {"dll-verbose", no_argument, NULL, OPTION_VERBOSE}, /* Linux.  */
@@ -502,7 +521,12 @@ static const struct ld_option ld_options[] =
   { {"version-exports-section", required_argument, NULL,
      OPTION_VERSION_EXPORTS_SECTION },
     '\0', N_("SYMBOL"), N_("Take export symbols list from .exports, using\n"
-			   "\t\t\t\tSYMBOL as the version."), TWO_DASHES },
+			   "                                SYMBOL as the version."),
+    TWO_DASHES },
+  { {"dynamic-list-data", no_argument, NULL, OPTION_DYNAMIC_LIST_DATA},
+    '\0', NULL, N_("Add data symbols to dynamic list"), TWO_DASHES },
+  { {"dynamic-list-cpp-new", no_argument, NULL, OPTION_DYNAMIC_LIST_CPP_NEW},
+    '\0', NULL, N_("Use C++ operator new/delete dynamic list"), TWO_DASHES },
   { {"dynamic-list-cpp-typeinfo", no_argument, NULL, OPTION_DYNAMIC_LIST_CPP_TYPEINFO},
     '\0', NULL, N_("Use C++ typeinfo dynamic list"), TWO_DASHES },
   { {"dynamic-list", required_argument, NULL, OPTION_DYNAMIC_LIST},
@@ -680,6 +704,8 @@ parse_args (unsigned argc, char **argv)
 	{
 	case '?':
 	  einfo (_("%P: unrecognized option '%s'\n"), argv[last_optind]);
+	  /* Fall through.  */
+
 	default:
 	  einfo (_("%P%F: use the --help option for usage information\n"));
 
@@ -947,6 +973,9 @@ parse_args (unsigned argc, char **argv)
 	case OPTION_NO_WARN_MISMATCH:
 	  command_line.warn_mismatch = FALSE;
 	  break;
+	case OPTION_NO_WARN_SEARCH_MISMATCH:
+	  command_line.warn_search_mismatch = FALSE;
+	  break;
 	case OPTION_NOINHIBIT_EXEC:
 	  force_make_executable = TRUE;
 	  break;
@@ -1028,17 +1057,14 @@ parse_args (unsigned argc, char **argv)
 	      /* First see whether OPTARG is already in the path.  */
 	      do
 		{
-		  size_t idx = 0;
-
-		  while (optarg[idx] != '\0' && optarg[idx] == cp[idx])
-		    ++idx;
-		  if (optarg[idx] == '\0'
-		      && (cp[idx] == '\0' || cp[idx] == ':'))
+		  if (strncmp (optarg, cp, optarg_len) == 0
+		      && (cp[optarg_len] == 0
+			  || cp[optarg_len] == config.rpath_separator))
 		    /* We found it.  */
 		    break;
 
 		  /* Not yet found.  */
-		  cp = strchr (cp, ':');
+		  cp = strchr (cp, config.rpath_separator);
 		  if (cp != NULL)
 		    ++cp;
 		}
@@ -1047,7 +1073,8 @@ parse_args (unsigned argc, char **argv)
 	      if (cp == NULL)
 		{
 		  buf = xmalloc (rpath_len + optarg_len + 2);
-		  sprintf (buf, "%s:%s", command_line.rpath, optarg);
+		  sprintf (buf, "%s%c%s", command_line.rpath,
+			   config.rpath_separator, optarg);
 		  free (command_line.rpath);
 		  command_line.rpath = buf;
 		}
@@ -1063,7 +1090,8 @@ parse_args (unsigned argc, char **argv)
 	      buf = xmalloc (strlen (command_line.rpath_link)
 			     + strlen (optarg)
 			     + 2);
-	      sprintf (buf, "%s:%s", command_line.rpath_link, optarg);
+	      sprintf (buf, "%s%c%s", command_line.rpath_link,
+		       config.rpath_separator, optarg);
 	      free (command_line.rpath_link);
 	      command_line.rpath_link = buf;
 	    }
@@ -1129,7 +1157,10 @@ parse_args (unsigned argc, char **argv)
 	  config.stats = TRUE;
 	  break;
 	case OPTION_SYMBOLIC:
-	  link_info.symbolic = TRUE;
+	  command_line.symbolic = symbolic;
+	  break;
+	case OPTION_SYMBOLIC_FUNCTIONS:
+	  command_line.symbolic = symbolic_functions;
 	  break;
 	case 't':
 	  trace_files = TRUE;
@@ -1138,6 +1169,9 @@ parse_args (unsigned argc, char **argv)
 	  ldfile_open_command_file (optarg);
 	  parser_input = input_script;
 	  yyparse ();
+	  break;
+	case OPTION_DEFAULT_SCRIPT:
+	  command_line.default_script = optarg;
 	  break;
 	case OPTION_SECTION_START:
 	  {
@@ -1242,8 +1276,24 @@ parse_args (unsigned argc, char **argv)
 	     .exports sections.  */
 	  command_line.version_exports_section = optarg;
 	  break;
+	case OPTION_DYNAMIC_LIST_DATA:
+	  command_line.dynamic_list = dynamic_list_data;
+	  if (command_line.symbolic == symbolic)
+	    command_line.symbolic = symbolic_unset;
+	  break;
 	case OPTION_DYNAMIC_LIST_CPP_TYPEINFO:
 	  lang_append_dynamic_list_cpp_typeinfo ();
+	  if (command_line.dynamic_list != dynamic_list_data)
+	    command_line.dynamic_list = dynamic_list;
+	  if (command_line.symbolic == symbolic)
+	    command_line.symbolic = symbolic_unset;
+	  break;
+	case OPTION_DYNAMIC_LIST_CPP_NEW:
+	  lang_append_dynamic_list_cpp_new ();
+	  if (command_line.dynamic_list != dynamic_list_data)
+	    command_line.dynamic_list = dynamic_list;
+	  if (command_line.symbolic == symbolic)
+	    command_line.symbolic = symbolic_unset;
 	  break;
 	case OPTION_DYNAMIC_LIST:
 	  /* This option indicates a small script that only specifies
@@ -1258,6 +1308,10 @@ parse_args (unsigned argc, char **argv)
 	    parser_input = input_dynamic_list;
 	    yyparse ();
 	  }
+	  if (command_line.dynamic_list != dynamic_list_data)
+	    command_line.dynamic_list = dynamic_list;
+	  if (command_line.symbolic == symbolic)
+	    command_line.symbolic = symbolic_unset;
 	  break;
 	case OPTION_WARN_COMMON:
 	  config.warn_common = TRUE;
@@ -1368,7 +1422,7 @@ parse_args (unsigned argc, char **argv)
 	  break;
 
 	case OPTION_REDUCE_MEMORY_OVERHEADS:
-	  command_line.reduce_memory_overheads = TRUE;
+	  link_info.reduce_memory_overheads = TRUE;
 	  if (config.hash_table_size == 0)
 	    config.hash_table_size = 1021;
 	  break;
@@ -1586,5 +1640,6 @@ help (void)
   ldemul_list_emulation_options (stdout);
   printf ("\n");
 
-  printf (_("Report bugs to %s\n"), REPORT_BUGS_TO);
+  if (REPORT_BUGS_TO[0])
+    printf (_("Report bugs to %s\n"), REPORT_BUGS_TO);
 }

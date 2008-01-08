@@ -1,12 +1,12 @@
 /* tc-hppa.c -- Assemble for the PA
    Copyright 1989, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-   2002, 2003, 2004, 2005, 2006 Free Software Foundation, Inc.
+   2002, 2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -25,6 +25,7 @@
 #include "as.h"
 #include "safe-ctype.h"
 #include "subsegs.h"
+#include "dw2gencfi.h"
 
 #include "bfd/libhppa.h"
 
@@ -582,8 +583,8 @@ const char EXP_CHARS[] = "eE";
    As in 0f12.456 or 0d1.2345e12.
 
    Be aware that MAXIMUM_NUMBER_OF_CHARS_FOR_FLOAT may have to be
-   changed in read.c.  Ideally it shouldn't hae to know abou it at
-   all, but nothing is ideal around here.  */
+   changed in read.c.  Ideally it shouldn't have to know about it
+   at all, but nothing is ideal around here.  */
 const char FLT_CHARS[] = "rRsSfFdDxXpP";
 
 static struct pa_it the_insn;
@@ -1334,61 +1335,10 @@ pa_parse_nullif (char **s)
   return nullif;
 }
 
-/* Turn a string in input_line_pointer into a floating point constant of type
-   type, and store the appropriate bytes in *litP.  The number of LITTLENUMS
-   emitted is stored in *sizeP .  An error message or NULL is returned.  */
-
-#define MAX_LITTLENUMS 6
-
 char *
 md_atof (int type, char *litP, int *sizeP)
 {
-  int prec;
-  LITTLENUM_TYPE words[MAX_LITTLENUMS];
-  LITTLENUM_TYPE *wordP;
-  char *t;
-
-  switch (type)
-    {
-
-    case 'f':
-    case 'F':
-    case 's':
-    case 'S':
-      prec = 2;
-      break;
-
-    case 'd':
-    case 'D':
-    case 'r':
-    case 'R':
-      prec = 4;
-      break;
-
-    case 'x':
-    case 'X':
-      prec = 6;
-      break;
-
-    case 'p':
-    case 'P':
-      prec = 6;
-      break;
-
-    default:
-      *sizeP = 0;
-      return _("Bad call to MD_ATOF()");
-    }
-  t = atof_ieee (input_line_pointer, type, words);
-  if (t)
-    input_line_pointer = t;
-  *sizeP = prec * sizeof (LITTLENUM_TYPE);
-  for (wordP = words; prec--;)
-    {
-      md_number_to_chars (litP, (valueT) (*wordP++), sizeof (LITTLENUM_TYPE));
-      litP += sizeof (LITTLENUM_TYPE);
-    }
-  return NULL;
+  return ieee_md_atof (type, litP, sizeP, TRUE);
 }
 
 /* Write out big-endian.  */
@@ -3261,7 +3211,7 @@ pa_ip (char *str)
       return;
     }
 
-  /* Look up the opcode in the has table.  */
+  /* Look up the opcode in the hash table.  */
   if ((insn = (struct pa_opcode *) hash_find (op_hash, str)) == NULL)
     {
       as_bad ("Unknown opcode: `%s'", str);
@@ -6216,7 +6166,7 @@ pa_data (int unused ATTRIBUTE_UNUSED)
 }
 
 /* This is different than the standard GAS s_comm(). On HP9000/800 machines,
-   the .comm pseudo-op has the following symtax:
+   the .comm pseudo-op has the following syntax:
 
    <label> .comm <length>
 
@@ -8149,7 +8099,7 @@ pa_stringer (int append_zero)
 	    }
 	}
     }
-  stringer (append_zero);
+  stringer (8 + append_zero);
   pa_undefine_label ();
 }
 
@@ -8690,3 +8640,45 @@ const pseudo_typeS md_pseudo_table[] =
   {"word", pa_cons, 4},
   {NULL, 0, 0}
 };
+
+#ifdef OBJ_ELF
+void
+hppa_cfi_frame_initial_instructions (void)
+{
+  cfi_add_CFA_def_cfa (30, 0);
+}
+
+int
+hppa_regname_to_dw2regnum (char *regname)
+{
+  unsigned int regnum = -1;
+  unsigned int i;
+  const char *p;
+  char *q;
+  static struct { char *name; int dw2regnum; } regnames[] =
+    {
+      { "sp", 30 }, { "rp", 2 },
+    };
+
+  for (i = 0; i < ARRAY_SIZE (regnames); ++i)
+    if (strcmp (regnames[i].name, regname) == 0)
+      return regnames[i].dw2regnum;
+
+  if (regname[0] == 'r')
+    {
+      p = regname + 1;
+      regnum = strtoul (p, &q, 10);
+      if (p == q || *q || regnum >= 32)
+	return -1;
+    }
+  else if (regname[0] == 'f' && regname[1] == 'r')
+    {
+      p = regname + 2;
+      regnum = strtoul (p, &q, 10);
+      if (p == q || *q || regnum <= 4 || regnum >= 32)
+	return -1;
+      regnum += 32 - 4;
+    }
+  return regnum;
+}
+#endif

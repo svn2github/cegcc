@@ -1,12 +1,12 @@
 /* dlltool.c -- tool to generate stuff for PE style DLLs
    Copyright 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
-   2005, 2006 Free Software Foundation, Inc.
+   2005, 2006, 2007 Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -243,12 +243,13 @@
 
 #define PAGE_SIZE 4096
 #define PAGE_MASK (-PAGE_SIZE)
+#include "sysdep.h"
 #include "bfd.h"
 #include "libiberty.h"
-#include "bucomm.h"
 #include "getopt.h"
 #include "demangle.h"
 #include "dyn-string.h"
+#include "bucomm.h"
 #include "dlltool.h"
 #include "safe-ctype.h"
 
@@ -387,41 +388,43 @@ static int verbose;
 static FILE *output_def;
 static FILE *base_file;
 
-#ifdef DLLTOOL_ARM
-#if defined(DLLTOOL_ARM_EPOC)
-static const char *mname = "arm-epoc";
-#elif defined(DLLTOOL_ARM_WINCE)
-static const char *mname = "arm-wince";
-#else
+#ifdef DLLTOOL_DEFAULT_ARM
 static const char *mname = "arm";
 #endif
+
+#ifdef DLLTOOL_DEFAULT_ARM_EPOC
+static const char *mname = "arm-epoc";
 #endif
 
-#ifdef DLLTOOL_I386
+#ifdef DLLTOOL_DEFAULT_ARM_WINCE
+static const char *mname = "arm-wince";
+#endif
+
+#ifdef DLLTOOL_DEFAULT_I386
 static const char *mname = "i386";
 #endif
 
-#ifdef DLLTOOL_MX86_64
+#ifdef DLLTOOL_DEFAULT_MX86_64
 static const char *mname = "i386:x86-64";
 #endif
 
-#ifdef DLLTOOL_PPC
+#ifdef DLLTOOL_DEFAULT_PPC
 static const char *mname = "ppc";
 #endif
 
-#ifdef DLLTOOL_SH
+#ifdef DLLTOOL_DEFAULT_SH
 static const char *mname = "sh";
 #endif
 
-#ifdef DLLTOOL_MIPS
+#ifdef DLLTOOL_DEFAULT_MIPS
 static const char *mname = "mips";
 #endif
 
-#ifdef DLLTOOL_MCORE
+#ifdef DLLTOOL_DEFAULT_MCORE
 static const char * mname = "mcore-le";
 #endif
 
-#ifdef DLLTOOL_MCORE_ELF
+#ifdef DLLTOOL_DEFAULT_MCORE_ELF
 static const char * mname = "mcore-elf";
 static char * mcore_elf_out_file = NULL;
 static char * mcore_elf_linker   = NULL;
@@ -1888,7 +1891,7 @@ gen_exp_file (void)
 		     ASM_RVA_BEFORE, exp->ordinal, ASM_RVA_AFTER);
 	}
 
-      fprintf (f,"%s Export Oridinal Table\n", ASM_C);
+      fprintf (f,"%s Export Ordinal Table\n", ASM_C);
       fprintf (f, "anords:\n");
       for (i = 0; (exp = d_exports_lexically[i]); i++)
 	{
@@ -2410,6 +2413,12 @@ make_one_lib_file (export_type *exp, int i)
 						      BFD_RELOC_16_GOTOFF);
 		  rel->sym_ptr_ptr = iname_pp;
 		}
+	      else if (machine == MX86)
+		{
+		  rel->howto = bfd_reloc_type_lookup (abfd,
+						      BFD_RELOC_32_PCREL);
+		  rel->sym_ptr_ptr = iname_pp;
+		}
 	      else
 		{
 		  rel->howto = bfd_reloc_type_lookup (abfd, BFD_RELOC_32);
@@ -2819,7 +2828,7 @@ gen_lib_file (void)
       if (exp->private)
 	continue;
       n = make_one_lib_file (exp, i);
-      n->next = head;
+      n->archive_next = head;
       head = n;
       if (ext_prefix_alias)
 	{
@@ -2838,14 +2847,14 @@ gen_lib_file (void)
 	  alias_exp.forward = exp->forward;
 	  alias_exp.next = exp->next;
 	  n = make_one_lib_file (&alias_exp, i + PREFIX_ALIAS_BASE);
-	  n->next = head;
+	  n->archive_next = head;
 	  head = n;
 	}
     }
 
   /* Now stick them all into the archive.  */
-  ar_head->next = head;
-  ar_tail->next = ar_head;
+  ar_head->archive_next = head;
+  ar_tail->archive_next = ar_head;
   head = ar_tail;
 
   if (! bfd_set_archive_head (outarch, head))
@@ -2856,7 +2865,7 @@ gen_lib_file (void)
 
   while (head != NULL)
     {
-      bfd *n = head->next;
+      bfd *n = head->archive_next;
       bfd_close (head);
       head = n;
     }
@@ -2979,7 +2988,7 @@ process_duplicates (export_type **d_export_vec)
 	      if (a->ordinal != -1
 		  && b->ordinal != -1)
 		/* xgettext:c-format */
-		fatal (_("Error, duplicate EXPORT with oridinals: %s"),
+		fatal (_("Error, duplicate EXPORT with ordinals: %s"),
 		      a->name);
 
 	      /* Merge attributes.  */
@@ -3159,6 +3168,8 @@ usage (FILE *file, int status)
   fprintf (file, _("   -L --linker <name>        Use <name> as the linker.\n"));
   fprintf (file, _("   -F --linker-flags <flags> Pass <flags> to the linker.\n"));
 #endif
+  if (REPORT_BUGS_TO[0] && status == 0)
+    fprintf (file, _("Report bugs to %s\n"), REPORT_BUGS_TO);
   exit (status);
 }
 

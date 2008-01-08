@@ -1,12 +1,12 @@
 /* Binutils emulation layer.
-   Copyright 2002, 2003 Free Software Foundation, Inc.
+   Copyright 2002, 2003, 2007 Free Software Foundation, Inc.
    Written by Tom Rix, Red Hat Inc.
 
    This file is part of GNU Binutils.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -16,7 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 #include "binemul.h"
 
@@ -58,7 +59,7 @@ ar_emul_default_append (bfd **after_bfd, char *file_name,
   AR_EMUL_ELEMENT_CHECK (*after_bfd, file_name);
   AR_EMUL_APPEND_PRINT_VERBOSE (verbose, file_name);
 
-  (*after_bfd)->next = temp;
+  (*after_bfd)->archive_next = temp;
 
   return TRUE;
 }
@@ -84,7 +85,7 @@ ar_emul_default_replace (bfd **after_bfd, char *file_name,
   AR_EMUL_ELEMENT_CHECK (*after_bfd, file_name);
   AR_EMUL_REPLACE_PRINT_VERBOSE (verbose, file_name);
 
-  (*after_bfd)->next = temp;
+  (*after_bfd)->archive_next = temp;
 
   return TRUE;
 }

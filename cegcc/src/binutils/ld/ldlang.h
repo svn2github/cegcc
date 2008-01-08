@@ -1,24 +1,24 @@
 /* ldlang.h - linker command language support
    Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005, 2006
+   2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
-   This file is part of GLD, the Gnu Linker.
+   This file is part of the GNU Binutils.
 
-   GLD is free software; you can redistribute it and/or modify
+   This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
-   any later version.
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
 
-   GLD is distributed in the hope that it will be useful,
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with GLD; see the file COPYING.  If not, write to the Free
-   Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA
-   02110-1301, USA.  */
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 #ifndef LDLANG_H
 #define LDLANG_H
@@ -108,6 +108,7 @@ typedef struct lang_output_statement_struct
 enum section_type
 {
   normal_section,
+  overlay_section,
   noload_section,
   noalloc_section
 };
@@ -456,6 +457,7 @@ extern struct bfd_sym_chain entry_symbol;
 extern const char *entry_section;
 extern bfd_boolean entry_from_cmdline;
 extern lang_statement_list_type file_chain;
+extern lang_statement_list_type input_file_chain;
 
 extern int lang_statement_iteration;
 
@@ -607,6 +609,7 @@ extern void lang_register_vers_node
   (const char *, struct bfd_elf_version_tree *, struct bfd_elf_version_deps *);
 extern void lang_append_dynamic_list (struct bfd_elf_version_expr *);
 extern void lang_append_dynamic_list_cpp_typeinfo (void);
+extern void lang_append_dynamic_list_cpp_new (void);
 bfd_boolean unique_section_p
   (const asection *);
 extern void lang_add_unique
@@ -619,5 +622,11 @@ extern void lang_update_definedness
   (const char *, struct bfd_link_hash_entry *);
 
 extern void add_excluded_libs (const char *);
+extern bfd_boolean load_symbols
+  (lang_input_statement_type *, lang_statement_list_type *);
+
+extern bfd_boolean
+ldlang_override_segment_assignment
+  (struct bfd_link_info *, bfd *, asection *, asection *, bfd_boolean);
 
 #endif

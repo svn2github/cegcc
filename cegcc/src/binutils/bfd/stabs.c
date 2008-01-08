@@ -1,13 +1,13 @@
 /* Stabs in sections linking support.
    Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-   2006 Free Software Foundation, Inc.
+   2006, 2007 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -17,13 +17,15 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
+
 
 /* This file contains support for linking stabs in sections, as used
    on COFF and ELF.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "aout/stab_gnu.h"
 #include "safe-ctype.h"
@@ -175,10 +177,8 @@ _bfd_link_section_stabs (bfd *abfd,
        prepared to handle them.  */
     return TRUE;
 
-  if ((stabsec->output_section != NULL
-       && bfd_is_abs_section (stabsec->output_section))
-      || (stabstrsec->output_section != NULL
-	  && bfd_is_abs_section (stabstrsec->output_section)))
+  if (bfd_is_abs_section (stabsec->output_section)
+      || bfd_is_abs_section (stabstrsec->output_section))
     /* At least one of the sections is being discarded from the
        link, so we should just ignore them.  */
     return TRUE;
@@ -433,7 +433,7 @@ _bfd_link_section_stabs (bfd *abfd,
 		    ++nest;
 		  else if (incl_type == (int) N_EXCL)
 		    /* Keep existing exclusion marks.  */
-		    continue;   
+		    continue;
 		  else if (nest == 0)
 		    {
 		      *incl_pstridx = (bfd_size_type) -1;
@@ -458,8 +458,8 @@ _bfd_link_section_stabs (bfd *abfd,
      for that section.  */
   stabsec->size = (count - skip) * STABSIZE;
   if (stabsec->size == 0)
-    stabsec->flags |= SEC_EXCLUDE;
-  stabstrsec->flags |= SEC_EXCLUDE;
+    stabsec->flags |= SEC_EXCLUDE | SEC_KEEP;
+  stabstrsec->flags |= SEC_EXCLUDE | SEC_KEEP;
   sinfo->stabstr->size = _bfd_stringtab_size (sinfo->strings);
 
   /* Calculate the `cumulative_skips' array now that stabs have been
@@ -611,7 +611,7 @@ _bfd_discard_section_stabs (bfd *abfd,
   /* Shrink the stabsec as needed.  */
   stabsec->size -= skip * STABSIZE;
   if (stabsec->size == 0)
-    stabsec->flags |= SEC_EXCLUDE;
+    stabsec->flags |= SEC_EXCLUDE | SEC_KEEP;
 
   /* Recalculate the `cumulative_skips' array now that stabs have been
      deleted for this section.  */

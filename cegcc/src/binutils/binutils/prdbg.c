@@ -1,5 +1,5 @@
 /* prdbg.c -- Print out generic debugging information.
-   Copyright 1995, 1996, 1999, 2002, 2003, 2004, 2006
+   Copyright 1995, 1996, 1999, 2002, 2003, 2004, 2006, 2007
    Free Software Foundation, Inc.
    Written by Ian Lance Taylor <ian@cygnus.com>.
    Tags style generation written by Salvador E. Tropea <set@computer.org>.
@@ -8,7 +8,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -24,12 +24,11 @@
 /* This file prints out the generic debugging information, by
    supplying a set of routines to debug_write.  */
 
-#include <stdio.h>
+#include "sysdep.h"
 #include <assert.h>
-
 #include "bfd.h"
-#include "bucomm.h"
 #include "libiberty.h"
+#include "demangle.h"
 #include "debug.h"
 #include "budbg.h"
 
@@ -53,7 +52,7 @@ struct pr_handle
   /* The symbols table for this BFD.  */
   asymbol **syms;
   /* Pointer to a function to demangle symbols.  */
-  char *(*demangler) (bfd *, const char *);
+  char *(*demangler) (bfd *, const char *, int);
 };
 
 /* The type stack.  */
@@ -2526,25 +2525,18 @@ tg_variable (void *p, const char *name, enum debug_var_kind kind,
 	     bfd_vma val ATTRIBUTE_UNUSED)
 {
   struct pr_handle *info = (struct pr_handle *) p;
-  char *t;
-  const char *dname, *from_class;
+  char *t, *dname, *from_class;
 
   t = pop_type (info);
   if (t == NULL)
     return FALSE;
 
-  dname = name;
+  dname = NULL;
   if (info->demangler)
-    {
-      dname = info->demangler (info->abfd, name);
-      if (strcmp (name, dname) == 0)
-	{
-	  free ((char *) dname);
-	  dname = name;
-	}
-    }
+    dname = info->demangler (info->abfd, name, DMGL_ANSI | DMGL_PARAMS);
 
-  if (dname != name)
+  from_class = NULL;
+  if (dname != NULL)
     {
       char *sep;
       sep = strstr (dname, "::");
@@ -2555,14 +2547,9 @@ tg_variable (void *p, const char *name, enum debug_var_kind kind,
 	  from_class = dname;
 	}
       else
-	{
-	  /* Obscure types as vts and type_info nodes.  */
-	  name = dname;
-	  from_class = NULL;
-	}
+	/* Obscure types as vts and type_info nodes.  */
+	name = dname;
     }
-  else
-    from_class = NULL;
 
   fprintf (info->f, "%s\t%s\t0;\"\tkind:v\ttype:%s", name, info->filename, t);
 
@@ -2580,10 +2567,10 @@ tg_variable (void *p, const char *name, enum debug_var_kind kind,
     }
 
   if (from_class)
-    {
-      fprintf (info->f, "\tclass:%s",from_class);
-      free ((char *) dname);
-    }
+    fprintf (info->f, "\tclass:%s", from_class);
+
+  if (dname)
+    free (dname);
 
   fprintf (info->f, "\n");
 
@@ -2598,28 +2585,22 @@ static bfd_boolean
 tg_start_function (void *p, const char *name, bfd_boolean global)
 {
   struct pr_handle *info = (struct pr_handle *) p;
-  const char *dname;
+  char *dname;
 
   if (! global)
     info->stack->flavor = "static";
   else
     info->stack->flavor = NULL;
 
-  dname = name;
+  dname = NULL;
   if (info->demangler)
-    {
-      dname = info->demangler (info->abfd, name);
-      if (strcmp (name, dname) == 0)
-	{
-	  free ((char *) dname);
-	  dname = name;
-	}
-    }
+    dname = info->demangler (info->abfd, name, DMGL_ANSI | DMGL_PARAMS);
 
-  if (! substitute_type (info, dname))
+  if (! substitute_type (info, dname ? dname : name))
     return FALSE;
 
-  if (dname != name)
+  info->stack->method = NULL;
+  if (dname != NULL)
     {
       char *sep;
       sep = strstr (dname, "::");
@@ -2639,8 +2620,6 @@ tg_start_function (void *p, const char *name, bfd_boolean global)
 	*sep = 0;
       /* Obscure functions as type_info function.  */
     }
-  else
-    info->stack->method = NULL;
 
   info->stack->parents = strdup (name);
 

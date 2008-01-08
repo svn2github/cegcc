@@ -1,10 +1,12 @@
 /* Select disassembly routine for specified architecture.
    Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-   2004, 2005, 2006 Free Software Foundation, Inc.
+   2004, 2005, 2006, 2007 Free Software Foundation, Inc.
 
-   This program is free software; you can redistribute it and/or modify
+   This file is part of the GNU opcodes library.
+
+   This library is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -14,7 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 #include "sysdep.h"
 #include "dis-asm.h"
@@ -25,6 +28,7 @@
 #define ARCH_arm
 #define ARCH_avr
 #define ARCH_bfin
+#define ARCH_cr16
 #define ARCH_cris
 #define ARCH_crx
 #define ARCH_d10v
@@ -50,6 +54,7 @@
 #define ARCH_m88k
 #define ARCH_maxq
 #define ARCH_mcore
+#define ARCH_mep
 #define ARCH_mips
 #define ARCH_mmix
 #define ARCH_mn10200
@@ -67,6 +72,7 @@
 #define ARCH_score
 #define ARCH_sh
 #define ARCH_sparc
+#define ARCH_spu
 #define ARCH_tic30
 #define ARCH_tic4x
 #define ARCH_tic54x
@@ -125,6 +131,11 @@ disassembler (abfd)
 #ifdef ARCH_bfin
     case bfd_arch_bfin:
       disassemble = print_insn_bfin;
+      break;
+#endif
+#ifdef ARCH_cr16
+    case bfd_arch_cr16:
+      disassemble = print_insn_cr16;
       break;
 #endif
 #ifdef ARCH_cris
@@ -260,6 +271,11 @@ disassembler (abfd)
       disassemble = print_insn_mcore;
       break;
 #endif
+#ifdef ARCH_mep
+    case bfd_arch_mep:
+      disassemble = print_insn_mep;
+      break;
+#endif
 #ifdef ARCH_mips
     case bfd_arch_mips:
       if (bfd_big_endian (abfd))
@@ -343,6 +359,11 @@ disassembler (abfd)
 #ifdef ARCH_sparc
     case bfd_arch_sparc:
       disassemble = print_insn_sparc;
+      break;
+#endif
+#ifdef ARCH_spu
+    case bfd_arch_spu:
+      disassemble = print_insn_spu;
       break;
 #endif
 #ifdef ARCH_tic30
@@ -442,6 +463,9 @@ disassembler_usage (stream)
 #ifdef ARCH_powerpc
   print_ppc_disassembler_options (stream);
 #endif
+#ifdef ARCH_i386
+  print_i386_disassembler_options (stream);
+#endif
 
   return;
 }
@@ -468,6 +492,12 @@ disassemble_init_for_target (struct disassemble_info * info)
 #ifdef ARCH_tic4x
     case bfd_arch_tic4x:
       info->skip_zeroes = 32;
+      break;
+#endif
+#ifdef ARCH_mep
+    case bfd_arch_mep:
+      info->skip_zeroes = 256;
+      info->skip_zeroes_at_end = 0;
       break;
 #endif
 #ifdef ARCH_m32c

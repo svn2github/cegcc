@@ -1,23 +1,23 @@
 /* Generic stabs parsing for gas.
    Copyright 1989, 1990, 1991, 1993, 1995, 1996, 1997, 1998, 2000, 2001
-   2002, 2003, 2004, 2005 Free Software Foundation, Inc.
+   2002, 2003, 2004, 2005, 2007 Free Software Foundation, Inc.
 
-This file is part of GAS, the GNU Assembler.
+   This file is part of GAS, the GNU Assembler.
 
-GAS is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as
-published by the Free Software Foundation; either version 2,
-or (at your option) any later version.
+   GAS is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as
+   published by the Free Software Foundation; either version 3,
+   or (at your option) any later version.
 
-GAS is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-the GNU General Public License for more details.
+   GAS is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+   the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with GAS; see the file COPYING.  If not, write to the Free
-Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA
-02110-1301, USA.  */
+   You should have received a copy of the GNU General Public License
+   along with GAS; see the file COPYING.  If not, write to the Free
+   Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA
+   02110-1301, USA.  */
 
 #include "as.h"
 #include "obstack.h"
@@ -163,6 +163,8 @@ aout_process_stab (what, string, type, other, desc)
     }
 
   symbol_append (symbol, symbol_lastP, &symbol_rootP, &symbol_lastP);
+
+  symbol_get_bfdsym (symbol)->flags |= BSF_DEBUGGING;
 
   S_SET_TYPE (symbol, type);
   S_SET_OTHER (symbol, other);
@@ -492,9 +494,10 @@ stabs_generate_asm_file (void)
   as_where (&file, &lineno);
   if (use_gnu_debug_info_extensions)
     {
-      char *dir, *dir2;
+      const char *dir;
+      char *dir2;
 
-      dir = getpwd ();
+      dir = remap_debug_filename (getpwd ());
       dir2 = alloca (strlen (dir) + 2);
       sprintf (dir2, "%s%s", dir, "/");
       generate_asm_file (N_SO, dir2);
@@ -666,8 +669,9 @@ stabs_generate_asm_func (const char *funcname, const char *startlabname)
     }
 
   as_where (&file, &lineno);
-  asprintf (&buf, "\"%s:F1\",%d,0,%d,%s",
-	    funcname, N_FUN, lineno + 1, startlabname);
+  if (asprintf (&buf, "\"%s:F1\",%d,0,%d,%s",
+		funcname, N_FUN, lineno + 1, startlabname) == -1)
+    as_fatal ("%s", xstrerror (errno));
   input_line_pointer = buf;
   s_stab ('s');
   free (buf);
@@ -692,7 +696,8 @@ stabs_generate_asm_endfunc (const char *funcname ATTRIBUTE_UNUSED,
   ++label_count;
   colon (sym);
 
-  asprintf (&buf, "\"\",%d,0,0,%s-%s", N_FUN, sym, startlabname);
+  if (asprintf (&buf, "\"\",%d,0,0,%s-%s", N_FUN, sym, startlabname) == -1)
+    as_fatal ("%s", xstrerror (errno));
   input_line_pointer = buf;
   s_stab ('s');
   free (buf);

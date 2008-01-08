@@ -1,12 +1,12 @@
 /* Generic support for 64-bit ELF
-   Copyright 1993, 1995, 1998, 1999, 2001, 2002, 2004, 2005
+   Copyright 1993, 1995, 1998, 1999, 2001, 2002, 2004, 2005, 2007
    Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -16,10 +16,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "elf-bfd.h"
 
@@ -94,6 +95,7 @@ elf64_generic_link_add_symbols (bfd *abfd, struct bfd_link_info *info)
 #define ELF_MACHINE_CODE		EM_NONE
 #define ELF_MAXPAGESIZE			0x1
 #define bfd_elf64_bfd_reloc_type_lookup bfd_default_reloc_type_lookup
+#define bfd_elf64_bfd_reloc_name_lookup _bfd_norelocs_bfd_reloc_name_lookup
 #define bfd_elf64_bfd_link_add_symbols	elf64_generic_link_add_symbols
 #define elf_info_to_howto		elf_generic_info_to_howto
 #define elf_info_to_howto_rel		elf_generic_info_to_howto_rel

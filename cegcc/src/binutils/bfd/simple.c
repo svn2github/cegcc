@@ -1,5 +1,5 @@
 /* simple.c -- BFD simple client routines
-   Copyright 2002, 2003, 2004, 2005
+   Copyright 2002, 2003, 2004, 2005, 2007
    Free Software Foundation, Inc.
    Contributed by MontaVista Software, Inc.
 
@@ -7,7 +7,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -17,10 +17,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "bfdlink.h"
 
@@ -161,7 +162,10 @@ bfd_simple_get_relocated_section_contents (bfd *abfd,
   int storage_needed;
   void *saved_offsets;
 
-  if (! (sec->flags & SEC_RELOC))
+  /* Don't apply relocation on executable and shared library.  See
+     PR 4756.  */
+  if ((abfd->flags & (HAS_RELOC | EXEC_P | DYNAMIC)) != HAS_RELOC
+      || ! (sec->flags & SEC_RELOC))
     {
       bfd_size_type amt = sec->rawsize > sec->size ? sec->rawsize : sec->size;
       bfd_size_type size = sec->rawsize ? sec->rawsize : sec->size;
@@ -183,6 +187,7 @@ bfd_simple_get_relocated_section_contents (bfd *abfd,
   /* Fill in the bare minimum number of fields for our purposes.  */
   memset (&link_info, 0, sizeof (link_info));
   link_info.input_bfds = abfd;
+  link_info.input_bfds_tail = &abfd->link_next;
 
   link_info.hash = _bfd_generic_link_hash_table_create (abfd);
   link_info.callbacks = &callbacks;

@@ -1,16 +1,18 @@
 /* Disassemble h8300 instructions.
-   Copyright 1993, 1994, 1996, 1998, 2000, 2001, 2002, 2003, 2004, 2005, 2006
-   Free Software Foundation, Inc.
+   Copyright 1993, 1994, 1996, 1998, 2000, 2001, 2002, 2003, 2004, 2005, 2006,
+   2007  Free Software Foundation, Inc.
 
-   This program is free software; you can redistribute it and/or modify
+   This file is part of the GNU opcodes library.
+
+   This library is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+   the Free Software Foundation; either version 3, or (at your option)
+   any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   It is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+   License for more details.
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
@@ -362,7 +364,7 @@ bfd_h8_disassemble (bfd_vma addr, disassemble_info *info, int mach)
   for (qi = h8_instructions; qi->opcode->name; qi++)
     {
       const struct h8_opcode *q = qi->opcode;
-      op_type *nib = q->data.nib;
+      const op_type *nib = q->data.nib;
       unsigned int len = 0;
 
       while (1)
@@ -640,7 +642,7 @@ bfd_h8_disassemble (bfd_vma addr, disassemble_info *info, int mach)
 		    }
 		  if (CONST_STRNEQ (q->name, "mova"))
 		    {
-		      op_type *args = q->args.nib;
+		      const op_type *args = q->args.nib;
 
 		      if (args[1] == (op_type) E)
 			{
@@ -666,7 +668,7 @@ bfd_h8_disassemble (bfd_vma addr, disassemble_info *info, int mach)
 		    }
 		  /* Fill in the args.  */
 		  {
-		    op_type *args = q->args.nib;
+		    const op_type *args = q->args.nib;
 		    int hadone = 0;
 		    int nargs;
 

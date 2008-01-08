@@ -1,11 +1,12 @@
 /* tc-iq2000.c -- Assembler for the Sitera IQ2000.
-   Copyright (C) 2003, 2004, 2005, 2006 Free Software Foundation.
+   Copyright (C) 2003, 2004, 2005, 2006, 2007
+   Free Software Foundation. Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -724,60 +725,11 @@ md_operand (expressionS * exp)
     gas_cgen_md_operand (exp);
 }
 
-/* Turn a string in input_line_pointer into a floating point constant
-   of type type, and store the appropriate bytes in *litP.  The number
-   of LITTLENUMS emitted is stored in *sizeP .  An error message is
-   returned, or NULL on OK.  */
-
-/* Equal to MAX_PRECISION in atof-ieee.c */
-#define MAX_LITTLENUMS 6
-
 char *
 md_atof (int type, char * litP, int * sizeP)
 {
-  int              i;
-  int              prec;
-  LITTLENUM_TYPE   words [MAX_LITTLENUMS];
-  char *           t;
-
-  switch (type)
-    {
-    case 'f':
-    case 'F':
-    case 's':
-    case 'S':
-      prec = 2;
-      break;
-
-    case 'd':
-    case 'D':
-    case 'r':
-    case 'R':
-      prec = 4;
-      break;
-
-   /* FIXME: Some targets allow other format chars for bigger sizes here.  */
-
-    default:
-      * sizeP = 0;
-      return _("Bad call to md_atof()");
-    }
-
-  t = atof_ieee (input_line_pointer, type, words);
-  if (t)
-    input_line_pointer = t;
-  * sizeP = prec * sizeof (LITTLENUM_TYPE);
-
-  for (i = 0; i < prec; i++)
-    {
-      md_number_to_chars (litP, (valueT) words[i],
-			  sizeof (LITTLENUM_TYPE));
-      litP += sizeof (LITTLENUM_TYPE);
-    }
-
-  return 0;
+  return ieee_md_atof (type, litP, sizeP, TRUE);
 }
-
 
 bfd_boolean
 iq2000_fix_adjustable (fixS * fixP)

@@ -55,8 +55,17 @@ Generate code for PowerPC 440.  BookE and some 405 instructions.
 @item -m7400, -m7410, -m7450, -m7455
 Generate code for PowerPC 7400/7410/7450/7455.
 
+@item -m750cl
+Generate code for PowerPC 750CL.
+
 @item -mppc64, -m620
 Generate code for PowerPC 620/625/630.
+
+@item -me500, -me500x2
+Generate code for Motorola e500 core complex.
+
+@item -mspe
+Generate code for Motorola SPE instructions.
 
 @item -mppc64bridge
 Generate code for PowerPC 64, including bridge insns.
@@ -81,6 +90,9 @@ Generate code for Power5 architecture.
 
 @item -mpower6
 Generate code for Power6 architecture.
+
+@item -mcell
+Generate code for Cell Broadband Engine architecture.
 
 @item -mcom
 Generate code Power/PowerPC common instructions.

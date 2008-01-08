@@ -1,13 +1,13 @@
 /* vms.c -- BFD back-end for VAX (openVMS/VAX) and
    EVAX (openVMS/Alpha) files.
    Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-   2006 Free Software Foundation, Inc.
+   2006, 2007 Free Software Foundation, Inc.
 
    Written by Klaus K"ampf (kkaempf@rmi.de)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -17,10 +17,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "bfdlink.h"
 #include "libbfd.h"
 
@@ -1351,6 +1352,22 @@ vms_bfd_reloc_type_lookup (bfd * abfd ATTRIBUTE_UNUSED,
   vms_debug (2, "reloc is %s\n", alpha_howto_table[alpha_type].name);
 #endif
   return & alpha_howto_table[alpha_type];
+}
+
+static reloc_howto_type *
+vms_bfd_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+			   const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0;
+       i < sizeof (alpha_howto_table) / sizeof (alpha_howto_table[0]);
+       i++)
+    if (alpha_howto_table[i].name != NULL
+	&& strcasecmp (alpha_howto_table[i].name, r_name) == 0)
+      return &alpha_howto_table[i];
+
+  return NULL;
 }
 
 /* Part 4.7, writing an object file.  */

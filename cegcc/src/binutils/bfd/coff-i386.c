@@ -1,6 +1,6 @@
 /* BFD back-end for Intel 386 COFF files.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004
+   2000, 2001, 2002, 2003, 2004, 2007
    Free Software Foundation, Inc.
    Written by Cygnus Support.
 
@@ -8,7 +8,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -18,10 +18,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 
 #include "coff/i386.h"
@@ -449,7 +450,7 @@ coff_i386_rtype_to_howto (abfd, sec, rel, h, sym, addendp)
 {
   reloc_howto_type *howto;
 
-  if (rel->r_type > sizeof (howto_table) / sizeof (howto_table[0]))
+  if (rel->r_type >= sizeof (howto_table) / sizeof (howto_table[0]))
     {
       bfd_set_error (bfd_error_bad_value);
       return NULL;
@@ -517,7 +518,8 @@ coff_i386_rtype_to_howto (abfd, sec, rel, h, sym, addendp)
       *addendp -= pe_data(sec->output_section->owner)->pe_opthdr.ImageBase;
     }
 
-  if (rel->r_type == R_SECREL32)
+  BFD_ASSERT (sym != NULL);
+  if (rel->r_type == R_SECREL32 && sym != NULL)
     {
       bfd_vma osect_vma;
 
@@ -546,6 +548,7 @@ coff_i386_rtype_to_howto (abfd, sec, rel, h, sym, addendp)
 }
 
 #define coff_bfd_reloc_type_lookup coff_i386_reloc_type_lookup
+#define coff_bfd_reloc_name_lookup coff_i386_reloc_name_lookup
 
 static reloc_howto_type *
 coff_i386_reloc_type_lookup (abfd, code)
@@ -576,6 +579,20 @@ coff_i386_reloc_type_lookup (abfd, code)
       BFD_FAIL ();
       return 0;
     }
+}
+
+static reloc_howto_type *
+coff_i386_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+			     const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0; i < sizeof (howto_table) / sizeof (howto_table[0]); i++)
+    if (howto_table[i].name != NULL
+	&& strcasecmp (howto_table[i].name, r_name) == 0)
+      return &howto_table[i];
+
+  return NULL;
 }
 
 #define coff_rtype_to_howto coff_i386_rtype_to_howto

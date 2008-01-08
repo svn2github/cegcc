@@ -1,12 +1,12 @@
 # This shell script emits a C file. -*- C -*-
-#   Copyright 1991, 1993, 1994, 1997, 1999, 2000, 2001, 2002, 2003
+#   Copyright 1991, 1993, 1994, 1997, 1999, 2000, 2001, 2002, 2003, 2007
 #   Free Software Foundation, Inc.
 #
-# This file is part of GLD, the Gnu Linker.
+# This file is part of the GNU Binutils.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -16,7 +16,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+# MA 02110-1301, USA.
 #
 
 # This file is sourced from elf32.em, and defines extra m68hc12-elf
@@ -39,7 +40,7 @@
 #
 # Copied from hppaelf and adapted for M68HC11/M68HC12 specific needs.
 #
-cat >>e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 
 #include "ldctor.h"
 #include "elf32-m68hc1x.h"
@@ -351,11 +352,11 @@ PARSE_AND_LIST_LONGOPTS='
 '
 
 PARSE_AND_LIST_OPTIONS='
-  fprintf (file, _(""
-"  --no-trampoline         Do not generate the far trampolines used to call\n"
-"                          a far function using 'jsr' or 'bsr'.\n"
-"  --bank-window NAME      Specify the name of the memory region describing\n"
-"                          the layout of the memory bank window.\n"
+  fprintf (file, _(
+"  --no-trampoline             Do not generate the far trampolines used to call\n"
+"                                a far function using 'jsr' or 'bsr'.\n"
+"  --bank-window NAME          Specify the name of the memory region describing\n"
+"                                the layout of the memory bank window.\n"
 		   ));
 '
 

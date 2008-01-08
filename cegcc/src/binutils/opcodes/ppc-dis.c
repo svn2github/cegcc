@@ -1,23 +1,24 @@
 /* ppc-dis.c -- Disassemble PowerPC instructions
-   Copyright 1994, 1995, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   Copyright 1994, 1995, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Cygnus Support
 
-This file is part of GDB, GAS, and the GNU binutils.
+   This file is part of the GNU opcodes library.
 
-GDB, GAS, and the GNU binutils are free software; you can redistribute
-them and/or modify them under the terms of the GNU General Public
-License as published by the Free Software Foundation; either version
-2, or (at your option) any later version.
+   This library is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3, or (at your option)
+   any later version.
 
-GDB, GAS, and the GNU binutils are distributed in the hope that they
-will be useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-the GNU General Public License for more details.
+   It is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+   License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this file; see the file COPYING.  If not, write to the Free
-Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   You should have received a copy of the GNU General Public License
+   along with this file; see the file COPYING.  If not, write to the
+   Free Software Foundation, 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 #include <stdio.h>
 #include "sysdep.h"
@@ -45,6 +46,9 @@ powerpc_dialect (struct disassemble_info *info)
     dialect |= PPC_OPCODE_64;
 
   if (info->disassembler_options
+      && strstr (info->disassembler_options, "ppcps") != NULL)
+    dialect |= PPC_OPCODE_PPCPS;
+  else if (info->disassembler_options
       && strstr (info->disassembler_options, "booke") != NULL)
     dialect |= PPC_OPCODE_BOOKE | PPC_OPCODE_BOOKE64;
   else if ((info->mach == bfd_mach_ppc_e500)
@@ -61,6 +65,10 @@ powerpc_dialect (struct disassemble_info *info)
   else if (info->disassembler_options
 	   && strstr (info->disassembler_options, "e300") != NULL)
     dialect |= PPC_OPCODE_E300 | PPC_OPCODE_CLASSIC | PPC_OPCODE_COMMON;
+  else if (info->disassembler_options
+	   && strstr (info->disassembler_options, "440") != NULL)
+    dialect |= PPC_OPCODE_BOOKE | PPC_OPCODE_32
+      | PPC_OPCODE_440 | PPC_OPCODE_ISEL | PPC_OPCODE_RFMCI;
   else
     dialect |= (PPC_OPCODE_403 | PPC_OPCODE_601 | PPC_OPCODE_CLASSIC
 		| PPC_OPCODE_COMMON | PPC_OPCODE_ALTIVEC);
@@ -72,6 +80,10 @@ powerpc_dialect (struct disassemble_info *info)
   if (info->disassembler_options
       && strstr (info->disassembler_options, "power5") != NULL)
     dialect |= PPC_OPCODE_POWER4 | PPC_OPCODE_POWER5;
+
+  if (info->disassembler_options
+      && strstr (info->disassembler_options, "cell") != NULL)
+    dialect |= PPC_OPCODE_POWER4 | PPC_OPCODE_CELL | PPC_OPCODE_ALTIVEC;
 
   if (info->disassembler_options
       && strstr (info->disassembler_options, "power6") != NULL)
@@ -119,6 +131,56 @@ print_insn_rs6000 (bfd_vma memaddr, struct disassemble_info *info)
   return print_insn_powerpc (memaddr, info, 1, PPC_OPCODE_POWER);
 }
 
+/* Extract the operand value from the PowerPC or POWER instruction.  */
+
+static long
+operand_value_powerpc (const struct powerpc_operand *operand,
+		       unsigned long insn, int dialect)
+{
+  long value;
+  int invalid;
+  /* Extract the value from the instruction.  */
+  if (operand->extract)
+    value = (*operand->extract) (insn, dialect, &invalid);
+  else
+    {
+      value = (insn >> operand->shift) & operand->bitm;
+      if ((operand->flags & PPC_OPERAND_SIGNED) != 0)
+	{
+	  /* BITM is always some number of zeros followed by some
+	     number of ones, followed by some numer of zeros.  */
+	  unsigned long top = operand->bitm;
+	  /* top & -top gives the rightmost 1 bit, so this
+	     fills in any trailing zeros.  */
+	  top |= (top & -top) - 1;
+	  top &= ~(top >> 1);
+	  value = (value ^ top) - top;
+	}
+    }
+
+  return value;
+}
+
+/* Determine whether the optional operand(s) should be printed.  */
+
+static int
+skip_optional_operands (const unsigned char *opindex,
+			unsigned long insn, int dialect)
+{
+  const struct powerpc_operand *operand;
+
+  for (; *opindex != 0; opindex++)
+    {
+      operand = &powerpc_operands[*opindex];
+      if ((operand->flags & PPC_OPERAND_NEXT) != 0
+	  || ((operand->flags & PPC_OPERAND_OPTIONAL) != 0
+	      && operand_value_powerpc (operand, insn, dialect) != 0))
+	return 0;
+    }
+
+  return 1;
+}
+
 /* Print a PowerPC or POWER instruction.  */
 
 static int
@@ -164,6 +226,7 @@ print_insn_powerpc (bfd_vma memaddr,
       int invalid;
       int need_comma;
       int need_paren;
+      int skip_optional;
 
       table_op = PPC_OP (opcode->opcode);
       if (op < table_op)
@@ -197,6 +260,7 @@ print_insn_powerpc (bfd_vma memaddr,
       /* Now extract and print the operands.  */
       need_comma = 0;
       need_paren = 0;
+      skip_optional = -1;
       for (opindex = opcode->operands; *opindex != 0; opindex++)
 	{
 	  long value;
@@ -209,23 +273,18 @@ print_insn_powerpc (bfd_vma memaddr,
 	  if ((operand->flags & PPC_OPERAND_FAKE) != 0)
 	    continue;
 
-	  /* Extract the value from the instruction.  */
-	  if (operand->extract)
-	    value = (*operand->extract) (insn, dialect, &invalid);
-	  else
+	  /* If all of the optional operands have the value zero,
+	     then don't print any of them.  */
+	  if ((operand->flags & PPC_OPERAND_OPTIONAL) != 0)
 	    {
-	      value = (insn >> operand->shift) & ((1 << operand->bits) - 1);
-	      if ((operand->flags & PPC_OPERAND_SIGNED) != 0
-		  && (value & (1 << (operand->bits - 1))) != 0)
-		value -= 1 << operand->bits;
+	      if (skip_optional < 0)
+		skip_optional = skip_optional_operands (opindex, insn,
+							dialect);
+	      if (skip_optional)
+		continue;
 	    }
 
-	  /* If the operand is optional, and the value is zero, don't
-	     print anything.  */
-	  if ((operand->flags & PPC_OPERAND_OPTIONAL) != 0
-	      && (operand->flags & PPC_OPERAND_NEXT) == 0
-	      && value == 0)
-	    continue;
+	  value = operand_value_powerpc (operand, insn, dialect);
 
 	  if (need_comma)
 	    {
@@ -250,7 +309,7 @@ print_insn_powerpc (bfd_vma memaddr,
 	    (*info->fprintf_func) (info->stream, "%ld", value);
 	  else
 	    {
-	      if (operand->bits == 3)
+	      if (operand->bitm == 7)
 		(*info->fprintf_func) (info->stream, "cr%ld", value);
 	      else
 		{
@@ -307,7 +366,9 @@ the -M switch:\n");
   fprintf (stream, "  booke|booke32|booke64    Disassemble the BookE instructions\n");
   fprintf (stream, "  e300                     Disassemble the e300 instructions\n");
   fprintf (stream, "  e500|e500x2              Disassemble the e500 instructions\n");
+  fprintf (stream, "  440                      Disassemble the 440 instructions\n");
   fprintf (stream, "  efs                      Disassemble the EFS instructions\n");
+  fprintf (stream, "  ppcps                    Disassemble the PowerPC paired singles instructions\n");
   fprintf (stream, "  power4                   Disassemble the Power4 instructions\n");
   fprintf (stream, "  power5                   Disassemble the Power5 instructions\n");
   fprintf (stream, "  power6                   Disassemble the Power6 instructions\n");

@@ -1,13 +1,13 @@
 /* Support for the generic parts of PE/PEI; common header information.
-   Copyright 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2005, 2006
-   Free Software Foundation, Inc.
+   Copyright 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2005,
+   2006, 2007   Free Software Foundation, Inc.
    Written by Cygnus Solutions.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -17,7 +17,9 @@
    
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
+
 
 /* Most of this hacked by  Steve Chamberlain,
 			sac@cygnus.com
@@ -224,7 +226,6 @@
 #define _bfd_XX_only_swap_filehdr_out			_bfd_pex64_only_swap_filehdr_out
 #define _bfd_XX_print_private_bfd_data_common		_bfd_pex64_print_private_bfd_data_common
 #define _bfd_XXi_final_link_postscript			_bfd_pex64i_final_link_postscript
-#define _bfd_XXi_final_link_postscript			_bfd_pex64i_final_link_postscript
 #define _bfd_XXi_only_swap_filehdr_out			_bfd_pex64i_only_swap_filehdr_out
 #define _bfd_XXi_swap_aouthdr_in			_bfd_pex64i_swap_aouthdr_in
 #define _bfd_XXi_swap_aouthdr_out			_bfd_pex64i_swap_aouthdr_out
@@ -255,7 +256,6 @@
 #define _bfd_XX_get_symbol_info				_bfd_pep_get_symbol_info
 #define _bfd_XX_only_swap_filehdr_out			_bfd_pep_only_swap_filehdr_out
 #define _bfd_XX_print_private_bfd_data_common		_bfd_pep_print_private_bfd_data_common
-#define _bfd_XXi_final_link_postscript			_bfd_pepi_final_link_postscript
 #define _bfd_XXi_final_link_postscript			_bfd_pepi_final_link_postscript
 #define _bfd_XXi_only_swap_filehdr_out			_bfd_pepi_only_swap_filehdr_out
 #define _bfd_XXi_swap_aouthdr_in			_bfd_pepi_swap_aouthdr_in
@@ -288,7 +288,6 @@
 #define _bfd_XX_only_swap_filehdr_out			_bfd_pe_only_swap_filehdr_out
 #define _bfd_XX_print_private_bfd_data_common		_bfd_pe_print_private_bfd_data_common
 #define _bfd_XXi_final_link_postscript			_bfd_pei_final_link_postscript
-#define _bfd_XXi_final_link_postscript			_bfd_pei_final_link_postscript
 #define _bfd_XXi_only_swap_filehdr_out			_bfd_pei_only_swap_filehdr_out
 #define _bfd_XXi_swap_aouthdr_in			_bfd_pei_swap_aouthdr_in
 #define _bfd_XXi_swap_aouthdr_out			_bfd_pei_swap_aouthdr_out
@@ -302,10 +301,27 @@
 
 #endif /* !COFF_WITH_pep */
 
-/* Macro: Returns true if the bfd is a PE executable as opposed to a PE object file.  */
+/* Returns true if the target is a PE executable target.  */
+#define bfd_target_pei_p(xvec)				\
+  (CONST_STRNEQ ((xvec)->name, "pei-"))
+
+/* Return the arch string of a PE executable target.  */
+#define bfd_target_pei_arch(xvec)				\
+  ((xvec)->name + sizeof ("pei-") - 1)
+
+/* Returns true if the target is an EFI target.  */
+#define bfd_target_efi_p(xvec)				\
+   (CONST_STRNEQ ((xvec)->name, "efi-app-"))
+
+/* Return the arch string of an EFI target.  */
+#define bfd_target_efi_arch(xvec)				\
+  ((xvec)->name + sizeof ("efi-app-") - 1)
+
+/* Macro: Returns true if the bfd is a PE executable as opposed to a
+   PE object file.  */
 #define bfd_pe_executable_p(abfd)			\
-  (CONST_STRNEQ ((abfd)->xvec->name, "pei-")		\
-   || CONST_STRNEQ ((abfd)->xvec->name, "efi-app-"))
+  (bfd_target_pei_p ((abfd)->xvec)			\
+   || bfd_target_efi_p ((abfd)->xvec))
 
 /* These functions are architecture dependent, and are in peicode.h:
    coff_swap_reloc_in

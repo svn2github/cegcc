@@ -87,7 +87,8 @@ START_RELOC_NUMBERS (elf_mips_reloc_type)
   RELOC_NUMBER (R_MIPS_TLS_TPREL64, 48)
   RELOC_NUMBER (R_MIPS_TLS_TPREL_HI16, 49)
   RELOC_NUMBER (R_MIPS_TLS_TPREL_LO16, 50)
-  FAKE_RELOC (R_MIPS_max, 51)
+  RELOC_NUMBER (R_MIPS_GLOB_DAT, 51)
+  FAKE_RELOC (R_MIPS_max, 52)
   /* These relocs are used for the mips16.  */
   FAKE_RELOC (R_MIPS16_min, 100)
   RELOC_NUMBER (R_MIPS16_26, 100)
@@ -215,6 +216,8 @@ END_RELOC_NUMBERS (R_MIPS_maxext)
 #define E_MIPS_MACH_5400	0x00910000
 #define E_MIPS_MACH_5500	0x00980000
 #define E_MIPS_MACH_9000	0x00990000
+#define E_MIPS_MACH_LS2E        0x00A00000
+#define E_MIPS_MACH_LS2F        0x00A10000
 
 /* Processor specific section indices.  These sections do not actually
    exist.  Symbols with a st_shndx field corresponding to one of these
@@ -1004,5 +1007,16 @@ extern void bfd_mips_elf64_swap_reginfo_out
 #define OHWA0_R4KEOP_CHECKED	0x00000001
 #define OHWA0_R4KEOP_CLEAN	0x00000002
 
+
+/* Object attribute tags.  */
+enum
+{
+  /* 0-3 are generic.  */
+  Tag_GNU_MIPS_ABI_FP = 4, /* Value 1 for hard-float -mdouble-float, 2
+			      for hard-float -msingle-float, 3 for
+			      soft-float, 4 for -mips32r2 -mfp64; 0 for
+			      not tagged or not using any ABIs affected
+			      by the differences.  */
+};
 
 #endif /* _ELF_MIPS_H */

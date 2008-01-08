@@ -8,13 +8,15 @@ else
 fi
 rm -f e${EMULATION_NAME}.c
 (echo;echo;echo;echo;echo)>e${EMULATION_NAME}.c # there, now line numbers match ;-)
-cat >>e${EMULATION_NAME}.c <<EOF
-/* This file is part of GLD, the Gnu Linker.
-   Copyright 2006 Free Software Foundation, Inc.
+fragment <<EOF
+/* Copyright 2006, 2007 Free Software Foundation, Inc.
+   Written by Kai Tietz, OneVision Software GmbH&CoKg.
+
+   This file is part of the GNU Binutils.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -24,9 +26,9 @@ cat >>e${EMULATION_NAME}.c <<EOF
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
-   
-   Written by Kai Tietz, OneVision Software GmbH&CoKg.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
+
 
 /* For WINDOWS_XP64 and higher */
 /* Based on pe.em, but modified for 64 bit support.  */
@@ -37,8 +39,8 @@ cat >>e${EMULATION_NAME}.c <<EOF
 #define COFF_WITH_PE
 #define COFF_WITH_pex64
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "bfdlink.h"
 #include "getopt.h"
 #include "libiberty.h"
@@ -104,7 +106,7 @@ static int support_old_code = 0;
 static lang_assignment_statement_type *image_base_statement = 0;
 
 #ifdef DLL_SUPPORT
-static int    pep_enable_stdcall_fixup = -1; /* 0=disable 1=enable.  */
+static int    pep_enable_stdcall_fixup = 1; /* 0=disable 1=enable (default).  */
 static char * pep_out_def_filename = NULL;
 static char * pep_implib_filename = NULL;
 static int    pep_enable_auto_image_base = 0;
@@ -258,7 +260,7 @@ static definfo init[] =
 #define DLLOFF 1
   {&dll, sizeof(dll), 0, "__dll__", 0},
 #define MSIMAGEBASEOFF	2
-  D(ImageBase,"__ImageBase", NT_EXE_IMAGE_BASE),
+  D(ImageBase,"___ImageBase", NT_EXE_IMAGE_BASE),
   D(SectionAlignment,"__section_alignment__", PE_DEF_SECTION_ALIGNMENT),
   D(FileAlignment,"__file_alignment__", PE_DEF_FILE_ALIGNMENT),
   D(MajorOperatingSystemVersion,"__major_os_version__", 4),
@@ -341,7 +343,7 @@ set_pep_name (char *name, long val)
 	  init[i].value = val;
 	  init[i].inited = 1;
 	  if (strcmp (name,"__image_base__") == 0)
-	    set_pep_name ("__ImageBase", val);
+	    set_pep_name ("___ImageBase", val);
 	  return;
 	}
     }
@@ -882,8 +884,20 @@ pep_find_data_imports (void)
 	      int nsyms, symsize, i;
 
 	      if (link_info.pei386_auto_import == -1)
-		info_msg (_("Info: resolving %s by linking to %s (auto-import)\n"),
-			  undef->root.string, buf);
+		{
+		  static bfd_boolean warned = FALSE;
+
+		  info_msg (_("Info: resolving %s by linking to %s (auto-import)\n"),
+			    undef->root.string, buf);
+
+		  /* PR linker/4844.  */
+		  if (! warned)
+		    {
+		      warned = TRUE;
+		      einfo (_("%P: warning: auto-importing has been activated without --enable-auto-import specified on the command line.\n\
+This should work unless it involves constant data structures referencing symbols from auto-imported DLLs."));
+		    }
+		}
 
 	      symsize = bfd_get_symtab_upper_bound (b);
 	      symbols = xmalloc (symsize);
@@ -1303,19 +1317,8 @@ gld_${EMULATION_NAME}_recognized_file (lang_input_statement_type *entry ATTRIBUT
 #ifdef TARGET_IS_i386pep
   pep_dll_id_target ("pei-x86-64");
 #endif
-  if (bfd_get_format (entry->the_bfd) == bfd_object)
-    {
-      char fbuf[LD_PATHMAX + 1];
-      const char *ext;
-
-      if (REALPATH (entry->filename, fbuf) == NULL)
-	strncpy (fbuf, entry->filename, sizeof (fbuf));
-
-      ext = fbuf + strlen (fbuf) - 4;
-
-      if (strcmp (ext, ".dll") == 0 || strcmp (ext, ".DLL") == 0)
-	return pep_implied_import_dll (fbuf);
-    }
+  if (pep_bfd_is_dll (entry->the_bfd))
+    return pep_implied_import_dll (entry->filename);
 #endif
   return FALSE;
 }
@@ -1557,7 +1560,7 @@ gld_${EMULATION_NAME}_open_dynamic_archive
           For backwards compatibility, libfoo.a needs to precede
           libfoo.dll and foo.dll in the search.  */
       { "lib%s.a", FALSE },
-      /* The 'native' spelling of an import lib name is "foo.lib".  */  	
+      /* The 'native' spelling of an import lib name is "foo.lib".  */
       { "%s.lib", FALSE },
 #ifdef DLL_SUPPORT
       /* Try "<prefix>foo.dll" (preferred dll name, if specified).  */
@@ -1614,7 +1617,7 @@ gld_${EMULATION_NAME}_open_dynamic_archive
 
   for (i = 0; libname_fmt[i].format; i++)
     {
-#ifdef DLL_SUPPORT 
+#ifdef DLL_SUPPORT
       if (libname_fmt[i].use_prefix)
 	{
 	  if (!pep_dll_search_prefix)
@@ -1654,7 +1657,7 @@ EOF
 # sed commands to quote an ld script as a C string.
 sc="-f stringify.sed"
 
-cat >>e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 {
   *isfile = 0;
 
@@ -1668,11 +1671,15 @@ echo '  ; else if (!config.text_read_only) return'	>> e${EMULATION_NAME}.c
 sed $sc ldscripts/${EMULATION_NAME}.xbn			>> e${EMULATION_NAME}.c
 echo '  ; else if (!config.magic_demand_paged) return'	>> e${EMULATION_NAME}.c
 sed $sc ldscripts/${EMULATION_NAME}.xn			>> e${EMULATION_NAME}.c
+if test -n "$GENERATE_AUTO_IMPORT_SCRIPT" ; then
+echo '  ; else if (link_info.pei386_auto_import == 1) return'	>> e${EMULATION_NAME}.c
+sed $sc ldscripts/${EMULATION_NAME}.xa			>> e${EMULATION_NAME}.c
+fi
 echo '  ; else return'					>> e${EMULATION_NAME}.c
 sed $sc ldscripts/${EMULATION_NAME}.x			>> e${EMULATION_NAME}.c
 echo '; }'						>> e${EMULATION_NAME}.c
 
-cat >>e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 
 
 struct ld_emulation_xfer_struct ld_${EMULATION_NAME}_emulation =

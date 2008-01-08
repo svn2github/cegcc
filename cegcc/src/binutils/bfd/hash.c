@@ -1,13 +1,13 @@
 /* hash.c -- hash table routines for BFD
    Copyright 1993, 1994, 1995, 1997, 1999, 2001, 2002, 2003, 2004, 2005,
-   2006 Free Software Foundation, Inc.
+   2006, 2007 Free Software Foundation, Inc.
    Written by Steve Chamberlain <sac@cygnus.com>
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -17,10 +17,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "objalloc.h"
 #include "libiberty.h"
@@ -383,6 +384,7 @@ bfd_hash_table_init_n (struct bfd_hash_table *table,
   table->size = size;
   table->entsize = entsize;
   table->count = 0;
+  table->frozen = 0;
   table->newfunc = newfunc;
   return TRUE;
 }
@@ -449,9 +451,6 @@ bfd_hash_lookup (struct bfd_hash_table *table,
   if (! create)
     return NULL;
 
-  hashp = (*table->newfunc) (NULL, table, string);
-  if (hashp == NULL)
-    return NULL;
   if (copy)
     {
       char *new;
@@ -465,13 +464,31 @@ bfd_hash_lookup (struct bfd_hash_table *table,
       memcpy (new, string, len + 1);
       string = new;
     }
+
+  return bfd_hash_insert (table, string, hash);
+}
+
+/* Insert an entry in a hash table.  */
+
+struct bfd_hash_entry *
+bfd_hash_insert (struct bfd_hash_table *table,
+		 const char *string,
+		 unsigned long hash)
+{
+  struct bfd_hash_entry *hashp;
+  unsigned int index;
+
+  hashp = (*table->newfunc) (NULL, table, string);
+  if (hashp == NULL)
+    return NULL;
   hashp->string = string;
   hashp->hash = hash;
+  index = hash % table->size;
   hashp->next = table->table[index];
   table->table[index] = hashp;
   table->count++;
 
-  if (table->count > table->size * 3 / 4)
+  if (!table->frozen && table->count > table->size * 3 / 4)
     {
       unsigned long newsize = higher_prime_number (table->size);
       struct bfd_hash_entry **newtable;
@@ -482,13 +499,17 @@ bfd_hash_lookup (struct bfd_hash_table *table,
 	 that much memory, don't try to grow the table.  */
       if (newsize == 0 || alloc / sizeof (struct bfd_hash_entry *) != newsize)
 	{
-	  /* Lie.  Stops us trying to grow again for a while.  */
-	  table->count = 0;
+	  table->frozen = 1;
 	  return hashp;
 	}
 
       newtable = ((struct bfd_hash_entry **)
 		  objalloc_alloc ((struct objalloc *) table->memory, alloc));
+      if (newtable == NULL)
+	{
+	  table->frozen = 1;
+	  return hashp;
+	}
       memset ((PTR) newtable, 0, alloc);
 
       for (hi = 0; hi < table->size; hi ++)
@@ -496,7 +517,6 @@ bfd_hash_lookup (struct bfd_hash_table *table,
 	  {
 	    struct bfd_hash_entry *chain = table->table[hi];
 	    struct bfd_hash_entry *chain_end = chain;
-	    int index;
 
 	    while (chain_end->next && chain_end->next->hash == chain->hash)
 	      chain_end = chain_end->next;
@@ -573,14 +593,17 @@ bfd_hash_traverse (struct bfd_hash_table *table,
 {
   unsigned int i;
 
+  table->frozen = 1;
   for (i = 0; i < table->size; i++)
     {
       struct bfd_hash_entry *p;
 
       for (p = table->table[i]; p != NULL; p = p->next)
 	if (! (*func) (p, info))
-	  return;
+	  goto out;
     }
+ out:
+  table->frozen = 0;
 }
 
 void

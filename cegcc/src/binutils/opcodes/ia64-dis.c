@@ -1,18 +1,18 @@
 /* ia64-dis.c -- Disassemble ia64 instructions
-   Copyright 1998, 1999, 2000, 2002 Free Software Foundation, Inc.
+   Copyright 1998, 1999, 2000, 2002, 2007 Free Software Foundation, Inc.
    Contributed by David Mosberger-Tang <davidm@hpl.hp.com>
 
-   This file is part of GDB, GAS, and the GNU binutils.
+   This file is part of the GNU opcodes library.
 
-   GDB, GAS, and the GNU binutils are free software; you can redistribute
-   them and/or modify them under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either version
-   2, or (at your option) any later version.
+   This library is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3, or (at your option)
+   any later version.
 
-   GDB, GAS, and the GNU binutils are distributed in the hope that they
-   will be useful, but WITHOUT ANY WARRANTY; without even the implied
-   warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-   the GNU General Public License for more details.
+   It is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+   License for more details.
 
    You should have received a copy of the GNU General Public License
    along with this file; see the file COPYING.  If not, write to the
@@ -205,11 +205,48 @@ print_insn_ia64 (bfd_vma memaddr, struct disassemble_info *info)
 		  case 36:	strcpy (regname, "ar.unat"); break;
 		  case 40:	strcpy (regname, "ar.fpsr"); break;
 		  case 44:	strcpy (regname, "ar.itc"); break;
+		  case 45:	strcpy (regname, "ar.ruc"); break;
 		  case 64:	strcpy (regname, "ar.pfs"); break;
 		  case 65:	strcpy (regname, "ar.lc"); break;
 		  case 66:	strcpy (regname, "ar.ec"); break;
 		  default:
 		    sprintf (regname, "ar%u", (unsigned int) value);
+		    break;
+		  }
+		(*info->fprintf_func) (info->stream, "%s", regname);
+	      }
+	    else if (odesc->str[0] == 'c' && odesc->str[1] == 'r')
+	      {
+		switch (value)
+		  {
+		  case 0:       strcpy (regname, "cr.dcr"); break;
+		  case 1:       strcpy (regname, "cr.itm"); break;
+		  case 2:       strcpy (regname, "cr.iva"); break;
+		  case 8:       strcpy (regname, "cr.pta"); break;
+		  case 16:      strcpy (regname, "cr.ipsr"); break;
+		  case 17:      strcpy (regname, "cr.isr"); break;
+		  case 19:      strcpy (regname, "cr.iip"); break;
+		  case 20:      strcpy (regname, "cr.ifa"); break;
+		  case 21:      strcpy (regname, "cr.itir"); break;
+		  case 22:      strcpy (regname, "cr.iipa"); break;
+		  case 23:      strcpy (regname, "cr.ifs"); break;
+		  case 24:      strcpy (regname, "cr.iim"); break;
+		  case 25:      strcpy (regname, "cr.iha"); break;
+		  case 64:      strcpy (regname, "cr.lid"); break;
+		  case 65:      strcpy (regname, "cr.ivr"); break;
+		  case 66:      strcpy (regname, "cr.tpr"); break;
+		  case 67:      strcpy (regname, "cr.eoi"); break;
+		  case 68:      strcpy (regname, "cr.irr0"); break;
+		  case 69:      strcpy (regname, "cr.irr1"); break;
+		  case 70:      strcpy (regname, "cr.irr2"); break;
+		  case 71:      strcpy (regname, "cr.irr3"); break;
+		  case 72:      strcpy (regname, "cr.itv"); break;
+		  case 73:      strcpy (regname, "cr.pmv"); break;
+		  case 74:      strcpy (regname, "cr.cmcv"); break;
+		  case 80:      strcpy (regname, "cr.lrr0"); break;
+		  case 81:      strcpy (regname, "cr.lrr1"); break;
+		  default:
+		    sprintf (regname, "cr%u", (unsigned int) value);
 		    break;
 		  }
 		(*info->fprintf_func) (info->stream, "%s", regname);

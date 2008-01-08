@@ -1,12 +1,12 @@
 /* tc-mcore.c -- Assemble code for M*Core
-   Copyright 1999, 2000, 2001, 2002, 2003, 2005, 2006
+   Copyright 1999, 2000, 2001, 2002, 2003, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -411,8 +411,8 @@ const pseudo_typeS md_pseudo_table[] =
      occupy can be taken into account when deciding whether or not to
      dump the current literal pool.
      XXX - currently we do not cope with the .space and .dcb.d directives.  */
-  { "ascii",    mcore_stringer,       0 },
-  { "asciz",    mcore_stringer,       1 },
+  { "ascii",    mcore_stringer,       8 + 0 },
+  { "asciz",    mcore_stringer,       8 + 1 },
   { "byte",     mcore_cons,           1 },
   { "dc",       mcore_cons,           2 },
   { "dc.b",     mcore_cons,           1 },
@@ -430,7 +430,7 @@ const pseudo_typeS md_pseudo_table[] =
   { "quad",     mcore_cons,           8 },
   { "short",    mcore_cons,           2 },
   { "single",   mcore_float_cons,    'f'},
-  { "string",   mcore_stringer,       1 },
+  { "string",   mcore_stringer,       8 + 1 },
   { "word",     mcore_cons,           2 },
   { "fill",     mcore_fill,           0 },
 
@@ -1616,77 +1616,11 @@ md_mcore_end (void)
 }
 
 /* Various routines to kill one day.  */
-/* Equal to MAX_PRECISION in atof-ieee.c.  */
-#define MAX_LITTLENUMS 6
-
-/* Turn a string in input_line_pointer into a floating point constant of type
-   type, and store the appropriate bytes in *litP.  The number of LITTLENUMS
-   emitted is stored in *sizeP.  An error message is returned, or NULL on OK.  */
 
 char *
-md_atof (int type,  char * litP, int * sizeP)
+md_atof (int type, char * litP, int * sizeP)
 {
-  int prec;
-  LITTLENUM_TYPE words[MAX_LITTLENUMS];
-  int    i;
-  char * t;
-
-  switch (type)
-    {
-    case 'f':
-    case 'F':
-    case 's':
-    case 'S':
-      prec = 2;
-      break;
-
-    case 'd':
-    case 'D':
-    case 'r':
-    case 'R':
-      prec = 4;
-      break;
-
-    case 'x':
-    case 'X':
-      prec = 6;
-      break;
-
-    case 'p':
-    case 'P':
-      prec = 6;
-      break;
-
-    default:
-      *sizeP = 0;
-      return _("Bad call to MD_NTOF()");
-    }
-
-  t = atof_ieee (input_line_pointer, type, words);
-
-  if (t)
-    input_line_pointer = t;
-
-  *sizeP = prec * sizeof (LITTLENUM_TYPE);
-
-  if (! target_big_endian)
-    {
-      for (i = prec - 1; i >= 0; i--)
-	{
-	  md_number_to_chars (litP, (valueT) words[i],
-			      sizeof (LITTLENUM_TYPE));
-	  litP += sizeof (LITTLENUM_TYPE);
-	}
-    }
-  else
-    for (i = 0; i < prec; i++)
-      {
-	md_number_to_chars (litP, (valueT) words[i],
-			    sizeof (LITTLENUM_TYPE));
-	litP += sizeof (LITTLENUM_TYPE);
-      }
-
-  return 0;
+  return ieee_md_atof (type, litP, sizeP, target_big_endian);
 }
 
 const char * md_shortopts = "";
@@ -2170,24 +2104,10 @@ md_estimate_size_before_relax (fragS * fragP, segT segment_type)
 void
 md_number_to_chars (char * ptr, valueT use, int nbytes)
 {
-  if (! target_big_endian)
-    switch (nbytes)
-      {
-      case 4: ptr[3] = (use >> 24) & 0xff; /* Fall through.  */
-      case 3: ptr[2] = (use >> 16) & 0xff; /* Fall through.  */
-      case 2: ptr[1] = (use >>  8) & 0xff; /* Fall through.  */
-      case 1: ptr[0] = (use >>  0) & 0xff;    break;
-      default: abort ();
-      }
+  if (target_big_endian)
+    number_to_chars_bigendian (ptr, use, nbytes);
   else
-    switch (nbytes)
-      {
-      case 4: *ptr++ = (use >> 24) & 0xff; /* Fall through.  */
-      case 3: *ptr++ = (use >> 16) & 0xff; /* Fall through.  */
-      case 2: *ptr++ = (use >>  8) & 0xff; /* Fall through.  */
-      case 1: *ptr++ = (use >>  0) & 0xff;    break;
-      default: abort ();
-      }
+    number_to_chars_littleendian (ptr, use, nbytes);
 }
 
 /* Round up a section size to the appropriate boundary.  */

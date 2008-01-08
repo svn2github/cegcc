@@ -1,19 +1,19 @@
 /* as.c - GAS main program.
    Copyright 1987, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
-   GAS is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   GAS is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+   License for more details.
 
    You should have received a copy of the GNU General Public License
    along with GAS; see the file COPYING.  If not, write to the Free
@@ -45,7 +45,6 @@
 #ifdef HAVE_ITBL_CPU
 #include "itbl-ops.h"
 #else
-#define itbl_parse(itbl_file) 1
 #define itbl_init()
 #endif
 
@@ -59,13 +58,6 @@ extern PTR sbrk ();
 /* Perform any cgen specific initialisation for gas.  */
 extern void gas_cgen_begin (void);
 #endif
-
-/* Keep a record of the itbl files we read in.  */
-struct itbl_file_list
-{
-  struct itbl_file_list *next;
-  char *name;
-};
 
 /* We build a list of defsyms as we read the options, and then define
    them after we have initialized everything.  */
@@ -117,7 +109,15 @@ static char *listing_filename = NULL;
 
 static struct defsym_list *defsyms;
 
+#ifdef HAVE_ITBL_CPU
+/* Keep a record of the itbl files we read in.  */
+struct itbl_file_list
+{
+  struct itbl_file_list *next;
+  char *name;
+};
 static struct itbl_file_list *itbl_files;
+#endif
 
 static long start_time;
 
@@ -244,6 +244,8 @@ Options:\n\
   fprintf (stream, _("\
   -D                      produce assembler debugging messages\n"));
   fprintf (stream, _("\
+  --debug-prefix-map OLD=NEW  Map OLD to NEW in debug information\n"));
+  fprintf (stream, _("\
   --defsym SYM=VAL        define symbol SYM to given value\n"));
 #ifdef USE_EMULATIONS
   {
@@ -321,9 +323,11 @@ Options:\n\
   --warn                  don't suppress warnings\n"));
   fprintf (stream, _("\
   --fatal-warnings        treat warnings as errors\n"));
+#ifdef HAVE_ITBL_CPU
   fprintf (stream, _("\
   --itbl INSTTBL          extend instruction set to include instructions\n\
                           matching the specifications defined in file INSTTBL\n"));
+#endif
   fprintf (stream, _("\
   -w                      ignored\n"));
   fprintf (stream, _("\
@@ -349,7 +353,9 @@ Options:\n\
   md_show_usage (stream);
 
   fputc ('\n', stream);
-  fprintf (stream, _("Report bugs to %s\n"), REPORT_BUGS_TO);
+
+  if (REPORT_BUGS_TO[0] && stream == stdout)
+    fprintf (stream, _("Report bugs to %s\n"), REPORT_BUGS_TO);
 }
 
 /* Since it is easy to do here we interpret the special arg "-"
@@ -388,8 +394,10 @@ parse_args (int * pargc, char *** pargv)
     'v',
 #endif
     'w', 'X',
+#ifdef HAVE_ITBL_CPU
     /* New option for extending instruction set (see also --itbl below).  */
     't', ':',
+#endif
     '\0'
   };
   struct option *longopts;
@@ -405,8 +413,8 @@ parse_args (int * pargc, char *** pargv)
       OPTION_DUMPCONFIG,
       OPTION_VERBOSE,
       OPTION_EMULATION,
+      OPTION_DEBUG_PREFIX_MAP,
       OPTION_DEFSYM,
-      OPTION_INSTTBL,
       OPTION_LISTING_LHS_WIDTH,
       OPTION_LISTING_LHS_WIDTH2,
       OPTION_LISTING_RHS_WIDTH,
@@ -443,6 +451,7 @@ parse_args (int * pargc, char *** pargv)
     ,{"a", optional_argument, NULL, 'a'}
     /* Handle -al=<FILE>.  */
     ,{"al", optional_argument, NULL, OPTION_AL}
+    ,{"debug-prefix-map", required_argument, NULL, OPTION_DEBUG_PREFIX_MAP}
     ,{"defsym", required_argument, NULL, OPTION_DEFSYM}
     ,{"dump-config", no_argument, NULL, OPTION_DUMPCONFIG}
     ,{"emulation", required_argument, NULL, OPTION_EMULATION}
@@ -460,13 +469,15 @@ parse_args (int * pargc, char *** pargv)
     ,{"gstabs+", no_argument, NULL, OPTION_GSTABS_PLUS}
     ,{"hash-size", required_argument, NULL, OPTION_HASH_TABLE_SIZE}
     ,{"help", no_argument, NULL, OPTION_HELP}
+#ifdef HAVE_ITBL_CPU
     /* New option for extending instruction set (see also -t above).
        The "-t file" or "--itbl file" option extends the basic set of
        valid instructions by reading "file", a text file containing a
        list of instruction formats.  The additional opcodes and their
        formats are added to the built-in set of instructions, and
        mnemonics for new registers may also be defined.  */
-    ,{"itbl", required_argument, NULL, OPTION_INSTTBL}
+    ,{"itbl", required_argument, NULL, 't'}
+#endif
     /* getopt allows abbreviations, so we do this to stop it from
        treating -k as an abbreviation for --keep-locals.  Some
        ports use -k to enable PIC assembly.  */
@@ -588,10 +599,11 @@ parse_args (int * pargc, char *** pargv)
 	case OPTION_VERSION:
 	  /* This output is intended to follow the GNU standards document.  */
 	  printf (_("GNU assembler %s\n"), BFD_VERSION_STRING);
-	  printf (_("Copyright 2005 Free Software Foundation, Inc.\n"));
+	  printf (_("Copyright 2007 Free Software Foundation, Inc.\n"));
 	  printf (_("\
 This program is free software; you may redistribute it under the terms of\n\
-the GNU General Public License.  This program has absolutely no warranty.\n"));
+the GNU General Public License version 3 or later.\n\
+This program has absolutely no warranty.\n"));
 	  printf (_("This assembler was configured for a target of `%s'.\n"),
 		  TARGET_ALIAS);
 	  exit (EXIT_SUCCESS);
@@ -617,6 +629,10 @@ the GNU General Public License.  This program has absolutely no warranty.\n"));
 #endif
 	  exit (EXIT_SUCCESS);
 
+	case OPTION_DEBUG_PREFIX_MAP:
+	  add_debug_prefix_map (optarg);
+	  break;
+
 	case OPTION_DEFSYM:
 	  {
 	    char *s;
@@ -637,7 +653,7 @@ the GNU General Public License.  This program has absolutely no warranty.\n"));
 	  }
 	  break;
 
-	case OPTION_INSTTBL:
+#ifdef HAVE_ITBL_CPU
 	case 't':
 	  {
 	    /* optarg is the name of the file containing the instruction
@@ -665,6 +681,7 @@ the GNU General Public License.  This program has absolutely no warranty.\n"));
 			itbl_files->name);
 	  }
 	  break;
+#endif
 
 	case OPTION_DEPFILE:
 	  start_dependencies (optarg);
@@ -1029,6 +1046,33 @@ perform_an_assembly_pass (int argc, char ** argv)
     read_a_source_file ("");
 }
 
+#ifdef OBJ_ELF
+static void
+create_obj_attrs_section (void)
+{
+  segT s;
+  char *p;
+  addressT addr;
+  offsetT size;
+  const char *name;
+
+  size = bfd_elf_obj_attr_size (stdoutput);
+  if (size)
+    {
+      name = get_elf_backend_data (stdoutput)->obj_attrs_section;
+      if (!name)
+	name = ".gnu.attributes";
+      s = subseg_new (name, 0);
+      elf_section_type (s)
+	= get_elf_backend_data (stdoutput)->obj_attrs_section_type;
+      bfd_set_section_flags (stdoutput, s, SEC_READONLY | SEC_DATA);
+      addr = frag_now_fix ();
+      p = frag_more (size);
+      bfd_elf_set_obj_attr_contents (stdoutput, (bfd_byte *)p, size);
+    }
+}
+#endif
+
 
 int
 main (int argc, char ** argv)
@@ -1122,6 +1166,11 @@ main (int argc, char ** argv)
 
       sym = symbol_new (defsyms->name, absolute_section, defsyms->value,
 			&zero_address_frag);
+      /* Make symbols defined on the command line volatile, so that they
+	 can be redefined inside a source file.  This makes this assembler's
+	 behaviour compatible with earlier versions, but it may not be
+	 completely intuitive.  */
+      S_SET_VOLATILE (sym);
       symbol_table_insert (sym);
       next = defsyms->next;
       free (defsyms);
@@ -1137,6 +1186,11 @@ main (int argc, char ** argv)
 
 #ifdef md_end
   md_end ();
+#endif
+
+#ifdef OBJ_ELF
+  if (IS_ELF)
+    create_obj_attrs_section ();
 #endif
 
 #if defined OBJ_ELF || defined OBJ_MAYBE_ELF
@@ -1174,6 +1228,8 @@ main (int argc, char ** argv)
 
   if (keep_it)
     write_object_file ();
+
+  fflush (stderr);
 
 #ifndef NO_LISTING
   listing_print (listing_filename);

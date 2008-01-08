@@ -3,7 +3,7 @@
 # objdump: -dr --prefix-addresses --show-raw-insn
 # The arm-aout and arm-pe ports do not support Thumb branch relocations.
 # not-target: *-*-*aout* *-*-pe
-# error-output: thumb32.l
+# stderr: thumb32.l
 
 .*: +file format .*arm.*
 
@@ -63,9 +63,9 @@ Disassembly of section .text:
 0[0-9a-f]+ <[^>]+> eb00 0800 	add\.w	r8, r0, r0
 0[0-9a-f]+ <[^>]+> 4401      	add	r1, r0
 0[0-9a-f]+ <[^>]+> 4408      	add	r0, r1
-0[0-9a-f]+ <[^>]+> a000      	add	r0, pc, #0	\(adr r0,[0-9a-f]+ <[^>]+>\)
-0[0-9a-f]+ <[^>]+> a500      	add	r5, pc, #0	\(adr r5,[0-9a-f]+ <[^>]+>\)
-0[0-9a-f]+ <[^>]+> a081      	add	r0, pc, #516	\(adr r0,[0-9a-f]+ <[^>]+>\)
+0[0-9a-f]+ <[^>]+> a000      	add	r0, pc, #0	\(adr r0, [0-9a-f]+ <[^>]+>\)
+0[0-9a-f]+ <[^>]+> a500      	add	r5, pc, #0	\(adr r5, [0-9a-f]+ <[^>]+>\)
+0[0-9a-f]+ <[^>]+> a081      	add	r0, pc, #516	\(adr r0, [0-9a-f]+ <[^>]+>\)
 0[0-9a-f]+ <[^>]+> a800      	add	r0, sp, #0
 0[0-9a-f]+ <[^>]+> ad00      	add	r5, sp, #0
 0[0-9a-f]+ <[^>]+> a881      	add	r0, sp, #516
@@ -954,4 +954,79 @@ Disassembly of section .text:
 0[0-9a-f]+ <[^>]+> c006      	stmiaeq	r0!, \{r1, r2\}
 0[0-9a-f]+ <[^>]+> e890 0300 	ldmiaeq.w	r0, \{r8, r9\}
 0[0-9a-f]+ <[^>]+> e880 0300 	stmiaeq.w	r0, \{r8, r9\}
+0[0-9a-f]+ <[^>]+> bf00      	nop
+0[0-9a-f]+ <[^>]+> e98d c010 	srsia	sp, #16
+0[0-9a-f]+ <[^>]+> e80d c010 	srsdb	sp, #16
+0[0-9a-f]+ <[^>]+> e9ad c015 	srsia	sp!, #21
+0[0-9a-f]+ <[^>]+> e9ad c00a 	srsia	sp!, #10
+0[0-9a-f]+ <[^>]+> f3de 8f00 	subs	pc, lr, #0
+0[0-9a-f]+ <[^>]+> f3de 8f00 	subs	pc, lr, #0
+0[0-9a-f]+ <[^>]+> f3de 8f04 	subs	pc, lr, #4
+0[0-9a-f]+ <[^>]+> f3de 8fff 	subs	pc, lr, #255
+0[0-9a-f]+ <[^>]+> e9f9 240c 	ldrd	r2, r4, \[r9, #48\]!
+0[0-9a-f]+ <[^>]+> e979 240c 	ldrd	r2, r4, \[r9, #-48\]!
+0[0-9a-f]+ <[^>]+> e9e9 240c 	strd	r2, r4, \[r9, #48\]!
+0[0-9a-f]+ <[^>]+> e969 240c 	strd	r2, r4, \[r9, #-48\]!
+0[0-9a-f]+ <[^>]+> e8f9 240c 	ldrd	r2, r4, \[r9\], #48
+0[0-9a-f]+ <[^>]+> e879 240c 	ldrd	r2, r4, \[r9\], #-48
+0[0-9a-f]+ <[^>]+> e8e9 240c 	strd	r2, r4, \[r9\], #48
+0[0-9a-f]+ <[^>]+> e869 240c 	strd	r2, r4, \[r9\], #-48
+0[0-9a-f]+ <[^>]+> f8d5 1301 	ldr.w	r1, \[r5, #769]
+0[0-9a-f]+ <[^>]+> f855 1f30 	ldr.w	r1, \[r5, #48]!
+0[0-9a-f]+ <[^>]+> f855 1d30 	ldr.w	r1, \[r5, #-48]!
+0[0-9a-f]+ <[^>]+> f855 1b30 	ldr.w	r1, \[r5\], #48
+0[0-9a-f]+ <[^>]+> f855 1930 	ldr.w	r1, \[r5\], #-48
+0[0-9a-f]+ <[^>]+> f855 1009 	ldr.w	r1, \[r5, r9\]
+0[0-9a-f]+ <[^>]+> f895 1301 	ldrb.w	r1, \[r5, #769]
+0[0-9a-f]+ <[^>]+> f815 1f30 	ldrb.w	r1, \[r5, #48]!
+0[0-9a-f]+ <[^>]+> f815 1d30 	ldrb.w	r1, \[r5, #-48]!
+0[0-9a-f]+ <[^>]+> f815 1b30 	ldrb.w	r1, \[r5\], #48
+0[0-9a-f]+ <[^>]+> f815 1930 	ldrb.w	r1, \[r5\], #-48
+0[0-9a-f]+ <[^>]+> f815 1009 	ldrb.w	r1, \[r5, r9\]
+0[0-9a-f]+ <[^>]+> f995 1301 	ldrsb.w	r1, \[r5, #769]
+0[0-9a-f]+ <[^>]+> f915 1f30 	ldrsb.w	r1, \[r5, #48]!
+0[0-9a-f]+ <[^>]+> f915 1d30 	ldrsb.w	r1, \[r5, #-48]!
+0[0-9a-f]+ <[^>]+> f915 1b30 	ldrsb.w	r1, \[r5\], #48
+0[0-9a-f]+ <[^>]+> f915 1930 	ldrsb.w	r1, \[r5\], #-48
+0[0-9a-f]+ <[^>]+> f915 1009 	ldrsb.w	r1, \[r5, r9\]
+0[0-9a-f]+ <[^>]+> f8b5 1301 	ldrh.w	r1, \[r5, #769]
+0[0-9a-f]+ <[^>]+> f835 1f30 	ldrh.w	r1, \[r5, #48]!
+0[0-9a-f]+ <[^>]+> f835 1d30 	ldrh.w	r1, \[r5, #-48]!
+0[0-9a-f]+ <[^>]+> f835 1b30 	ldrh.w	r1, \[r5\], #48
+0[0-9a-f]+ <[^>]+> f835 1930 	ldrh.w	r1, \[r5\], #-48
+0[0-9a-f]+ <[^>]+> f835 1009 	ldrh.w	r1, \[r5, r9\]
+0[0-9a-f]+ <[^>]+> f9b5 1301 	ldrsh.w	r1, \[r5, #769]
+0[0-9a-f]+ <[^>]+> f935 1f30 	ldrsh.w	r1, \[r5, #48]!
+0[0-9a-f]+ <[^>]+> f935 1d30 	ldrsh.w	r1, \[r5, #-48]!
+0[0-9a-f]+ <[^>]+> f935 1b30 	ldrsh.w	r1, \[r5\], #48
+0[0-9a-f]+ <[^>]+> f935 1930 	ldrsh.w	r1, \[r5\], #-48
+0[0-9a-f]+ <[^>]+> f935 1009 	ldrsh.w	r1, \[r5, r9\]
+0[0-9a-f]+ <[^>]+> 00a1      	lsls	r1, r4, #2
+0[0-9a-f]+ <[^>]+> ea5f 0389 	movs.w	r3, r9, lsl #2
+0[0-9a-f]+ <[^>]+> fa12 f103 	lsls.w	r1, r2, r3
+0[0-9a-f]+ <[^>]+> 4099      	lsls	r1, r3
+0[0-9a-f]+ <[^>]+> fa11 f109 	lsls.w	r1, r1, r9
+0[0-9a-f]+ <[^>]+> fa02 f103 	lsl.w	r1, r2, r3
+0[0-9a-f]+ <[^>]+> fa01 f103 	lsl.w	r1, r1, r3
+0[0-9a-f]+ <[^>]+> 08a1      	lsrs	r1, r4, #2
+0[0-9a-f]+ <[^>]+> ea5f 0399 	movs.w	r3, r9, lsr #2
+0[0-9a-f]+ <[^>]+> fa32 f103 	lsrs.w	r1, r2, r3
+0[0-9a-f]+ <[^>]+> 40d9      	lsrs	r1, r3
+0[0-9a-f]+ <[^>]+> fa31 f109 	lsrs.w	r1, r1, r9
+0[0-9a-f]+ <[^>]+> fa22 f103 	lsr.w	r1, r2, r3
+0[0-9a-f]+ <[^>]+> fa21 f103 	lsr.w	r1, r1, r3
+0[0-9a-f]+ <[^>]+> 10a1      	asrs	r1, r4, #2
+0[0-9a-f]+ <[^>]+> ea5f 03a9 	movs.w	r3, r9, asr #2
+0[0-9a-f]+ <[^>]+> fa52 f103 	asrs.w	r1, r2, r3
+0[0-9a-f]+ <[^>]+> 4119      	asrs	r1, r3
+0[0-9a-f]+ <[^>]+> fa51 f109 	asrs.w	r1, r1, r9
+0[0-9a-f]+ <[^>]+> fa42 f103 	asr.w	r1, r2, r3
+0[0-9a-f]+ <[^>]+> fa41 f103 	asr.w	r1, r1, r3
+0[0-9a-f]+ <[^>]+> ea5f 01b4 	movs.w	r1, r4, ror #2
+0[0-9a-f]+ <[^>]+> ea5f 03b9 	movs.w	r3, r9, ror #2
+0[0-9a-f]+ <[^>]+> fa72 f103 	rors.w	r1, r2, r3
+0[0-9a-f]+ <[^>]+> 41d9      	rors	r1, r3
+0[0-9a-f]+ <[^>]+> fa71 f109 	rors.w	r1, r1, r9
+0[0-9a-f]+ <[^>]+> fa62 f103 	ror.w	r1, r2, r3
+0[0-9a-f]+ <[^>]+> fa61 f103 	ror.w	r1, r1, r3
 0[0-9a-f]+ <[^>]+> bf00      	nop

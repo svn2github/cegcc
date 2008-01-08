@@ -1,12 +1,12 @@
 /* tc-sh64.c -- Assemble code for the SuperH SH SHcompact and SHmedia.
-   Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -3035,8 +3035,6 @@ sh64_target_mach (void)
 valueT
 shmedia_md_pcrel_from_section (struct fix *fixP, segT sec ATTRIBUTE_UNUSED)
 {
-  know (fixP->fx_frag->fr_type == rs_machine_dependent);
-
   /* Use the ISA for the instruction to decide which offset to use.  We
      can glean it from the fisup type.  */
   switch (fixP->fx_r_type)

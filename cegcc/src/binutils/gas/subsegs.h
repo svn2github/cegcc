@@ -1,12 +1,12 @@
 /* subsegs.h -> subsegs.c
    Copyright 1987, 1992, 1993, 1994, 1995, 1996, 1998, 2000, 2003, 2005,
-   2006 Free Software Foundation, Inc.
+   2006, 2007 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -40,6 +40,8 @@
 
 #include "obstack.h"
 
+struct frch_cfi_data;
+
 struct frchain			/* control building of a frag chain */
 {				/* FRCH = FRagment CHain control */
   struct frag *frch_root;	/* 1st struct frag in chain, or NULL */
@@ -50,6 +52,7 @@ struct frchain			/* control building of a frag chain */
   fixS *fix_tail;		/* Last fixup for this subsegment.  */
   struct obstack frch_obstack;	/* for objects in this frag chain */
   fragS *frch_frag_now;		/* frag_now for this subsegment */
+  struct frch_cfi_data *frch_cfi_data;
 };
 
 typedef struct frchain frchainS;

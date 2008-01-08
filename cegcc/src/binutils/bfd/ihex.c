@@ -1,13 +1,13 @@
 /* BFD back-end for Intel Hex objects.
    Copyright 1995, 1996, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-   2006 Free Software Foundation, Inc.
+   2006, 2007 Free Software Foundation, Inc.
    Written by Ian Lance Taylor of Cygnus Support <ian@cygnus.com>.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -17,7 +17,9 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
+
 
 /* This is what Intel Hex files look like:
 
@@ -118,8 +120,8 @@ The MRI compiler uses this, which is a repeat of type 5:
    18..19	Checksum in hex notation
    20..21	Carriage return, line feed.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "libiberty.h"
 #include "safe-ctype.h"
@@ -924,9 +926,6 @@ ihex_sizeof_headers (bfd *abfd ATTRIBUTE_UNUSED,
 #define ihex_bfd_make_debug_symbol                _bfd_nosymbols_bfd_make_debug_symbol
 #define ihex_read_minisymbols                     _bfd_nosymbols_read_minisymbols
 #define ihex_minisymbol_to_symbol                 _bfd_nosymbols_minisymbol_to_symbol
-#define ihex_get_reloc_upper_bound                ((long (*) (bfd *, asection *)) bfd_0l)
-#define ihex_canonicalize_reloc                   ((long (*) (bfd *, asection *, arelent **, asymbol **)) bfd_0l)
-#define ihex_bfd_reloc_type_lookup                _bfd_norelocs_bfd_reloc_type_lookup
 #define ihex_bfd_get_relocated_section_contents   bfd_generic_get_relocated_section_contents
 #define ihex_bfd_relax_section                    bfd_generic_relax_section
 #define ihex_bfd_gc_sections                      bfd_generic_gc_sections
@@ -985,7 +984,7 @@ const bfd_target ihex_vec =
   BFD_JUMP_TABLE_CORE (_bfd_nocore),
   BFD_JUMP_TABLE_ARCHIVE (_bfd_noarchive),
   BFD_JUMP_TABLE_SYMBOLS (ihex),
-  BFD_JUMP_TABLE_RELOCS (ihex),
+  BFD_JUMP_TABLE_RELOCS (_bfd_norelocs),
   BFD_JUMP_TABLE_WRITE (ihex),
   BFD_JUMP_TABLE_LINK (ihex),
   BFD_JUMP_TABLE_DYNAMIC (_bfd_nodynamic),

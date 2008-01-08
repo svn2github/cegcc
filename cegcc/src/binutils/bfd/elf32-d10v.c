@@ -1,13 +1,13 @@
 /* D10V-specific support for 32-bit ELF
-   Copyright 1996, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
-   Free Software Foundation, Inc.
+   Copyright 1996, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006,
+   2007 Free Software Foundation, Inc.
    Contributed by Martin Hunt (hunt@cygnus.com).
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -20,8 +20,8 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
    MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "elf-bfd.h"
 #include "elf/d10v.h"
@@ -203,6 +203,22 @@ bfd_elf32_bfd_reloc_type_lookup (bfd *abfd ATTRIBUTE_UNUSED,
   return NULL;
 }
 
+static reloc_howto_type *
+bfd_elf32_bfd_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+				 const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0;
+       i < sizeof (elf_d10v_howto_table) / sizeof (elf_d10v_howto_table[0]);
+       i++)
+    if (elf_d10v_howto_table[i].name != NULL
+	&& strcasecmp (elf_d10v_howto_table[i].name, r_name) == 0)
+      return &elf_d10v_howto_table[i];
+
+  return NULL;
+}
+
 /* Set the howto pointer for an D10V ELF reloc.  */
 
 static void
@@ -246,7 +262,7 @@ elf32_d10v_check_relocs (bfd *abfd,
 			 const Elf_Internal_Rela *relocs)
 {
   Elf_Internal_Shdr *symtab_hdr;
-  struct elf_link_hash_entry **sym_hashes, **sym_hashes_end;
+  struct elf_link_hash_entry **sym_hashes;
   const Elf_Internal_Rela *rel;
   const Elf_Internal_Rela *rel_end;
 
@@ -255,9 +271,6 @@ elf32_d10v_check_relocs (bfd *abfd,
 
   symtab_hdr = &elf_tdata (abfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (abfd);
-  sym_hashes_end = sym_hashes + symtab_hdr->sh_size/sizeof (Elf32_External_Sym);
-  if (!elf_bad_symtab (abfd))
-    sym_hashes_end -= symtab_hdr->sh_info;
 
   rel_end = relocs + sec->reloc_count;
   for (rel = relocs; rel < rel_end; rel++)
@@ -288,7 +301,9 @@ elf32_d10v_check_relocs (bfd *abfd,
         /* This relocation describes which C++ vtable entries are actually
            used.  Record for later use during GC.  */
         case R_D10V_GNU_VTENTRY:
-          if (!bfd_elf_gc_record_vtentry (abfd, sec, h, rel->r_offset))
+          BFD_ASSERT (h != NULL);
+          if (h != NULL
+              && !bfd_elf_gc_record_vtentry (abfd, sec, h, rel->r_offset))
             return FALSE;
           break;
         }
@@ -405,35 +420,6 @@ elf32_d10v_relocate_section (bfd *output_bfd,
         continue;
 
       howto = elf_d10v_howto_table + r_type;
-
-      if (info->relocatable)
-	{
-	  bfd_vma val;
-	  bfd_byte *where;
-
-	  /* This is a relocatable link.  We don't have to change
-	     anything, unless the reloc is against a section symbol,
-	     in which case we have to adjust according to where the
-	     section symbol winds up in the output section.  */
-	  if (r_symndx >= symtab_hdr->sh_info)
-	    continue;
-
-	  sym = local_syms + r_symndx;
-	  if (ELF_ST_TYPE (sym->st_info) != STT_SECTION)
-	    continue;
-
-	  sec = local_sections[r_symndx];
-	  val = sec->output_offset;
-	  if (val == 0)
-	    continue;
-
-	  where = contents + rel->r_offset;
-	  val += extract_rel_addend (input_bfd, where, howto);
-	  insert_rel_addend (input_bfd, where, howto, val);
-	  continue;
-	}
-
-      /* This is a final link.  */
       h = NULL;
       sym = NULL;
       sec = NULL;
@@ -444,18 +430,26 @@ elf32_d10v_relocate_section (bfd *output_bfd,
 	  relocation = (sec->output_section->vma
 			+ sec->output_offset
 			+ sym->st_value);
-	  if ((sec->flags & SEC_MERGE)
-	      && ELF_ST_TYPE (sym->st_info) == STT_SECTION)
+	  if (ELF_ST_TYPE (sym->st_info) == STT_SECTION
+	      && ((sec->flags & SEC_MERGE) != 0
+		  || (info->relocatable
+		      && sec->output_offset != 0)))
 	    {
-	      asection *msec;
 	      bfd_vma addend;
 	      bfd_byte *where = contents + rel->r_offset;
 
 	      addend = extract_rel_addend (input_bfd, where, howto);
-	      msec = sec;
-	      addend = _bfd_elf_rel_local_sym (output_bfd, sym, &msec, addend);
-	      addend -= relocation;
-	      addend += msec->output_section->vma + msec->output_offset;
+
+	      if (info->relocatable)
+		addend += sec->output_offset;
+	      else
+		{
+		  asection *msec = sec;
+		  addend = _bfd_elf_rel_local_sym (output_bfd, sym, &msec,
+						   addend);
+		  addend -= relocation;
+		  addend += msec->output_section->vma + msec->output_offset;
+		}
 	      insert_rel_addend (input_bfd, where, howto, addend);
 	    }
 	}
@@ -468,6 +462,20 @@ elf32_d10v_relocate_section (bfd *output_bfd,
 				   h, sec, relocation,
 				   unresolved_reloc, warned);
 	}
+
+      if (sec != NULL && elf_discarded_section (sec))
+	{
+	  /* For relocs against symbols from removed linkonce sections,
+	     or sections discarded by a linker script, we just want the
+	     section contents zeroed.  Avoid any special processing.  */
+	  _bfd_clear_contents (howto, input_bfd, contents + rel->r_offset);
+	  rel->r_info = 0;
+	  rel->r_addend = 0;
+	  continue;
+	}
+
+      if (info->relocatable)
+	continue;
 
       if (h != NULL)
 	name = h->root.root.string;

@@ -1,11 +1,11 @@
 /* tc-xstormy16.h -- Header file for tc-xstormy16.c.
-   Copyright 2000, 2001, 2002, 2005 Free Software Foundation, Inc.
+   Copyright 2000, 2001, 2002, 2005, 2007 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -63,3 +63,6 @@ extern void xstormy16_cons_fix_new (fragS *f, int, int, expressionS *);
 
 /* Minimum instruction is two bytes.  */
 #define DWARF2_LINE_MIN_INSN_LENGTH 2
+
+/* This target is buggy, and sets fix size too large.  */
+#define TC_FX_SIZE_SLACK(FIX) 2

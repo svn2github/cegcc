@@ -1,6 +1,6 @@
 /* Function declarations for libiberty.
 
-   Copyright 2001, 2002, 2005 Free Software Foundation, Inc.
+   Copyright 2001, 2002, 2005, 2007 Free Software Foundation, Inc.
    
    Note - certain prototypes declared in this header file are for
    functions whoes implementation copyright does not belong to the
@@ -85,6 +85,10 @@ extern char **dupargv (char **) ATTRIBUTE_MALLOC;
 /* Expand "@file" arguments in argv.  */
 
 extern void expandargv PARAMS ((int *, char ***));
+
+/* Write argv to an @-file, inserting necessary quoting.  */
+
+extern int writeargv PARAMS ((char **, FILE *));
 
 /* Return the last component of a path name.  Note that we can't use a
    prototype here because the parameter is declared inconsistently
@@ -196,6 +200,13 @@ extern long get_run_time (void);
 
 extern char *make_relative_prefix (const char *, const char *,
                                    const char *) ATTRIBUTE_MALLOC;
+
+/* Generate a relocated path to some installation directory without
+   attempting to follow any soft links.  Allocates
+   return value using malloc.  */
+
+extern char *make_relative_prefix_ignore_links (const char *, const char *,
+						const char *) ATTRIBUTE_MALLOC;
 
 /* Choose a temporary directory to use for scratch files.  */
 
@@ -393,6 +404,19 @@ extern struct pex_obj *pex_init (int flags, const char *pname,
    PEX_BINARY_INPUT.  */
 #define PEX_BINARY_OUTPUT	0x20
 
+/* Capture stderr to a pipe.  The output can be read by
+   calling pex_read_err and reading from the returned
+   FILE object.  This flag may be specified only for
+   the last program in a pipeline.  
+
+   This flag is supported only on Unix and Windows.  */
+#define PEX_STDERR_TO_PIPE	0x40
+
+/* Capture stderr in binary mode.  This flag is ignored
+   on Unix.  */
+#define PEX_BINARY_ERROR	0x80
+
+
 /* Execute one program.  Returns NULL on success.  On error returns an
    error string (typically just the name of a system call); the error
    string is statically allocated.
@@ -465,33 +489,6 @@ extern const char *pex_run_in_environment (struct pex_obj *obj, int flags,
               	          		   const char *outname,
 					   const char *errname, int *err);
 
-/* Return a `FILE' pointer FP for the standard input of the first
-   program in the pipeline; FP is opened for writing.  You must have
-   passed `PEX_USE_PIPES' to the `pex_init' call that returned OBJ.
-   You must close FP yourself with `fclose' to indicate that the
-   pipeline's input is complete.
-
-   The file descriptor underlying FP is marked not to be inherited by
-   child processes.
-
-   This call is not supported on systems which do not support pipes;
-   it returns with an error.  (We could implement it by writing a
-   temporary file, but then you would need to write all your data and
-   close FP before your first call to `pex_run' -- and that wouldn't
-   work on systems that do support pipes: the pipe would fill up, and
-   you would block.  So there isn't any easy way to conceal the
-   differences between the two types of systems.)
-
-   If you call both `pex_write_input' and `pex_read_output', be
-   careful to avoid deadlock.  If the output pipe fills up, so that
-   each program in the pipeline is waiting for the next to read more
-   data, and you fill the input pipe by writing more data to FP, then
-   there is no way to make progress: the only process that could read
-   data from the output pipe is you, but you are blocked on the input
-   pipe.  */
-
-extern FILE *pex_write_input (struct pex_obj *obj, int binary);
-
 /* Return a stream for a temporary file to pass to the first program
    in the pipeline as input.  The file name is chosen as for pex_run.
    pex_run closes the file automatically; don't close it yourself.  */
@@ -513,6 +510,14 @@ extern FILE *pex_input_pipe (struct pex_obj *obj, int binary);
    will be closed by pex_free.  */
 
 extern FILE *pex_read_output (struct pex_obj *, int binary);
+
+/* Read the standard error of the last program to be executed.
+   pex_run can not be called after this.  BINARY should be non-zero if
+   the file should be opened in binary mode; this is ignored on Unix.
+   Returns NULL on error.  Don't call fclose on the returned FILE; it
+   will be closed by pex_free.  */
+
+extern FILE *pex_read_err (struct pex_obj *, int binary);
 
 /* Return exit status of all programs in VECTOR.  COUNT indicates the
    size of VECTOR.  The status codes in the vector are in the order of
@@ -536,7 +541,8 @@ struct pex_time
 extern int pex_get_times (struct pex_obj *, int count,
 			  struct pex_time *vector);
 
-/* Clean up a pex_obj.  */
+/* Clean up a pex_obj.  If you have not called pex_get_times or
+   pex_get_status, this will try to kill the subprocesses.  */
 
 extern void pex_free (struct pex_obj *);
 

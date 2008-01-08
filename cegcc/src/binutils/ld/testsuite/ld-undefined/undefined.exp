@@ -1,28 +1,31 @@
 # Test that the linker reports undefined symbol errors correctly.
 # By Ian Lance Taylor, Cygnus Support
 #
-#   Copyright 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004
-#   Free Software Foundation, Inc.
+#   Copyright 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
+#   2007  Free Software Foundation, Inc.
 #
-# This file is free software; you can redistribute it and/or modify
+# This file is part of the GNU Binutils.
+#
+# This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
 set testund "undefined"
 set testfn "undefined function"
 set testline "undefined line"
 
-if { [which $CC] == 0 } {
+if { ![is_remote host] && [which $CC] == 0 } {
     verbose "Could not find C compiler!" 1
     untested $testund
     untested $testfn
@@ -38,16 +41,15 @@ if ![ld_compile "$CC -g" $srcdir/$subdir/undefined.c tmpdir/undefined.o] {
     return
 }
 
-catch "exec rm -f tmpdir/undefined" exec_output
+remote_file host delete "tmpdir/undefined"
 
 set flags [big_or_little_endian]
 
 # Using -e start prevents the SunOS linker from trying to build a
 # shared library.
 send_log "$ld -e start $flags -o tmpdir/undefined tmpdir/undefined.o\n"
-verbose "$ld -e start $flags -o tmpdir/undefined tmpdir/undefined.o"
+set exec_output [run_host_cmd "$ld" "-e start $flags -o tmpdir/undefined tmpdir/undefined.o"]
 
-catch "exec $ld -e start $flags -o tmpdir/undefined tmpdir/undefined.o" exec_output
 send_log "$exec_output\n"
 verbose "$exec_output"
 
@@ -119,6 +121,7 @@ set ml "undefined.c:9: undefined reference to `*this_function_is_not_defined'"
 # hence the xfails below.
 
 setup_xfail mcore-*-elf
+setup_xfail mep-*-*
 setup_xfail mips-sgi-irix6*
 setup_xfail "sh64-*-*"
 

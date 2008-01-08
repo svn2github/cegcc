@@ -1,12 +1,12 @@
 /* V850-specific support for 32-bit ELF
    Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-   2006 Free Software Foundation, Inc.
+   2006, 2007 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -19,11 +19,12 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
    MA 02110-1301, USA.  */
 
+
 /* XXX FIXME: This code is littered with 32bit int, 16bit short, 8bit char
    dependencies.  As is the gas & simulator code for the v850.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "bfdlink.h"
 #include "libbfd.h"
 #include "elf-bfd.h"
@@ -115,7 +116,9 @@ v850_elf_check_relocs (bfd *abfd,
         /* This relocation describes which C++ vtable entries
 	   are actually used.  Record for later use during GC.  */
         case R_V850_GNU_VTENTRY:
-          if (!bfd_elf_gc_record_vtentry (abfd, sec, h, rel->r_addend))
+          BFD_ASSERT (h != NULL);
+          if (h != NULL
+              && !bfd_elf_gc_record_vtentry (abfd, sec, h, rel->r_addend))
             return FALSE;
           break;
 
@@ -1339,6 +1342,22 @@ v850_elf_reloc_type_lookup (bfd *abfd ATTRIBUTE_UNUSED,
 
   return NULL;
 }
+
+static reloc_howto_type *
+v850_elf_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+			    const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0;
+       i < sizeof (v850_elf_howto_table) / sizeof (v850_elf_howto_table[0]);
+       i++)
+    if (v850_elf_howto_table[i].name != NULL
+	&& strcasecmp (v850_elf_howto_table[i].name, r_name) == 0)
+      return &v850_elf_howto_table[i];
+
+  return NULL;
+}
 
 /* Set the howto pointer for an V850 ELF reloc.  */
 
@@ -1567,9 +1586,6 @@ v850_elf_relocate_section (bfd *output_bfd,
   Elf_Internal_Rela *rel;
   Elf_Internal_Rela *relend;
 
-  if (info->relocatable)
-    return TRUE;
-
   symtab_hdr = & elf_tdata (input_bfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (input_bfd);
 
@@ -1598,7 +1614,6 @@ v850_elf_relocate_section (bfd *output_bfd,
           || r_type == R_V850_GNU_VTINHERIT)
         continue;
 
-      /* This is a final link.  */
       howto = v850_elf_howto_table + r_type;
       h = NULL;
       sym = NULL;
@@ -1630,6 +1645,20 @@ v850_elf_relocate_section (bfd *output_bfd,
 				   h, sec, relocation,
 				   unresolved_reloc, warned);
 	}
+
+      if (sec != NULL && elf_discarded_section (sec))
+	{
+	  /* For relocs against symbols from removed linkonce sections,
+	     or sections discarded by a linker script, we just want the
+	     section contents zeroed.  Avoid any special processing.  */
+	  _bfd_clear_contents (howto, input_bfd, contents + rel->r_offset);
+	  rel->r_info = 0;
+	  rel->r_addend = 0;
+	  continue;
+	}
+
+      if (info->relocatable)
+	continue;
 
       /* FIXME: We should use the addend, but the COFF relocations don't.  */
       r = v850_elf_final_link_relocate (howto, input_bfd, output_bfd,
@@ -2088,6 +2117,12 @@ v850_elf_link_output_symbol_hook (struct bfd_link_info *info ATTRIBUTE_UNUSED,
       else if (strcmp (input_sec->name, ".zcommon") == 0)
 	sym->st_shndx = SHN_V850_ZCOMMON;
     }
+
+  /* The price we pay for using h->other unused bits as flags in the
+     linker is cleaning up after ourselves.  */
+
+  sym->st_other &= ~(V850_OTHER_SDA | V850_OTHER_ZDA | V850_OTHER_TDA
+		     | V850_OTHER_ERROR);
 
   return TRUE;
 }
@@ -3057,6 +3092,7 @@ static const struct bfd_elf_special_section v850_elf_special_sections[] =
 
 #define bfd_elf32_bfd_is_local_label_name	v850_elf_is_local_label_name
 #define bfd_elf32_bfd_reloc_type_lookup		v850_elf_reloc_type_lookup
+#define bfd_elf32_bfd_reloc_name_lookup	v850_elf_reloc_name_lookup
 #define bfd_elf32_bfd_merge_private_bfd_data 	v850_elf_merge_private_bfd_data
 #define bfd_elf32_bfd_set_private_flags		v850_elf_set_private_flags
 #define bfd_elf32_bfd_print_private_bfd_data	v850_elf_print_private_bfd_data

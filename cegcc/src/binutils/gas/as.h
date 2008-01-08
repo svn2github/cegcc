@@ -1,19 +1,19 @@
 /* as.h - global header file
    Copyright 1987, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
-   GAS is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   GAS is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+   License for more details.
 
    You should have received a copy of the GNU General Public License
    along with GAS; see the file COPYING.  If not, write to the Free
@@ -37,7 +37,6 @@
    If TEST is #defined, then we are testing a module: #define COMMON as "".  */
 
 #include "config.h"
-#include "bin-bugs.h"
 
 /* This is the code recommended in the autoconf documentation, almost
    verbatim.  If it doesn't work for you, let me know, and notify
@@ -259,7 +258,11 @@ typedef addressT valueT;
 #endif
 /* COMMON now defined */
 
-#ifdef DEBUG
+#ifndef ENABLE_CHECKING
+#define ENABLE_CHECKING 0
+#endif
+
+#if ENABLE_CHECKING || defined (DEBUG)
 #ifndef know
 #define know(p) assert(p)	/* Verify our assumptions!  */
 #endif /* not yet defined */
@@ -531,6 +534,8 @@ void   as_bad_value_out_of_range (char *, offsetT, offsetT, offsetT, char *, uns
 void   print_version_id (void);
 char * app_push (void);
 char * atof_ieee (char *, int, LITTLENUM_TYPE *);
+char * ieee_md_atof (int, char *, int *, bfd_boolean);
+char * vax_md_atof (int, char *, int *);
 char * input_scrub_include_file (char *, char *);
 void   input_scrub_insert_line (const char *);
 void   input_scrub_insert_file (char *);
@@ -551,6 +556,7 @@ void   input_scrub_begin (void);
 void   input_scrub_close (void);
 void   input_scrub_end (void);
 int    new_logical_line (char *, int);
+int    new_logical_line_flags (char *, int, int);
 void   subsegs_begin (void);
 void   subseg_change (segT, int);
 segT   subseg_new (const char *, subsegT);
@@ -563,10 +569,12 @@ void   register_dependency (char *);
 void   print_dependencies (void);
 segT   subseg_get (const char *, int);
 
+const char *remap_debug_filename (const char *);
+void add_debug_prefix_map (const char *);
+
 struct expressionS;
 struct fix;
 typedef struct symbol symbolS;
-struct relax_type;
 typedef struct frag fragS;
 
 /* literal.c */

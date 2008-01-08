@@ -1,11 +1,11 @@
 # This shell script emits a C file. -*- C -*-
-#   Copyright 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
+#   Copyright 2002, 2003, 2004, 2005, 2007 Free Software Foundation, Inc.
 #
-# This file is part of GLD, the Gnu Linker.
+# This file is part of the GNU Binutils.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -15,13 +15,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+# MA 02110-1301, USA.
 #
 
 # This file is sourced from elf32.em, and defines extra powerpc64-elf
 # specific routines.
 #
-cat >>e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 
 #include "ldctor.h"
 #include "libbfd.h"
@@ -225,7 +226,7 @@ ppc_add_stub_section (const char *stub_sec_name, asection *input_section)
     goto err_ret;
 
   flags = (SEC_ALLOC | SEC_LOAD | SEC_READONLY | SEC_CODE
-	   | SEC_HAS_CONTENTS | SEC_RELOC | SEC_IN_MEMORY | SEC_KEEP);
+	   | SEC_HAS_CONTENTS | SEC_IN_MEMORY | SEC_KEEP);
   if (!bfd_set_section_flags (stub_file->the_bfd, stub_sec, flags))
     goto err_ret;
 
@@ -414,17 +415,22 @@ gld${EMULATION_NAME}_new_vers_pattern (struct bfd_elf_version_expr *entry)
   unsigned int len;
   char *dot_pat;
 
-  if (!dotsyms || entry->pattern[0] == '*' || entry->pattern[0] == '.')
+  if (!dotsyms
+      || (entry->pattern != NULL
+	  && (entry->pattern[0] == '*' || entry->pattern[0] == '.')))
     return entry;
 
   dot_entry = xmalloc (sizeof *dot_entry);
   *dot_entry = *entry;
   dot_entry->next = entry;
-  len = strlen (entry->pattern) + 2;
-  dot_pat = xmalloc (len);
-  dot_pat[0] = '.';
-  memcpy (dot_pat + 1, entry->pattern, len - 1);
-  dot_entry->pattern = dot_pat;
+  if (entry->pattern != NULL)
+    {
+      len = strlen (entry->pattern) + 2;
+      dot_pat = xmalloc (len);
+      dot_pat[0] = '.';
+      memcpy (dot_pat + 1, entry->pattern, len - 1);
+      dot_entry->pattern = dot_pat;
+    }
   if (entry->symbol != NULL)
     {
       len = strlen (entry->symbol) + 2;
@@ -459,6 +465,24 @@ ppc_lang_for_each_input_file (void (*func) (lang_input_statement_type *))
 
 EOF
 
+if grep -q 'ld_elf32_spu_emulation' ldemul-list.h; then
+  fragment <<EOF
+/* Special handling for embedded SPU executables.  */
+extern bfd_boolean embedded_spu_file (lang_input_statement_type *, const char *);
+static bfd_boolean gld${EMULATION_NAME}_load_symbols (lang_input_statement_type *);
+
+static bfd_boolean
+ppc64_recognized_file (lang_input_statement_type *entry)
+{
+  if (embedded_spu_file (entry, "-m64"))
+    return TRUE;
+
+  return gld${EMULATION_NAME}_load_symbols (entry);
+}
+EOF
+LDEMUL_RECOGNIZED_FILE=ppc64_recognized_file
+fi
+
 # Define some shell vars to insert bits of code into the standard elf
 # parse_args and list_options functions.
 #
@@ -488,41 +512,42 @@ PARSE_AND_LIST_LONGOPTS='
 
 PARSE_AND_LIST_OPTIONS='
   fprintf (file, _("\
-  --stub-group-size=N   Maximum size of a group of input sections that can be\n\
-                          handled by one stub section.  A negative value\n\
-                          locates all stubs before their branches (with a\n\
-                          group size of -N), while a positive value allows\n\
-                          two groups of input sections, one before, and one\n\
-                          after each stub section.  Values of +/-1 indicate\n\
-                          the linker should choose suitable defaults.\n"
+  --stub-group-size=N         Maximum size of a group of input sections that\n\
+                                can be handled by one stub section.  A negative\n\
+                                value locates all stubs before their branches\n\
+                                (with a group size of -N), while a positive\n\
+                                value allows two groups of input sections, one\n\
+                                before, and one after each stub section.\n\
+                                Values of +/-1 indicate the linker should\n\
+                                choose suitable defaults.\n"
 		   ));
   fprintf (file, _("\
-  --emit-stub-syms      Label linker stubs with a symbol.\n"
+  --emit-stub-syms            Label linker stubs with a symbol.\n"
 		   ));
   fprintf (file, _("\
-  --dotsyms             For every version pattern \"foo\" in a version script,\n\
-                          add \".foo\" so that function code symbols are\n\
-                          treated the same as function descriptor symbols.\n\
-                          Defaults to on.\n"
+  --dotsyms                   For every version pattern \"foo\" in a version\n\
+                                script, add \".foo\" so that function code\n\
+                                symbols are treated the same as function\n\
+                                descriptor symbols.  Defaults to on.\n"
 		   ));
   fprintf (file, _("\
-  --no-dotsyms          Don'\''t do anything special in version scripts.\n"
+  --no-dotsyms                Don'\''t do anything special in version scripts.\n"
 		   ));
   fprintf (file, _("\
-  --no-tls-optimize     Don'\''t try to optimize TLS accesses.\n"
+  --no-tls-optimize           Don'\''t try to optimize TLS accesses.\n"
 		   ));
   fprintf (file, _("\
-  --no-opd-optimize     Don'\''t optimize the OPD section.\n"
+  --no-opd-optimize           Don'\''t optimize the OPD section.\n"
 		   ));
   fprintf (file, _("\
-  --no-toc-optimize     Don'\''t optimize the TOC section.\n"
+  --no-toc-optimize           Don'\''t optimize the TOC section.\n"
 		   ));
   fprintf (file, _("\
-  --no-multi-toc        Disallow automatic multiple toc sections.\n"
+  --no-multi-toc              Disallow automatic multiple toc sections.\n"
 		   ));
   fprintf (file, _("\
-  --non-overlapping-opd Canonicalize .opd, so that there are no overlapping\n\
-                          .opd entries.\n"
+  --non-overlapping-opd       Canonicalize .opd, so that there are no\n\
+                                overlapping .opd entries.\n"
 		   ));
 '
 

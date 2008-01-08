@@ -1,6 +1,6 @@
 /* BFD back-end for a.out.adobe binaries.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005, 2006
+   2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Written by Cygnus Support.  Based on bout.c.
 
@@ -8,7 +8,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -20,8 +20,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "aout/adobe.h"
 #include "aout/stab_gnu.h"
@@ -450,6 +450,7 @@ aout_adobe_sizeof_headers (bfd *ignore_abfd ATTRIBUTE_UNUSED,
 
 #define aout_32_bfd_make_debug_symbol ((asymbol *(*) (bfd *, void *, unsigned long)) bfd_nullvoidptr)
 #define aout_32_bfd_reloc_type_lookup ((reloc_howto_type *(*) (bfd *, bfd_reloc_code_real_type)) bfd_nullvoidptr)
+#define aout_32_bfd_reloc_name_lookup ((reloc_howto_type *(*) (bfd *, const char *)) bfd_nullvoidptr)
 #define aout_32_close_and_cleanup                   aout_32_bfd_free_cached_info
 #define	aout_32_set_arch_mach		            aout_adobe_set_arch_mach
 #define	aout_32_set_section_contents	            aout_adobe_set_section_contents

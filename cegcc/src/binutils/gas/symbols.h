@@ -1,12 +1,12 @@
 /* symbols.h -
    Copyright 1987, 1990, 1992, 1993, 1994, 1995, 1997, 1999, 2000, 2001,
-   2002, 2003, 2004, 2005 Free Software Foundation, Inc.
+   2002, 2003, 2004, 2005, 2006 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -35,6 +35,9 @@ extern int symbol_table_frozen;
    default.  */
 extern int symbols_case_sensitive;
 
+char * symbol_relc_make_expr  (expressionS *);
+char * symbol_relc_make_sym   (symbolS *);
+char * symbol_relc_make_value (offsetT);
 char *decode_local_label_name (char *s);
 symbolS *symbol_find (const char *name);
 symbolS *symbol_find_noref (const char *name, int noref);
@@ -192,6 +195,7 @@ extern int symbol_section_p (symbolS *);
 extern int symbol_equated_p (symbolS *);
 extern int symbol_equated_reloc_p (symbolS *);
 extern int symbol_constant_p (symbolS *);
+extern int symbol_shadow_p (symbolS *);
 extern asymbol *symbol_get_bfdsym (symbolS *);
 extern void symbol_set_bfdsym (symbolS *, asymbol *);
 

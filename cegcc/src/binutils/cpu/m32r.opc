@@ -1,6 +1,6 @@
 /* M32R opcode support.  -*- C -*-
 
-   Copyright 1998, 1999, 2000, 2001, 2004, 2005
+   Copyright 1998, 1999, 2000, 2001, 2004, 2005, 2007
    Free Software Foundation, Inc.
 
    Contributed by Red Hat Inc; developed under contract from
@@ -8,13 +8,9 @@
 
    This file is part of the GNU Binutils.
 
-   Contributed by Red Hat Inc; developed under contract from Fujitsu.
-
-   This file is part of the GNU Binutils.
-
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -26,6 +22,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
    MA 02110-1301, USA.  */
+
 
 /* This file is an addendum to m32r.cpu.  Heavy use of C code isn't
    appropriate in .cpu files, so it resides here.  This especially applies
@@ -126,7 +123,7 @@ parse_hi16 (CGEN_CPU_DESC cd,
 	return MISSING_CLOSING_PARENTHESIS;
       ++*strp;
       if (errmsg == NULL
-  	  && result_type == CGEN_PARSE_OPERAND_RESULT_NUMBER)
+	  && result_type == CGEN_PARSE_OPERAND_RESULT_NUMBER)
 	{
 	  value >>= 16;
 	  value &= 0xffff;
@@ -138,17 +135,17 @@ parse_hi16 (CGEN_CPU_DESC cd,
     {
       *strp += 6;
       errmsg = cgen_parse_address (cd, strp, opindex, BFD_RELOC_M32R_HI16_SLO,
- 				   & result_type, & value);
+				   & result_type, & value);
       if (**strp != ')')
 	return MISSING_CLOSING_PARENTHESIS;
       ++*strp;
       if (errmsg == NULL
 	  && result_type == CGEN_PARSE_OPERAND_RESULT_NUMBER)
-        {
-          value += 0x8000;
-          value >>= 16;
+	{
+	  value += 0x8000;
+	  value >>= 16;
 	  value &= 0xffff;
-        }
+	}
       *valuep = value;
       return errmsg;
     }
@@ -183,7 +180,7 @@ parse_slo16 (CGEN_CPU_DESC cd,
       ++*strp;
       if (errmsg == NULL
 	  && result_type == CGEN_PARSE_OPERAND_RESULT_NUMBER)
-	value = ((value & 0xffff) ^ 0x8000) - 0x8000;    
+	value = ((value & 0xffff) ^ 0x8000) - 0x8000;
       *valuep = value;
       return errmsg;
     }
@@ -247,7 +244,7 @@ parse_ulo16 (CGEN_CPU_DESC cd,
   do								\
     {								\
       if (CGEN_BOOL_ATTR ((attrs), CGEN_OPERAND_HASH_PREFIX))	\
-        (*info->fprintf_func) (info->stream, "#");		\
+	(*info->fprintf_func) (info->stream, "#");		\
     }								\
   while (0)
 
@@ -284,7 +281,7 @@ my_print_insn (CGEN_CPU_DESC cd,
   /* Read the base part of the insn.  */
 
   status = (*info->read_memory_func) (pc - ((!big_p && (pc & 3) != 0) ? 2 : 0),
-                                      buf, buflen, info);
+				      buf, buflen, info);
   if (status != 0)
     {
       (*info->memory_error_func) (status, pc, info);

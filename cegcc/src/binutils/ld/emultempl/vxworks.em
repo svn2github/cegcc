@@ -1,10 +1,38 @@
+# This shell script emits a C file. -*- C -*-
+#   Copyright 2007 Free Software Foundation, Inc.
+#
+# This file is part of the GNU Binutils.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+# MA 02110-1301, USA.
+#
+
 if test -n "$VXWORKS_BASE_EM_FILE" ; then
-. "${srcdir}/emultempl/${VXWORKS_BASE_EM_FILE}.em"
+  source_em "${srcdir}/emultempl/${VXWORKS_BASE_EM_FILE}.em"
 fi
 
-cat >>e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 
 static int force_dynamic;
+
+static void
+vxworks_before_parse (void)
+{
+  ${LDEMUL_BEFORE_PARSE-gld${EMULATION_NAME}_before_parse} ();
+  config.rpath_separator = ';';
+}
 
 static void
 vxworks_after_open (void)
@@ -39,7 +67,7 @@ PARSE_AND_LIST_LONGOPTS=$PARSE_AND_LIST_LONGOPTS'
 
 PARSE_AND_LIST_OPTIONS=$PARSE_AND_LIST_OPTIONS'
   fprintf (file, _("\
-  --force-dynamic       Always create dynamic sections\n"));
+  --force-dynamic             Always create dynamic sections\n"));
 '
 
 PARSE_AND_LIST_ARGS_CASES=$PARSE_AND_LIST_ARGS_CASES'
@@ -48,4 +76,27 @@ PARSE_AND_LIST_ARGS_CASES=$PARSE_AND_LIST_ARGS_CASES'
       break;
 '
 
-LDEMUL_AFTER_OPEN=vxworks_after_open
+# Hook in our routines above.  There are three possibilities:
+#
+#   (1) VXWORKS_BASE_EM_FILE did not set the hook's LDEMUL_FOO variable.
+#	We want to define LDEMUL_FOO to vxworks_foo in that case,
+#
+#   (2) VXWORKS_BASE_EM_FILE set the hook's LDEMUL_FOO variable to
+#	gld${EMULATION_NAME}_foo.  This means that the file has
+#	replaced elf32.em's default definition, so we simply #define
+#	the current value of LDEMUL_FOO to vxworks_foo.
+#
+#   (3) VXWORKS_BASE_EM_FILE set the hook's LDEMUL_FOO variable to
+#	something other than gld${EMULATION_NAME}_foo.  We handle
+#	this case in the same way as (1).
+for override in before_parse after_open; do
+  var="LDEMUL_`echo ${override} | tr a-z A-Z`"
+  eval value=\$${var}
+  if test "${value}" = "gld${EMULATION_NAME}_${override}"; then
+    fragment <<EOF
+#define ${value} vxworks_${override}
+EOF
+  else
+    eval $var=vxworks_${override}
+  fi
+done

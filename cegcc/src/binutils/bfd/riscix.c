@@ -1,13 +1,13 @@
 /* BFD back-end for RISC iX (Acorn, arm) binaries.
    Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2004,
-   2005 Free Software Foundation, Inc.
+   2005, 2007 Free Software Foundation, Inc.
    Contributed by Richard Earnshaw (rwe@pegasus.esprit.ec.org)
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -17,7 +17,9 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
+
 
 /* RISC iX overloads the MAGIC field to indicate more than just the usual
    [ZNO]MAGIC values.  Also included are squeezing information and
@@ -103,8 +105,8 @@
                   && ((x).a_info != NMAGIC))
 #define N_MAGIC(x) ((x).a_info & ~07200)
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 
 #define WRITE_HEADERS(abfd, execp)					    \
@@ -274,12 +276,29 @@ riscix_reloc_type_lookup (bfd *abfd, bfd_reloc_code_real_type code)
     }
 }
 
+static reloc_howto_type *
+riscix_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+			  const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0;
+       i < sizeof (riscix_std_reloc_howto) / sizeof (riscix_std_reloc_howto[0]);
+       i++)
+    if (riscix_std_reloc_howto[i].name != NULL
+	&& strcasecmp (riscix_std_reloc_howto[i].name, r_name) == 0)
+      return &riscix_std_reloc_howto[i];
+
+  return NULL;
+}
+
 #define MY_bfd_link_hash_table_create  _bfd_generic_link_hash_table_create
 #define MY_bfd_link_add_symbols        _bfd_generic_link_add_symbols
 #define MY_final_link_callback         should_not_be_used
 #define MY_bfd_final_link              _bfd_generic_final_link
 
 #define MY_bfd_reloc_type_lookup       riscix_reloc_type_lookup
+#define MY_bfd_reloc_name_lookup riscix_reloc_name_lookup
 #define MY_canonicalize_reloc          riscix_canonicalize_reloc
 #define MY_object_p                    riscix_object_p
 

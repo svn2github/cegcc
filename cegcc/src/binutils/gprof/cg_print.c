@@ -1,12 +1,12 @@
 /* cg_print.c -  Print routines for displaying call graphs.
 
-   Copyright 2000, 2001, 2002, 2004 Free Software Foundation, Inc.
+   Copyright 2000, 2001, 2002, 2004, 2007 Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -76,7 +76,7 @@ print_header ()
     }
 
   printf (_("\ngranularity: each sample hit covers %ld byte(s)"),
-	  (long) hist_scale * sizeof (UNIT));
+	  (long) hist_scale * (long) sizeof (UNIT));
 
   if (print_time > 0.0)
     printf (_(" for %.2f%% of %.2f seconds\n\n"),
@@ -166,7 +166,7 @@ sort_members (Sym *cyc)
   todo = cyc->cg.cyc.next;
   cyc->cg.cyc.next = 0;
 
-  for (doing = todo; doing && doing->cg.cyc.next; doing = todo)
+  for (doing = todo; doing != NULL; doing = todo)
     {
       todo = doing->cg.cyc.next;
 

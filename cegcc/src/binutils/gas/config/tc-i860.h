@@ -1,5 +1,5 @@
 /* tc-i860.h -- Header file for the i860.
-   Copyright 1991, 1992, 1995, 1998, 2000, 2001, 2002, 2003, 2005
+   Copyright 1991, 1992, 1995, 1998, 2000, 2001, 2002, 2003, 2005, 2007
    Free Software Foundation, Inc.
 
    Brought back from the dead and completely reworked
@@ -9,7 +9,7 @@
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -73,7 +73,7 @@ extern int target_big_endian;
 #define LOCAL_LABELS_FB		1
 #define LISTING_HEADER		"GAS for i860"
 
-#define md_convert_frag(b,s,f)  as_fatal (_("i860_convert_frag\n"));
+#define md_convert_frag(b,s,f)  abort ()
 
 /* Values passed to md_apply_fix don't include the symbol value.  */
 #define MD_APPLY_SYM_VALUE(FIX) 0

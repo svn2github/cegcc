@@ -1,5 +1,5 @@
 /* dwarf2dbg.c - DWARF2 debug support
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Contributed by David Mosberger-Tang <davidm@hpl.hp.com>
 
@@ -7,7 +7,7 @@
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -173,7 +173,7 @@ static unsigned int dirs_allocated;
 
 /* TRUE when we've seen a .loc directive recently.  Used to avoid
    doing work when there's nothing to do.  */
-static bfd_boolean loc_directive_seen;
+bfd_boolean dwarf2_loc_directive_seen;
 
 /* TRUE when we're supposed to set the basic block mark whenever a
    label is seen.  */
@@ -365,7 +365,7 @@ dwarf2_emit_insn (int size)
 {
   struct dwarf2_line_info loc;
 
-  if (loc_directive_seen)
+  if (dwarf2_loc_directive_seen)
     {
       /* Use the last location established by a .loc directive, not
 	 the value returned by dwarf2_where().  That calls as_where()
@@ -373,11 +373,6 @@ dwarf2_emit_insn (int size)
 	or the physical input file name (foo.s) and not the file name
 	specified in the most recent .loc directive (eg foo.h).  */
       loc = current;
-
-      /* Unless we generate DWARF2 debugging information for each
-	 assembler line, we only emit one line symbol for one LOC.  */
-      if (debug_type != DEBUG_DWARF2)
-	loc_directive_seen = FALSE;
     }
   else if (debug_type != DEBUG_DWARF2)
     return;
@@ -385,6 +380,21 @@ dwarf2_emit_insn (int size)
     dwarf2_where (&loc);
 
   dwarf2_gen_line_info (frag_now_fix () - size, &loc);
+  dwarf2_consume_line_info ();
+}
+
+/* Called after the current line information has been either used with
+   dwarf2_gen_line_info or saved with a machine instruction for later use.
+   This resets the state of the line number information to reflect that
+   it has been used.  */
+
+void
+dwarf2_consume_line_info (void)
+{
+  /* Unless we generate DWARF2 debugging information for each
+     assembler line, we only emit one line symbol for one LOC.  */
+  if (debug_type != DEBUG_DWARF2)
+    dwarf2_loc_directive_seen = FALSE;
 
   current.flags &= ~(DWARF2_FLAG_BASIC_BLOCK
 		     | DWARF2_FLAG_PROLOGUE_END
@@ -409,17 +419,11 @@ dwarf2_emit_label (symbolS *label)
   if (debug_type == DEBUG_DWARF2)
     dwarf2_where (&loc);
   else
-    {
-      loc = current;
-      loc_directive_seen = FALSE;
-    }
+    loc = current;
 
   loc.flags |= DWARF2_FLAG_BASIC_BLOCK;
 
-  current.flags &= ~(DWARF2_FLAG_BASIC_BLOCK
-		     | DWARF2_FLAG_PROLOGUE_END
-		     | DWARF2_FLAG_EPILOGUE_BEGIN);
-
+  dwarf2_consume_line_info ();
   dwarf2_gen_line_info_1 (label, &loc);
 }
 
@@ -570,6 +574,11 @@ dwarf2_directive_loc (int dummy ATTRIBUTE_UNUSED)
 {
   offsetT filenum, line;
 
+  /* If we see two .loc directives in a row, force the first one to be
+     output now.  */
+  if (dwarf2_loc_directive_seen && debug_type != DEBUG_DWARF2)
+    dwarf2_emit_insn (0);
+
   filenum = get_absolute_expression ();
   SKIP_WHITESPACE ();
   line = get_absolute_expression ();
@@ -676,7 +685,7 @@ dwarf2_directive_loc (int dummy ATTRIBUTE_UNUSED)
     }
 
   demand_empty_rest_of_line ();
-  loc_directive_seen = TRUE;
+  dwarf2_loc_directive_seen = TRUE;
 }
 
 void
@@ -1224,15 +1233,17 @@ static void
 out_file_list (void)
 {
   size_t size;
+  const char *dir;
   char *cp;
   unsigned int i;
 
   /* Emit directory list.  */
   for (i = 1; i < dirs_in_use; ++i)
     {
-      size = strlen (dirs[i]) + 1;
+      dir = remap_debug_filename (dirs[i]);
+      size = strlen (dir) + 1;
       cp = frag_more (size);
-      memcpy (cp, dirs[i], size);
+      memcpy (cp, dir, size);
     }
   /* Terminate it.  */
   out_byte ('\0');
@@ -1514,7 +1525,8 @@ static void
 out_debug_info (segT info_seg, segT abbrev_seg, segT line_seg, segT ranges_seg)
 {
   char producer[128];
-  char *comp_dir;
+  const char *comp_dir;
+  const char *dirname;
   expressionS expr;
   symbolS *info_start;
   symbolS *info_end;
@@ -1591,13 +1603,9 @@ out_debug_info (segT info_seg, segT abbrev_seg, segT line_seg, segT ranges_seg)
     }
   else
     {
-      /* This attributes is emitted if the code is disjoint.  */
-      
-      /* DW_AT_ranges */
-      expr.X_op = O_symbol;
-      expr.X_add_symbol = section_symbol (ranges_seg);
-      expr.X_add_number = 0;
-      emit_expr (&expr, sizeof_address);
+      /* This attribute is emitted if the code is disjoint.  */
+      /* DW_AT_ranges.  */
+      TC_DWARF2_EMIT_OFFSET (section_symbol (ranges_seg), sizeof_offset);
     }
 
   /* DW_AT_name.  We don't have the actual file name that was present
@@ -1608,9 +1616,10 @@ out_debug_info (segT info_seg, segT abbrev_seg, segT line_seg, segT ranges_seg)
     abort ();
   if (files[1].dir)
     {
-      len = strlen (dirs[files[1].dir]);
+      dirname = remap_debug_filename (dirs[files[1].dir]);
+      len = strlen (dirname);
       p = frag_more (len + 1);
-      memcpy (p, dirs[files[1].dir], len);
+      memcpy (p, dirname, len);
       INSERT_DIR_SEPARATOR (p, len);
     }
   len = strlen (files[1].filename) + 1;
@@ -1618,7 +1627,7 @@ out_debug_info (segT info_seg, segT abbrev_seg, segT line_seg, segT ranges_seg)
   memcpy (p, files[1].filename, len);
 
   /* DW_AT_comp_dir */
-  comp_dir = getpwd ();
+  comp_dir = remap_debug_filename (getpwd ());
   len = strlen (comp_dir) + 1;
   p = frag_more (len);
   memcpy (p, comp_dir, len);

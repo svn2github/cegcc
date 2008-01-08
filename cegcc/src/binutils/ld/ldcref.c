@@ -1,32 +1,35 @@
 /* ldcref.c -- output a cross reference table
-   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2006
-   Free Software Foundation, Inc.
+   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2006,
+   2007  Free Software Foundation, Inc.
    Written by Ian Lance Taylor <ian@cygnus.com>
 
-This file is part of GLD, the Gnu Linker.
+   This file is part of the GNU Binutils.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
+
 
 /* This file holds routines that manage the cross reference table.
    The table is used to generate cross reference reports.  It is also
    used to implement the NOCROSSREFS command in the linker script.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "bfdlink.h"
 #include "libiberty.h"
+#include "demangle.h"
 #include "objalloc.h"
 
 #include "ld.h"
@@ -56,7 +59,7 @@ struct cref_ref {
 struct cref_hash_entry {
   struct bfd_hash_entry root;
   /* The demangled name.  */
-  char *demangled;
+  const char *demangled;
   /* References to and definitions of this symbol.  */
   struct cref_ref *refs;
 };
@@ -324,7 +327,10 @@ cref_fill_array (struct cref_hash_entry *h, void *data)
   struct cref_hash_entry ***pph = data;
 
   ASSERT (h->demangled == NULL);
-  h->demangled = demangle (h->root.string);
+  h->demangled = bfd_demangle (output_bfd, h->root.string,
+			       DMGL_ANSI | DMGL_PARAMS);
+  if (h->demangled == NULL)
+    h->demangled = h->root.string;
 
   **pph = h;
 
@@ -710,11 +716,11 @@ check_reloc_refs (bfd *abfd, asection *sec, void *iarg)
 						   | BSF_WEAK)) != 0))
 	      || (!global
 		  && ((*q->sym_ptr_ptr)->flags & (BSF_LOCAL
-						  | BSF_SECTION_SYM)) != 0))
+						  | BSF_SECTION_SYM)) != 0
+		  && bfd_get_section (*q->sym_ptr_ptr) == info->defsec))
 	  && (symname != NULL
 	      ? strcmp (bfd_asymbol_name (*q->sym_ptr_ptr), symname) == 0
-	      : (((*q->sym_ptr_ptr)->flags & BSF_SECTION_SYM) != 0
-		 && bfd_get_section (*q->sym_ptr_ptr) == info->defsec)))
+	      : ((*q->sym_ptr_ptr)->flags & BSF_SECTION_SYM) != 0))
 	{
 	  /* We found a reloc for the symbol.  The symbol is defined
 	     in OUTSECNAME.  This reloc is from a section which is

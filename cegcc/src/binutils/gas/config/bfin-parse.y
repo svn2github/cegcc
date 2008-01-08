@@ -1,12 +1,12 @@
 /* bfin-parse.y  ADI Blackfin parser
-   Copyright 2005, 2006
+   Copyright 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -1432,6 +1432,8 @@ asm_1:
 	      notethat ("COMPI2opD: dregs += imm7\n");
 	      $$ = COMPI2OPD (&$1, imm7 ($3), 1);
 	    }
+	  else if ((IS_DREG ($1) || IS_PREG ($1)) && IS_CONST ($3))
+	    return yyerror ("Immediate value out of range");
 	  else
 	    return yyerror ("Register mismatch");
 	}

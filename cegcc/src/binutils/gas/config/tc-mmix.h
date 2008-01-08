@@ -1,12 +1,12 @@
 /* tc-mmix.h -- Header file for tc-mmix.c.
-   Copyright (C) 2001, 2002, 2003, 2005 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2002, 2003, 2005, 2007 Free Software Foundation, Inc.
    Written by Hans-Peter Nilsson (hp@bitrange.com).
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -221,3 +221,6 @@ extern void mmix_md_do_align (int, char *, int, int);
    sequences sprinkled in, we can get unaligned DWARF2 offsets, so let's
    explicitly say one byte.  */
 #define DWARF2_LINE_MIN_INSN_LENGTH 1
+
+/* This target is buggy, and sets fix size too large.  */
+#define TC_FX_SIZE_SLACK(FIX) 6

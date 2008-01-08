@@ -1,12 +1,12 @@
 /* BFD back-end for PDP-11 a.out binaries.
-   Copyright 2001, 2002, 2003, 2004, 2005, 2006
+   Copyright 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -16,7 +16,9 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA. */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA. */
+
 
 /* BFD backend for PDP-11, running 2.11BSD in particular.
 
@@ -70,6 +72,7 @@
 		  && ((x).a_info != A_MAGIC5) \
 		  && ((x).a_info != A_MAGIC6))
 
+#include "sysdep.h"
 #include "bfd.h"
 
 #define external_exec pdp11_external_exec
@@ -123,7 +126,6 @@ struct pdp11_external_nlist
 
 #define WRITE_HEADERS(abfd, execp) pdp11_aout_write_headers (abfd, execp)
 
-#include "sysdep.h"
 #include "libbfd.h"
 #include "libaout.h"
 
@@ -275,6 +277,22 @@ NAME (aout, reloc_type_lookup) (bfd * abfd ATTRIBUTE_UNUSED,
     default:
       return NULL;
     }
+}
+
+reloc_howto_type *
+NAME (aout, reloc_name_lookup) (bfd *abfd ATTRIBUTE_UNUSED,
+				      const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0;
+       i < sizeof (howto_table_pdp11) / sizeof (howto_table_pdp11[0]);
+       i++)
+    if (howto_table_pdp11[i].name != NULL
+	&& strcasecmp (howto_table_pdp11[i].name, r_name) == 0)
+      return &howto_table_pdp11[i];
+
+  return NULL;
 }
 
 static int

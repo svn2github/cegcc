@@ -1,12 +1,12 @@
 /* dwarf.c -- display DWARF contents of a BFD binary file
-   Copyright 2005, 2006
+   Copyright 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -19,12 +19,12 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA
    02110-1301, USA.  */
 
-#include <stdio.h>
-
-#include "dwarf.h"
-
-#include "bucomm.h"
+#include "sysdep.h"
 #include "libiberty.h"
+#include "bfd.h"
+#include "bucomm.h"
+#include "elf/dwarf2.h"
+#include "dwarf.h"
 
 static int have_frame_base;
 static int need_base_address;
@@ -36,7 +36,6 @@ static unsigned int num_debug_info_entries = 0;
 static debug_info *debug_information = NULL;
 
 dwarf_vma eh_addr_size;
-int is_relocatable;
 
 int do_debug_info;
 int do_debug_abbrevs;
@@ -271,8 +270,47 @@ process_extended_line_op (unsigned char *data, int is_stmt)
       printf (_("%s\n\n"), name);
       break;
 
+    /* HP extensions.  */
+    case DW_LNE_HP_negate_is_UV_update:
+      printf ("DW_LNE_HP_negate_is_UV_update");
+      break;
+    case DW_LNE_HP_push_context:
+      printf ("DW_LNE_HP_push_context");
+      break;
+    case DW_LNE_HP_pop_context:
+      printf ("DW_LNE_HP_pop_context");
+      break;
+    case DW_LNE_HP_set_file_line_column:
+      printf ("DW_LNE_HP_set_file_line_column");
+      break;
+    case DW_LNE_HP_set_routine_name:
+      printf ("DW_LNE_HP_set_routine_name");
+      break;
+    case DW_LNE_HP_set_sequence:
+      printf ("DW_LNE_HP_set_sequence");
+      break;
+    case DW_LNE_HP_negate_post_semantics:
+      printf ("DW_LNE_HP_negate_post_semantics");
+      break;
+    case DW_LNE_HP_negate_function_exit:
+      printf ("DW_LNE_HP_negate_function_exit");
+      break;
+    case DW_LNE_HP_negate_front_end_logical:
+      printf ("DW_LNE_HP_negate_front_end_logical");
+      break;
+    case DW_LNE_HP_define_proc:
+      printf ("DW_LNE_HP_define_proc");
+      break;
+      
     default:
-      printf (_("UNKNOWN: length %d\n"), len - bytes_read);
+      if (op_code >= DW_LNE_lo_user
+	  /* The test against DW_LNW_hi_user is redundant due to
+	     the limited range of the unsigned char data type used
+	     for op_code.  */
+	  /*&& op_code <= DW_LNE_hi_user*/)
+	printf (_("user defined: length %d\n"), len - bytes_read);
+      else
+	printf (_("UNKNOWN: length %d\n"), len - bytes_read);
       break;
     }
 
@@ -893,12 +931,58 @@ decode_location_expression (unsigned char * data,
 	  data += 4;
 	  break;
 	case DW_OP_call_ref:
-	  printf ("DW_OP_call_ref");
+	  /* XXX: Strictly speaking for 64-bit DWARF3 files
+	     this ought to be an 8-byte wide computation.  */
+	  printf ("DW_OP_call_ref: <%lx>", (long) byte_get (data, 4) + cu_offset);
+	  data += 4;
+	  break;
+	case DW_OP_form_tls_address:
+	  printf ("DW_OP_form_tls_address");
+	  break;
+	case DW_OP_call_frame_cfa:
+	  printf ("DW_OP_call_frame_cfa");
+	  break;
+	case DW_OP_bit_piece:
+	  printf ("DW_OP_bit_piece: ");
+	  printf ("size: %lu ", read_leb128 (data, &bytes_read, 0));
+	  data += bytes_read;
+	  printf ("offset: %lu ", read_leb128 (data, &bytes_read, 0));
+	  data += bytes_read;
 	  break;
 
 	  /* GNU extensions.  */
 	case DW_OP_GNU_push_tls_address:
-	  printf ("DW_OP_GNU_push_tls_address");
+	  printf ("DW_OP_GNU_push_tls_address or DW_OP_HP_unknown");
+	  break;
+	case DW_OP_GNU_uninit:
+	  printf ("DW_OP_GNU_uninit");
+	  /* FIXME: Is there data associated with this OP ?  */
+	  break;
+
+	  /* HP extensions.  */
+	case DW_OP_HP_is_value:
+	  printf ("DW_OP_HP_is_value");
+	  /* FIXME: Is there data associated with this OP ?  */
+	  break;
+	case DW_OP_HP_fltconst4:
+	  printf ("DW_OP_HP_fltconst4");
+	  /* FIXME: Is there data associated with this OP ?  */
+	  break;
+	case DW_OP_HP_fltconst8:
+	  printf ("DW_OP_HP_fltconst8");
+	  /* FIXME: Is there data associated with this OP ?  */
+	  break;
+	case DW_OP_HP_mod_range:
+	  printf ("DW_OP_HP_mod_range");
+	  /* FIXME: Is there data associated with this OP ?  */
+	  break;
+	case DW_OP_HP_unmod_range:
+	  printf ("DW_OP_HP_unmod_range");
+	  /* FIXME: Is there data associated with this OP ?  */
+	  break;
+	case DW_OP_HP_tls:
+	  printf ("DW_OP_HP_tls");
+	  /* FIXME: Is there data associated with this OP ?  */
 	  break;
 
 	default:
@@ -920,15 +1004,16 @@ decode_location_expression (unsigned char * data,
 }
 
 static unsigned char *
-read_and_display_attr_value (unsigned long attribute,
-			     unsigned long form,
-			     unsigned char *data,
-			     unsigned long cu_offset,
-			     unsigned long pointer_size,
-			     unsigned long offset_size,
-			     int dwarf_version,
-			     debug_info *debug_info_p,
-			     int do_loc)
+read_and_display_attr_value (unsigned long   attribute,
+			     unsigned long   form,
+			     unsigned char * data,
+			     unsigned long   cu_offset,
+			     unsigned long   pointer_size,
+			     unsigned long   offset_size,
+			     int             dwarf_version,
+			     debug_info *    debug_info_p,
+			     int             do_loc,
+			     unsigned char * section_start)
 {
   unsigned long uvalue = 0;
   unsigned char *block_start = NULL;
@@ -1003,14 +1088,15 @@ read_and_display_attr_value (unsigned long attribute,
       return read_and_display_attr_value (attribute, form, data,
 					  cu_offset, pointer_size,
 					  offset_size, dwarf_version,
-					  debug_info_p, do_loc);
+					  debug_info_p, do_loc,
+					  section_start);
     }
 
   switch (form)
     {
     case DW_FORM_ref_addr:
       if (!do_loc)
-	printf (" <#%lx>", uvalue);
+	printf (" <0x%lx>", uvalue);
       break;
 
     case DW_FORM_ref1:
@@ -1018,13 +1104,13 @@ read_and_display_attr_value (unsigned long attribute,
     case DW_FORM_ref4:
     case DW_FORM_ref_udata:
       if (!do_loc)
-	printf (" <%lx>", uvalue + cu_offset);
+	printf (" <0x%lx>", uvalue + cu_offset);
       break;
 
     case DW_FORM_data4:
     case DW_FORM_addr:
       if (!do_loc)
-	printf (" %#lx", uvalue);
+	printf (" 0x%lx", uvalue);
       break;
 
     case DW_FORM_flag:
@@ -1041,8 +1127,8 @@ read_and_display_attr_value (unsigned long attribute,
       if (!do_loc)
 	{
 	  uvalue = byte_get (data, 4);
-	  printf (" %lx", uvalue);
-	  printf (" %lx", (unsigned long) byte_get (data + 4, 4));
+	  printf (" 0x%lx", uvalue);
+	  printf (" 0x%lx", (unsigned long) byte_get (data + 4, 4));
 	}
       if ((do_loc || do_debug_loc || do_debug_ranges)
 	  && num_debug_info_entries == 0)
@@ -1112,7 +1198,6 @@ read_and_display_attr_value (unsigned long attribute,
       break;
     }
 
-  /* For some attributes we can display further information.  */
   if ((do_loc || do_debug_loc || do_debug_ranges)
       && num_debug_info_entries == 0)
     {
@@ -1121,15 +1206,14 @@ read_and_display_attr_value (unsigned long attribute,
 	case DW_AT_frame_base:
 	  have_frame_base = 1;
 	case DW_AT_location:
+	case DW_AT_string_length:
+	case DW_AT_return_addr:
 	case DW_AT_data_member_location:
 	case DW_AT_vtable_elem_location:
-	case DW_AT_allocated:
-	case DW_AT_associated:
-	case DW_AT_data_location:
-	case DW_AT_stride:
-	case DW_AT_upper_bound:
-	case DW_AT_lower_bound:
-	  if (form == DW_FORM_data4 || form == DW_FORM_data8)
+	case DW_AT_segment:
+	case DW_AT_static_link:
+	case DW_AT_use_location:
+    	  if (form == DW_FORM_data4 || form == DW_FORM_data8)
 	    {
 	      /* Process location list.  */
 	      unsigned int max = debug_info_p->max_loc_offsets;
@@ -1151,7 +1235,7 @@ read_and_display_attr_value (unsigned long attribute,
 	      debug_info_p->num_loc_offsets++;
 	    }
 	  break;
-	
+
 	case DW_AT_low_pc:
 	  if (need_base_address)
 	    debug_info_p->base_address = uvalue;
@@ -1185,6 +1269,7 @@ read_and_display_attr_value (unsigned long attribute,
   if (do_loc)
     return data;
 
+  /* For some attributes we can display further information.  */
   printf ("\t");
 
   switch (attribute)
@@ -1213,26 +1298,37 @@ read_and_display_attr_value (unsigned long attribute,
     case DW_AT_language:
       switch (uvalue)
 	{
-	case DW_LANG_C:			printf ("(non-ANSI C)"); break;
+	  /* Ordered by the numeric value of these constants.  */
 	case DW_LANG_C89:		printf ("(ANSI C)"); break;
-	case DW_LANG_C_plus_plus:	printf ("(C++)"); break;
-	case DW_LANG_Fortran77:		printf ("(FORTRAN 77)"); break;
-	case DW_LANG_Fortran90:		printf ("(Fortran 90)"); break;
-	case DW_LANG_Modula2:		printf ("(Modula 2)"); break;
-	case DW_LANG_Pascal83:		printf ("(ANSI Pascal)"); break;
+	case DW_LANG_C:			printf ("(non-ANSI C)"); break;
 	case DW_LANG_Ada83:		printf ("(Ada)"); break;
+	case DW_LANG_C_plus_plus:	printf ("(C++)"); break;
 	case DW_LANG_Cobol74:		printf ("(Cobol 74)"); break;
 	case DW_LANG_Cobol85:		printf ("(Cobol 85)"); break;
+	case DW_LANG_Fortran77:		printf ("(FORTRAN 77)"); break;
+	case DW_LANG_Fortran90:		printf ("(Fortran 90)"); break;
+	case DW_LANG_Pascal83:		printf ("(ANSI Pascal)"); break;
+	case DW_LANG_Modula2:		printf ("(Modula 2)"); break;
 	  /* DWARF 2.1 values.	*/
+	case DW_LANG_Java:		printf ("(Java)"); break;
 	case DW_LANG_C99:		printf ("(ANSI C99)"); break;
 	case DW_LANG_Ada95:		printf ("(ADA 95)"); break;
 	case DW_LANG_Fortran95:		printf ("(Fortran 95)"); break;
+	  /* DWARF 3 values.  */
+	case DW_LANG_PLI:		printf ("(PLI)"); break;
+	case DW_LANG_ObjC:		printf ("(Objective C)"); break;
+	case DW_LANG_ObjC_plus_plus:	printf ("(Objective C++)"); break;
+	case DW_LANG_UPC:		printf ("(Unified Parallel C)"); break;
+	case DW_LANG_D:			printf ("(D)"); break;
 	  /* MIPS extension.  */
 	case DW_LANG_Mips_Assembler:	printf ("(MIPS assembler)"); break;
 	  /* UPC extension.  */
 	case DW_LANG_Upc:		printf ("(Unified Parallel C)"); break;
 	default:
-	  printf ("(Unknown: %lx)", uvalue);
+	  if (uvalue >= DW_LANG_lo_user && uvalue <= DW_LANG_hi_user)
+	    printf ("(implementation defined: %lx)", uvalue);
+	  else
+	    printf ("(Unknown: %lx)", uvalue);
 	  break;
 	}
       break;
@@ -1249,9 +1345,24 @@ read_and_display_attr_value (unsigned long attribute,
 	case DW_ATE_signed_char:	printf ("(signed char)"); break;
 	case DW_ATE_unsigned:		printf ("(unsigned)"); break;
 	case DW_ATE_unsigned_char:	printf ("(unsigned char)"); break;
-	  /* DWARF 2.1 value.  */
+	  /* DWARF 2.1 values:  */
 	case DW_ATE_imaginary_float:	printf ("(imaginary float)"); break;
 	case DW_ATE_decimal_float:	printf ("(decimal float)"); break;
+	  /* DWARF 3 values:  */
+	case DW_ATE_packed_decimal:	printf ("(packed_decimal)"); break;
+	case DW_ATE_numeric_string:	printf ("(numeric_string)"); break;
+	case DW_ATE_edited:		printf ("(edited)"); break;
+	case DW_ATE_signed_fixed:	printf ("(signed_fixed)"); break;
+	case DW_ATE_unsigned_fixed:	printf ("(unsigned_fixed)"); break;
+	  /* HP extensions:  */
+	case DW_ATE_HP_float80:		printf ("(HP_float80)"); break;
+	case DW_ATE_HP_complex_float80:	printf ("(HP_complex_float80)"); break;
+	case DW_ATE_HP_float128:	printf ("(HP_float128)"); break;
+	case DW_ATE_HP_complex_float128:printf ("(HP_complex_float128)"); break;
+	case DW_ATE_HP_floathpintel:	printf ("(HP_floathpintel)"); break;
+	case DW_ATE_HP_imaginary_float80:	printf ("(HP_imaginary_float80)"); break;
+	case DW_ATE_HP_imaginary_float128:	printf ("(HP_imaginary_float128)"); break;
+
 	default:
 	  if (uvalue >= DW_ATE_lo_user
 	      && uvalue <= DW_ATE_hi_user)
@@ -1332,14 +1443,22 @@ read_and_display_attr_value (unsigned long attribute,
     case DW_AT_frame_base:
       have_frame_base = 1;
     case DW_AT_location:
+    case DW_AT_string_length:
+    case DW_AT_return_addr:
     case DW_AT_data_member_location:
     case DW_AT_vtable_elem_location:
+    case DW_AT_segment:
+    case DW_AT_static_link:
+    case DW_AT_use_location:
+      if (form == DW_FORM_data4 || form == DW_FORM_data8)
+	printf (_("(location list)"));
+      /* Fall through.  */
     case DW_AT_allocated:
     case DW_AT_associated:
     case DW_AT_data_location:
     case DW_AT_stride:
     case DW_AT_upper_bound:
-    case DW_AT_lower_bound:
+    case DW_AT_lower_bound:      
       if (block_start)
 	{
 	  int need_frame_base;
@@ -1353,9 +1472,28 @@ read_and_display_attr_value (unsigned long attribute,
 	  if (need_frame_base && !have_frame_base)
 	    printf (_(" [without DW_AT_frame_base]"));
 	}
-      else if (form == DW_FORM_data4 || form == DW_FORM_data8)
-	printf (_("(location list)"));
+      break;
 
+    case DW_AT_import:
+      {
+	unsigned long abbrev_number;
+	abbrev_entry * entry;
+
+	if (form == DW_FORM_ref1
+	    || form == DW_FORM_ref2
+	    || form == DW_FORM_ref4)
+	  uvalue += cu_offset;
+
+	abbrev_number = read_leb128 (section_start + uvalue, NULL, 0);
+	
+	printf ("[Abbrev Number: %ld", abbrev_number);
+	for (entry = first_abbrev; entry != NULL; entry = entry->next)
+	  if (entry->entry == abbrev_number)
+	    break;
+	if (entry != NULL)
+	  printf (" (%s)", get_TAG_name (entry->tag));
+	printf ("]");
+      }
       break;
 
     default:
@@ -1445,19 +1583,52 @@ get_AT_name (unsigned long attribute)
     case DW_AT_call_column:		return "DW_AT_call_column";
     case DW_AT_call_file:		return "DW_AT_call_file";
     case DW_AT_call_line:		return "DW_AT_call_line";
-      /* SGI/MIPS extensions.  */
-    case DW_AT_MIPS_fde:		return "DW_AT_MIPS_fde";
-    case DW_AT_MIPS_loop_begin:		return "DW_AT_MIPS_loop_begin";
-    case DW_AT_MIPS_tail_loop_begin:	return "DW_AT_MIPS_tail_loop_begin";
-    case DW_AT_MIPS_epilog_begin:	return "DW_AT_MIPS_epilog_begin";
-    case DW_AT_MIPS_loop_unroll_factor: return "DW_AT_MIPS_loop_unroll_factor";
-    case DW_AT_MIPS_software_pipeline_depth:
-      return "DW_AT_MIPS_software_pipeline_depth";
-    case DW_AT_MIPS_linkage_name:	return "DW_AT_MIPS_linkage_name";
-    case DW_AT_MIPS_stride:		return "DW_AT_MIPS_stride";
-    case DW_AT_MIPS_abstract_name:	return "DW_AT_MIPS_abstract_name";
-    case DW_AT_MIPS_clone_origin:	return "DW_AT_MIPS_clone_origin";
-    case DW_AT_MIPS_has_inlines:	return "DW_AT_MIPS_has_inlines";
+    case DW_AT_description:		return "DW_AT_description";
+    case DW_AT_binary_scale:		return "DW_AT_binary_scale";
+    case DW_AT_decimal_scale:		return "DW_AT_decimal_scale";
+    case DW_AT_small:			return "DW_AT_small";
+    case DW_AT_decimal_sign:		return "DW_AT_decimal_sign";
+    case DW_AT_digit_count:		return "DW_AT_digit_count";
+    case DW_AT_picture_string:		return "DW_AT_picture_string";
+    case DW_AT_mutable:			return "DW_AT_mutable";
+    case DW_AT_threads_scaled:		return "DW_AT_threads_scaled";
+    case DW_AT_explicit:		return "DW_AT_explicit";
+    case DW_AT_object_pointer:		return "DW_AT_object_pointer";
+    case DW_AT_endianity:		return "DW_AT_endianity";
+    case DW_AT_elemental:		return "DW_AT_elemental";
+    case DW_AT_pure:			return "DW_AT_pure";
+    case DW_AT_recursive:		return "DW_AT_recursive";
+
+      /* HP and SGI/MIPS extensions.  */
+    case DW_AT_MIPS_loop_begin:			return "DW_AT_MIPS_loop_begin";
+    case DW_AT_MIPS_tail_loop_begin:		return "DW_AT_MIPS_tail_loop_begin";
+    case DW_AT_MIPS_epilog_begin:		return "DW_AT_MIPS_epilog_begin";
+    case DW_AT_MIPS_loop_unroll_factor: 	return "DW_AT_MIPS_loop_unroll_factor";
+    case DW_AT_MIPS_software_pipeline_depth: 	return "DW_AT_MIPS_software_pipeline_depth";
+    case DW_AT_MIPS_linkage_name:		return "DW_AT_MIPS_linkage_name";
+    case DW_AT_MIPS_stride:			return "DW_AT_MIPS_stride";
+    case DW_AT_MIPS_abstract_name:		return "DW_AT_MIPS_abstract_name";
+    case DW_AT_MIPS_clone_origin:		return "DW_AT_MIPS_clone_origin";
+    case DW_AT_MIPS_has_inlines:		return "DW_AT_MIPS_has_inlines";
+
+      /* HP Extensions.  */
+    case DW_AT_HP_block_index:			return "DW_AT_HP_block_index";      
+    case DW_AT_HP_actuals_stmt_list:		return "DW_AT_HP_actuals_stmt_list";
+    case DW_AT_HP_proc_per_section:		return "DW_AT_HP_proc_per_section";
+    case DW_AT_HP_raw_data_ptr:			return "DW_AT_HP_raw_data_ptr";
+    case DW_AT_HP_pass_by_reference:		return "DW_AT_HP_pass_by_reference";
+    case DW_AT_HP_opt_level:			return "DW_AT_HP_opt_level";
+    case DW_AT_HP_prof_version_id:		return "DW_AT_HP_prof_version_id";
+    case DW_AT_HP_opt_flags:			return "DW_AT_HP_opt_flags";
+    case DW_AT_HP_cold_region_low_pc:		return "DW_AT_HP_cold_region_low_pc";
+    case DW_AT_HP_cold_region_high_pc:		return "DW_AT_HP_cold_region_high_pc";
+    case DW_AT_HP_all_variables_modifiable:	return "DW_AT_HP_all_variables_modifiable";
+    case DW_AT_HP_linkage_name:			return "DW_AT_HP_linkage_name";
+    case DW_AT_HP_prof_flags:			return "DW_AT_HP_prof_flags";
+
+      /* One value is shared by the MIPS and HP extensions:  */
+    case DW_AT_MIPS_fde:			return "DW_AT_MIPS_fde or DW_AT_HP_unmodifiable";
+      
       /* GNU extensions.  */
     case DW_AT_sf_names:		return "DW_AT_sf_names";
     case DW_AT_src_info:		return "DW_AT_src_info";
@@ -1466,8 +1637,15 @@ get_AT_name (unsigned long attribute)
     case DW_AT_body_begin:		return "DW_AT_body_begin";
     case DW_AT_body_end:		return "DW_AT_body_end";
     case DW_AT_GNU_vector:		return "DW_AT_GNU_vector";
+
       /* UPC extension.  */
     case DW_AT_upc_threads_scaled:	return "DW_AT_upc_threads_scaled";
+
+    /* PGI (STMicroelectronics) extensions.  */
+    case DW_AT_PGI_lbase:		return "DW_AT_PGI_lbase";
+    case DW_AT_PGI_soffset:		return "DW_AT_PGI_soffset";
+    case DW_AT_PGI_lstride:		return "DW_AT_PGI_lstride";
+
     default:
       {
 	static char buffer[100];
@@ -1480,22 +1658,23 @@ get_AT_name (unsigned long attribute)
 }
 
 static unsigned char *
-read_and_display_attr (unsigned long attribute,
-		       unsigned long form,
-		       unsigned char *data,
-		       unsigned long cu_offset,
-		       unsigned long pointer_size,
-		       unsigned long offset_size,
-		       int dwarf_version,
-		       debug_info *debug_info_p,
-		       int do_loc)
+read_and_display_attr (unsigned long   attribute,
+		       unsigned long   form,
+		       unsigned char * data,
+		       unsigned long   cu_offset,
+		       unsigned long   pointer_size,
+		       unsigned long   offset_size,
+		       int             dwarf_version,
+		       debug_info *    debug_info_p,
+		       int             do_loc,
+		       unsigned char * section_start)
 {
   if (!do_loc)
-    printf ("     %-18s:", get_AT_name (attribute));
+    printf ("   %-18s:", get_AT_name (attribute));
   data = read_and_display_attr_value (attribute, form, data, cu_offset,
 				      pointer_size, offset_size,
 				      dwarf_version, debug_info_p,
-				      do_loc);
+				      do_loc, section_start);
   if (!do_loc)
     printf ("\n");
   return data;
@@ -1535,8 +1714,22 @@ process_debug_info (struct dwarf_section *section, void *file,
 	      length = byte_get (section_begin + 4, 8);
 	      section_begin += length + 12;
 	    }
+	  else if (length >= 0xfffffff0 && length < 0xffffffff)
+	    {
+	      warn (_("Reserved length value (%lx) found in section %s\n"), length, section->name);
+	      return 0;
+	    }
 	  else
 	    section_begin += length + 4;
+
+	  /* Negative values are illegal, they may even cause infinite
+	     looping.  This can happen if we can't accurately apply
+	     relocations to an object file.  */
+	  if ((signed long) length <= 0)
+	    {
+	      warn (_("Corrupt unit length (%lx) found in section %s\n"), length, section->name);
+	      return 0;
+	    }
 	}
 
       if (num_units == 0)
@@ -1604,7 +1797,6 @@ process_debug_info (struct dwarf_section *section, void *file,
       hdrptr += 2;
 
       cu_offset = start - section_begin;
-      start += compunit.cu_length + initial_length_size;
 
       cu_abbrev_offset_ptr = hdrptr;
       compunit.cu_abbrev_offset = byte_get (hdrptr, offset_size);
@@ -1628,8 +1820,6 @@ process_debug_info (struct dwarf_section *section, void *file,
 	  debug_information [unit].num_range_lists = 0;
 	}
 
-      tags = hdrptr;
-
       if (!do_loc)
 	{
 	  printf (_("  Compilation Unit @ offset 0x%lx:\n"), cu_offset);
@@ -1638,6 +1828,16 @@ process_debug_info (struct dwarf_section *section, void *file,
 	  printf (_("   Abbrev Offset: %ld\n"), compunit.cu_abbrev_offset);
 	  printf (_("   Pointer Size:  %d\n"), compunit.cu_pointer_size);
 	}
+
+      if (cu_offset + compunit.cu_length + initial_length_size
+	  > section->size)
+	{
+	  warn (_("Debug info is corrupted, length of CU at %lx extends beyond end of section (length = %lx)\n"),
+		cu_offset, compunit.cu_length);
+	  break;
+	}
+      tags = hdrptr;
+      start += compunit.cu_length + initial_length_size;
 
       if (compunit.cu_version != 2 && compunit.cu_version != 3)
 	{
@@ -1649,30 +1849,55 @@ process_debug_info (struct dwarf_section *section, void *file,
 
       /* Process the abbrevs used by this compilation unit. DWARF
 	 sections under Mach-O have non-zero addresses.  */
-      process_abbrev_section
-	((unsigned char *) debug_displays [abbrev].section.start
-	 + compunit.cu_abbrev_offset - debug_displays [abbrev].section.address,
-	 (unsigned char *) debug_displays [abbrev].section.start
-	 + debug_displays [abbrev].section.size);
+      if (compunit.cu_abbrev_offset >= debug_displays [abbrev].section.size)
+	warn (_("Debug info is corrupted, abbrev offset (%lx) is larger than abbrev section size (%lx)\n"),
+	      (unsigned long) compunit.cu_abbrev_offset,
+	      (unsigned long) debug_displays [abbrev].section.size);
+      else
+	process_abbrev_section
+	  ((unsigned char *) debug_displays [abbrev].section.start
+	   + compunit.cu_abbrev_offset - debug_displays [abbrev].section.address,
+	   (unsigned char *) debug_displays [abbrev].section.start
+	   + debug_displays [abbrev].section.size);
 
       level = 0;
       while (tags < start)
 	{
 	  unsigned int bytes_read;
 	  unsigned long abbrev_number;
+	  unsigned long die_offset;
 	  abbrev_entry *entry;
 	  abbrev_attr *attr;
+
+	  die_offset = tags - section_begin;
 
 	  abbrev_number = read_leb128 (tags, & bytes_read, 0);
 	  tags += bytes_read;
 
-	  /* A null DIE marks the end of a list of children.  */
+	  /* A null DIE marks the end of a list of siblings.  */
 	  if (abbrev_number == 0)
 	    {
 	      --level;
+	      if (level < 0)
+		{
+		  static unsigned num_bogus_warns = 0;
+
+		  if (num_bogus_warns < 3)
+		    {
+		      warn (_("Bogus end-of-siblings marker detected at offset %lx in .debug_info section\n"),
+			    die_offset);
+		      num_bogus_warns ++;
+		      if (num_bogus_warns == 3)
+			warn (_("Further warnings about bogus end-of-sibling markers suppressed\n"));
+		    }
+		}
 	      continue;
 	    }
 
+	  if (!do_loc)
+	    printf (_(" <%d><%lx>: Abbrev Number: %lu"),
+		    level, die_offset, abbrev_number);
+ 
 	  /* Scan through the abbreviation list until we reach the
 	     correct entry.  */
 	  for (entry = first_abbrev;
@@ -1682,18 +1907,18 @@ process_debug_info (struct dwarf_section *section, void *file,
 
 	  if (entry == NULL)
 	    {
+	      if (!do_loc)
+		{
+		  printf ("\n");
+		  fflush (stdout);
+		}
 	      warn (_("Unable to locate entry %lu in the abbreviation table\n"),
 		    abbrev_number);
 	      return 0;
 	    }
 
 	  if (!do_loc)
-	    printf (_(" <%d><%lx>: Abbrev Number: %lu (%s)\n"),
-		    level,
-		    (unsigned long) (tags - section_begin
-				     - bytes_read),
-		    abbrev_number,
-		    get_TAG_name (entry->tag));
+	    printf (_(" (%s)\n"), get_TAG_name (entry->tag));
  
 	  switch (entry->tag)
 	    {
@@ -1704,7 +1929,6 @@ process_debug_info (struct dwarf_section *section, void *file,
 	      need_base_address = 1;
 	      break;
 	    case DW_TAG_entry_point:
-	    case DW_TAG_inlined_subroutine:
 	    case DW_TAG_subprogram:
 	      need_base_address = 0;
 	      /* Assuming that there is no DW_AT_frame_base.  */
@@ -1713,14 +1937,20 @@ process_debug_info (struct dwarf_section *section, void *file,
 	    }
 
 	  for (attr = entry->first_attr; attr; attr = attr->next)
-	    tags = read_and_display_attr (attr->attribute,
-					  attr->form,
-					  tags, cu_offset,
-					  compunit.cu_pointer_size,
-					  offset_size,
-					  compunit.cu_version,
-					  &debug_information [unit],
-					  do_loc);
+	    {
+	      if (! do_loc)
+		/* Show the offset from where the tag was extracted.  */
+		printf ("    <%2lx>", (unsigned long)(tags - section_begin));
+
+	      tags = read_and_display_attr (attr->attribute,
+					    attr->form,
+					    tags, cu_offset,
+					    compunit.cu_pointer_size,
+					    offset_size,
+					    compunit.cu_version,
+					    debug_information + unit,
+					    do_loc, section->start);
+	    }
  
  	  if (entry->children)
  	    ++level;
@@ -1784,11 +2014,13 @@ display_debug_lines (struct dwarf_section *section, void *file)
       unsigned char *standard_opcodes;
       unsigned char *end_of_sequence;
       unsigned char *hdrptr;
+      unsigned long hdroff;
       int initial_length_size;
       int offset_size;
       int i;
 
       hdrptr = data;
+      hdroff = hdrptr - start;
 
       /* Check the length of the block.  */
       info.li_length = byte_get (hdrptr, 4);
@@ -1841,6 +2073,7 @@ display_debug_lines (struct dwarf_section *section, void *file)
       info.li_line_base <<= 24;
       info.li_line_base >>= 24;
 
+      printf (_("  Offset:                      0x%lx\n"), hdroff);
       printf (_("  Length:                      %ld\n"), info.li_length);
       printf (_("  DWARF Version:               %d\n"), info.li_version);
       printf (_("  Prologue Length:             %d\n"), info.li_prologue_length);
@@ -2315,7 +2548,8 @@ display_debug_loc (struct dwarf_section *section, void *file)
     error (_("No location lists in .debug_info section!\n"));
 
   /* DWARF sections under Mach-O have non-zero addresses.  */
-  if (debug_information [first].loc_offsets [0] != section->address)
+  if (debug_information [first].num_loc_offsets > 0
+      && debug_information [first].loc_offsets [0] != section->address)
     warn (_("Location lists in %s section start at 0x%lx\n"),
 	  section->name, debug_information [first].loc_offsets [0]);
 
@@ -2434,6 +2668,10 @@ display_debug_loc (struct dwarf_section *section, void *file)
 	    }
 	}
     }
+
+  if (start < section_end)
+    warn (_("There are %ld unused bytes at the end of section %s\n"),
+	  (long) (section_end - start), section->name);
   return 1;
 }
 
@@ -2494,7 +2732,6 @@ display_debug_str (struct dwarf_section *section,
 
   return 1;
 }
-
 
 static int
 display_debug_info (struct dwarf_section *section, void *file)
@@ -2686,7 +2923,8 @@ display_debug_ranges (struct dwarf_section *section,
     error (_("No range lists in .debug_info section!\n"));
 
   /* DWARF sections under Mach-O have non-zero addresses.  */
-  if (debug_information [first].range_lists [0] != section->address)
+  if (debug_information [first].num_range_lists > 0
+      && debug_information [first].range_lists [0] != section->address)
     warn (_("Range lists in %s section start at 0x%lx\n"),
 	  section->name, debug_information [first].range_lists [0]);
 
@@ -3134,11 +3372,7 @@ display_debug_frames (struct dwarf_section *section,
 	    encoded_ptr_size = size_of_encoded_value (fc->fde_encoding);
 
 	  fc->pc_begin = get_encoded_value (start, fc->fde_encoding);
-	  if ((fc->fde_encoding & 0x70) == DW_EH_PE_pcrel
-	      /* Don't adjust for relocatable file since there's
-		 invariably a pcrel reloc here, which we haven't
-		 applied.  */
-	      && !is_relocatable)
+	  if ((fc->fde_encoding & 0x70) == DW_EH_PE_pcrel)
 	    fc->pc_begin += section->address + (start - section_start);
 	  start += encoded_ptr_size;
 	  fc->pc_range = byte_get (start, encoded_ptr_size);
@@ -3341,8 +3575,7 @@ display_debug_frames (struct dwarf_section *section,
 
 	    case DW_CFA_set_loc:
 	      vma = get_encoded_value (start, fc->fde_encoding);
-	      if ((fc->fde_encoding & 0x70) == DW_EH_PE_pcrel
-		  && !is_relocatable)
+	      if ((fc->fde_encoding & 0x70) == DW_EH_PE_pcrel)
 		vma += section->address + (start - section_start);
 	      start += encoded_ptr_size;
 	      if (do_debug_frames_interp)

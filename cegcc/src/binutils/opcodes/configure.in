@@ -17,6 +17,9 @@ changequote([,])dnl
 
 AM_INIT_AUTOMAKE(opcodes, ${BFD_VERSION})
 
+AC_PROG_CC
+AC_GNU_SOURCE
+
 dnl These must be called before AM_PROG_LIBTOOL, because it may want
 dnl to call AC_CHECK_PROG.
 AC_CHECK_TOOL(AR, ar)
@@ -58,8 +61,6 @@ AC_EXEEXT
 
 # host-specific stuff:
 
-AC_PROG_CC
-
 ALL_LINGUAS="fr sv tr es da de id pt_BR ro nl fi vi ga zh_CN"
 ZW_GNU_GETTEXT_SISTER_DIR
 AM_PO_SUBDIRS
@@ -71,9 +72,9 @@ BFD_CC_FOR_BUILD
 AC_SUBST(HDEFINES)
 AC_PROG_INSTALL
 
-AC_CHECK_HEADERS(string.h strings.h stdlib.h)
+AC_CHECK_HEADERS(string.h strings.h stdlib.h limits.h)
 
-AC_CHECK_DECLS(basename)
+AC_CHECK_DECLS([basename, stpcpy])
 
 cgen_maint=no
 cgendir='$(srcdir)/../cgen'
@@ -96,19 +97,25 @@ AC_SUBST(cgendir)
 
 using_cgen=no
 
-# Horrible hacks to build DLLs on Windows.
-WIN32LDFLAGS=
-WIN32LIBADD=
-case "${host}" in
-*-*-cygwin*)
-  if test "$enable_shared" = "yes"; then
-    WIN32LDFLAGS="-no-undefined"
-    WIN32LIBADD="-L`pwd`/../bfd -lbfd -L`pwd`/../libiberty -liberty -L`pwd`/../intl -lintl -lcygwin"
-  fi
-  ;;
-esac
-AC_SUBST(WIN32LDFLAGS)
-AC_SUBST(WIN32LIBADD)
+# Horrible hacks to build DLLs on Windows and a shared library elsewhere.
+SHARED_LDFLAGS=
+SHARED_LIBADD=
+SHARED_DEPENDENCIES=
+if test "$enable_shared" = "yes"; then
+  case "${host}" in
+    *-*-cygwin*)
+      SHARED_LDFLAGS="-no-undefined"
+      SHARED_LIBADD="-L`pwd`/../bfd -lbfd -L`pwd`/../libiberty -liberty -L`pwd`/../intl -lintl -lcygwin"
+      ;;
+    *)
+      SHARED_LIBADD="-Wl,`pwd`/../bfd/.libs/libbfd.so"
+      SHARED_DEPENDENCIES="../bfd/libbfd.la"
+      ;;
+  esac
+fi
+AC_SUBST(SHARED_LDFLAGS)
+AC_SUBST(SHARED_LIBADD)
+AC_SUBST(SHARED_DEPENDENCIES)
 
 # target-specific stuff:
 
@@ -159,6 +166,7 @@ if test x${all_targets} = xfalse ; then
 	bfd_arm_arch)		ta="$ta arm-dis.lo" ;;
 	bfd_avr_arch)		ta="$ta avr-dis.lo" ;;
 	bfd_bfin_arch)		ta="$ta bfin-dis.lo" ;;
+	bfd_cr16_arch)    	ta="$ta cr16-dis.lo cr16-opc.lo" ;;
 	bfd_cris_arch)		ta="$ta cris-dis.lo cris-opc.lo cgen-bitset.lo" ;;
 	bfd_crx_arch)    	ta="$ta crx-dis.lo crx-opc.lo" ;;
 	bfd_d10v_arch)		ta="$ta d10v-dis.lo d10v-opc.lo" ;;
@@ -170,7 +178,7 @@ if test x${all_targets} = xfalse ; then
 	bfd_h8500_arch)		ta="$ta h8500-dis.lo" ;;
 	bfd_hppa_arch)		ta="$ta hppa-dis.lo" ;;
 	bfd_i370_arch)		ta="$ta i370-dis.lo i370-opc.lo" ;;
-	bfd_i386_arch)		ta="$ta i386-dis.lo" ;;
+	bfd_i386_arch)		ta="$ta i386-dis.lo i386-opc.lo" ;;
 	bfd_i860_arch)		ta="$ta i860-dis.lo" ;;
 	bfd_i960_arch)		ta="$ta i960-dis.lo" ;;
 	bfd_ia64_arch)		ta="$ta ia64-dis.lo ia64-opc.lo" ;;
@@ -184,6 +192,7 @@ if test x${all_targets} = xfalse ; then
 	bfd_m88k_arch)		ta="$ta m88k-dis.lo" ;;
 	bfd_maxq_arch)		ta="$ta maxq-dis.lo" ;;
 	bfd_mcore_arch)		ta="$ta mcore-dis.lo" ;;
+	bfd_mep_arch)		ta="$ta mep-asm.lo mep-desc.lo mep-dis.lo mep-ibld.lo mep-opc.lo" using_cgen=yes ;;
 	bfd_mips_arch)		ta="$ta mips-dis.lo mips-opc.lo mips16-opc.lo" ;;
 	bfd_mmix_arch)		ta="$ta mmix-dis.lo mmix-opc.lo" ;;
 	bfd_mn10200_arch)	ta="$ta m10200-dis.lo m10200-opc.lo" ;;
@@ -216,8 +225,9 @@ if test x${all_targets} = xfalse ; then
 				break;;
 	    esac;
 	  done
-				ta="$ta sh-dis.lo" ;;
+				ta="$ta sh-dis.lo cgen-bitset.lo" ;;
 	bfd_sparc_arch)		ta="$ta sparc-dis.lo sparc-opc.lo" ;;
+	bfd_spu_arch)		ta="$ta spu-dis.lo spu-opc.lo" ;;
 	bfd_tahoe_arch)		;;
 	bfd_tic30_arch)		ta="$ta tic30-dis.lo" ;;
         bfd_tic4x_arch)         ta="$ta tic4x-dis.lo" ;;

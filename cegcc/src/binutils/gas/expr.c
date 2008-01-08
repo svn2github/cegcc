@@ -1,13 +1,13 @@
 /* expr.c -operands, expressions-
    Copyright 1987, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -95,7 +95,9 @@ make_expr_symbol (expressionS *expressionP)
   symbolP = symbol_create (FAKE_LABEL_NAME,
 			   (expressionP->X_op == O_constant
 			    ? absolute_section
-			    : expr_section),
+			    : expressionP->X_op == O_register
+			      ? reg_section
+			      : expr_section),
 			   0, &zero_address_frag);
   symbol_set_value_expression (symbolP, expressionP);
 
@@ -1636,7 +1638,7 @@ expr (int rankarg,		/* Larger # is higher rank.  */
   operatorT op_right;
   int op_chars;
 
-  know (rank >= 0);
+  know (rankarg >= 0);
 
   /* Save the value of dot for the fixup code.  */
   if (rank == 0)
@@ -1722,7 +1724,11 @@ expr (int rankarg,		/* Larger # is higher rank.  */
 	}
       else
 #endif
-      if (op_left == O_add && right.X_op == O_constant)
+#ifndef md_register_arithmetic
+# define md_register_arithmetic 1
+#endif
+      if (op_left == O_add && right.X_op == O_constant
+	  && (md_register_arithmetic || resultP->X_op != O_register))
 	{
 	  /* X + constant.  */
 	  resultP->X_add_number += right.X_add_number;
@@ -1732,6 +1738,9 @@ expr (int rankarg,		/* Larger # is higher rank.  */
 	       && right.X_op == O_symbol
 	       && resultP->X_op == O_symbol
 	       && retval == rightseg
+#ifdef md_allow_local_subtract
+	       && md_allow_local_subtract (resultP, & right, rightseg)
+#endif
 	       && (SEG_NORMAL (rightseg)
 		   || right.X_add_symbol == resultP->X_add_symbol)
 	       && frag_offset_fixed_p (symbol_get_frag (resultP->X_add_symbol),
@@ -1745,12 +1754,14 @@ expr (int rankarg,		/* Larger # is higher rank.  */
 	  resultP->X_op = O_constant;
 	  resultP->X_add_symbol = 0;
 	}
-      else if (op_left == O_subtract && right.X_op == O_constant)
+      else if (op_left == O_subtract && right.X_op == O_constant
+	       && (md_register_arithmetic || resultP->X_op != O_register))
 	{
 	  /* X - constant.  */
 	  resultP->X_add_number -= right.X_add_number;
 	}
-      else if (op_left == O_add && resultP->X_op == O_constant)
+      else if (op_left == O_add && resultP->X_op == O_constant
+	       && (md_register_arithmetic || right.X_op != O_register))
 	{
 	  /* Constant + X.  */
 	  resultP->X_op = right.X_op;
@@ -1785,7 +1796,9 @@ expr (int rankarg,		/* Larger # is higher rank.  */
 	    case O_bit_or_not:		resultP->X_add_number |= ~v; break;
 	    case O_bit_exclusive_or:	resultP->X_add_number ^= v; break;
 	    case O_bit_and:		resultP->X_add_number &= v; break;
-	    case O_add:			resultP->X_add_number += v; break;
+	      /* Constant + constant (O_add) is handled by the
+		 previous if statement for constant + X, so is omitted
+		 here.  */
 	    case O_subtract:		resultP->X_add_number -= v; break;
 	    case O_eq:
 	      resultP->X_add_number =

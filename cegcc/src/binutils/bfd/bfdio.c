@@ -1,33 +1,32 @@
 /* Low-level I/O routines for BFDs.
 
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005
+   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    Written by Cygnus Support.
 
-This file is part of BFD, the Binary File Descriptor library.
+   This file is part of BFD, the Binary File Descriptor library.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 #include "sysdep.h"
-
+#include <limits.h>
 #include "bfd.h"
 #include "libbfd.h"
-
-#include <limits.h>
 
 #ifndef S_IXUSR
 #define S_IXUSR 0100    /* Execute by owner.  */
@@ -115,6 +114,15 @@ bfd_size_type
 bfd_bread (void *ptr, bfd_size_type size, bfd *abfd)
 {
   size_t nread;
+
+  /* If this is an archive element, don't read past the end of
+     this element.  */
+  if (abfd->arelt_data != NULL)
+    {
+      size_t maxbytes = ((struct areltdata *) abfd->arelt_data)->parsed_size;
+      if (size > maxbytes)
+	size = maxbytes;
+    }
 
   if ((abfd->flags & BFD_IN_MEMORY) != 0)
     {
@@ -401,7 +409,7 @@ FUNCTION
 	bfd_get_size
 
 SYNOPSIS
-	long bfd_get_size (bfd *abfd);
+	file_ptr bfd_get_size (bfd *abfd);
 
 DESCRIPTION
 	Return the file size (as read from file system) for the file
@@ -429,7 +437,7 @@ DESCRIPTION
 	size reasonable?".
 */
 
-long
+file_ptr
 bfd_get_size (bfd *abfd)
 {
   struct stat buf;

@@ -1,12 +1,12 @@
 /* tc-bfin.h - header file for tc-bfin.c
-   Copyright 2005
+   Copyright 2005, 2007
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -74,5 +74,8 @@ extern long md_pcrel_from_section PARAMS ((struct fix *, segT));
 
 /* Values passed to md_apply_fix3 don't include symbol values.  */
 #define MD_APPLY_SYM_VALUE(FIX) 0
+
+/* This target is buggy, and sets fix size too large.  */
+#define TC_FX_SIZE_SLACK(FIX) 2
 
 /* end of tc-bfin.h */

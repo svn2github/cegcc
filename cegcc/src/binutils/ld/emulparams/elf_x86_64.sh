@@ -4,7 +4,6 @@ OUTPUT_FORMAT="elf64-x86-64"
 TEXT_START_ADDR=0x400000
 MAXPAGESIZE="CONSTANT (MAXPAGESIZE)"
 COMMONPAGESIZE="CONSTANT (COMMONPAGESIZE)"
-NONPAGED_TEXT_START_ADDR=0x400000
 ARCH="i386:x86-64"
 MACHINE=
 NOP=0x90909090
@@ -25,7 +24,7 @@ fi
 # Linux/Solaris modify the default library search path to first include
 # a 64-bit specific directory.
 case "$target" in
-  x86_64*-linux*)
+  x86_64*-linux*|i[3-7]86-*-linux-*)
     case "$EMULATION_NAME" in
       *64*) LIBPATH_SUFFIX=64 ;;
     esac

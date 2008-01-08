@@ -1,10 +1,10 @@
 /* strings -- print the strings of printable characters in files
    Copyright 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-   2002, 2003, 2004, 2005, 2006 Free Software Foundation, Inc.
+   2002, 2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -58,17 +58,13 @@
    Written by Richard Stallman <rms@gnu.ai.mit.edu>
    and David MacKenzie <djm@gnu.ai.mit.edu>.  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "sysdep.h"
 #include "bfd.h"
-#include <stdio.h>
 #include "getopt.h"
-#include <errno.h>
-#include "bucomm.h"
 #include "libiberty.h"
 #include "safe-ctype.h"
 #include <sys/stat.h>
+#include "bucomm.h"
 
 /* Some platforms need to put stdin into binary mode, to read
     binary files.  */
@@ -597,14 +593,12 @@ print_strings (const char *filename, FILE *stream, file_off address,
 	  case 8:
 #if __STDC_VERSION__ >= 199901L || (defined(__GNUC__) && __GNUC__ >= 2)
 	    if (sizeof (start) > sizeof (long))
-	      printf ("%7Lo ", (unsigned long long) start);
+	      printf ("%7llo ", (unsigned long long) start);
 	    else
-#else
-# if !BFD_HOST_64BIT_LONG
+#elif !BFD_HOST_64BIT_LONG
 	    if (start != (unsigned long) start)
 	      printf ("++%7lo ", (unsigned long) start);
 	    else
-# endif
 #endif
 	      printf ("%7lo ", (unsigned long) start);
 	    break;
@@ -612,14 +606,12 @@ print_strings (const char *filename, FILE *stream, file_off address,
 	  case 10:
 #if __STDC_VERSION__ >= 199901L || (defined(__GNUC__) && __GNUC__ >= 2)
 	    if (sizeof (start) > sizeof (long))
-	      printf ("%7Ld ", (unsigned long long) start);
+	      printf ("%7lld ", (unsigned long long) start);
 	    else
-#else
-# if !BFD_HOST_64BIT_LONG
+#elif !BFD_HOST_64BIT_LONG
 	    if (start != (unsigned long) start)
 	      printf ("++%7ld ", (unsigned long) start);
 	    else
-# endif
 #endif
 	      printf ("%7ld ", (long) start);
 	    break;
@@ -627,15 +619,13 @@ print_strings (const char *filename, FILE *stream, file_off address,
 	  case 16:
 #if __STDC_VERSION__ >= 199901L || (defined(__GNUC__) && __GNUC__ >= 2)
 	    if (sizeof (start) > sizeof (long))
-	      printf ("%7Lx ", (unsigned long long) start);
+	      printf ("%7llx ", (unsigned long long) start);
 	    else
-#else
-# if !BFD_HOST_64BIT_LONG
+#elif !BFD_HOST_64BIT_LONG
 	    if (start != (unsigned long) start)
 	      printf ("%lx%8.8lx ", (unsigned long) (start >> 32),
 		      (unsigned long) (start & 0xffffffff));
 	    else
-# endif
 #endif
 	      printf ("%7lx ", (unsigned long) start);
 	    break;
@@ -722,7 +712,7 @@ usage (FILE *stream, int status)
   -h --help                 Display this information\n\
   -v --version              Print the program's version number\n"));
   list_supported_targets (program_name, stream);
-  if (status == 0)
+  if (REPORT_BUGS_TO[0] && status == 0)
     fprintf (stream, _("Report bugs to %s\n"), REPORT_BUGS_TO);
   exit (status);
 }

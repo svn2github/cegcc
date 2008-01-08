@@ -1,12 +1,12 @@
 /* tc-d10v.c -- Assembler code for the Mitsubishi D10V
-   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2005, 2006
+   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -251,44 +251,10 @@ md_undefined_symbol (char *name ATTRIBUTE_UNUSED)
   return 0;
 }
 
-/* Turn a string in input_line_pointer into a floating point constant
-   of type TYPE, and store the appropriate bytes in *LITP.  The number
-   of LITTLENUMS emitted is stored in *SIZEP.  An error message is
-   returned, or NULL on OK.  */
-
 char *
 md_atof (int type, char *litP, int *sizeP)
 {
-  int prec;
-  LITTLENUM_TYPE words[4];
-  char *t;
-  int i;
-
-  switch (type)
-    {
-    case 'f':
-      prec = 2;
-      break;
-    case 'd':
-      prec = 4;
-      break;
-    default:
-      *sizeP = 0;
-      return _("bad call to md_atof");
-    }
-
-  t = atof_ieee (input_line_pointer, type, words);
-  if (t)
-    input_line_pointer = t;
-
-  *sizeP = prec * 2;
-
-  for (i = 0; i < prec; i++)
-    {
-      md_number_to_chars (litP, (valueT) words[i], 2);
-      litP += 2;
-    }
-  return NULL;
+  return ieee_md_atof (type, litP, sizeP, TRUE);
 }
 
 void
@@ -1440,7 +1406,6 @@ do_assemble (char *str, struct d10v_opcode **opcode)
   char name[20];
   int nlen = 0;
   expressionS myops[6];
-  unsigned long insn;
 
   /* Drop leading whitespace.  */
   while (*str == ' ')
@@ -1462,7 +1427,7 @@ do_assemble (char *str, struct d10v_opcode **opcode)
   /* Find the first opcode with the proper name.  */
   *opcode = (struct d10v_opcode *) hash_find (d10v_hash, name);
   if (*opcode == NULL)
-    as_fatal (_("unknown opcode: %s"), name);
+    return -1;
 
   save = input_line_pointer;
   input_line_pointer = (char *) op_end;
@@ -1471,8 +1436,7 @@ do_assemble (char *str, struct d10v_opcode **opcode)
     return -1;
   input_line_pointer = save;
 
-  insn = build_insn ((*opcode), myops, 0);
-  return insn;
+  return build_insn ((*opcode), myops, 0);
 }
 
 /* If while processing a fixup, a reloc really needs to be created.
@@ -1778,7 +1742,7 @@ md_assemble (char *str)
 	  prev_seg = now_seg;
 	  prev_subseg = now_subseg;
 	  if (prev_insn == (unsigned long) -1)
-	    as_fatal (_("can't find opcode "));
+	    as_fatal (_("can't find previous opcode "));
 	  fixups = fixups->next;
 	  str = str2 + 2;
 	}
@@ -1788,11 +1752,10 @@ md_assemble (char *str)
   if (insn == (unsigned long) -1)
     {
       if (extype != PACK_UNSPEC)
-	{
-	  etype = extype;
-	  return;
-	}
-      as_fatal (_("can't find opcode "));
+	etype = extype;
+      else
+	as_bad (_("could not assemble: %s"), str);
+      return;
     }
 
   if (etype != PACK_UNSPEC)

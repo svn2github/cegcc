@@ -1,12 +1,12 @@
 /* SOM object file format.
-   Copyright 1993, 1994, 1998, 2000, 2002, 2003, 2004, 2005, 2006
-   Free Software Foundation, Inc.
+   Copyright 1993, 1994, 1998, 2000, 2002, 2003, 2004, 2005, 2006,
+   2007  Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2,
+   published by the Free Software Foundation; either version 3,
    or (at your option) any later version.
 
    GAS is distributed in the hope that it will be useful, but
@@ -55,7 +55,7 @@ obj_som_compiler (int unused ATTRIBUTE_UNUSED)
 
   if (compiler_seen)
     {
-      as_bad ("Only one .compiler pseudo-op per file!");
+      as_bad (_("Only one .compiler pseudo-op per file!"));
       ignore_rest_of_line ();
       return;
     }
@@ -72,7 +72,7 @@ obj_som_compiler (int unused ATTRIBUTE_UNUSED)
     }
   else
     {
-      as_bad ("Expected quoted string");
+      as_bad (_("Expected quoted string"));
       ignore_rest_of_line ();
       return;
     }
@@ -85,7 +85,7 @@ obj_som_compiler (int unused ATTRIBUTE_UNUSED)
     p++;
   if (*p == '\000')
     {
-      as_bad (".compiler directive missing language and version");
+      as_bad (_(".compiler directive missing language and version"));
       return;
     }
   *p = '\000';
@@ -95,7 +95,7 @@ obj_som_compiler (int unused ATTRIBUTE_UNUSED)
     p++;
   if (*p == '\000')
     {
-      as_bad (".compiler directive missing version");
+      as_bad (_(".compiler directive missing version"));
       return;
     }
   *p = '\000';
@@ -111,7 +111,7 @@ obj_som_compiler (int unused ATTRIBUTE_UNUSED)
 					 "GNU Tools", version_id))
     {
       bfd_perror (stdoutput->filename);
-      as_fatal ("FATAL: Attaching compiler header %s", stdoutput->filename);
+      as_fatal (_("FATAL: Attaching compiler header %s"), stdoutput->filename);
     }
   *input_line_pointer = c;
   demand_empty_rest_of_line ();

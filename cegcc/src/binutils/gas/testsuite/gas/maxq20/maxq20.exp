@@ -1,26 +1,13 @@
 #
 # MAXQ20 tests
 #
-proc run_list_test { name opts } {
-    global srcdir subdir
-    set testname "maxq20 $name"
-    set file $srcdir/$subdir/$name
-    gas_run ${name}.s $opts ">&dump.out"
-    if { [regexp_diff "dump.out" "${file}.l"] } then {
-	fail $testname
-	verbose "output is [file_contents "dump.out"]" 2
-	return
-    }
-    pass $testname
-}
-
 proc gas_64_check { } {
     global NM
     global NMFLAGS
     global srcdir
 
-    catch "exec $srcdir/lib/run $NM $NMFLAGS --help" nm_help
-    return [regexp "targets:.*maxq" $nm_help]
+    set status [gas_host_run "$NM $NMFLAGS --help" ""]
+    return [regexp "targets:.*maxq" [lindex $status 1]]
 }
 
 proc gas_32_check { } {
@@ -28,8 +15,8 @@ proc gas_32_check { } {
     global NMFLAGS
     global srcdir
 
-    catch "exec $srcdir/lib/run $NM $NMFLAGS --help" nm_help
-    return [regexp "targets:.*maxq" $nm_help]
+    set status [gas_host_run "$NM $NMFLAGS --help" ""]
+    return [regexp "targets:.*maxq" [lindex $status 1]]
 }
 
 

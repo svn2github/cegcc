@@ -1,11 +1,11 @@
 /* BFD back-end for National Semiconductor's CR16C ELF
-   Copyright 2004, 2005, 2006 Free Software Foundation, Inc.
+   Copyright 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -15,10 +15,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "bfdlink.h"
 #include "elf/cr16c.h"
@@ -148,6 +149,20 @@ elf_cr16c_reloc_type_lookup (bfd *abfd ATTRIBUTE_UNUSED,
 
   /* printf ("This relocation Type is not supported - %x\n", code); */
   return 0;
+}
+
+static reloc_howto_type *
+elf_cr16c_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+			     const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0; i < sizeof (elf_howto_table) / sizeof (elf_howto_table[0]); i++)
+    if (elf_howto_table[i].name != NULL
+	&& strcasecmp (elf_howto_table[i].name, r_name) == 0)
+      return &elf_howto_table[i];
+
+  return NULL;
 }
 
 static void
@@ -692,26 +707,6 @@ elf32_cr16c_relocate_section (bfd *output_bfd,
       r_type = ELF32_R_TYPE (rel->r_info);
       howto = elf_howto_table + r_type;
 
-      if (info->relocatable)
-	{
-	  /* This is a relocatable link.  We don't have to change
-	     anything, unless the reloc is against a section symbol,
-	     in which case we have to adjust according to where the
-	     section symbol winds up in the output section.  */
-	  if (r_symndx < symtab_hdr->sh_info)
-	    {
-	      sym = local_syms + r_symndx;
-	      if (ELF_ST_TYPE (sym->st_info) == STT_SECTION)
-		{
-		  sec = local_sections[r_symndx];
-		  rel->r_addend += sec->output_offset + sym->st_value;
-		}
-	    }
-
-	  continue;
-	}
-
-      /* This is a final link.  */
       h = NULL;
       sym = NULL;
       sec = NULL;
@@ -729,6 +724,28 @@ elf32_cr16c_relocate_section (bfd *output_bfd,
 				   r_symndx, symtab_hdr, sym_hashes,
 				   h, sec, relocation,
 				   unresolved_reloc, warned);
+	}
+
+      if (sec != NULL && elf_discarded_section (sec))
+	{
+	  /* For relocs against symbols from removed linkonce sections,
+	     or sections discarded by a linker script, we just want the
+	     section contents zeroed.  Avoid any special processing.  */
+	  _bfd_clear_contents (howto, input_bfd, contents + rel->r_offset);
+	  rel->r_info = 0;
+	  rel->r_addend = 0;
+	  continue;
+	}
+
+      if (info->relocatable)
+	{
+	  /* This is a relocatable link.  We don't have to change
+	     anything, unless the reloc is against a section symbol,
+	     in which case we have to adjust according to where the
+	     section symbol winds up in the output section.  */
+	  if (sym != NULL && ELF_ST_TYPE (sym->st_info) == STT_SECTION)
+	    rel->r_addend += sec->output_offset;
+	  continue;
 	}
 
       r = cr16c_elf_final_link_relocate (howto, input_bfd, output_bfd,
@@ -941,6 +958,7 @@ elf32_cr16c_link_output_symbol_hook (struct bfd_link_info *info ATTRIBUTE_UNUSED
 #define elf_symbol_leading_char		'_'
 
 #define bfd_elf32_bfd_reloc_type_lookup		elf_cr16c_reloc_type_lookup
+#define bfd_elf32_bfd_reloc_name_lookup	elf_cr16c_reloc_name_lookup
 #define elf_info_to_howto			elf_cr16c_info_to_howto
 #define elf_info_to_howto_rel			elf_cr16c_info_to_howto_rel
 #define elf_backend_relocate_section		elf32_cr16c_relocate_section

@@ -1,12 +1,13 @@
 /* ELF object file format
    Copyright 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
+   2001, 2002, 2003, 2004, 2005, 2006, 2007
+   Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2,
+   published by the Free Software Foundation; either version 3,
    or (at your option) any later version.
 
    GAS is distributed in the hope that it will be useful, but
@@ -55,6 +56,10 @@
 
 #ifdef TC_I386
 #include "elf/x86-64.h"
+#endif
+
+#ifdef TC_MEP
+#include "elf/mep.h"
 #endif
 
 static void obj_elf_line (int);
@@ -878,6 +883,7 @@ obj_elf_section (int push)
   int type, attr, dummy;
   int entsize;
   int linkonce;
+  subsegT new_subsection = -1;
 
 #ifndef TC_I370
   if (flag_mri)
@@ -915,6 +921,22 @@ obj_elf_section (int push)
       /* Skip the comma.  */
       ++input_line_pointer;
       SKIP_WHITESPACE ();
+
+      if (push && ISDIGIT (*input_line_pointer))
+	{
+	  /* .pushsection has an optional subsection.  */
+	  new_subsection = (subsegT) get_absolute_expression ();
+
+	  SKIP_WHITESPACE ();
+
+	  /* Stop if we don't see a comma.  */
+	  if (*input_line_pointer != ',')
+	    goto done;
+
+	  /* Skip the comma.  */
+	  ++input_line_pointer;
+	  SKIP_WHITESPACE ();
+	}
 
       if (*input_line_pointer == '"')
 	{
@@ -1022,9 +1044,13 @@ obj_elf_section (int push)
 	}
     }
 
+done:
   demand_empty_rest_of_line ();
 
   obj_elf_change_section (name, type, attr, entsize, group_name, linkonce, push);
+
+  if (push && new_subsection != -1)
+    subseg_set (now_seg, new_subsection);
 }
 
 /* Change to the .data section.  */
@@ -1084,7 +1110,7 @@ obj_elf_struct (int i)
 static void
 obj_elf_subsection (int ignore ATTRIBUTE_UNUSED)
 {
-  register int temp;
+  int temp;
 
 #ifdef md_flush_pending_output
   md_flush_pending_output ();
@@ -1270,7 +1296,7 @@ obj_elf_vtable_inherit (int ignore ATTRIBUTE_UNUSED)
 
   if (csym == NULL || symbol_get_frag (csym) == NULL)
     {
-      as_bad ("expected `%s' to have already been set for .vtable_inherit",
+      as_bad (_("expected `%s' to have already been set for .vtable_inherit"),
 	      cname);
       bad = 1;
     }
@@ -1280,7 +1306,7 @@ obj_elf_vtable_inherit (int ignore ATTRIBUTE_UNUSED)
   SKIP_WHITESPACE ();
   if (*input_line_pointer != ',')
     {
-      as_bad ("expected comma after name in .vtable_inherit");
+      as_bad (_("expected comma after name in .vtable_inherit"));
       ignore_rest_of_line ();
       return NULL;
     }
@@ -1340,7 +1366,7 @@ obj_elf_vtable_entry (int ignore ATTRIBUTE_UNUSED)
   SKIP_WHITESPACE ();
   if (*input_line_pointer != ',')
     {
-      as_bad ("expected comma after name in .vtable_entry");
+      as_bad (_("expected comma after name in .vtable_entry"));
       ignore_rest_of_line ();
       return NULL;
     }
@@ -1419,11 +1445,12 @@ obj_elf_version (int ignore ATTRIBUTE_UNUSED)
   Elf_Internal_Note i_note;
   Elf_External_Note e_note;
   asection *note_secp = NULL;
-  int len;
 
   SKIP_WHITESPACE ();
   if (*input_line_pointer == '\"')
     {
+      unsigned int len;
+
       ++input_line_pointer;	/* -> 1st char of string.  */
       name = input_line_pointer;
 
@@ -1434,19 +1461,19 @@ obj_elf_version (int ignore ATTRIBUTE_UNUSED)
       *(input_line_pointer - 1) = '\0';
       *input_line_pointer = c;
 
-      /* create the .note section */
-
+      /* Create the .note section.  */
       note_secp = subseg_new (".note", 0);
       bfd_set_section_flags (stdoutput,
 			     note_secp,
 			     SEC_HAS_CONTENTS | SEC_READONLY);
 
-      /* process the version string */
+      /* Process the version string.  */
+      len = strlen (name) + 1;
 
-      len = strlen (name);
-
-      i_note.namesz = ((len + 1) + 3) & ~3; /* round this to word boundary */
-      i_note.descsz = 0;	/* no description */
+      /* PR 3456: Although the name field is padded out to an 4-byte
+	 boundary, the namesz field should not be adjusted.  */
+      i_note.namesz = len;
+      i_note.descsz = 0;	/* No description.  */
       i_note.type = NT_VERSION;
       p = frag_more (sizeof (e_note.namesz));
       md_number_to_chars (p, i_note.namesz, sizeof (e_note.namesz));
@@ -1454,17 +1481,16 @@ obj_elf_version (int ignore ATTRIBUTE_UNUSED)
       md_number_to_chars (p, i_note.descsz, sizeof (e_note.descsz));
       p = frag_more (sizeof (e_note.type));
       md_number_to_chars (p, i_note.type, sizeof (e_note.type));
-      p = frag_more (len + 1);
-      strcpy (p, name);
+      p = frag_more (len);
+      memcpy (p, name, len);
 
       frag_align (2, 0, 0);
 
       subseg_set (seg, subseg);
     }
   else
-    {
-      as_bad (_("expected quoted string"));
-    }
+    as_bad (_("expected quoted string"));
+
   demand_empty_rest_of_line ();
 }
 
@@ -1574,6 +1600,33 @@ obj_elf_type (int ignore ATTRIBUTE_UNUSED)
   else if (strcmp (typename, "notype") == 0
 	   || strcmp (typename, "STT_NOTYPE") == 0)
     ;
+  else if (strcmp (typename, "common") == 0
+	   || strcmp (typename, "STT_COMMON") == 0)
+    {
+      type = BSF_OBJECT;
+
+      if (! S_IS_COMMON (sym))
+	{
+	  if (S_IS_VOLATILE (sym))
+	    {
+	      sym = symbol_clone (sym, 1);
+	      S_SET_SEGMENT (sym, bfd_com_section_ptr);
+	      S_SET_VALUE (sym, 0);
+	      S_SET_EXTERNAL (sym);
+	      symbol_set_frag (sym, &zero_address_frag);
+	      S_CLEAR_VOLATILE (sym);
+	    }
+	  else if (S_IS_DEFINED (sym) || symbol_equated_p (sym))
+	    as_bad (_("symbol '%s' is already defined"), S_GET_NAME (sym));
+	  else
+	    {
+	      /* FIXME: Is it safe to just change the section ?  */
+	      S_SET_SEGMENT (sym, bfd_com_section_ptr);
+	      S_SET_VALUE (sym, 0);
+	      S_SET_EXTERNAL (sym);
+	    }
+	}
+    }
 #ifdef md_elf_symbol_type
   else if ((type = md_elf_symbol_type (typename, sym, elfsym)) != -1)
     ;
@@ -1613,7 +1666,7 @@ obj_elf_ident (int ignore ATTRIBUTE_UNUSED)
     }
   else
     subseg_set (comment_section, 0);
-  stringer (1);
+  stringer (8 + 1);
   subseg_set (old_section, old_subsection);
 }
 
@@ -1689,6 +1742,9 @@ adjust_stab_sections (bfd *abfd, asection *sec, void *xxx ATTRIBUTE_UNUSED)
    this at the moment, so we do it ourselves.  We save the information
    in the symbol.  */
 
+#ifdef OBJ_MAYBE_ELF
+static
+#endif
 void
 elf_ecoff_set_ext (symbolS *sym, struct ecoff_extr *ext)
 {
@@ -1983,6 +2039,7 @@ elf_frob_file (void)
       bfd_set_section_size (stdoutput, s, size);
       s->contents = (unsigned char *) frag_more (size);
       frag_now->fr_fix = frag_now_fix_octets ();
+      frag_wane (frag_now);
     }
 
 #ifdef elf_tc_final_processing

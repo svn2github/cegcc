@@ -1,8 +1,8 @@
-# Copyright 2002, 2004, 2006 Free Software Foundation, Inc.
+# Copyright 2002, 2004, 2006, 2007 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 # 
 # This program is distributed in the hope that it will be useful,
@@ -14,14 +14,14 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
 
-if {![istarget "i*86-*-*"] && ![istarget "x86_64-*-mingw64*"] } {
+if {![istarget "i*86-*-*"] && ![istarget "x86_64-*-mingw*"] } {
     return
 }
 
 if {![istarget "i*86-*-*pe*"] \
     && ![istarget "i*86-*-cygwin*"] \
     && ![istarget "i*86-*-mingw32*"] \
-    && ![istarget "x86_64-*-mingw64*"] } {
+    && ![istarget "x86_64-*-mingw*"] } {
     set target_xfail "yes"
 } else {
     set target_xfail "no"

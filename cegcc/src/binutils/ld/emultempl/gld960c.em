@@ -1,33 +1,31 @@
 # This shell script emits a C file. -*- C -*-
 # It does some substitutions.
-cat >e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 /* Copyright 1991, 1993, 1994, 1996, 1999, 2000, 2001, 2002, 2003, 2004,
-   2005 Free Software Foundation, Inc.
+   2005, 2007 Free Software Foundation, Inc.
 
-This file is part of GLD, the Gnu Linker.
+   This file is part of the GNU Binutils.
 
-GLD is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 1, or (at your option)
-any later version.
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
 
-GLD is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with GLD; see the file COPYING.  If not, write to the Free
-Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA
-02110-1301, USA.  */
-
-/*
- * emulate the Intels port of  gld
- */
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 
-#include "bfd.h"
+/* Emulate the Intel's port of gld.  */
+
 #include "sysdep.h"
+#include "bfd.h"
 #include "libiberty.h"
 #include "safe-ctype.h"
 #include "bfdlink.h"
@@ -96,7 +94,7 @@ then
 # sed commands to quote an ld script as a C string.
 sc="-f stringify.sed"
 
-cat >>e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 {
   *isfile = 0;
 
@@ -117,7 +115,7 @@ echo '; }'                                             >> e${EMULATION_NAME}.c
 else
 # Scripts read from the filesystem.
 
-cat >>e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 {
   *isfile = 1;
 
@@ -136,7 +134,7 @@ EOF
 
 fi
 
-cat >>e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 
 struct ld_emulation_xfer_struct ld_gld960coff_emulation =
 {

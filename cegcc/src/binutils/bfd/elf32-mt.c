@@ -1,12 +1,12 @@
 /* Morpho Technologies MT specific support for 32-bit ELF
-   Copyright 2001, 2002, 2003, 2004, 2005, 2006
+   Copyright 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -16,10 +16,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+   MA 02111-1307, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "elf-bfd.h"
 #include "elf/mt.h"
@@ -187,6 +188,22 @@ mt_reloc_type_lookup
   return NULL;
 }
 
+static reloc_howto_type *
+mt_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+		      const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0;
+       i < sizeof (mt_elf_howto_table) / sizeof (mt_elf_howto_table[0]);
+       i++)
+    if (mt_elf_howto_table[i].name != NULL
+	&& strcasecmp (mt_elf_howto_table[i].name, r_name) == 0)
+      return &mt_elf_howto_table[i];
+
+  return NULL;
+}
+
 bfd_reloc_status_type
 mt_elf_relocate_hi16
     (bfd *               input_bfd,
@@ -309,7 +326,6 @@ mt_elf_relocate_section
 
       r_symndx = ELF32_R_SYM (rel->r_info);
 
-      /* This is a final link.  */
       howto  = mt_elf_howto_table + ELF32_R_TYPE (rel->r_info);
       h      = NULL;
       sym    = NULL;
@@ -338,6 +354,19 @@ mt_elf_relocate_section
 	  name = h->root.root.string;
 	}
 
+      if (sec != NULL && elf_discarded_section (sec))
+	{
+	  /* For relocs against symbols from removed linkonce sections,
+	     or sections discarded by a linker script, we just want the
+	     section contents zeroed.  Avoid any special processing.  */
+	  _bfd_clear_contents (howto, input_bfd, contents + rel->r_offset);
+	  rel->r_info = 0;
+	  rel->r_addend = 0;
+	  continue;
+	}
+
+      if (info->relocatable)
+	continue;
 
       /* Finally, the sole MT-specific part.  */
       switch (r_type)
@@ -407,7 +436,6 @@ mt_elf_check_relocs
 {
   Elf_Internal_Shdr *           symtab_hdr;
   struct elf_link_hash_entry ** sym_hashes;
-  struct elf_link_hash_entry ** sym_hashes_end;
   const Elf_Internal_Rela *     rel;
   const Elf_Internal_Rela *     rel_end;
   
@@ -416,9 +444,6 @@ mt_elf_check_relocs
   
   symtab_hdr = &elf_tdata (abfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (abfd);
-  sym_hashes_end = sym_hashes + symtab_hdr->sh_size / sizeof (Elf32_External_Sym);
-  if (!elf_bad_symtab (abfd))
-    sym_hashes_end -= symtab_hdr->sh_info;
   
   rel_end = relocs + sec->reloc_count;
   for (rel = relocs; rel < rel_end; rel++)
@@ -487,6 +512,10 @@ mt_elf_copy_private_bfd_data (bfd * ibfd, bfd * obfd)
 
   elf_elfheader (obfd)->e_flags = elf_elfheader (ibfd)->e_flags;
   elf_flags_init (obfd) = TRUE;
+
+  /* Copy object attributes.  */
+  _bfd_elf_copy_obj_attributes (ibfd, obfd);
+
   return TRUE;
 }
 
@@ -580,6 +609,7 @@ mt_elf_print_private_bfd_data (bfd * abfd, void * ptr)
 #define elf_backend_relocate_section		mt_elf_relocate_section
 
 #define bfd_elf32_bfd_reloc_type_lookup	        mt_reloc_type_lookup
+#define bfd_elf32_bfd_reloc_name_lookup   mt_reloc_name_lookup
 
 #define elf_backend_check_relocs                mt_elf_check_relocs
 #define elf_backend_object_p		        mt_elf_object_p

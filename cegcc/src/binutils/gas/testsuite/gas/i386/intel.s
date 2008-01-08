@@ -484,8 +484,8 @@ foo:
  xchg   bp, ax
  xchg   si, ax
  xchg   di, ax
- cbtw
- cwtd
+ cbw
+ cwd
  callw  0x9090,0x9090
  pushfw
  popfw
@@ -601,7 +601,7 @@ rot5:
 
 1:
  jne	1b
- movq	mm6, [DWORD PTR .LC5+40]		 
+ movq	mm6, [QWORD PTR .LC5+40]		 
  add	edi, dword ptr [ebx+8*eax]
  movd	mm0, dword ptr [ebx+8*eax+4]
  add	edi, dword ptr [ebx+8*ecx+((4095+1)*8)]
@@ -624,5 +624,65 @@ rot5:
 	mov	%al, 0x11
 	mov	%bl, ((( 0x4711  ) >> 8) & 0xff) 
 	mov	%bl, 0x47
-	
- .p2align 4,0
+
+ shrd   eax, edx, cl
+ shld   eax, edx, cl
+
+fadd
+fadd	st(3)
+fadd	st,st(3)
+fadd	st(3),st
+fadd   DWORD PTR [ebx]
+fadd   QWORD PTR [ebx]
+faddp
+faddp	st(3)
+faddp	st(3),st
+fdiv
+fdiv   st(3)
+fdiv   st,st(3)
+fdiv   st(3),st
+fdiv   DWORD PTR [ebx]
+fdiv   QWORD PTR [ebx]
+fdivp
+fdivp  st(3)
+fdivp  st(3),st
+fdivp  st,st(3)
+fdivr
+fdivr  st(3)
+fdivr  st,st(3)
+fdivr  st(3),st
+fdivr  DWORD PTR [ebx]
+fdivr  QWORD PTR [ebx]
+fdivrp
+fdivrp st(3)
+fdivrp st(3),st
+fdivrp st,st(3)
+fmul
+fmul	st(3)
+fmul	st,st(3)
+fmul	st(3),st
+fmul   DWORD PTR [ebx]
+fmul   QWORD PTR [ebx]
+fmulp
+fmulp	st(3)
+fmulp	st(3),st
+fsub
+fsubr
+fsub   st(3)
+fsub   st,st(3)
+fsub   st(3),st
+fsub   DWORD PTR [ebx]
+fsub   QWORD PTR [ebx]
+fsubp
+fsubp  st(3)
+fsubp  st,st(3)
+fsubp  st(3),st
+fsubr  st(3)
+fsubr  st,st(3)
+fsubr  st(3),st
+fsubr  DWORD PTR [ebx]
+fsubr  QWORD PTR [ebx]
+fsubrp
+fsubrp st(3)
+fsubrp st(3),st
+fsubrp st,st(3)

@@ -1,12 +1,12 @@
 /* Motorola 68k series support for 32-bit ELF
    Copyright 1993, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-   2004, 2005, 2006 Free Software Foundation, Inc.
+   2004, 2005, 2006, 2007 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -16,10 +16,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "bfdlink.h"
 #include "libbfd.h"
 #include "elf-bfd.h"
@@ -174,7 +175,21 @@ reloc_type_lookup (abfd, code)
   return 0;
 }
 
+static reloc_howto_type *
+reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED, const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0; i < sizeof (howto_table) / sizeof (howto_table[0]); i++)
+    if (howto_table[i].name != NULL
+	&& strcasecmp (howto_table[i].name, r_name) == 0)
+      return &howto_table[i];
+
+  return NULL;
+}
+
 #define bfd_elf32_bfd_reloc_type_lookup reloc_type_lookup
+#define bfd_elf32_bfd_reloc_name_lookup reloc_name_lookup
 #define ELF_ARCH bfd_arch_m68k
 
 /* Functions for the m68k ELF linker.  */
@@ -284,6 +299,40 @@ static const struct elf_m68k_plt_info elf_isab_plt_info = {
   ISAB_PLT_ENTRY_SIZE,
   elf_isab_plt0_entry, { 2, 12 },
   elf_isab_plt_entry, { 2, 20 }, 12
+};
+
+#define ISAC_PLT_ENTRY_SIZE 24 
+
+static const bfd_byte elf_isac_plt0_entry[ISAC_PLT_ENTRY_SIZE] =
+{
+  0x20, 0x3c,		  /* move.l #offset,%d0 */
+  0, 0, 0, 0,		  /* replaced with .got + 4 - . */
+  0x2e, 0xbb, 0x08, 0xfa, /* move.l (-6,%pc,%d0:l),(%sp) */
+  0x20, 0x3c,		  /* move.l #offset,%d0 */
+  0, 0, 0, 0,		  /* replaced with .got + 8 - . */
+  0x20, 0x7b, 0x08, 0xfa, /* move.l (-6,%pc,%d0:l), %a0 */
+  0x4e, 0xd0,		  /* jmp (%a0) */
+  0x4e, 0x71		  /* nop */
+};
+
+/* Subsequent entries in a procedure linkage table look like this.  */
+
+static const bfd_byte elf_isac_plt_entry[ISAC_PLT_ENTRY_SIZE] =
+{
+  0x20, 0x3c,		  /* move.l #offset,%d0 */
+  0, 0, 0, 0,		  /* replaced with (.got entry) - . */
+  0x20, 0x7b, 0x08, 0xfa, /* move.l (-6,%pc,%d0:l), %a0 */
+  0x4e, 0xd0,		  /* jmp (%a0) */
+  0x2f, 0x3c,		  /* move.l #offset,-(%sp) */
+  0, 0, 0, 0,		  /* replaced with offset into relocation table */
+  0x61, 0xff,		  /* bsr.l .plt */
+  0, 0, 0, 0 		  /* replaced with .plt - . */
+};
+
+static const struct elf_m68k_plt_info elf_isac_plt_info = {
+  ISAC_PLT_ENTRY_SIZE,
+  elf_isac_plt0_entry, { 2, 12},
+  elf_isac_plt_entry, { 2, 20 }, 12
 };
 
 #define CPU32_PLT_ENTRY_SIZE 24
@@ -429,40 +478,48 @@ elf32_m68k_object_p (bfd *abfd)
   unsigned features = 0;
   flagword eflags = elf_elfheader (abfd)->e_flags;
 
-  if (eflags & EF_M68K_M68000)
+  if ((eflags & EF_M68K_ARCH_MASK) == EF_M68K_M68000)
     features |= m68000;
-  else if (eflags & EF_M68K_CPU32)
+  else if ((eflags & EF_M68K_ARCH_MASK) == EF_M68K_CPU32)
     features |= cpu32;
-  else if (eflags & EF_M68K_ISA_MASK)
+  else if ((eflags & EF_M68K_ARCH_MASK) == EF_M68K_FIDO)
+    features |= fido_a;
+  else
     {
-      switch (eflags & EF_M68K_ISA_MASK)
+      switch (eflags & EF_M68K_CF_ISA_MASK)
 	{
-	case EF_M68K_ISA_A_NODIV:
+	case EF_M68K_CF_ISA_A_NODIV:
 	  features |= mcfisa_a;
 	  break;
-	case EF_M68K_ISA_A:
+	case EF_M68K_CF_ISA_A:
 	  features |= mcfisa_a|mcfhwdiv;
 	  break;
-	case EF_M68K_ISA_A_PLUS:
+	case EF_M68K_CF_ISA_A_PLUS:
 	  features |= mcfisa_a|mcfisa_aa|mcfhwdiv|mcfusp;
 	  break;
-	case EF_M68K_ISA_B_NOUSP:
+	case EF_M68K_CF_ISA_B_NOUSP:
 	  features |= mcfisa_a|mcfisa_b|mcfhwdiv;
 	  break;
-	case EF_M68K_ISA_B:
+	case EF_M68K_CF_ISA_B:
 	  features |= mcfisa_a|mcfisa_b|mcfhwdiv|mcfusp;
 	  break;
+	case EF_M68K_CF_ISA_C:
+	  features |= mcfisa_a|mcfisa_c|mcfhwdiv|mcfusp;
+	  break;
+	case EF_M68K_CF_ISA_C_NODIV:
+	  features |= mcfisa_a|mcfisa_c|mcfusp;
+	  break;
 	}
-      switch (eflags & EF_M68K_MAC_MASK)
+      switch (eflags & EF_M68K_CF_MAC_MASK)
 	{
-	case EF_M68K_MAC:
+	case EF_M68K_CF_MAC:
 	  features |= mcfmac;
 	  break;
-	case EF_M68K_EMAC:
+	case EF_M68K_CF_EMAC:
 	  features |= mcfemac;
 	  break;
 	}
-      if (eflags & EF_M68K_FLOAT)
+      if (eflags & EF_M68K_CF_FLOAT)
 	features |= cfloat;
     }
 
@@ -518,10 +575,27 @@ elf32_m68k_merge_private_bfd_data (ibfd, obfd)
   else
     {
       out_flags = elf_elfheader (obfd)->e_flags;
-      in_isa = (in_flags & EF_M68K_ISA_MASK);
-      out_isa = (out_flags & EF_M68K_ISA_MASK);
+      unsigned int variant_mask;
+
+      if ((in_flags & EF_M68K_ARCH_MASK) == EF_M68K_M68000)
+	variant_mask = 0;
+      else if ((in_flags & EF_M68K_ARCH_MASK) == EF_M68K_CPU32)
+	variant_mask = 0;
+      else if ((in_flags & EF_M68K_ARCH_MASK) == EF_M68K_FIDO)
+	variant_mask = 0;
+      else
+	variant_mask = EF_M68K_CF_ISA_MASK;
+
+      in_isa = (in_flags & variant_mask);
+      out_isa = (out_flags & variant_mask);
       if (in_isa > out_isa)
 	out_flags ^= in_isa ^ out_isa;
+      if (((in_flags & EF_M68K_ARCH_MASK) == EF_M68K_CPU32
+	   && (out_flags & EF_M68K_ARCH_MASK) == EF_M68K_FIDO)
+	  || ((in_flags & EF_M68K_ARCH_MASK) == EF_M68K_FIDO
+	      && (out_flags & EF_M68K_ARCH_MASK) == EF_M68K_CPU32))
+	out_flags = EF_M68K_FIDO;
+      else
       out_flags |= in_flags ^ in_isa;
     }
   elf_elfheader (obfd)->e_flags = out_flags;
@@ -548,58 +622,68 @@ elf32_m68k_print_private_bfd_data (abfd, ptr)
   /* xgettext:c-format */
   fprintf (file, _("private flags = %lx:"), elf_elfheader (abfd)->e_flags);
 
-  if (eflags & EF_M68K_CPU32)
-    fprintf (file, " [cpu32]");
-
-  if (eflags & EF_M68K_M68000)
+  if ((eflags & EF_M68K_ARCH_MASK) == EF_M68K_M68000)
     fprintf (file, " [m68000]");
-
-  if (eflags & EF_M68K_CFV4E)
-    fprintf (file, " [cfv4e]");
-
-  if (eflags & EF_M68K_ISA_MASK)
+  else if ((eflags & EF_M68K_ARCH_MASK) == EF_M68K_CPU32)
+    fprintf (file, " [cpu32]");
+  else if ((eflags & EF_M68K_ARCH_MASK) == EF_M68K_FIDO)
+    fprintf (file, " [fido]");
+  else
     {
-      char const *isa = _("unknown");
-      char const *mac = _("unknown");
-      char const *additional = "";
+      if ((eflags & EF_M68K_ARCH_MASK) == EF_M68K_CFV4E)
+	fprintf (file, " [cfv4e]");
+
+      if (eflags & EF_M68K_CF_ISA_MASK)
+	{
+	  char const *isa = _("unknown");
+	  char const *mac = _("unknown");
+	  char const *additional = "";
       
-      switch (eflags & EF_M68K_ISA_MASK)
-	{
-	case EF_M68K_ISA_A_NODIV:
-	  isa = "A";
-	  additional = " [nodiv]";
-	  break;
-	case EF_M68K_ISA_A:
-	  isa = "A";
-	  break;
-	case EF_M68K_ISA_A_PLUS:
-	  isa = "A+";
-	  break;
-	case EF_M68K_ISA_B_NOUSP:
-	  isa = "B";
-	  additional = " [nousp]";
-	  break;
-	case EF_M68K_ISA_B:
-	  isa = "B";
-	  break;
+	  switch (eflags & EF_M68K_CF_ISA_MASK)
+	    {
+	    case EF_M68K_CF_ISA_A_NODIV:
+	      isa = "A";
+	      additional = " [nodiv]";
+	      break;
+	    case EF_M68K_CF_ISA_A:
+	      isa = "A";
+	      break;
+	    case EF_M68K_CF_ISA_A_PLUS:
+	      isa = "A+";
+	      break;
+	    case EF_M68K_CF_ISA_B_NOUSP:
+	      isa = "B";
+	      additional = " [nousp]";
+	      break;
+	    case EF_M68K_CF_ISA_B:
+	      isa = "B";
+	      break;
+	    case EF_M68K_CF_ISA_C:
+	      isa = "C";
+	      break;
+	    case EF_M68K_CF_ISA_C_NODIV:
+	      isa = "C";
+	      additional = " [nodiv]";
+	      break;
+	    }
+	  fprintf (file, " [isa %s]%s", isa, additional);
+	  if (eflags & EF_M68K_CF_FLOAT)
+	    fprintf (file, " [float]");
+	  switch (eflags & EF_M68K_CF_MAC_MASK)
+	    {
+	    case 0:
+	      mac = NULL;
+	      break;
+	    case EF_M68K_CF_MAC:
+	      mac = "mac";
+	      break;
+	    case EF_M68K_CF_EMAC:
+	      mac = "emac";
+	      break;
+	    }
+	  if (mac)
+	    fprintf (file, " [%s]", mac);
 	}
-      fprintf (file, " [isa %s]%s", isa, additional);
-      if (eflags & EF_M68K_FLOAT)
-	fprintf (file, " [float]");
-      switch (eflags & EF_M68K_MAC_MASK)
-	{
-	case 0:
-	  mac = NULL;
-	  break;
-	case EF_M68K_MAC:
-	  mac = "mac";
-	  break;
-	case EF_M68K_EMAC:
-	  mac = "emac";
-	  break;
-	}
-      if (mac)
-	fprintf (file, " [%s]", mac);
     }
   
   fputc ('\n', file);
@@ -958,7 +1042,9 @@ elf_m68k_check_relocs (abfd, info, sec, relocs)
 	  /* This relocation describes which C++ vtable entries are actually
 	     used.  Record for later use during GC.  */
 	case R_68K_GNU_VTENTRY:
-	  if (!bfd_elf_gc_record_vtentry (abfd, sec, h, rel->r_addend))
+	  BFD_ASSERT (h != NULL);
+	  if (h != NULL
+	      && !bfd_elf_gc_record_vtentry (abfd, sec, h, rel->r_addend))
 	    return FALSE;
 	  break;
 
@@ -1109,6 +1195,8 @@ elf_m68k_get_plt_info (bfd *output_bfd)
     return &elf_cpu32_plt_info;
   if (features & mcfisa_b)
     return &elf_isab_plt_info;
+  if (features & mcfisa_c)
+    return &elf_isac_plt_info;
   return &elf_m68k_plt_info;
 }
 
@@ -1137,7 +1225,6 @@ elf_m68k_adjust_dynamic_symbol (info, h)
   struct elf_m68k_link_hash_table *htab;
   bfd *dynobj;
   asection *s;
-  unsigned int power_of_two;
 
   htab = elf_m68k_hash_table (info);
   dynobj = elf_hash_table (info)->dynobj;
@@ -1282,28 +1369,7 @@ elf_m68k_adjust_dynamic_symbol (info, h)
       h->needs_copy = 1;
     }
 
-  /* We need to figure out the alignment required for this symbol.  I
-     have no idea how ELF linkers handle this.  */
-  power_of_two = bfd_log2 (h->size);
-  if (power_of_two > 3)
-    power_of_two = 3;
-
-  /* Apply the required alignment.  */
-  s->size = BFD_ALIGN (s->size, (bfd_size_type) (1 << power_of_two));
-  if (power_of_two > bfd_get_section_alignment (dynobj, s))
-    {
-      if (!bfd_set_section_alignment (dynobj, s, power_of_two))
-	return FALSE;
-    }
-
-  /* Define the symbol as being at this point in the section.  */
-  h->root.u.def.section = s;
-  h->root.u.def.value = s->size;
-
-  /* Increment the section size to make room for the symbol.  */
-  s->size += h->size;
-
-  return TRUE;
+  return _bfd_elf_adjust_dynamic_copy (h, s);
 }
 
 /* Set the sizes of the dynamic sections.  */
@@ -1543,9 +1609,6 @@ elf_m68k_relocate_section (output_bfd, info, input_bfd, input_section,
   Elf_Internal_Rela *rel;
   Elf_Internal_Rela *relend;
 
-  if (info->relocatable)
-    return TRUE;
-
   dynobj = elf_hash_table (info)->dynobj;
   symtab_hdr = &elf_tdata (input_bfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (input_bfd);
@@ -1599,6 +1662,20 @@ elf_m68k_relocate_section (output_bfd, info, input_bfd, input_section,
 				   h, sec, relocation,
 				   unresolved_reloc, warned);
 	}
+
+      if (sec != NULL && elf_discarded_section (sec))
+	{
+	  /* For relocs against symbols from removed linkonce sections,
+	     or sections discarded by a linker script, we just want the
+	     section contents zeroed.  Avoid any special processing.  */
+	  _bfd_clear_contents (howto, input_bfd, contents + rel->r_offset);
+	  rel->r_info = 0;
+	  rel->r_addend = 0;
+	  continue;
+	}
+
+      if (info->relocatable)
+	continue;
 
       switch (r_type)
 	{
@@ -1833,11 +1910,12 @@ elf_m68k_relocate_section (output_bfd, info, input_bfd, input_section,
 	      else
 		{
 		  /* This symbol is local, or marked to become local.  */
+		  outrel.r_addend = relocation + rel->r_addend;
+
 		  if (r_type == R_68K_32)
 		    {
 		      relocate = TRUE;
 		      outrel.r_info = ELF32_R_INFO (0, R_68K_RELATIVE);
-		      outrel.r_addend = relocation + rel->r_addend;
 		    }
 		  else
 		    {
@@ -1854,13 +1932,24 @@ elf_m68k_relocate_section (output_bfd, info, input_bfd, input_section,
 			{
 			  asection *osec;
 
+			  /* We are turning this relocation into one
+			     against a section symbol.  It would be
+			     proper to subtract the symbol's value,
+			     osec->vma, from the emitted reloc addend,
+			     but ld.so expects buggy relocs.  */
 			  osec = sec->output_section;
 			  indx = elf_section_data (osec)->dynindx;
-			  BFD_ASSERT (indx > 0);
+			  if (indx == 0)
+			    {
+			      struct elf_link_hash_table *htab;
+			      htab = elf_hash_table (info);
+			      osec = htab->text_index_section;
+			      indx = elf_section_data (osec)->dynindx;
+			    }
+			  BFD_ASSERT (indx != 0);
 			}
 
 		      outrel.r_info = ELF32_R_INFO (indx, r_type);
-		      outrel.r_addend = relocation + rel->r_addend;
 		    }
 		}
 
@@ -2418,6 +2507,7 @@ elf_m68k_plt_sym_val (bfd_vma i, const asection *plt,
 					elf_m68k_adjust_dynamic_symbol
 #define elf_backend_size_dynamic_sections \
 					elf_m68k_size_dynamic_sections
+#define elf_backend_init_index_section	_bfd_elf_init_1_index_section
 #define elf_backend_relocate_section	elf_m68k_relocate_section
 #define elf_backend_finish_dynamic_symbol \
 					elf_m68k_finish_dynamic_symbol

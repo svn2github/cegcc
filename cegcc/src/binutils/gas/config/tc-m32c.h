@@ -1,11 +1,11 @@
 /* tc-m32c.h -- Header file for tc-m32c.c.
-   Copyright (C) 2004, 2005 Free Software Foundation, Inc.
+   Copyright (C) 2004, 2005, 2007 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -56,6 +56,10 @@ extern bfd_boolean m32c_fix_adjustable PARAMS ((struct fix *));
 /* When relaxing, we need to emit various relocs we otherwise wouldn't.  */
 #define TC_FORCE_RELOCATION(fix) m32c_force_relocation (fix)
 extern int m32c_force_relocation PARAMS ((struct fix *));
+
+#define TC_CONS_FIX_NEW(FRAG, WHERE, NBYTES, EXP) \
+  m32c_cons_fix_new (FRAG, WHERE, NBYTES, EXP)
+extern void m32c_cons_fix_new (fragS *, int, int, expressionS *);
 
 extern const struct relax_type md_relax_table[];
 #define TC_GENERIC_RELAX_TABLE md_relax_table

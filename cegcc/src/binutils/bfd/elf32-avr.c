@@ -1,5 +1,5 @@
 /* AVR-specific support for 32-bit ELF
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2006
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2006, 2007
    Free Software Foundation, Inc.
    Contributed by Denis Chertykov <denisc@overta.ru>
 
@@ -7,7 +7,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -20,8 +20,8 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor,
    Boston, MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "elf-bfd.h"
 #include "elf/avr.h"
@@ -103,7 +103,9 @@ struct elf32_avr_link_hash_table
 
 /* Various hash macros and functions.  */
 #define avr_link_hash_table(p) \
-  ((struct elf32_avr_link_hash_table *) ((p)->hash))
+  /* PR 3874: Check that we have an AVR style hash table before using it.  */\
+  ((p)->hash->table.newfunc != elf32_avr_link_hash_newfunc ? NULL : \
+   ((struct elf32_avr_link_hash_table *) ((p)->hash)))
 
 #define avr_stub_hash_entry(ent) \
   ((struct elf32_avr_stub_hash_entry *)(ent))
@@ -587,6 +589,18 @@ stub_hash_newfunc (struct bfd_hash_entry *entry,
   return entry;
 }
 
+/* This function is just a straight passthrough to the real
+   function in linker.c.  Its prupose is so that its address
+   can be compared inside the avr_link_hash_table macro.  */
+
+static struct bfd_hash_entry *
+elf32_avr_link_hash_newfunc (struct bfd_hash_entry * entry,
+			     struct bfd_hash_table * table,
+			     const char * string)
+{
+  return _bfd_elf_link_hash_newfunc (entry, table, string);
+}
+
 /* Create the derived linker hash table.  The AVR ELF port uses the derived
    hash table to keep information specific to the AVR ELF linker (without
    using static variables).  */
@@ -602,7 +616,7 @@ elf32_avr_link_hash_table_create (bfd *abfd)
     return NULL;
 
   if (!_bfd_elf_link_hash_table_init (&htab->etab, abfd,
-                                      _bfd_elf_link_hash_newfunc,
+                                      elf32_avr_link_hash_newfunc,
                                       sizeof (struct elf_link_hash_entry)))
     {
       free (htab);
@@ -674,6 +688,22 @@ bfd_elf32_bfd_reloc_type_lookup (bfd *abfd ATTRIBUTE_UNUSED,
   return NULL;
 }
 
+static reloc_howto_type *
+bfd_elf32_bfd_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+				 const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0;
+       i < sizeof (elf_avr_howto_table) / sizeof (elf_avr_howto_table[0]);
+       i++)
+    if (elf_avr_howto_table[i].name != NULL
+	&& strcasecmp (elf_avr_howto_table[i].name, r_name) == 0)
+      return &elf_avr_howto_table[i];
+
+  return NULL;
+}
+
 /* Set the howto pointer for an AVR ELF reloc.  */
 
 static void
@@ -699,7 +729,7 @@ elf32_avr_check_relocs (bfd *abfd,
 			const Elf_Internal_Rela *relocs)
 {
   Elf_Internal_Shdr *symtab_hdr;
-  struct elf_link_hash_entry **sym_hashes, **sym_hashes_end;
+  struct elf_link_hash_entry **sym_hashes;
   const Elf_Internal_Rela *rel;
   const Elf_Internal_Rela *rel_end;
 
@@ -708,9 +738,6 @@ elf32_avr_check_relocs (bfd *abfd,
 
   symtab_hdr = &elf_tdata (abfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (abfd);
-  sym_hashes_end = sym_hashes + symtab_hdr->sh_size / sizeof (Elf32_External_Sym);
-  if (!elf_bad_symtab (abfd))
-    sym_hashes_end -= symtab_hdr->sh_info;
 
   rel_end = relocs + sec->reloc_count;
   for (rel = relocs; rel < rel_end; rel++)
@@ -1139,9 +1166,6 @@ elf32_avr_relocate_section (bfd *output_bfd ATTRIBUTE_UNUSED,
   Elf_Internal_Rela *           relend;
   struct elf32_avr_link_hash_table * htab = avr_link_hash_table (info);
 
-  if (info->relocatable)
-    return TRUE;
-
   symtab_hdr = & elf_tdata (input_bfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (input_bfd);
   relend     = relocs + input_section->reloc_count;
@@ -1158,7 +1182,6 @@ elf32_avr_relocate_section (bfd *output_bfd ATTRIBUTE_UNUSED,
       const char *                 name;
       int                          r_type;
 
-      /* This is a final link.  */
       r_type = ELF32_R_TYPE (rel->r_info);
       r_symndx = ELF32_R_SYM (rel->r_info);
       howto  = elf_avr_howto_table + ELF32_R_TYPE (rel->r_info);
@@ -1187,6 +1210,20 @@ elf32_avr_relocate_section (bfd *output_bfd ATTRIBUTE_UNUSED,
 
 	  name = h->root.root.string;
 	}
+
+      if (sec != NULL && elf_discarded_section (sec))
+	{
+	  /* For relocs against symbols from removed linkonce sections,
+	     or sections discarded by a linker script, we just want the
+	     section contents zeroed.  Avoid any special processing.  */
+	  _bfd_clear_contents (howto, input_bfd, contents + rel->r_offset);
+	  rel->r_info = 0;
+	  rel->r_addend = 0;
+	  continue;
+	}
+
+      if (info->relocatable)
+	continue;
 
       r = avr_final_link_relocate (howto, input_bfd, input_section,
 				   contents, rel, relocation, htab);
@@ -1560,6 +1597,8 @@ elf32_avr_relax_section (bfd *abfd,
   struct elf32_avr_link_hash_table *htab;
 
   htab = avr_link_hash_table (link_info);
+  if (htab == NULL)
+    return FALSE;
 
   /* Assume nothing changes.  */
   *again = FALSE;
@@ -2364,6 +2403,8 @@ avr_build_one_stub (struct bfd_hash_entry *bh, void *in_arg)
   info = (struct bfd_link_info *) in_arg;
 
   htab = avr_link_hash_table (info);
+  if (htab == NULL)
+    return FALSE;
 
   target = hsh->target_value;
 
@@ -2454,8 +2495,10 @@ elf32_avr_setup_params (struct bfd_link_info *info,
                         bfd_vma pc_wrap_around,
                         bfd_boolean call_ret_replacement)
 {
-  struct elf32_avr_link_hash_table *htab = avr_link_hash_table(info);
+  struct elf32_avr_link_hash_table *htab = avr_link_hash_table (info);
 
+  if (htab == NULL)
+    return;
   htab->stub_sec = avr_stub_section;
   htab->stub_bfd = avr_stub_bfd;
   htab->no_stubs = no_stubs;
@@ -2485,7 +2528,7 @@ elf32_avr_setup_section_lists (bfd *output_bfd,
   bfd_size_type amt;
   struct elf32_avr_link_hash_table *htab = avr_link_hash_table(info);
 
-  if (htab->no_stubs)
+  if (htab == NULL || htab->no_stubs)
     return 0;
 
   /* Count the number of input BFDs and find the top input section id.  */
@@ -2547,6 +2590,9 @@ get_local_syms (bfd *input_bfd, struct bfd_link_info *info)
   Elf_Internal_Sym *local_syms, **all_local_syms;
   struct elf32_avr_link_hash_table *htab = avr_link_hash_table (info);
 
+  if (htab == NULL)
+    return -1;
+
   /* We want to read in symbol extension records only once.  To do this
      we need to read in the local symbols in parallel and save them for
      later use; so hold pointers to the local symbols in an array.  */
@@ -2596,21 +2642,23 @@ elf32_avr_size_stubs (bfd *output_bfd,
                       struct bfd_link_info *info,
                       bfd_boolean is_prealloc_run)
 {
- struct elf32_avr_link_hash_table *htab;
- int stub_changed = 0;
+  struct elf32_avr_link_hash_table *htab;
+  int stub_changed = 0;
 
- htab = avr_link_hash_table (info);
+  htab = avr_link_hash_table (info);
+  if (htab == NULL)
+    return FALSE;
 
- /* At this point we initialize htab->vector_base
-    To the start of the text output section.  */
- htab->vector_base = htab->stub_sec->output_section->vma;
+  /* At this point we initialize htab->vector_base
+     To the start of the text output section.  */
+  htab->vector_base = htab->stub_sec->output_section->vma;
 
- if (get_local_syms (info->input_bfds, info))
-   {
-     if (htab->all_local_syms)
-       goto error_ret_free_local;
-     return FALSE;
-   }
+  if (get_local_syms (info->input_bfds, info))
+    {
+      if (htab->all_local_syms)
+	goto error_ret_free_local;
+      return FALSE;
+    }
 
   if (ADD_DUMMY_STUBS_FOR_DEBUGGING)
     {
@@ -2856,6 +2904,8 @@ elf32_avr_build_stubs (struct bfd_link_info *info)
   bfd_size_type total_size = 0;
 
   htab = avr_link_hash_table (info);
+  if (htab == NULL)
+    return FALSE;
 
   /* In case that there were several stub sections:  */
   for (stub_sec = htab->stub_bfd->sections;

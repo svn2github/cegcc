@@ -1,23 +1,23 @@
 /* ldexp.h -
    Copyright 1991, 1992, 1993, 1994, 1995, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005 Free Software Foundation, Inc.
+   2003, 2004, 2005, 2007 Free Software Foundation, Inc.
 
-   This file is part of GLD, the Gnu Linker.
+   This file is part of the GNU Binutils.
 
-   GLD is free software; you can redistribute it and/or modify
+   This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
-   any later version.
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
 
-   GLD is distributed in the hope that it will be useful,
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with GLD; see the file COPYING.  If not, write to the Free
-   Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA
-   02110-1301, USA.  */
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 #ifndef LDEXP_H
 #define LDEXP_H
@@ -32,6 +32,7 @@ typedef struct {
 
 typedef struct {
   int node_code;
+  unsigned int lineno;
   enum {
     etree_binary,
     etree_trinary,
@@ -97,6 +98,8 @@ typedef enum {
   lang_final_phase_enum
 } lang_phase_type;
 
+union lang_statement_union;
+
 struct ldexp_control {
   /* Modify expression evaluation depending on this.  */
   lang_phase_type phase;
@@ -124,6 +127,15 @@ struct ldexp_control {
     } phase;
 
     bfd_vma base, min_base, relro_end, end, pagesize, maxpagesize;
+
+    enum {
+      exp_dataseg_relro_none,
+      exp_dataseg_relro_start,
+      exp_dataseg_relro_end,
+    } relro;
+
+    union lang_statement_union *relro_start_stat;
+    union lang_statement_union *relro_end_stat;
   } dataseg;
 };
 

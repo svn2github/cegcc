@@ -1,11 +1,12 @@
 /* BFD back-end for Intel 386 PE IMAGE COFF files.
-   Copyright 1995, 1996, 1999, 2002, 2004 Free Software Foundation, Inc.
+   Copyright 1995, 1996, 1999, 2002, 2004, 2007
+   Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -15,10 +16,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 
 #define TARGET_SYM 		i386pei_vec
 #define TARGET_NAME 		"pei-i386"
@@ -31,20 +33,6 @@
 #define COFF_LONG_FILENAMES
 
 #define COFF_SECTION_ALIGNMENT_ENTRIES \
-{ COFF_SECTION_NAME_EXACT_MATCH (".bss"), \
-  COFF_ALIGNMENT_FIELD_EMPTY, COFF_ALIGNMENT_FIELD_EMPTY, 4 }, \
-{ COFF_SECTION_NAME_EXACT_MATCH (".data"), \
-  COFF_ALIGNMENT_FIELD_EMPTY, COFF_ALIGNMENT_FIELD_EMPTY, 4 }, \
-{ COFF_SECTION_NAME_PARTIAL_MATCH (".data$"), \
-  COFF_ALIGNMENT_FIELD_EMPTY, COFF_ALIGNMENT_FIELD_EMPTY, 4 }, \
-{ COFF_SECTION_NAME_EXACT_MATCH (".rdata"), \
-  COFF_ALIGNMENT_FIELD_EMPTY, COFF_ALIGNMENT_FIELD_EMPTY, 4 }, \
-{ COFF_SECTION_NAME_PARTIAL_MATCH (".rdata$"), \
-  COFF_ALIGNMENT_FIELD_EMPTY, COFF_ALIGNMENT_FIELD_EMPTY, 4 }, \
-{ COFF_SECTION_NAME_EXACT_MATCH (".text"), \
-  COFF_ALIGNMENT_FIELD_EMPTY, COFF_ALIGNMENT_FIELD_EMPTY, 4 }, \
-{ COFF_SECTION_NAME_PARTIAL_MATCH (".text$"), \
-  COFF_ALIGNMENT_FIELD_EMPTY, COFF_ALIGNMENT_FIELD_EMPTY, 4 }, \
 { COFF_SECTION_NAME_PARTIAL_MATCH (".idata"), \
   COFF_ALIGNMENT_FIELD_EMPTY, COFF_ALIGNMENT_FIELD_EMPTY, 2 }, \
 { COFF_SECTION_NAME_EXACT_MATCH (".pdata"), \

@@ -1,6 +1,6 @@
 /* tc-avr.c -- Assembler code for the ATMEL AVR
 
-   Copyright 1999, 2000, 2001, 2002, 2004, 2005, 2006
+   Copyright 1999, 2000, 2001, 2002, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Contributed by Denis Chertykov <denisc@overta.ru>
 
@@ -8,7 +8,7 @@
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -68,7 +68,6 @@ static struct mcu_type_s mcu_types[] =
   {"avr5",       AVR_ISA_ALL,     bfd_mach_avr5},
   {"avr6",       AVR_ISA_ALL,     bfd_mach_avr6},
   {"at90s1200",  AVR_ISA_1200,    bfd_mach_avr1},
-  {"attiny10",   AVR_ISA_TINY1,   bfd_mach_avr1}, /* XXX -> tn11 */
   {"attiny11",   AVR_ISA_TINY1,   bfd_mach_avr1},
   {"attiny12",   AVR_ISA_TINY1,   bfd_mach_avr1},
   {"attiny15",   AVR_ISA_TINY1,   bfd_mach_avr1},
@@ -97,20 +96,26 @@ static struct mcu_type_s mcu_types[] =
   {"attiny25",   AVR_ISA_TINY2,   bfd_mach_avr2},
   {"attiny45",   AVR_ISA_TINY2,   bfd_mach_avr2},
   {"attiny85",   AVR_ISA_TINY2,   bfd_mach_avr2},
-  {"atmega603",  AVR_ISA_M603,    bfd_mach_avr3}, /* XXX -> m103 */
+  {"attiny43u",  AVR_ISA_TINY2,   bfd_mach_avr2},
+  {"attiny48",   AVR_ISA_TINY2,   bfd_mach_avr2},
+  {"attiny88",   AVR_ISA_TINY2,   bfd_mach_avr2},
   {"atmega103",  AVR_ISA_M103,    bfd_mach_avr3},
   {"at43usb320", AVR_ISA_M103,    bfd_mach_avr3},
   {"at43usb355", AVR_ISA_M603,    bfd_mach_avr3},
   {"at76c711",   AVR_ISA_M603,    bfd_mach_avr3},
   {"atmega48",   AVR_ISA_PWMx,    bfd_mach_avr4},
+  {"atmega48p",  AVR_ISA_PWMx,    bfd_mach_avr4},
   {"atmega8",    AVR_ISA_M8,      bfd_mach_avr4},
-  {"atmega83",   AVR_ISA_M8,      bfd_mach_avr4}, /* XXX -> m8535 */
-  {"atmega85",   AVR_ISA_M8,      bfd_mach_avr4}, /* XXX -> m8 */
   {"atmega88",   AVR_ISA_PWMx,    bfd_mach_avr4},
+  {"atmega88p",  AVR_ISA_PWMx,    bfd_mach_avr4},
   {"atmega8515", AVR_ISA_M8,      bfd_mach_avr4},
   {"atmega8535", AVR_ISA_M8,      bfd_mach_avr4},
+  {"atmega8hva", AVR_ISA_PWMx,    bfd_mach_avr4},
+  {"at90pwm1",   AVR_ISA_PWMx,    bfd_mach_avr4},
   {"at90pwm2",   AVR_ISA_PWMx,    bfd_mach_avr4},
+  {"at90pwm2b",  AVR_ISA_PWMx,    bfd_mach_avr4},
   {"at90pwm3",   AVR_ISA_PWMx,    bfd_mach_avr4},
+  {"at90pwm3b",  AVR_ISA_PWMx,    bfd_mach_avr4},
   {"atmega16",   AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega161",  AVR_ISA_M161,    bfd_mach_avr5},
   {"atmega162",  AVR_ISA_M323,    bfd_mach_avr5},
@@ -119,15 +124,22 @@ static struct mcu_type_s mcu_types[] =
   {"atmega165",  AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega165p", AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega168",  AVR_ISA_M323,    bfd_mach_avr5},
+  {"atmega168p", AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega169",  AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega169p", AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega32",   AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega323",  AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega324p", AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega325",  AVR_ISA_M323,    bfd_mach_avr5},
+  {"atmega325p", AVR_ISA_M323,    bfd_mach_avr5},
+  {"atmega328p", AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega329",  AVR_ISA_M323,    bfd_mach_avr5},
+  {"atmega329p", AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega3250", AVR_ISA_M323,    bfd_mach_avr5},
+  {"atmega3250p",AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega3290", AVR_ISA_M323,    bfd_mach_avr5},
+  {"atmega3290p",AVR_ISA_M323,    bfd_mach_avr5},
+  {"atmega32hvb",AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega406",  AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega64",   AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega640",  AVR_ISA_M323,    bfd_mach_avr5},
@@ -136,13 +148,19 @@ static struct mcu_type_s mcu_types[] =
   {"atmega128",  AVR_ISA_M128,    bfd_mach_avr5},
   {"atmega1280", AVR_ISA_M128,    bfd_mach_avr5},
   {"atmega1281", AVR_ISA_M128,    bfd_mach_avr5},
+  {"atmega1284p",AVR_ISA_M128,    bfd_mach_avr5},
   {"atmega645",  AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega649",  AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega6450", AVR_ISA_M323,    bfd_mach_avr5},
   {"atmega6490", AVR_ISA_M323,    bfd_mach_avr5},
+  {"atmega16hva",AVR_ISA_M323,    bfd_mach_avr5},
   {"at90can32" , AVR_ISA_M323,    bfd_mach_avr5},
   {"at90can64" , AVR_ISA_M323,    bfd_mach_avr5},
   {"at90can128", AVR_ISA_M128,    bfd_mach_avr5},
+  {"at90pwm216", AVR_ISA_M323,    bfd_mach_avr5},
+  {"at90pwm316", AVR_ISA_M323,    bfd_mach_avr5},
+  {"at90usb82",  AVR_ISA_M323,    bfd_mach_avr5},
+  {"at90usb162", AVR_ISA_M323,    bfd_mach_avr5},
   {"at90usb646", AVR_ISA_M323,    bfd_mach_avr5},
   {"at90usb647", AVR_ISA_M323,    bfd_mach_avr5},
   {"at90usb1286",AVR_ISA_M128,    bfd_mach_avr5},
@@ -317,8 +335,8 @@ md_show_usage (FILE *stream)
 	"                   [avr-name] can be:\n"
 	"                   avr1 - AT90S1200, ATtiny1x, ATtiny28\n"
 	"                   avr2 - AT90S2xxx, AT90S4xxx, AT90S8xxx, ATtiny22\n"
-	"                   avr3 - ATmega103, ATmega603\n"
-	"                   avr4 - ATmega83, ATmega85\n"
+	"                   avr3 - ATmega103\n"
+	"                   avr4 - ATmega8, ATmega88\n"
 	"                   avr5 - ATmega161, ATmega163, ATmega32, AT94K\n"
 	"                   or immediate microcontroller name.\n"));
   fprintf (stream,
@@ -399,46 +417,10 @@ md_undefined_symbol (char *name ATTRIBUTE_UNUSED)
   return NULL;
 }
 
-/* Turn a string in input_line_pointer into a floating point constant
-   of type TYPE, and store the appropriate bytes in *LITP.  The number
-   of LITTLENUMS emitted is stored in *SIZEP.  An error message is
-   returned, or NULL on OK.  */
-
 char *
 md_atof (int type, char *litP, int *sizeP)
 {
-  int prec;
-  LITTLENUM_TYPE words[4];
-  LITTLENUM_TYPE *wordP;
-  char *t;
-
-  switch (type)
-    {
-    case 'f':
-      prec = 2;
-      break;
-    case 'd':
-      prec = 4;
-      break;
-    default:
-      *sizeP = 0;
-      return _("bad call to md_atof");
-    }
-
-  t = atof_ieee (input_line_pointer, type, words);
-  if (t)
-    input_line_pointer = t;
-
-  *sizeP = prec * sizeof (LITTLENUM_TYPE);
-
-  /* This loop outputs the LITTLENUMs in REVERSE order.  */
-  for (wordP = words + prec - 1; prec--;)
-    {
-      md_number_to_chars (litP, (valueT) (*wordP--), sizeof (LITTLENUM_TYPE));
-      litP += sizeof (LITTLENUM_TYPE);
-    }
-
-  return NULL;
+  return ieee_md_atof (type, litP, sizeP, FALSE);
 }
 
 void
@@ -492,7 +474,7 @@ avr_get_constant (char *str, int max)
     as_bad (_("constant value required"));
 
   if (ex.X_add_number > max || ex.X_add_number < 0)
-    as_bad (_("number must be less than %d"), max + 1);
+    as_bad (_("number must be positive and less than %d"), max + 1);
 
   return ex.X_add_number;
 }

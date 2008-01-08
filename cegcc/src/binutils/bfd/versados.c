@@ -1,6 +1,6 @@
 /* BFD back-end for VERSAdos-E objects.
    Copyright 1995, 1996, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-   2006 Free Software Foundation, Inc.
+   2006, 2007 Free Software Foundation, Inc.
    Written by Steve Chamberlain of Cygnus Support <sac@cygnus.com>.
 
    Versados is a Motorola trademark.
@@ -9,7 +9,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -19,7 +19,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 /*
    SUBSECTION
@@ -37,8 +38,8 @@
    o Object Text Record
    o End Record.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "libiberty.h"
 
@@ -798,6 +799,7 @@ versados_canonicalize_reloc (bfd *abfd,
 #define versados_read_minisymbols                     _bfd_generic_read_minisymbols
 #define versados_minisymbol_to_symbol                 _bfd_generic_minisymbol_to_symbol
 #define versados_bfd_reloc_type_lookup                _bfd_norelocs_bfd_reloc_type_lookup
+#define versados_bfd_reloc_name_lookup          _bfd_norelocs_bfd_reloc_name_lookup
 #define versados_set_arch_mach                        bfd_default_set_arch_mach
 #define versados_bfd_get_relocated_section_contents   bfd_generic_get_relocated_section_contents
 #define versados_bfd_relax_section                    bfd_generic_relax_section

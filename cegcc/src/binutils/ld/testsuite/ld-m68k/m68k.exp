@@ -1,19 +1,22 @@
 # Expect script for run_dump_test based ld-m68k tests.
-#   Copyright 2006 Free Software Foundation, Inc.
+#   Copyright 2006, 2007 Free Software Foundation, Inc.
 #
-# This file is free software; you can redistribute it and/or modify
+# This file is part of the GNU Binutils.
+#
+# This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+# MA 02110-1301, USA.
 #
 # Test m68k object merging
 
@@ -56,7 +59,7 @@ run_dump_test "merge-ok-1b"
 run_dump_test "merge-ok-1c"
 
 foreach { id sources } { a { plt1.s } b { plt1-empty.s plt1.s } } {
-    foreach arch { 68020 cpu32 isab } {
+    foreach arch { 68020 cpu32 isab isac } {
 	run_ld_link_tests [list \
 	    [list "PLT 1$id ($arch)" "-shared -T plt1.ld" "-m$arch" \
 		 $sources [list [list objdump -dr plt1-$arch.d]] \

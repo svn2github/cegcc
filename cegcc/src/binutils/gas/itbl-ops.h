@@ -1,11 +1,11 @@
 /* itbl-ops.h
-   Copyright 1997, 1999, 2000, 2003, 2006 Free Software Foundation, Inc.
+   Copyright 1997, 1999, 2000, 2003, 2006, 2007 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -69,7 +69,7 @@ typedef enum
 typedef enum
   {
     e_p0,
-    e_nprocs = NUMBER_OF_PROCESSORS,
+    e_nprocs = ITBL_NUMBER_OF_PROCESSORS,
     e_invproc			/* invalid processor */
   } e_processor;
 

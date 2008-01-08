@@ -1,12 +1,12 @@
 # This shell script emits a C file. -*- C -*-
-#   Copyright 2006
+#   Copyright 2006, 2007
 #   Free Software Foundation, Inc.
 #
-# This file is part of GLD, the Gnu Linker.
+# This file is part of the GNU Binutils.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -16,20 +16,21 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, 
-# MA 02110-1301 USA.
+# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
-# This file is sourced from elf32.em, and defines extra avr-elf
-# specific routines.  It is used to generate the trampolines for the avr6
-# family devices where one needs to address the issue that it is not possible
+
+# This file is sourced from elf32.em, and defines extra avr-elf specific
+# routines.  It is used to generate the trampolines for the avr6 family
+# of devices where one needs to address the issue that it is not possible
 # to reach the whole program memory by using 16 bit pointers.
 
-cat >>e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 
 #include "elf32-avr.h"
 #include "ldctor.h"
 
-/* The fake file and it's corresponding section meant to hold 
+/* The fake file and it's corresponding section meant to hold
    the linker stubs if needed.  */
 
 static lang_input_statement_type *stub_file;
@@ -125,14 +126,14 @@ avr_elf_create_output_section_statements (void)
                                               ".trampolines");
   if (avr_stub_section == NULL)
     goto err_ret;
-  
+
   flags = (SEC_ALLOC | SEC_LOAD | SEC_READONLY | SEC_CODE
            | SEC_HAS_CONTENTS | SEC_RELOC | SEC_IN_MEMORY | SEC_KEEP);
   if (!bfd_set_section_flags (stub_file->the_bfd, avr_stub_section, flags))
     goto err_ret;
 
   avr_stub_section->alignment_power = 1;
-  
+
   ldlang_add_file (stub_file);
 
   return;
@@ -146,7 +147,7 @@ avr_elf_create_output_section_statements (void)
 
 static void
 avr_elf_finish (void)
-{ 
+{
   if (!avr_no_stubs)
     {
       /* Now build the linker stubs.  */
@@ -184,52 +185,56 @@ PARSE_AND_LIST_PROLOGUE='
 '
 
 PARSE_AND_LIST_LONGOPTS='
-  { "no-call-ret-replacement", no_argument, 
+  { "no-call-ret-replacement", no_argument,
      NULL, OPTION_NO_CALL_RET_REPLACEMENT},
-  { "pmem-wrap-around", required_argument, 
+  { "pmem-wrap-around", required_argument,
     NULL, OPTION_PMEM_WRAP_AROUND},
-  { "no-stubs", no_argument, 
+  { "no-stubs", no_argument,
     NULL, OPTION_NO_STUBS},
-  { "debug-stubs", no_argument, 
+  { "debug-stubs", no_argument,
     NULL, OPTION_DEBUG_STUBS},
-  { "debug-relax", no_argument, 
+  { "debug-relax", no_argument,
     NULL, OPTION_DEBUG_RELAX},
 '
 
 PARSE_AND_LIST_OPTIONS='
-  fprintf (file, _("     --pmem-wrap-around=<val> "
-                           "Make the linker relaxation machine assume that a\n"
-                   "                              "
-                           "program counter wrap-around occures at address\n"
-                   "                              "
-                           "<val>. Supported values are 16k, 32k and 64k.\n"));
-  fprintf (file, _("     --no-call-ret-replacement "
-                           "The relaxation machine normally will\n"
-                   "                               "
-                           "substitute two immediately following call/ret\n"
-                   "                               "
-                           "instructions by a single jump instruction.\n"
-                   "                               "
-                           "This option disables this optimization.\n"));
-  fprintf (file, _("     --no-stubs "
-                           "If the linker detects to attempt to access\n"
-                   "                               "
-                           "an instruction beyond 128k by a reloc that\n"
-                   "                               "
-                           "is limited to 128k max, it inserts a jump\n"
-                   "                               "
-                           "stub. You can de-active this with this switch.\n"));
-  fprintf (file, _("     --debug-stubs Used for debugging avr-ld.\n"));
-  fprintf (file, _("     --debug-relax Used for debugging avr-ld.\n"));
+  fprintf (file, _("  --pmem-wrap-around=<val>    "
+		   "Make the linker relaxation machine assume that a\n"
+		   "                              "
+		   "  program counter wrap-around occures at address\n"
+		   "                              "
+		   "  <val>.  Supported values: 8k, 16k, 32k and 64k.\n"));
+  fprintf (file, _("  --no-call-ret-replacement   "
+		   "The relaxation machine normally will\n"
+		   "                              "
+		   "  substitute two immediately following call/ret\n"
+		   "                              "
+		   "  instructions by a single jump instruction.\n"
+		   "                              "
+		   "  This option disables this optimization.\n"));
+  fprintf (file, _("  --no-stubs                  "
+		   "If the linker detects to attempt to access\n"
+		   "                              "
+		   "  an instruction beyond 128k by a reloc that\n"
+		   "                              "
+		   "  is limited to 128k max, it inserts a jump\n"
+		   "                              "
+		   "  stub. You can de-active this with this switch.\n"));
+  fprintf (file, _("  --debug-stubs               "
+		   "Used for debugging avr-ld.\n"));
+  fprintf (file, _("  --debug-relax               "
+		   "Used for debugging avr-ld.\n"));
 '
 
 PARSE_AND_LIST_ARGS_CASES='
 
     case OPTION_PMEM_WRAP_AROUND:
-      { 
+      {
         /* This variable is defined in the bfd library.  */
         if ((!strcmp (optarg,"32k"))      || (!strcmp (optarg,"32K")))
           avr_pc_wrap_around = 32768;
+        else if ((!strcmp (optarg,"8k")) || (!strcmp (optarg,"8K")))
+          avr_pc_wrap_around = 8192;
         else if ((!strcmp (optarg,"16k")) || (!strcmp (optarg,"16K")))
           avr_pc_wrap_around = 16384;
         else if ((!strcmp (optarg,"64k")) || (!strcmp (optarg,"64K")))

@@ -1,23 +1,23 @@
 /* s390-mkopc.c -- Generates opcode table out of s390-opc.txt
-   Copyright 2000, 2001, 2003 Free Software Foundation, Inc.
+   Copyright 2000, 2001, 2003, 2007 Free Software Foundation, Inc.
    Contributed by Martin Schwidefsky (schwidefsky@de.ibm.com).
 
-   This file is part of GDB, GAS, and the GNU binutils.
+   This file is part of the GNU opcodes library.
 
-   This program is free software; you can redistribute it and/or modify
+   This library is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+   the Free Software Foundation; either version 3, or (at your option)
+   any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   It is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+   License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA
-   02110-1301, USA.  */
+   along with this file; see the file COPYING.  If not, write to the
+   Free Software Foundation, 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,7 +36,8 @@ enum s390_opcode_cpu_val
     S390_OPCODE_G6,
     S390_OPCODE_Z900,
     S390_OPCODE_Z990,
-    S390_OPCODE_Z9_109
+    S390_OPCODE_Z9_109,
+    S390_OPCODE_Z9_EC
   };
 
 struct op_struct
@@ -112,6 +113,123 @@ insertOpcode (char *opcode, char *mnemonic, char *format,
   op_array[ix].min_cpu = min_cpu;
   op_array[ix].mode_bits = mode_bits;
   no_ops++;
+}
+
+struct s390_cond_ext_format
+{
+  char nibble;
+  char extension[4];
+};
+
+#define NUM_COND_EXTENSIONS 20
+
+const struct s390_cond_ext_format s390_cond_extensions[NUM_COND_EXTENSIONS] =
+  {
+    { '1', "o" },    /* jump on overflow / if ones */
+    { '2', "h" },    /* jump on A high */
+    { '2', "p" },    /* jump on plus */
+    { '3', "nle" },  /* jump on not low or equal */
+    { '4', "l" },    /* jump on A low */
+    { '4', "m" },    /* jump on minus / if mixed */
+    { '5', "nhe" },  /* jump on not high or equal */
+    { '6', "lh" },   /* jump on low or high */
+    { '7', "ne" },   /* jump on A not equal B */
+    { '7', "nz" },   /* jump on not zero / if not zeros */
+    { '8', "e" },    /* jump on A equal B */
+    { '8', "z" },    /* jump on zero / if zeros */
+    { '9', "nlh" },  /* jump on not low or high */
+    { 'a', "he" },   /* jump on high or equal */
+    { 'b', "nl" },   /* jump on A not low */
+    { 'b', "nm" },   /* jump on not minus / if not mixed */
+    { 'c', "le" },   /* jump on low or equal */
+    { 'd', "nh" },   /* jump on A not high */
+    { 'd', "np" },   /* jump on not plus */
+    { 'e', "no" },   /* jump on not overflow / if not ones */
+  };
+
+/* As with insertOpcode instructions are added to the sorted opcode
+   array.  Additionally mnemonics containing the '*<number>' tag are
+   expanded to the set of conditional instructions described by
+   s390_cond_extensions with the '*<number>' tag replaced by the
+   respective mnemonic extensions.  */
+
+static void
+expandConditionalJump (char *opcode, char *mnemonic, char *format,
+		       int min_cpu, int mode_bits)
+{
+  char prefix[5];
+  char suffix[5];
+  char number[5];
+  int mask_start, i = 0, star_found = 0, reading_number = 0;
+  int number_p = 0, suffix_p = 0, prefix_p = 0;
+
+  while (mnemonic[i] != '\0')
+    {
+      switch (mnemonic[i])
+	{
+	case '*':
+	  if (star_found)
+	    goto malformed_mnemonic;
+
+	  star_found = 1;
+	  reading_number = 1;
+	  break;
+
+	case '0': case '1': case '2': case '3': case '4':
+	case '5': case '6': case '7': case '8': case '9':
+	  if (!star_found || !reading_number)
+	    goto malformed_mnemonic;
+
+	  number[number_p++] = mnemonic[i];
+	  break;
+
+	default:
+	  if (reading_number)
+	    {
+	      if (!number_p)
+		goto malformed_mnemonic;
+	      else
+		reading_number = 0;
+	    }
+
+	  if (star_found)
+	    suffix[suffix_p++] = mnemonic[i];
+	  else
+	    prefix[prefix_p++] = mnemonic[i];
+	}
+      i++;
+    }
+
+  prefix[prefix_p] = '\0';
+  suffix[suffix_p] = '\0';
+  number[number_p] = '\0';
+
+  if (sscanf (number, "%d", &mask_start) != 1)
+    goto malformed_mnemonic;
+
+  if (mask_start & 3)
+    {
+      fprintf (stderr, "Conditional mask not at nibble boundary in: %s\n",
+	       mnemonic);
+      return;
+    }
+
+  mask_start >>= 2;
+
+  for (i = 0; i < NUM_COND_EXTENSIONS; i++)
+    {
+      char new_mnemonic[15];
+
+      strcpy (new_mnemonic, prefix);
+      strcat (new_mnemonic, s390_cond_extensions[i].extension);
+      strcat (new_mnemonic, suffix);
+      opcode[mask_start] = s390_cond_extensions[i].nibble;
+      insertOpcode (opcode, new_mnemonic, format, min_cpu, mode_bits);
+    }
+  return;
+
+ malformed_mnemonic:
+  fprintf (stderr, "Malformed mnemonic: %s\n", mnemonic);
 }
 
 static char file_header[] =
@@ -198,6 +316,8 @@ main (void)
 	    min_cpu = S390_OPCODE_Z990;
 	  else if (strcmp (cpu_string, "z9-109") == 0)
 	    min_cpu = S390_OPCODE_Z9_109;
+	  else if (strcmp (cpu_string, "z9-ec") == 0)
+	    min_cpu = S390_OPCODE_Z9_EC;
 	  else {
 	    fprintf (stderr, "Couldn't parse cpu string %s\n", cpu_string);
 	    exit (1);
@@ -222,7 +342,12 @@ main (void)
 	    if (*str == ',')
 	      str++;
 	  } while (*str != 0);
-	  insertOpcode (opcode, mnemonic, format, min_cpu, mode_bits);
+
+	  if (!strchr (mnemonic, '*'))
+	    insertOpcode (opcode, mnemonic, format, min_cpu, mode_bits);
+	  else
+	    expandConditionalJump (opcode, mnemonic, format,
+				   min_cpu, mode_bits);
 	}
       else
         fprintf (stderr, "Couldn't scan line %s\n", currentLine);

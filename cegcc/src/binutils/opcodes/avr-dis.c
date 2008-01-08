@@ -1,22 +1,25 @@
 /* Disassemble AVR instructions.
-   Copyright 1999, 2000, 2002, 2004, 2005, 2006
+   Copyright 1999, 2000, 2002, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    Contributed by Denis Chertykov <denisc@overta.ru>
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+   This file is part of libopcodes.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   This library is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3, or (at your option)
+   any later version.
+
+   It is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+   License for more details.
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 #include <assert.h>
 #include "sysdep.h"
@@ -42,6 +45,8 @@ const struct avr_opcodes_s avr_opcodes[] =
   #include "opcode/avr.h"
   {NULL, NULL, NULL, 0, 0, 0}
 };
+
+static const char * comment_start = "0x";
 
 static int
 avr_operand (unsigned int insn, unsigned int insn2, unsigned int pc, int constraint,
@@ -140,12 +145,11 @@ avr_operand (unsigned int insn, unsigned int insn2, unsigned int pc, int constra
     case 'h':
       *sym = 1;
       *sym_addr = ((((insn & 1) | ((insn & 0x1f0) >> 3)) << 16) | insn2) * 2;
-      /* See PR binutils/2545.  Ideally we would like to display the hex
+      /* See PR binutils/2454.  Ideally we would like to display the hex
 	 value of the address only once, but this would mean recoding
 	 objdump_print_address() which would affect many targets.  */
       sprintf (buf, "%#lx", (unsigned long) *sym_addr);      
-      sprintf (comment, "0x");
-
+      sprintf (comment, comment_start);
       break;
       
     case 'L':
@@ -154,17 +158,18 @@ avr_operand (unsigned int insn, unsigned int insn2, unsigned int pc, int constra
 	sprintf (buf, ".%+-8d", rel_addr);
         *sym = 1;
         *sym_addr = pc + 2 + rel_addr;
-	sprintf (comment, "0x");
+	sprintf (comment, comment_start);
       }
       break;
 
     case 'l':
       {
 	int rel_addr = ((((insn >> 3) & 0x7f) ^ 0x40) - 0x40) * 2;
+
 	sprintf (buf, ".%+-8d", rel_addr);
         *sym = 1;
         *sym_addr = pc + 2 + rel_addr;
-	sprintf (comment, "0x");
+	sprintf (comment, comment_start);
       }
       break;
 
@@ -267,9 +272,16 @@ print_insn_avr (bfd_vma addr, disassemble_info *info)
   int sym_op1 = 0, sym_op2 = 0;
   bfd_vma sym_addr1, sym_addr2;
 
+
   if (!initialized)
     {
       unsigned int nopcodes;
+
+      /* PR 4045: Try to avoid duplicating the 0x prefix that
+	 objdump_print_addr() will put on addresses when there
+	 is no symbol table available.  */
+      if (info->symtab_size == 0)
+	comment_start = " ";
 
       nopcodes = sizeof (avr_opcodes) / sizeof (struct avr_opcodes_s);
       

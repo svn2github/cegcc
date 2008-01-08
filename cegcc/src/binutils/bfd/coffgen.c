@@ -1,6 +1,6 @@
 /* Support for the generic parts of COFF, for BFD.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005
+   2000, 2001, 2002, 2003, 2004, 2005, 2007
    Free Software Foundation, Inc.
    Written by Cygnus Support.
 
@@ -8,7 +8,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -18,7 +18,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 /* Most of this hacked by  Steve Chamberlain, sac@cygnus.com.
    Split out of coffcode.h by Ian Taylor, ian@cygnus.com.  */
@@ -37,8 +38,8 @@
    Those functions may not use any COFF specific information, such as
    coff_data (abfd).  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "coff/internal.h"
 #include "libcoff.h"
@@ -408,6 +409,9 @@ _bfd_coff_read_internal_relocs (bfd *abfd,
   struct internal_reloc *irel;
   bfd_size_type amt;
 
+  if (sec->reloc_count == 0)
+    return internal_relocs;	/* Nothing to do.  */
+
   if (coff_section_data (abfd, sec) != NULL
       && coff_section_data (abfd, sec)->relocs != NULL)
     {
@@ -424,7 +428,7 @@ _bfd_coff_read_internal_relocs (bfd *abfd,
   if (external_relocs == NULL)
     {
       free_external = bfd_malloc (amt);
-      if (free_external == NULL && sec->reloc_count > 0)
+      if (free_external == NULL)
 	goto error_return;
       external_relocs = free_external;
     }
@@ -438,7 +442,7 @@ _bfd_coff_read_internal_relocs (bfd *abfd,
       amt = sec->reloc_count;
       amt *= sizeof (struct internal_reloc);
       free_internal = bfd_malloc (amt);
-      if (free_internal == NULL && sec->reloc_count > 0)
+      if (free_internal == NULL)
 	goto error_return;
       internal_relocs = free_internal;
     }
@@ -561,7 +565,8 @@ fixup_symbol_value (bfd *abfd,
 		    struct internal_syment *syment)
 {
   /* Normalize the symbol flags.  */
-  if (bfd_is_com_section (coff_symbol_ptr->symbol.section))
+  if (coff_symbol_ptr->symbol.section 
+      && bfd_is_com_section (coff_symbol_ptr->symbol.section))
     {
       /* A common symbol is undefined with a value.  */
       syment->n_scnum = N_UNDEF;
@@ -725,8 +730,8 @@ coff_mangle_symbols (bfd *bfd_ptr)
 	    {
 	      /* FIXME: We should use a union here.  */
 	      s->u.syment.n_value =
-		(bfd_vma)((combined_entry_type *)
-			  ((unsigned long) s->u.syment.n_value))->offset;
+		(bfd_hostptr_t) ((combined_entry_type *)
+			  ((bfd_hostptr_t) s->u.syment.n_value))->offset;
 	      s->fix_value = 0;
 	    }
 	  if (s->fix_line)
@@ -1443,9 +1448,11 @@ _bfd_coff_get_external_symbols (bfd *abfd)
   symesz = bfd_coff_symesz (abfd);
 
   size = obj_raw_syment_count (abfd) * symesz;
+  if (size == 0)
+    return TRUE;
 
   syms = bfd_malloc (size);
-  if (syms == NULL && size != 0)
+  if (syms == NULL)
     return FALSE;
 
   if (bfd_seek (abfd, obj_sym_filepos (abfd), SEEK_SET) != 0
@@ -1640,7 +1647,7 @@ coff_get_normalized_symtab (bfd *abfd)
 		}
 
 	      internal_ptr->u.syment._n._n_n._n_offset =
-		((long)
+		((bfd_hostptr_t)
 		 (string_table
 		  + (internal_ptr + 1)->u.auxent.x_file.x_n.x_offset));
 	    }
@@ -1652,13 +1659,13 @@ coff_get_normalized_symtab (bfd *abfd)
 	      if (internal_ptr->u.syment.n_numaux > 1
 		  && coff_data (abfd)->pe)
 		internal_ptr->u.syment._n._n_n._n_offset =
-		  ((long)
+		  ((bfd_hostptr_t)
 		   copy_name (abfd,
 			      (internal_ptr + 1)->u.auxent.x_file.x_fname,
 			      internal_ptr->u.syment.n_numaux * symesz));
 	      else
 		internal_ptr->u.syment._n._n_n._n_offset =
-		  ((long)
+		  ((bfd_hostptr_t)
 		   copy_name (abfd,
 			      (internal_ptr + 1)->u.auxent.x_file.x_fname,
 			      (size_t) bfd_coff_filnmlen (abfd)));
@@ -1682,11 +1689,11 @@ coff_get_normalized_symtab (bfd *abfd)
 	      if (newstring == NULL)
 		return NULL;
 	      strncpy (newstring, internal_ptr->u.syment._n._n_name, i);
-	      internal_ptr->u.syment._n._n_n._n_offset = (long int) newstring;
+	      internal_ptr->u.syment._n._n_n._n_offset = (bfd_hostptr_t) newstring;
 	      internal_ptr->u.syment._n._n_n._n_zeroes = 0;
 	    }
 	  else if (internal_ptr->u.syment._n._n_n._n_offset == 0)
-	    internal_ptr->u.syment._n._n_n._n_offset = (long int) "";
+	    internal_ptr->u.syment._n._n_n._n_offset = (bfd_hostptr_t) "";
 	  else if (!bfd_coff_symname_in_debug (abfd, &internal_ptr->u.syment))
 	    {
 	      /* Long name already.  Point symbol at the string in the
@@ -1698,7 +1705,7 @@ coff_get_normalized_symtab (bfd *abfd)
 		    return NULL;
 		}
 	      internal_ptr->u.syment._n._n_n._n_offset =
-		((long int)
+		((bfd_hostptr_t)
 		 (string_table
 		  + internal_ptr->u.syment._n._n_n._n_offset));
 	    }
@@ -1707,7 +1714,7 @@ coff_get_normalized_symtab (bfd *abfd)
 	      /* Long name in debug section.  Very similar.  */
 	      if (debug_section == NULL)
 		debug_section = build_debug_section (abfd);
-	      internal_ptr->u.syment._n._n_n._n_offset = (long int)
+	      internal_ptr->u.syment._n._n_n._n_offset = (bfd_hostptr_t)
 		(debug_section + internal_ptr->u.syment._n._n_n._n_offset);
 	    }
 	}
@@ -1784,7 +1791,7 @@ coff_get_symbol_info (bfd *abfd, asymbol *symbol, symbol_info *ret)
   if (coffsymbol (symbol)->native != NULL
       && coffsymbol (symbol)->native->fix_value)
     ret->value = coffsymbol (symbol)->native->u.syment.n_value -
-      (unsigned long) obj_raw_syments (abfd);
+      (bfd_hostptr_t) obj_raw_syments (abfd);
 }
 
 /* Return the COFF syment for a symbol.  */
@@ -1807,7 +1814,7 @@ bfd_coff_get_syment (bfd *abfd,
 
   if (csym->native->fix_value)
     psyment->n_value = psyment->n_value -
-      (unsigned long) obj_raw_syments (abfd);
+      (bfd_hostptr_t) obj_raw_syments (abfd);
 
   /* FIXME: We should handle fix_line here.  */
 
@@ -1893,7 +1900,7 @@ coff_print_symbol (bfd *abfd,
 	  if (! combined->fix_value)
 	    val = (bfd_vma) combined->u.syment.n_value;
 	  else
-	    val = combined->u.syment.n_value - (unsigned long) root;
+	    val = combined->u.syment.n_value - (bfd_hostptr_t) root;
 
 	  fprintf (file, "(sec %2d)(fl 0x%02x)(ty %3x)(scl %3d) (nx %d) 0x",
 		   combined->u.syment.n_scnum,
@@ -1901,7 +1908,16 @@ coff_print_symbol (bfd *abfd,
 		   combined->u.syment.n_type,
 		   combined->u.syment.n_sclass,
 		   combined->u.syment.n_numaux);
-	  fprintf_vma (file, val);
+#ifdef BFD64
+	  /* fprintf_vma() on a 64-bit enabled host will always print a 64-bit
+	     value, but really we want to display the address in the target's
+	     address size.  Since we do not have a field in the bfd structure
+	     to tell us this, we take a guess, based on the target's name.  */
+	  if (strstr (bfd_get_target (abfd), "64") == NULL)
+	    fprintf (file, "%08lx", (unsigned long) (val & 0xffffffff));
+	  else
+#endif
+	    fprintf_vma (file, val);
 	  fprintf (file, " %s", symbol->name);
 
 	  for (aux = 0; aux < combined->u.syment.n_numaux; aux++)

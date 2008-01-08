@@ -119,6 +119,28 @@ generated.
 
 Valid @var{CPU} values are identical to @option{-march=@var{CPU}}.
 
+@cindex @samp{-mmnemonic=} option, i386
+@cindex @samp{-mmnemonic=} option, x86-64
+@item -mmnemonic=@var{att}
+@item -mmnemonic=@var{intel}
+This option specifies instruction mnemonic for matching instructions. 
+The @code{.att_mnemonic} and @code{.intel_mnemonic} directives will
+take precedent.
+
+@cindex @samp{-msyntax=} option, i386
+@cindex @samp{-msyntax=} option, x86-64
+@item -msyntax=@var{att}
+@item -msyntax=@var{intel}
+This option specifies instruction syntax when processing instructions. 
+The @code{.att_syntax} and @code{.intel_syntax} directives will
+take precedent.
+
+@cindex @samp{-mnaked-reg} option, i386
+@cindex @samp{-mnaked-reg} option, x86-64
+@item -mnaked-reg
+This opetion specifies that registers don't require a @samp{%} prefix.
+The @code{.att_syntax} and @code{.intel_syntax} directives will take precedent.
+
 @end table
 
 @node i386-Syntax
@@ -178,9 +200,9 @@ operands are prefixed by @samp{*}; they are undelimited in Intel syntax.
 AT&T and Intel syntax use the opposite order for source and destination
 operands.  Intel @samp{add eax, 4} is @samp{addl $4, %eax}.  The
 @samp{source, dest} convention is maintained for compatibility with
-previous Unix assemblers.  Note that instructions with more than one
-source operand, such as the @samp{enter} instruction, do @emph{not} have
-reversed order.  @ref{i386-Bugs}.
+previous Unix assemblers.  Note that @samp{bound}, @samp{invlpga}, and
+instructions with 2 immediate operands, such as the @samp{enter}
+instruction, do @emph{not} have reversed order.  @ref{i386-Bugs}.
 
 @cindex mnemonic suffixes, i386
 @cindex sizes operands, i386
@@ -296,6 +318,21 @@ instructions.
 Far call/jump instructions are @samp{lcall} and @samp{ljmp} in
 AT&T syntax, but are @samp{call far} and @samp{jump far} in Intel
 convention.
+
+@section AT&T Mnemonic versus Intel Mnemonic
+
+@cindex i386 mnemonic compatibility
+@cindex mnemonic compatibility, i386
+
+@code{@value{AS}} supports assembly using Intel mnemonic.
+@code{.intel_mnemonic} selects Intel mnemonic with Intel syntax, and
+@code{.att_mnemonic} switches back to the usual AT&T mnemonic with AT&T
+syntax for compatibility with the output of @code{@value{GCC}}.
+Several x87 instructions, @samp{fadd}, @samp{fdiv}, @samp{fdivp},
+@samp{fdivr}, @samp{fdivrp}, @samp{fmul}, @samp{fsub}, @samp{fsubp},
+@samp{fsubr} and @samp{fsubrp},  are implemented in AT&T System V/386
+assembler with different mnemonics from those in Intel IA32 specification.
+@code{@value{GCC}} generates those instructions with AT&T mnemonic.
 
 @node i386-Regs
 @section Register Naming
@@ -753,10 +790,12 @@ supported on the CPU specified.  The choices for @var{cpu_type} are:
 @item @samp{i486} @tab @samp{i586} @tab @samp{i686} @tab @samp{pentium}
 @item @samp{pentiumpro} @tab @samp{pentiumii} @tab @samp{pentiumiii} @tab @samp{pentium4}
 @item @samp{prescott} @tab @samp{nocona} @tab @samp{core} @tab @samp{core2}
+@item @samp{amdfam10}
 @item @samp{k6} @tab @samp{athlon} @tab @samp{sledgehammer} @tab @samp{k8} 
 @item @samp{.mmx} @tab @samp{.sse} @tab @samp{.sse2} @tab @samp{.sse3}
-@item @samp{.3dnow} @tab @samp{.3dnowa} @tab @samp{.padlock} @tab @samp{.pacifica}
-@item @samp{.svme}
+@item @samp{.ssse3} @tab @samp{.sse4.1} @tab @samp{.sse4.2} @tab @samp{.sse4}
+@item @samp{.sse4a} @tab @samp{.3dnow} @tab @samp{.3dnowa} @tab @samp{.padlock}
+@item @samp{.pacifica} @tab @samp{.svme} @tab @samp{.abm}
 @end multitable
 
 Apart from the warning, there are only two other effects on

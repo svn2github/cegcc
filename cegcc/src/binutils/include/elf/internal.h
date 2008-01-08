@@ -1,6 +1,6 @@
 /* ELF support for BFD.
    Copyright 1991, 1992, 1993, 1994, 1995, 1997, 1998, 2000, 2001, 2002,
-   2003, 2006 Free Software Foundation, Inc.
+   2003, 2006, 2007 Free Software Foundation, Inc.
 
    Written by Fred Fish @ Cygnus Support, from information published
    in "UNIX System V Release 4, Programmers Guide: ANSI C and
@@ -235,8 +235,12 @@ struct elf_segment_map
   unsigned long p_flags;
   /* Program segment physical address.  */
   bfd_vma p_paddr;
+  /* Program segment virtual address offset from section vma.  */
+  bfd_vma p_vaddr_offset;
   /* Program segment alignment.  */
   bfd_vma p_align;
+  /* Segment size in file and memory */
+  bfd_vma p_size;
   /* Whether the p_flags field is valid; if not, the flags are based
      on the section flags.  */
   unsigned int p_flags_valid : 1;
@@ -246,6 +250,9 @@ struct elf_segment_map
   /* Whether the p_align field is valid; if not, PT_LOAD segment
      alignment is based on the default maximum page size.  */
   unsigned int p_align_valid : 1;
+  /* Whether the p_size field is valid; if not, the size are based
+     on the section sizes.  */
+  unsigned int p_size_valid : 1;
   /* Whether this segment includes the file header.  */
   unsigned int includes_filehdr : 1;
   /* Whether this segment includes the program headers.  */
@@ -264,25 +271,27 @@ struct elf_segment_map
      || segment->p_type == PT_TLS) ? sec_hdr->sh_size : 0)
 
 /* Decide if the given sec_hdr is in the given segment.  PT_TLS segment
-   contains only SHF_TLS sections.  Only PT_LOAD and PT_TLS segments
-   can contain SHF_TLS sections.  */
-#define ELF_IS_SECTION_IN_SEGMENT(sec_hdr, segment)		\
-  (((((sec_hdr->sh_flags & SHF_TLS) != 0)			\
-     && (segment->p_type == PT_TLS				\
-	 || segment->p_type == PT_LOAD))			\
-    || ((sec_hdr->sh_flags & SHF_TLS) == 0			\
-	&& segment->p_type != PT_TLS))				\
-   /* Compare allocated sec_hdrs by VMA, unallocated sec_hdrs	\
-      by file offset.  */					\
-   && (sec_hdr->sh_flags & SHF_ALLOC				\
-       ? (sec_hdr->sh_addr >= segment->p_vaddr			\
-	  && (sec_hdr->sh_addr					\
-	      + ELF_SECTION_SIZE(sec_hdr, segment)		\
-	      <= segment->p_vaddr + segment->p_memsz))		\
-       : ((bfd_vma) sec_hdr->sh_offset >= segment->p_offset	\
-	  && (sec_hdr->sh_offset				\
-	      + ELF_SECTION_SIZE(sec_hdr, segment)		\
-	      <= segment->p_offset + segment->p_filesz))))
+   contains only SHF_TLS sections.  Only PT_LOAD, PT_GNU_RELRO and
+   and PT_TLS segments can contain SHF_TLS sections.  */
+#define ELF_IS_SECTION_IN_SEGMENT(sec_hdr, segment)			\
+  (((((sec_hdr->sh_flags & SHF_TLS) != 0)				\
+     && (segment->p_type == PT_TLS					\
+	 || segment->p_type == PT_GNU_RELRO				\
+	 || segment->p_type == PT_LOAD))				\
+    || ((sec_hdr->sh_flags & SHF_TLS) == 0				\
+	&& segment->p_type != PT_TLS))					\
+   /* Any section besides one of type SHT_NOBITS must have a file	\
+      offset within the segment.  */					\
+   && (sec_hdr->sh_type == SHT_NOBITS					\
+       || ((bfd_vma) sec_hdr->sh_offset >= segment->p_offset		\
+	   && (sec_hdr->sh_offset + ELF_SECTION_SIZE(sec_hdr, segment)	\
+	       <= segment->p_offset + segment->p_filesz)))		\
+   /* SHF_ALLOC sections must have VMAs within the segment.  Be		\
+      careful about segments right at the end of memory.  */		\
+   && ((sec_hdr->sh_flags & SHF_ALLOC) == 0				\
+       || (sec_hdr->sh_addr >= segment->p_vaddr				\
+	   && (sec_hdr->sh_addr - segment->p_vaddr			\
+	       + ELF_SECTION_SIZE(sec_hdr, segment) <= segment->p_memsz))))
 
 /* Decide if the given sec_hdr is in the given segment in file.  */
 #define ELF_IS_SECTION_IN_SEGMENT_FILE(sec_hdr, segment)	\

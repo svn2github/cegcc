@@ -10,10 +10,9 @@
 proc gas_64_check { } {
     global NM
     global NMFLAGS
-    global srcdir
 
-    catch "exec $srcdir/lib/run $NM $NMFLAGS --help" nm_help
-    return [regexp "elf64\[_-\]sparc" $nm_help]
+    set status [gas_host_run "$NM $NMFLAGS --help" ""]
+    return [regexp "elf64\[_-\]sparc" [lindex $status 1]]
 }
 
 proc sparc_elf_setup { } {
@@ -48,6 +47,13 @@ if [istarget sparc*-*-*] {
 	run_dump_test "pcrel64"
 	run_dump_test "plt64"
     }
+    run_dump_test "v9branch1"
+    run_dump_test "v9branch2"
+    run_dump_test "v9branch3"
+    run_dump_test "v9branch4"
+    run_dump_test "v9branch5"
+
+    run_list_test "pr4587" ""
 }
 
 if [istarget sparc-*-vxworks*] {

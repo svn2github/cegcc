@@ -1,20 +1,20 @@
 /* Print instructions for the Motorola 88000, for GDB and GNU Binutils.
    Copyright 1986, 1987, 1988, 1989, 1990, 1991, 1993, 1998, 2000, 2001,
-   2002, 2005 Free Software Foundation, Inc.
+   2002, 2005, 2007  Free Software Foundation, Inc.
    Contributed by Data General Corporation, November 1989.
    Partially derived from an earlier printcmd.c.
 
-   This file is part of GDB and the GNU Binutils.
+   This file is part of the GNU opcodes library.
 
-   This program is free software; you can redistribute it and/or modify
+   This library is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+   the Free Software Foundation; either version 3, or (at your option)
+   any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   It is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+   License for more details.
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
@@ -276,15 +276,15 @@ const INSTAB  instructions[] =
   {0x8400bc20,"fcmpu.sxs   ",{21,5,REG} ,{16,5,XREG}  ,{0,5,XREG}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
   {0x8400bd20,"fcmpu.sxx   ",{21,5,REG} ,{16,5,XREG}  ,{0,5,XREG}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
 
-  {0x84000820,"fcvt.sd     ",{21,5,REG} ,{0,5,REG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
-  {0x84000880,"fcvt.ds     ",{21,5,REG} ,{0,5,REG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
+  {0x84000820,"fcvt.ds     ",{21,5,REG} ,{0,5,REG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
+  {0x84000880,"fcvt.sd     ",{21,5,REG} ,{0,5,REG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
 
-  {0x84008880,"fcvt.ds     ",{21,5,XREG} ,{0,5,XREG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
-  {0x840088c0,"fcvt.dx     ",{21,5,XREG} ,{0,5,XREG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
-  {0x84008820,"fcvt.sd     ",{21,5,XREG} ,{0,5,XREG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
-  {0x84008840,"fcvt.sx     ",{21,5,XREG} ,{0,5,XREG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
-  {0x84008920,"fcvt.xd     ",{21,5,XREG} ,{0,5,XREG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
-  {0x84008900,"fcvt.xs     ",{21,5,XREG} ,{0,5,XREG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
+  {0x84008880,"fcvt.sd     ",{21,5,XREG} ,{0,5,XREG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
+  {0x840088c0,"fcvt.xd     ",{21,5,XREG} ,{0,5,XREG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
+  {0x84008820,"fcvt.ds     ",{21,5,XREG} ,{0,5,XREG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
+  {0x84008840,"fcvt.xs     ",{21,5,XREG} ,{0,5,XREG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
+  {0x84008920,"fcvt.dx     ",{21,5,XREG} ,{0,5,XREG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
+  {0x84008900,"fcvt.sx     ",{21,5,XREG} ,{0,5,XREG}  ,NO_OPERAND, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
 
   {0x8400f2a0,"fdiv.ddd    ",{21,5,XREG} ,{16,5,XREG}  ,{0,5,XREG}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },
   {0x8400f280,"fdiv.dds    ",{21,5,XREG} ,{16,5,XREG}  ,{0,5,XREG}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} },

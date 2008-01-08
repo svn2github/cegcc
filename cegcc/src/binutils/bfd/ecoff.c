@@ -1,6 +1,6 @@
 /* Generic ECOFF (Extended-COFF) routines.
    Copyright 1990, 1991, 1993, 1994, 1995, 1996, 1998, 1999, 2000, 2001,
-   2002, 2003, 2004, 2005, 2006 Free Software Foundation, Inc.
+   2002, 2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
    Original version by Per Bothner.
    Full support added by Ian Lance Taylor, ian@cygnus.com.
 
@@ -8,7 +8,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -18,10 +18,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "bfdlink.h"
 #include "libbfd.h"
 #include "aout/ar.h"
@@ -54,8 +55,8 @@ static asection bfd_debug_section =
 {
   /* name,      id,  index, next, prev, flags, user_set_vma,       */
      "*DEBUG*", 0,   0,     NULL, NULL, 0,     0,
-  /* linker_mark, linker_has_input, gc_mark, gc_mark_from_eh,      */
-     0,           0,                1,       0,
+  /* linker_mark, linker_has_input, gc_mark,                       */
+     0,           0,                1,
   /* segment_mark, sec_info_type, use_rela_p, has_tls_reloc,       */
      0,            0,             0,          0,
   /* has_gp_reloc, need_finalize_relax, reloc_done,                */
@@ -3087,7 +3088,7 @@ _bfd_ecoff_write_armap (bfd *abfd,
   last_elt = current;
   for (i = 0; i < orl_count; i++)
     {
-      unsigned int hash, rehash;
+      unsigned int hash, rehash = 0;
 
       /* Advance firstreal to the file position of this archive
 	 element.  */
@@ -3097,7 +3098,7 @@ _bfd_ecoff_write_armap (bfd *abfd,
 	    {
 	      firstreal += arelt_size (current) + sizeof (struct ar_hdr);
 	      firstreal += firstreal % 2;
-	      current = current->next;
+	      current = current->archive_next;
 	    }
 	  while (current != map[i].u.abfd);
 	}
@@ -3757,7 +3758,7 @@ ecoff_link_add_archive_symbols (bfd *abfd, struct bfd_link_info *info)
   while (*pundef != NULL)
     {
       struct bfd_link_hash_entry *h;
-      unsigned int hash, rehash;
+      unsigned int hash, rehash = 0;
       unsigned int file_offset;
       const char *name;
       bfd *element;

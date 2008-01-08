@@ -1,6 +1,6 @@
 /* BFD back-end for archive files (libraries).
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005
+   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Written by Cygnus Support.  Mostly Gumby Henkel-Wallace's fault.
 
@@ -8,7 +8,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -129,8 +129,8 @@ SUBSECTION
  " 18             " - Long name 18 characters long, extended pseudo-BSD.
  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libiberty.h"
 #include "libbfd.h"
 #include "aout/ar.h"
@@ -698,7 +698,8 @@ bfd_generic_archive_p (bfd *abfd)
 /* The size of the string count.  */
 #define BSD_STRING_COUNT_SIZE 4
 
-/* Returns FALSE on error, TRUE otherwise.  */
+/* Read a BSD-style archive symbol table.  Returns FALSE on error,
+   TRUE otherwise.  */
 
 static bfd_boolean
 do_slurp_bsd_armap (bfd *abfd)
@@ -768,7 +769,8 @@ do_slurp_bsd_armap (bfd *abfd)
   return TRUE;
 }
 
-/* Returns FALSE on error, TRUE otherwise.  */
+/* Read a COFF archive symbol table.  Returns FALSE on error, TRUE
+   otherwise.  */
 
 static bfd_boolean
 do_slurp_coff_armap (bfd *abfd)
@@ -895,8 +897,8 @@ release_symdefs:
   return FALSE;
 }
 
-/* This routine can handle either coff-style or bsd-style armaps.
-   Returns FALSE on error, TRUE otherwise */
+/* This routine can handle either coff-style or bsd-style armaps
+   (archive symbol table).  Returns FALSE on error, TRUE otherwise */
 
 bfd_boolean
 bfd_slurp_armap (bfd *abfd)
@@ -1234,7 +1236,9 @@ _bfd_construct_extended_name_table (bfd *abfd,
   *tablen = 0;
 
   /* Figure out how long the table should be.  */
-  for (current = abfd->archive_head; current != NULL; current = current->next)
+  for (current = abfd->archive_head;
+       current != NULL;
+       current = current->archive_next)
     {
       const char *normal;
       unsigned int thislen;
@@ -1286,8 +1290,9 @@ _bfd_construct_extended_name_table (bfd *abfd,
   *tablen = total_namelen;
   strptr = *tabloc;
 
-  for (current = abfd->archive_head; current != NULL; current =
-       current->next)
+  for (current = abfd->archive_head;
+       current != NULL;
+       current = current->archive_next)
     {
       const char *normal;
       unsigned int thislen;
@@ -1637,7 +1642,9 @@ _bfd_write_archive_contents (bfd *arch)
   /* Verify the viability of all entries; if any of them live in the
      filesystem (as opposed to living in an archive open for input)
      then construct a fresh ar_hdr for them.  */
-  for (current = arch->archive_head; current; current = current->next)
+  for (current = arch->archive_head;
+       current != NULL;
+       current = current->archive_next)
     {
       /* This check is checking the bfds for the objects we're reading
 	 from (which are usually either an object file or archive on
@@ -1647,14 +1654,14 @@ _bfd_write_archive_contents (bfd *arch)
       if (bfd_write_p (current))
 	{
 	  bfd_set_error (bfd_error_invalid_operation);
-	  return FALSE;
+	  goto input_err;
 	}
       if (!current->arelt_data)
 	{
 	  current->arelt_data =
 	    bfd_ar_hdr_from_filesystem (arch, current->filename, current);
 	  if (!current->arelt_data)
-	    return FALSE;
+	    goto input_err;
 
 	  /* Put in the file name.  */
 	  BFD_SEND (arch, _bfd_truncate_arname,
@@ -1705,7 +1712,9 @@ _bfd_write_archive_contents (bfd *arch)
 	}
     }
 
-  for (current = arch->archive_head; current; current = current->next)
+  for (current = arch->archive_head;
+       current != NULL;
+       current = current->archive_next)
     {
       char buffer[DEFAULT_BUFFERSIZE];
       unsigned int remaining = arelt_size (current);
@@ -1716,7 +1725,7 @@ _bfd_write_archive_contents (bfd *arch)
 	  != sizeof (*hdr))
 	return FALSE;
       if (bfd_seek (current, (file_ptr) 0, SEEK_SET) != 0)
-	return FALSE;
+	goto input_err;
       while (remaining)
 	{
 	  unsigned int amt = DEFAULT_BUFFERSIZE;
@@ -1726,8 +1735,8 @@ _bfd_write_archive_contents (bfd *arch)
 	  if (bfd_bread (buffer, amt, current) != amt)
 	    {
 	      if (bfd_get_error () != bfd_error_system_call)
-		bfd_set_error (bfd_error_malformed_archive);
-	      return FALSE;
+		bfd_set_error (bfd_error_file_truncated);
+	      goto input_err;
 	    }
 	  if (bfd_bwrite (buffer, amt, arch) != amt)
 	    return FALSE;
@@ -1760,6 +1769,10 @@ _bfd_write_archive_contents (bfd *arch)
     }
 
   return TRUE;
+
+ input_err:
+  bfd_set_error (bfd_error_on_input, current, bfd_get_error ());
+  return FALSE;
 }
 
 /* Note that the namidx for the first symbol is 0.  */
@@ -1798,12 +1811,12 @@ _bfd_compute_and_write_armap (bfd *arch, unsigned int elength)
   /* Drop all the files called __.SYMDEF, we're going to make our own.  */
   while (arch->archive_head &&
 	 strcmp (arch->archive_head->filename, "__.SYMDEF") == 0)
-    arch->archive_head = arch->archive_head->next;
+    arch->archive_head = arch->archive_head->archive_next;
 
   /* Map over each element.  */
   for (current = arch->archive_head;
        current != NULL;
-       current = current->next, elt_no++)
+       current = current->archive_next, elt_no++)
     {
       if (bfd_check_format (current, bfd_object)
 	  && (bfd_get_file_flags (current) & HAS_SYMS) != 0)
@@ -1960,7 +1973,7 @@ bsd_write_armap (bfd *arch,
 	    {
 	      firstreal += arelt_size (current) + sizeof (struct ar_hdr);
 	      firstreal += firstreal % 2;
-	      current = current->next;
+	      current = current->archive_next;
 	    }
 	  while (current != map[count].u.abfd);
 	}
@@ -2130,7 +2143,7 @@ coff_write_armap (bfd *arch,
       archive_member_file_ptr += arelt_size (current) + sizeof (struct ar_hdr);
       /* Remember aboout the even alignment.  */
       archive_member_file_ptr += archive_member_file_ptr % 2;
-      current = current->next;
+      current = current->archive_next;
     }
 
   /* Now write the strings themselves.  */

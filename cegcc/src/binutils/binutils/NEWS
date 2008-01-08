@@ -1,4 +1,34 @@
 -*- text -*-
+* Added -c switch to readelf to allow string dumps of archive symbol index.
+
+* Support for SSE5 has been added to the i386 port.
+
+* Added -p switch to readelf to allow string dumps of sections.
+
+Changes in 2.18:
+* Resolved 37 coding problems in bfd including static array overruns, null
+  pointer dereferences and use of a malloc buffer after it has been freed, as
+  revealed by static analysis donated by Coverity, Inc. (http://scan.coverity.com).
+
+* The binutils sources are now released under version 3 of the GNU General
+  Public License.
+
+* A new tool "windmc" has been added for some targets.  This is a message
+  compiler which attempts to be compatible with the MS version.
+
+* Add codepage support to the windres tool.  It now supports many new
+  resource types (e.g. MANIFEST, TOOLBAR, etc).  The output generation
+  for binary files is done now via bfd itself.  The endianess problems
+  for different hosts are solved.  Dumps of .res files can now be
+  re-compiled by windres without lossing resources or compilation errors.
+  Some problems on dialog resource translations are corrected.
+
+* Add --extract-symbol command line option to objcopy, which will
+  strip everything out of an ordinary object file or executable except
+  for its symbol table.  Files containing just symbols can be useful
+  to some OSes.
+
+Changes in 2.17:
 
 * Add "-x NAME" to readelf in addition to "-x NUMBER".
 
@@ -30,6 +60,9 @@
 
 * Add "--globalize-symbol <name>" and "--globalize-symbols <filename>" switches
   to objcopy to convert local symbols into global symbols.
+  
+* gprof now allows input files to have histogram records for
+  several memory ranges, provided those ranges are disjoint.  
 
 Changes in 2.16:
 

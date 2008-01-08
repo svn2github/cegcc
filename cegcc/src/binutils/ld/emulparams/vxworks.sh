@@ -1,5 +1,7 @@
 # If you change this file, please also look at files which source this one:
-# elf_i386_vxworks.sh elf32ppcvxworks.sh elf32ebmipvxworks.sh
+# armelf_vxworks.sh elf32ebmipvxworks.sh elf32elmipvxworks.sh
+# elf_i386_vxworks.sh elf32ppcvxworks.sh elf32_sparc_vxworks.sh
+# shelf_vxworks.sh
 
 # The Diab tools use a different init/fini convention.  Initialization code
 # is place in sections named ".init$NN".  These sections are then concatenated
@@ -19,6 +21,24 @@ FINI_START='_fini = .;
             KEEP (*(.fini$9[0-8]));'
 FINI_END="KEEP (*(.fini\$99));
           PROVIDE (${SYMPREFIX}_etext = .);"
+
+OTHER_READONLY_SECTIONS=".tls_data ${RELOCATING-0} : {${RELOCATING+
+    __wrs_rtp_tls_data_start = .;
+    ___wrs_rtp_tls_data_start = .;}
+    *(.tls_data${RELOCATING+ .tls_data.*})
+  }${RELOCATING+
+  __wrs_rtp_tls_data_size = . - __wrs_rtp_tls_data_start;
+  ___wrs_rtp_tls_data_size = . - __wrs_rtp_tls_data_start;
+  __wrs_rtp_tls_data_align = ALIGNOF(.tls_data);
+  ___wrs_rtp_tls_data_align = ALIGNOF(.tls_data);}"
+
+OTHER_READWRITE_SECTIONS=".tls_vars ${RELOCATING-0} : {${RELOCATING+
+    __wrs_rtp_tls_vars_start = .;
+    ___wrs_rtp_tls_vars_start = .;}
+    *(.tls_vars${RELOCATING+ .tls_vars.*})
+  }${RELOCATING+
+  __wrs_rtp_tls_vars_size = SIZEOF(.tls_vars);
+  ___wrs_rtp_tls_vars_size = SIZEOF(.tls_vars);}"
 
 ETEXT_NAME=etext_unrelocated
 OTHER_END_SYMBOLS="PROVIDE (${SYMPREFIX}_ehdr = ${TEXT_START_ADDR});"

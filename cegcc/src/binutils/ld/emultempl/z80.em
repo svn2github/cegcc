@@ -1,12 +1,29 @@
 # This shell script emits C code -*- C -*-
 # to keep track of the machine type of Z80 object files
 # It does some substitutions.
+#   Copyright 2007  Free Software Foundation, Inc.
+# This file is part of the GNU Binutils.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
 LDEMUL_BEFORE_PARSE=gldz80_before_parse
 LDEMUL_RECOGNIZED_FILE=gldz80_recognized_file
 LDEMUL_AFTER_OPEN=gldz80_after_open
 
-cat >>e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 /* --- \begin{z80.em} */
 /* Codes for machine types, bitwise or gives the code to use for the
    output.  */
@@ -19,7 +36,7 @@ cat >>e${EMULATION_NAME}.c <<EOF
 /* Bitwise or of the machine types seen so far.  */
 static int result_mach_type;
 
-static void 
+static void
 ${LDEMUL_BEFORE_PARSE} (void)
 {
 #ifndef TARGET_			/* I.e., if not generic.  */
@@ -36,19 +53,19 @@ ${LDEMUL_RECOGNIZED_FILE} (lang_input_statement_type *entry)
   unsigned long mach_type;
 
   mach_type = bfd_get_mach (entry->the_bfd);
-  switch (mach_type) 
+  switch (mach_type)
     {
-    case bfd_mach_z80strict:      
-      result_mach_type |= M_Z80STRICT; 
+    case bfd_mach_z80strict:
+      result_mach_type |= M_Z80STRICT;
       break;
     case bfd_mach_z80:
-      result_mach_type |= M_Z80; 
+      result_mach_type |= M_Z80;
       break;
     case bfd_mach_z80full:
-      result_mach_type |= M_Z80FULL; 
+      result_mach_type |= M_Z80FULL;
       break;
     case bfd_mach_r800:
-      result_mach_type |= M_R800; 
+      result_mach_type |= M_R800;
       break;
     default:
       result_mach_type |= M_Z80ANY;

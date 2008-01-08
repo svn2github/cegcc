@@ -35,7 +35,7 @@ extern "C" {
 #include <stdio.h>
 #include "bfd.h"
 
-typedef int (*fprintf_ftype) (void *, const char*, ...) ATTRIBUTE_FPTR_PRINTF_2;
+  typedef int (*fprintf_ftype) (void *, const char*, ...) /*ATTRIBUTE_FPTR_PRINTF_2*/;
 
 enum dis_insn_type
 {
@@ -95,6 +95,12 @@ typedef struct disassemble_info
   asymbol **symbols;
   /* Number of symbols in array.  */
   int num_symbols;
+
+  /* Symbol table provided for targets that want to look at it.  This is
+     used on Arm to find mapping symbols and determine Arm/Thumb code.  */
+  asymbol **symtab;
+  int symtab_pos;
+  int symtab_size;
 
   /* For use by the disassembler.
      The top 16 bits are reserved for public use (and are documented here).
@@ -211,6 +217,7 @@ extern int print_insn_big_mips		(bfd_vma, disassemble_info *);
 extern int print_insn_big_or32		(bfd_vma, disassemble_info *);
 extern int print_insn_big_powerpc	(bfd_vma, disassemble_info *);
 extern int print_insn_big_score         (bfd_vma, disassemble_info *);
+extern int print_insn_cr16              (bfd_vma, disassemble_info *);
 extern int print_insn_crx               (bfd_vma, disassemble_info *);
 extern int print_insn_d10v		(bfd_vma, disassemble_info *);
 extern int print_insn_d30v		(bfd_vma, disassemble_info *);
@@ -245,6 +252,7 @@ extern int print_insn_m88k		(bfd_vma, disassemble_info *);
 extern int print_insn_maxq_big		(bfd_vma, disassemble_info *);
 extern int print_insn_maxq_little	(bfd_vma, disassemble_info *);
 extern int print_insn_mcore		(bfd_vma, disassemble_info *);
+extern int print_insn_mep		(bfd_vma, disassemble_info *);
 extern int print_insn_mmix		(bfd_vma, disassemble_info *);
 extern int print_insn_mn10200		(bfd_vma, disassemble_info *);
 extern int print_insn_mn10300		(bfd_vma, disassemble_info *);
@@ -260,6 +268,7 @@ extern int print_insn_sh		(bfd_vma, disassemble_info *);
 extern int print_insn_sh64		(bfd_vma, disassemble_info *);
 extern int print_insn_sh64x_media	(bfd_vma, disassemble_info *);
 extern int print_insn_sparc		(bfd_vma, disassemble_info *);
+extern int print_insn_spu		(bfd_vma, disassemble_info *);
 extern int print_insn_tic30		(bfd_vma, disassemble_info *);
 extern int print_insn_tic4x		(bfd_vma, disassemble_info *);
 extern int print_insn_tic54x		(bfd_vma, disassemble_info *);
@@ -277,6 +286,7 @@ extern int print_insn_z8002		(bfd_vma, disassemble_info *);
 extern disassembler_ftype arc_get_disassembler (void *);
 extern disassembler_ftype cris_get_disassembler (bfd *);
 
+extern void print_i386_disassembler_options (FILE *);
 extern void print_mips_disassembler_options (FILE *);
 extern void print_ppc_disassembler_options (FILE *);
 extern void print_arm_disassembler_options (FILE *);

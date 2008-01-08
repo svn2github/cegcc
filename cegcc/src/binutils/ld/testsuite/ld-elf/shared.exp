@@ -1,9 +1,11 @@
 # Expect script for various ELF tests.
-#   Copyright 2006 Free Software Foundation, Inc.
+#   Copyright 2006, 2007 Free Software Foundation, Inc.
 #
-# This file is free software; you can redistribute it and/or modify
+# This file is part of the GNU Binutils.
+#
+# This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -13,7 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+# MA 02110-1301, USA.
 #
 
 # Exclude non-ELF targets.
@@ -42,6 +45,9 @@ set build_tests {
   {"Build libbar.so"
    "-shared" "-fPIC"
    {begin.c end.c} {} "libbar.so"}
+  {"Build warn libbar.so"
+   "-shared" "-fPIC"
+   {beginwarn.c end.c} {} "libbarw.so"}
   {"Build hidden libbar.so"
    "-shared" "-fPIC"
    {begin.c endhidden.c} {} "libbarh.so"}
@@ -72,9 +78,51 @@ set build_tests {
   {"Build libdl2a.so with --dynamic-list=dl2.list"
    "-shared -Wl,--dynamic-list=dl2.list" "-fPIC"
    {dl2.c dl2xxx.c} {} "libdl2a.so"}
+  {"Build libdl2a.so with --dynamic-list=dl2a.list"
+   "-shared -Wl,--dynamic-list=dl2a.list" "-fPIC"
+   {dl2.c dl2xxx.c} {} "libdl2a.so"}
+  {"Build libdl2a.so with --dynamic-list-data"
+   "-shared -Wl,--dynamic-list-data" "-fPIC"
+   {dl2.c dl2xxx.c} {} "libdl2a.so"}
   {"Build libdl2b.so with --dynamic-list=dl2.list and dl2xxx.list"
    "-shared -Wl,--dynamic-list=dl2.list,--dynamic-list=dl2xxx.list" "-fPIC"
    {dl2.c dl2xxx.c} {} "libdl2b.so"}
+  {"Build libdl2c.so with --dynamic-list-data and dl2xxx.list"
+   "-shared -Wl,--dynamic-list-data,--dynamic-list=dl2xxx.list" "-fPIC"
+   {dl2.c dl2xxx.c} {} "libdl2c.so"}
+  {"Build libdl4a.so with --dynamic-list=dl4.list"
+   "-shared -Wl,--dynamic-list=dl4.list" "-fPIC"
+   {dl4.c dl4xxx.c} {} "libdl4a.so"}
+  {"Build libdl4b.so with --dynamic-list-data"
+   "-shared -Wl,--dynamic-list-data" "-fPIC"
+   {dl4.c dl4xxx.c} {} "libdl4b.so"}
+  {"Build libdl4c.so with --dynamic-list=dl4.list and dl4xxx.list"
+   "-shared -Wl,--dynamic-list=dl4.list,--dynamic-list=dl4xxx.list" "-fPIC"
+   {dl4.c dl4xxx.c} {} "libdl4c.so"}
+  {"Build libdl4d.so with --dynamic-list-data and dl4xxx.list"
+   "-shared -Wl,--dynamic-list-data,--dynamic-list=dl4xxx.list" "-fPIC"
+   {dl4.c dl4xxx.c} {} "libdl4d.so"}
+  {"Build libdl4e.so with -Bsymbolic-functions --dynamic-list-cpp-new"
+   "-shared -Wl,-Bsymbolic-functions,--dynamic-list-cpp-new" "-fPIC"
+   {dl4.c dl4xxx.c} {} "libdl4e.so"}
+  {"Build libdl4f.so with --dynamic-list-cpp-new -Bsymbolic-functions"
+   "-shared -Wl,--dynamic-list-cpp-new,-Bsymbolic-functions" "-fPIC"
+   {dl4.c dl4xxx.c} {} "libdl4f.so"}
+  {"Build libdl6a.so"
+   "-shared" "-fPIC"
+   {dl6.c} {} "libdl6a.so"}
+  {"Build libdl6b.so with -Bsymbolic --dynamic-list-data"
+   "-shared -Wl,-Bsymbolic,--dynamic-list-data" "-fPIC"
+   {dl6.c} {} "libdl6b.so"}
+  {"Build libdl6c.so with -Bsymbolic"
+   "-shared -Wl,-Bsymbolic" "-fPIC"
+   {dl6.c} {} "libdl6c.so"}
+  {"Build libdl6d.so with --dynamic-list-data -Bsymbolic"
+   "-shared -Wl,--dynamic-list-data,-Bsymbolic" "-fPIC"
+   {dl6.c} {} "libdl6d.so"}
+  {"Build libdata1.so"
+   "-shared" "-fPIC"
+   {data1.c} {} "libdata1.so"}
 }
 
 set run_tests {
@@ -90,6 +138,10 @@ set run_tests {
     {"Run normal with versioned libfoo.so"
      "tmpdir/begin.o tmpdir/libfoov.so tmpdir/end.o" ""
      {main.c} "normalv" "normal.out"}
+    {"Run warn with versioned libfoo.so"
+     "tmpdir/beginwarn.o tmpdir/libfoov.so" ""
+     {main.c} "warn" "warn.out"
+     "" "" "^.*\\\): warning: function foo is deprecated$"}
     {"Run protected with versioned libfoo.so"
      "tmpdir/begin.o tmpdir/libfoov.so tmpdir/endprotected.o" ""
      {main.c} "protected" "normal.out"}
@@ -114,15 +166,75 @@ set run_tests {
     {"Run hidden libbar.so with versioned libfoo.so"
      "tmpdir/libbarhfoov.so tmpdir/libfoov.so" ""
      {main.c} "hidden" "hidden.out"}
-    {"Run with dlopen on libdl1.so"
+    {"Run dl1a with --dynamic-list=dl1.list and dlopen on libdl1.so"
      "--dynamic-list=dl1.list -ldl" ""
-     {dl1main.c} "dl1" "dl1.out"}
+     {dl1main.c} "dl1a" "dl1.out"}
+    {"Run dl1b with --dynamic-list-data and dlopen on libdl1.so"
+     "--dynamic-list-data -ldl" ""
+     {dl1main.c} "dl1b" "dl1.out"}
     {"Run with libdl2a.so"
      "tmpdir/libdl2a.so" ""
      {dl2main.c} "dl2a" "dl2a.out"}
     {"Run with libdl2b.so"
      "tmpdir/libdl2b.so" ""
      {dl2main.c} "dl2b" "dl2b.out"}
+    {"Run with libdl2c.so"
+     "tmpdir/libdl2c.so" ""
+     {dl2main.c} "dl2c" "dl2b.out"}
+    {"Run with libdl4a.so"
+     "tmpdir/libdl4a.so" ""
+     {dl4main.c} "dl4a" "dl4a.out"}
+    {"Run with libdl4b.so"
+     "tmpdir/libdl4b.so" ""
+     {dl4main.c} "dl4b" "dl4a.out"}
+    {"Run with libdl4c.so"
+     "tmpdir/libdl4c.so" ""
+     {dl4main.c} "dl4c" "dl4b.out"}
+    {"Run with libdl4d.so"
+     "tmpdir/libdl4d.so" ""
+     {dl4main.c} "dl4d" "dl4b.out"}
+    {"Run with libdl4e.so"
+     "tmpdir/libdl4e.so" ""
+     {dl4main.c} "dl4e" "dl4a.out"}
+    {"Run with libdl4f.so"
+     "tmpdir/libdl4f.so" ""
+     {dl4main.c} "dl4f" "dl4a.out"}
+    {"Run dl6a1 with --dynamic-list-data and dlopen on libdl6a.so"
+     "--dynamic-list-data -ldl" ""
+     {dl6amain.c} "dl6a1" "dl6a.out"}
+    {"Run dl6a2 with -Bsymbolic-functions and dlopen on libdl6a.so"
+     "-Bsymbolic-functions -ldl" ""
+     {dl6amain.c} "dl6a2" "dl6b.out"}
+    {"Run dl6a3 with -Bsymbolic and dlopen on libdl6a.so"
+     "-Bsymbolic -ldl" ""
+     {dl6amain.c} "dl6a3" "dl6b.out"}
+    {"Run dl6a4 with -Bsymbolic --dynamic-list-data and dlopen on libdl6a.so"
+     "-Bsymbolic --dynamic-list-data -ldl" ""
+     {dl6amain.c} "dl6a4" "dl6a.out"}
+    {"Run dl6a5 with -Bsymbolic-functions --dynamic-list-cpp-new and dlopen on libdl6a.so"
+     "-Bsymbolic-functions --dynamic-list-cpp-new -ldl" ""
+     {dl6amain.c} "dl6a5" "dl6b.out"}
+    {"Run dl6a6 with --dynamic-list-cpp-new -Bsymbolic-functions and dlopen on libdl6a.so"
+     "--dynamic-list-cpp-new -Bsymbolic-functions -ldl" ""
+     {dl6amain.c} "dl6a6" "dl6b.out"}
+    {"Run dl6a7 with --dynamic-list-data -Bsymbolic and dlopen on libdl6a.so"
+     "--dynamic-list-data -Bsymbolic -ldl" ""
+     {dl6amain.c} "dl6a7" "dl6a.out"}
+    {"Run dl6b1 with --dynamic-list-data and dlopen on libdl6b.so"
+     "--dynamic-list-data -ldl" ""
+     {dl6bmain.c} "dl6b1" "dl6a.out"}
+    {"Run dl6b2 with dlopen on libdl6b.so"
+     "-ldl" ""
+     {dl6bmain.c} "dl6b2" "dl6b.out"}
+    {"Run dl6c1 with --dynamic-list-data and dlopen on libdl6c.so"
+     "--dynamic-list-data -ldl" ""
+     {dl6cmain.c} "dl6c1" "dl6b.out"}
+    {"Run dl6d1 with --dynamic-list-data and dlopen on libdl6d.so"
+     "--dynamic-list-data -ldl" ""
+     {dl6dmain.c} "dl6d1" "dl6b.out"}
+    {"Run with libdata1.so"
+     "tmpdir/libdata1.so" ""
+     {dynbss1.c} "dynbss1" "pass.out"}
 }
 
 run_cc_link_tests $build_tests
@@ -144,6 +256,12 @@ set build_cxx_tests {
   {"Build libdl3a.so with --dynamic-list-cpp-typeinfo"
    "-shared -Wl,--dynamic-list-cpp-typeinfo" "-fPIC"
    {dl3.cc} {} "libdl3c.so" "c++"}
+  {"Build libdnew1a.so with --Bsymbolic-functions --dynamic-list-cpp-new"
+   "-shared -Wl,-Bsymbolic-functions,--dynamic-list-cpp-new" "-fPIC"
+   {del.cc new.cc} {} "libnew1a.so" "c++"}
+  {"Build libdnew1b.so with --dynamic-list-data --dynamic-list-cpp-new"
+   "-shared -Wl,--dynamic-list-data,--dynamic-list-cpp-new" "-fPIC"
+   {del.cc new.cc} {} "libnew1b.so" "c++"}
 }
 
 set run_cxx_tests {
@@ -156,6 +274,12 @@ set run_cxx_tests {
     {"Run with libdl3c.so"
      "tmpdir/libdl3c.so" ""
      {dl3main.cc} "dl3c" "dl3a.out" "" "c++"}
+    {"Run with libnew1a.so"
+     "tmpdir/libnew1a.so" ""
+     {dl5.cc} "dl5a" "dl5.out" "" "c++"}
+    {"Run with libnew1b.so"
+     "tmpdir/libnew1b.so" ""
+     {dl5.cc} "dl5b" "dl5.out" "" "c++"}
 }
 
 run_cc_link_tests $build_cxx_tests

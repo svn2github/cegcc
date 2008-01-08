@@ -1,11 +1,13 @@
 # Test PHDRS in a linker script.
 # By Ian Lance Taylor, Cygnus Support.
-#   Copyright 1999, 2000, 2001, 2002, 2003
+#   Copyright 1999, 2000, 2001, 2002, 2003, 2006, 2007
 #   Free Software Foundation, Inc.
 #
-# This file is free software; you can redistribute it and/or modify
+# This file is part of the GNU Binutils.
+#
+# This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -15,7 +17,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
 # PHDRS is only meaningful for ELF.
 if ![is_elf_format] {
@@ -25,6 +28,11 @@ if ![is_elf_format] {
 # This is a very simplistic test.
 
 set testname "PHDRS"
+
+set ldopt ""
+if { [istarget spu*-*-*] } {
+    set ldopt "--local-store 0:0"
+}
 
 if ![ld_assemble $as $srcdir/$subdir/phdrs.s tmpdir/phdrs.o] {
     unresolved $testname
@@ -40,16 +48,15 @@ if [is_elf64 tmpdir/phdrs.o] {
 ".*Program Header:.*PHDR *off *0x00*40 *vaddr *0x00*800040 *paddr *0x00*800040.*filesz *0x0\[0-9a-f\]* *memsz *0x0\[0-9a-f\]* flags r--.*LOAD *off *0x00* *vaddr *0x00*800000 *paddr *0x00*800000.*filesz *0x00*\[0-9a-f\]* *memsz *0x0\[0-9a-f\]* *flags r-x.*LOAD *off *0x0\[0-9a-f\]* *vaddr *0x00*80*\[0-9a-f\]* *paddr *0x00*80*\[0-9a-f\]*.*filesz *0x0\[0-9a-f\]* *memsz *0x0\[0-9a-f\]* *flags *rw-.*"
 }
 
-if ![ld_simple_link $ld tmpdir/phdrs "-T $srcdir/$subdir/phdrs.t tmpdir/phdrs.o"] {
+set ldopt "$ldopt -T $srcdir/$subdir/phdrs.t tmpdir/phdrs.o"
+if ![ld_simple_link $ld tmpdir/phdrs $ldopt] {
     fail $testname
 } else {
-    if {[which $objdump] == 0} {
+    if {![is_remote host] && [which $objdump] == 0} {
 	unresolved $testname
 	return
     }
-
-    verbose -log "$objdump --private tmpdir/phdrs"
-    catch "exec $objdump --private tmpdir/phdrs" exec_output
+    set exec_output [run_host_cmd "$objdump" "--private tmpdir/phdrs"]
     set exec_output [prune_warnings $exec_output]
     verbose -log $exec_output
 

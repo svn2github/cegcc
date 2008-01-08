@@ -1,7 +1,7 @@
 /* Main header file for the bfd library -- portable access to object files.
 
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    Contributed by Cygnus Support.
@@ -10,7 +10,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -46,9 +46,8 @@ extern "C" {
 /* This is a utility macro to handle the situation where the code
    wants to place a constant string into the code, followed by a
    comma and then the length of the string.  Doing this by hand
-   is error prone, so using this macro is safer.  The macro will
-   also safely handle the case where a NULL is passed as the arg.  */
-#define STRING_COMMA_LEN(STR) (STR), ((STR) ? sizeof (STR) - 1 : 0)
+   is error prone, so using this macro is safer.  */
+#define STRING_COMMA_LEN(STR) (STR), (sizeof (STR) - 1)
 /* Unfortunately it is not possible to use the STRING_COMMA_LEN macro
    to create the arguments to another macro, since the preprocessor
    will mis-count the number of arguments to the outer macro (by not
@@ -76,6 +75,7 @@ extern "C" {
 #define BFD_DEFAULT_TARGET_SIZE @bfd_default_target_size@
 
 #define BFD_HOST_64BIT_LONG @BFD_HOST_64BIT_LONG@
+#define BFD_HOST_64BIT_LONG_LONG @BFD_HOST_64BIT_LONG_LONG@
 #define BFD_HOST_LONG_LONG @BFD_HOST_LONG_LONG@
 #if @BFD_HOST_64_BIT_DEFINED@
 #define BFD_HOST_64_BIT @BFD_HOST_64_BIT@
@@ -95,6 +95,10 @@ typedef BFD_HOST_U_64_BIT bfd_uint64_t;
 #define INLINE
 #endif
 #endif
+
+/* Declaring a type wide enough to hold a host long and a host pointer.  */
+#define BFD_HOSTPTR_T	@BFD_HOSTPTR_T@
+typedef BFD_HOSTPTR_T bfd_hostptr_t;
 
 /* Forward declaration.  */
 typedef struct bfd bfd;
@@ -129,6 +133,9 @@ typedef BFD_HOST_U_64_BIT symvalue;
 #if BFD_HOST_64BIT_LONG
 #define sprintf_vma(s,x) sprintf (s, "%016lx", x)
 #define fprintf_vma(f,x) fprintf (f, "%016lx", x)
+#elif BFD_HOST_64BIT_LONG_LONG
+#define sprintf_vma(s,x) sprintf (s, "%016llx", x)
+#define fprintf_vma(f,x) fprintf (f, "%016llx", x)
 #else
 #define _bfd_int64_low(x) ((unsigned long) (((x) & 0xffffffff)))
 #define _bfd_int64_high(x) ((unsigned long) (((x) >> 32) & 0xffffffff))
@@ -350,7 +357,15 @@ typedef struct bfd_section *sec_ptr;
   (((sec)->rawsize ? (sec)->rawsize : (sec)->size) \
    / bfd_octets_per_byte (bfd))
 
-typedef struct stat stat_type;
+/* Return TRUE if section has been discarded.  */
+#define elf_discarded_section(sec)				\
+  (!bfd_is_abs_section (sec)					\
+   && bfd_is_abs_section ((sec)->output_section)		\
+   && (sec)->sec_info_type != ELF_INFO_TYPE_MERGE		\
+   && (sec)->sec_info_type != ELF_INFO_TYPE_JUST_SYMS)
+
+/* Forward define.  */
+struct stat;
 
 typedef enum bfd_print_symbol
 {
@@ -398,12 +413,6 @@ struct bfd_hash_table
 {
   /* The hash array.  */
   struct bfd_hash_entry **table;
-  /* The number of slots in the hash table.  */
-  unsigned int size;
-  /* The number of entries in the hash table.  */
-  unsigned int count;
-  /* The size of elements.  */
-  unsigned int entsize;
   /* A function used to create new elements in the hash table.  The
      first entry is itself a pointer to an element.  When this
      function is first invoked, this pointer will be NULL.  However,
@@ -416,6 +425,14 @@ struct bfd_hash_table
    /* An objalloc for this hash table.  This is a struct objalloc *,
      but we use void * to avoid requiring the inclusion of objalloc.h.  */
   void *memory;
+  /* The number of slots in the hash table.  */
+  unsigned int size;
+  /* The number of entries in the hash table.  */
+  unsigned int count;
+  /* The size of elements.  */
+  unsigned int entsize;
+  /* If non-zero, don't grow the hash table.  */
+  unsigned int frozen:1;
 };
 
 /* Initialize a hash table.  */
@@ -445,6 +462,10 @@ extern void bfd_hash_table_free
 extern struct bfd_hash_entry *bfd_hash_lookup
   (struct bfd_hash_table *, const char *, bfd_boolean create,
    bfd_boolean copy);
+
+/* Insert an entry in a hash table.  */
+extern struct bfd_hash_entry *bfd_hash_insert
+  (struct bfd_hash_table *, const char *, unsigned long);
 
 /* Replace an entry in a hash table.  */
 extern void bfd_hash_replace
@@ -686,7 +707,7 @@ extern void bfd_elf_set_dt_needed_name
 extern const char *bfd_elf_get_dt_soname
   (bfd *);
 extern void bfd_elf_set_dyn_lib_class
-  (bfd *, int);
+  (bfd *, enum dynamic_lib_link_class);
 extern int bfd_elf_get_dyn_lib_class
   (bfd *);
 extern struct bfd_link_needed_list *bfd_elf_get_runpath_list
@@ -843,6 +864,27 @@ extern bfd_boolean bfd_coff_set_symbol_class
 extern bfd_boolean bfd_m68k_coff_create_embedded_relocs
   (bfd *, struct bfd_link_info *, struct bfd_section *, struct bfd_section *, char **);
 
+/* ARM VFP11 erratum workaround support.  */
+typedef enum
+{
+  BFD_ARM_VFP11_FIX_DEFAULT,
+  BFD_ARM_VFP11_FIX_NONE,
+  BFD_ARM_VFP11_FIX_SCALAR,
+  BFD_ARM_VFP11_FIX_VECTOR
+} bfd_arm_vfp11_fix;
+
+extern void bfd_elf32_arm_init_maps
+  (bfd *);
+
+extern void bfd_elf32_arm_set_vfp11_fix
+  (bfd *, struct bfd_link_info *);
+
+extern bfd_boolean bfd_elf32_arm_vfp11_erratum_scan
+  (bfd *, struct bfd_link_info *);
+
+extern void bfd_elf32_arm_vfp11_fix_veneer_locations
+  (bfd *, struct bfd_link_info *);
+
 /* ARM Interworking support.  Called from linker.  */
 extern bfd_boolean bfd_arm_allocate_interworking_sections
   (struct bfd_link_info *);
@@ -868,10 +910,11 @@ extern bfd_boolean bfd_elf32_arm_allocate_interworking_sections
   (struct bfd_link_info *);
 
 extern bfd_boolean bfd_elf32_arm_process_before_allocation
-  (bfd *, struct bfd_link_info *, int);
+  (bfd *, struct bfd_link_info *);
 
 void bfd_elf32_arm_set_target_relocs
-  (struct bfd_link_info *, int, char *, int, int);
+  (bfd *, struct bfd_link_info *, int, char *, int, int, bfd_arm_vfp11_fix,
+   int, int);
 
 extern bfd_boolean bfd_elf32_arm_get_bfd_for_interworking
   (bfd *, struct bfd_link_info *);
@@ -886,6 +929,8 @@ extern bfd_boolean bfd_elf32_arm_add_glue_sections_to_bfd
 #define BFD_ARM_SPECIAL_SYM_TYPE_ANY	(~0)
 extern bfd_boolean bfd_is_arm_special_symbol_name
   (const char * name, int type);
+
+extern void bfd_elf32_arm_set_byteswap_code (struct bfd_link_info *, int);
 
 /* ARM Note section processing.  */
 extern bfd_boolean bfd_arm_merge_machines

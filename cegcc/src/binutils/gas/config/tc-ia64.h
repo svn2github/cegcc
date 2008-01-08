@@ -1,5 +1,5 @@
 /* tc-ia64.h -- Header file for tc-ia64.c.
-   Copyright 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005
+   Copyright 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007
    Free Software Foundation, Inc.
    Contributed by David Mosberger-Tang <davidm@hpl.hp.com>
 
@@ -7,7 +7,7 @@
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -130,6 +130,7 @@ extern void ia64_convert_frag (fragS *);
 #endif /* TE_HPUX */
 #define md_flush_pending_output()	ia64_flush_pending_output ()
 #define md_parse_name(s,e,m,c)		ia64_parse_name (s, e, c)
+#define md_register_arithmetic		0
 #define tc_canonicalize_symbol_name(s)	ia64_canonicalize_symbol_name (s)
 #define tc_canonicalize_section_name(s)	ia64_canonicalize_symbol_name (s)
 #define md_optimize_expr(l,o,r)		ia64_optimize_expr (l, o, r)
@@ -315,5 +316,5 @@ typedef struct unwind_record
 #define TC_FORCE_RELOCATION_LOCAL(FIX)			\
   ((FIX)->fx_r_type != BFD_RELOC_UNUSED			\
    && (!(FIX)->fx_pcrel					\
-       || (FIX)->fx_plt					\
+       || (FIX)->fx_r_type == BFD_RELOC_IA64_PLTOFF22	\
        || TC_FORCE_RELOCATION (FIX)))

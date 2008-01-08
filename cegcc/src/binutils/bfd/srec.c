@@ -1,6 +1,6 @@
 /* BFD back-end for s-record objects.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2006
+   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Written by Steve Chamberlain of Cygnus Support <sac@cygnus.com>.
 
@@ -8,7 +8,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -18,7 +18,9 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
+
 
 /* SUBSECTION
 	S-Record handling
@@ -101,8 +103,8 @@
 	We allow symbols to be anywhere in the data stream - the module names
 	are always ignored.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "libiberty.h"
 #include "safe-ctype.h"
@@ -426,6 +428,11 @@ srec_scan (bfd *abfd)
 		  symval <<= 4;
 		  symval += NIBBLE (c);
 		  c = srec_get_byte (abfd, &error);
+		  if (c == EOF)
+		    {
+		      srec_bad_byte (abfd, lineno, c, error);
+		      goto error_return;
+		    }
 		}
 
 	      if (! srec_new_symbol (abfd, symname, symval))
@@ -779,10 +786,20 @@ srec_get_section_contents (bfd *abfd,
 			   file_ptr offset,
 			   bfd_size_type count)
 {
+  if (count == 0)
+    return TRUE;
+
+  if (offset + count < count
+      || offset + count > section->size)
+    {
+      bfd_set_error (bfd_error_invalid_operation);
+      return FALSE;
+    }
+
   if (section->used_by_bfd == NULL)
     {
       section->used_by_bfd = bfd_alloc (abfd, section->size);
-      if (section->used_by_bfd == NULL && section->size != 0)
+      if (section->used_by_bfd == NULL)
 	return FALSE;
 
       if (! srec_read_section (abfd, section, section->used_by_bfd))
@@ -1123,14 +1140,14 @@ srec_canonicalize_symtab (bfd *abfd, asymbol **alocation)
   unsigned int i;
 
   csymbols = abfd->tdata.srec_data->csymbols;
-  if (csymbols == NULL)
+  if (csymbols == NULL && symcount != 0)
     {
       asymbol *c;
       struct srec_symbol *s;
 
       csymbols = bfd_alloc (abfd, symcount * sizeof (asymbol));
-      if (csymbols == NULL && symcount != 0)
-	return 0;
+      if (csymbols == NULL)
+	return -1;
       abfd->tdata.srec_data->csymbols = csymbols;
 
       for (s = abfd->tdata.srec_data->symbols, c = csymbols;
@@ -1194,9 +1211,6 @@ srec_print_symbol (bfd *abfd,
 #define srec_bfd_make_debug_symbol                _bfd_nosymbols_bfd_make_debug_symbol
 #define srec_read_minisymbols                     _bfd_generic_read_minisymbols
 #define srec_minisymbol_to_symbol                 _bfd_generic_minisymbol_to_symbol
-#define srec_get_reloc_upper_bound                ((long (*) (bfd *, asection *)) bfd_0l)
-#define srec_canonicalize_reloc                   ((long (*) (bfd *, asection *, arelent **, asymbol **)) bfd_0l)
-#define srec_bfd_reloc_type_lookup                _bfd_norelocs_bfd_reloc_type_lookup
 #define srec_get_section_contents_in_window       _bfd_generic_get_section_contents_in_window
 #define srec_bfd_get_relocated_section_contents   bfd_generic_get_relocated_section_contents
 #define srec_bfd_relax_section                    bfd_generic_relax_section
@@ -1257,7 +1271,7 @@ const bfd_target srec_vec =
   BFD_JUMP_TABLE_CORE (_bfd_nocore),
   BFD_JUMP_TABLE_ARCHIVE (_bfd_noarchive),
   BFD_JUMP_TABLE_SYMBOLS (srec),
-  BFD_JUMP_TABLE_RELOCS (srec),
+  BFD_JUMP_TABLE_RELOCS (_bfd_norelocs),
   BFD_JUMP_TABLE_WRITE (srec),
   BFD_JUMP_TABLE_LINK (srec),
   BFD_JUMP_TABLE_DYNAMIC (_bfd_nodynamic),
@@ -1312,7 +1326,7 @@ const bfd_target symbolsrec_vec =
   BFD_JUMP_TABLE_CORE (_bfd_nocore),
   BFD_JUMP_TABLE_ARCHIVE (_bfd_noarchive),
   BFD_JUMP_TABLE_SYMBOLS (srec),
-  BFD_JUMP_TABLE_RELOCS (srec),
+  BFD_JUMP_TABLE_RELOCS (_bfd_norelocs),
   BFD_JUMP_TABLE_WRITE (srec),
   BFD_JUMP_TABLE_LINK (srec),
   BFD_JUMP_TABLE_DYNAMIC (_bfd_nodynamic),

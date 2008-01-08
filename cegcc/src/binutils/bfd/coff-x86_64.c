@@ -1,11 +1,11 @@
 /* BFD back-end for AMD 64 COFF files.
-   Copyright 2006 Free Software Foundation, Inc.
+   Copyright 2006, 2007 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -15,7 +15,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.
    
    Written by Kai Tietz, OneVision Software GmbH&CoKg.  */
 
@@ -23,8 +24,8 @@
 #define COFF_WITH_pex64
 #endif
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "coff/x86_64.h"
 #include "coff/internal.h"
@@ -634,6 +635,7 @@ coff_amd64_rtype_to_howto (bfd *abfd ATTRIBUTE_UNUSED,
 }
 
 #define coff_bfd_reloc_type_lookup coff_amd64_reloc_type_lookup
+#define coff_bfd_reloc_name_lookup coff_amd64_reloc_name_lookup
 
 static reloc_howto_type *
 coff_amd64_reloc_type_lookup (bfd *abfd ATTRIBUTE_UNUSED, bfd_reloc_code_real_type code)
@@ -672,6 +674,20 @@ coff_amd64_reloc_type_lookup (bfd *abfd ATTRIBUTE_UNUSED, bfd_reloc_code_real_ty
       BFD_FAIL ();
       return 0;
     }
+}
+
+static reloc_howto_type *
+coff_amd64_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
+			      const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0; i < sizeof (howto_table) / sizeof (howto_table[0]); i++)
+    if (howto_table[i].name != NULL
+	&& strcasecmp (howto_table[i].name, r_name) == 0)
+      return &howto_table[i];
+
+  return NULL;
 }
 
 #define coff_rtype_to_howto coff_amd64_rtype_to_howto

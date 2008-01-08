@@ -1,5 +1,5 @@
 /* tc-tic54x.c -- Assembly code for the Texas Instruments TMS320C54X
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Contributed by Timothy Wall (twall@cygnus.com)
 
@@ -7,7 +7,7 @@
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -5383,30 +5383,11 @@ tic54x_parse_name (name, exp)
 }
 
 char *
-md_atof (type, literalP, sizeP)
-     int type;
-     char *literalP;
-     int *sizeP;
+md_atof (int type, char *literalP, int *sizeP)
 {
-#define MAX_LITTLENUMS 2
-  LITTLENUM_TYPE words[MAX_LITTLENUMS];
-  LITTLENUM_TYPE *word;
-  /* Only one precision on the c54x.  */
-  int prec = 2;
-  char *t = atof_ieee (input_line_pointer, type, words);
-  if (t)
-    input_line_pointer = t;
-  *sizeP = 4;
-
   /* Target data is little-endian, but floats are stored
      big-"word"ian.  ugh.  */
-  for (word = words; prec--;)
-    {
-      md_number_to_chars (literalP, (long) (*word++), sizeof (LITTLENUM_TYPE));
-      literalP += sizeof (LITTLENUM_TYPE);
-    }
-
-  return 0;
+  return ieee_md_atof (type, literalP, sizeP, TRUE);
 }
 
 arelent *

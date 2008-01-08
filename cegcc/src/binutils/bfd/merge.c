@@ -1,5 +1,5 @@
 /* SEC_MERGE support.
-   Copyright 2001, 2002, 2003, 2004, 2005, 2006
+   Copyright 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Written by Jakub Jelinek <jakub@redhat.com>.
 
@@ -7,7 +7,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -17,13 +17,15 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
+
 
 /* This file contains support for merging duplicate entities within sections,
    as used in ELF SHF_MERGE.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "hashtab.h"
 #include "libiberty.h"
@@ -218,16 +220,11 @@ sec_merge_hash_lookup (struct sec_merge_hash *table, const char *string,
     return NULL;
 
   hashp = ((struct sec_merge_hash_entry *)
-	   sec_merge_hash_newfunc (NULL, &table->table, string));
+	   bfd_hash_insert (&table->table, string, hash));
   if (hashp == NULL)
     return NULL;
-  hashp->root.string = string;
-  hashp->root.hash = hash;
   hashp->len = len;
   hashp->alignment = alignment;
-  hashp->root.next = table->table.table[index];
-  table->table.table[index] = (struct bfd_hash_entry *) hashp;
-
   return hashp;
 }
 
@@ -406,7 +403,12 @@ _bfd_add_merge_section (bfd *abfd, void **psinfo, asection *sec,
 
   /* Read the section from abfd.  */
 
-  amt = sizeof (struct sec_merge_sec_info) + sec->size - 1;
+  amt = sizeof (struct sec_merge_sec_info) - 1 + sec->size;
+  if (sec->flags & SEC_STRINGS)
+    /* Some versions of gcc may emit a string without a zero terminator.
+       See http://gcc.gnu.org/ml/gcc-patches/2006-06/msg01004.html
+       Allocate space for an extra zero.  */
+    amt += sec->entsize;
   *psecinfo = bfd_alloc (abfd, amt);
   if (*psecinfo == NULL)
     goto error_return;
@@ -426,6 +428,8 @@ _bfd_add_merge_section (bfd *abfd, void **psinfo, asection *sec,
   secinfo->first_str = NULL;
 
   sec->rawsize = sec->size;
+  if (sec->flags & SEC_STRINGS)
+    memset (secinfo->contents + sec->size, 0, sec->entsize);
   if (! bfd_get_section_contents (sec->owner, sec, secinfo->contents,
 				  0, sec->size))
     goto error_return;
@@ -698,7 +702,7 @@ alloc_failure:
    with _bfd_merge_section.  */
 
 bfd_boolean
-_bfd_merge_sections (bfd *abfd ATTRIBUTE_UNUSED,
+_bfd_merge_sections (bfd *abfd,
 		     struct bfd_link_info *info ATTRIBUTE_UNUSED,
 		     void *xsinfo,
 		     void (*remove_hook) (bfd *, asection *))
@@ -766,7 +770,7 @@ _bfd_merge_sections (bfd *abfd ATTRIBUTE_UNUSED,
 	   the hash table at all.  */
 	for (secinfo = sinfo->chain; secinfo; secinfo = secinfo->next)
 	  if (secinfo->first_str == NULL)
-	    secinfo->sec->flags |= SEC_EXCLUDE;
+	    secinfo->sec->flags |= SEC_EXCLUDE | SEC_KEEP;
     }
 
   return TRUE;
@@ -781,6 +785,9 @@ _bfd_write_merged_section (bfd *output_bfd, asection *sec, void *psecinfo)
   file_ptr pos;
 
   secinfo = (struct sec_merge_sec_info *) psecinfo;
+
+  if (!secinfo)
+    return FALSE;
 
   if (secinfo->first_str == NULL)
     return TRUE;
@@ -809,6 +816,9 @@ _bfd_merged_section_offset (bfd *output_bfd ATTRIBUTE_UNUSED, asection **psec,
   asection *sec = *psec;
 
   secinfo = (struct sec_merge_sec_info *) psecinfo;
+
+  if (!secinfo)
+    return offset;
 
   if (offset >= sec->rawsize)
     {

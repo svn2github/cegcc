@@ -1,24 +1,25 @@
 /* chew
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1998, 2000, 2001,
-   2002, 2003, 2005
+   2002, 2003, 2005, 2007
    Free Software Foundation, Inc.
    Contributed by steve chamberlain @cygnus
 
-This file is part of BFD, the Binary File Descriptor library.
+   This file is part of BFD, the Binary File Descriptor library.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 /* Yet another way of extracting documentation from source.
    No, I haven't finished it yet, but I hope you people like it better
@@ -119,6 +120,7 @@ static void overwrite_string (string_type *, string_type *);
 static void catbuf (string_type *, char *, unsigned int);
 static void cattext (string_type *, char *);
 static void catstr (string_type *, string_type *);
+static void die (char *);
 #endif
 
 static void
@@ -161,7 +163,9 @@ write_buffer (buffer, f)
      string_type *buffer;
      FILE *f;
 {
-  fwrite (buffer->ptr, buffer->write_idx, 1, f);
+  if (buffer->write_idx != 0
+      && fwrite (buffer->ptr, buffer->write_idx, 1, f) != 1)
+    die ("cannot write output");
 }
 
 static void

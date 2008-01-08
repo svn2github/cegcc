@@ -1,12 +1,12 @@
 /* tc-vax.h -- Header file for tc-vax.c.
-   Copyright 1987, 1991, 1992, 1993, 1995, 1996, 1997, 2000, 2002, 2005, 2006
-   Free Software Foundation, Inc.
+   Copyright 1987, 1991, 1992, 1993, 1995, 1996, 1997, 2000, 2002, 2005,
+   2006, 2007  Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -46,6 +46,13 @@
 #define NOP_OPCODE	0x01
 
 #define md_operand(x)
+
+#ifdef OBJ_ELF
+#define TC_PARSE_CONS_EXPRESSION(EXP, NBYTES) vax_cons (EXP, NBYTES)
+#define TC_CONS_FIX_NEW vax_cons_fix_new
+void vax_cons (expressionS *, int);
+void vax_cons_fix_new (struct frag *, int, unsigned int, struct expressionS *);
+#endif
 
 extern const struct relax_type md_relax_table[];
 #define TC_GENERIC_RELAX_TABLE md_relax_table

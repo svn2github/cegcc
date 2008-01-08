@@ -1,3 +1,56 @@
+2007-08-02  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* pe.h (IMAGE_SCN_ALIGN_POWER_BIT_POS): New.
+	(IMAGE_SCN_ALIGN_POWER_BIT_MASK): Likewise.
+	(IMAGE_SCN_ALIGN_POWER_NUM): Likewise.
+	(IMAGE_SCN_ALIGN_POWER_CONST): Likewise.
+	(IMAGE_SCN_ALIGN_128BYTES): Likewise.
+	(IMAGE_SCN_ALIGN_256BYTES): Likewise.
+	(IMAGE_SCN_ALIGN_512BYTES): Likewise.
+	(IMAGE_SCN_ALIGN_1024BYTES): Likewise.
+	(IMAGE_SCN_ALIGN_2048BYTES): Likewise.
+	(IMAGE_SCN_ALIGN_4096BYTES): Likewise.
+	(IMAGE_SCN_ALIGN_8192BYTES): Likewise.
+	(IMAGE_SCN_ALIGN_1BYTES): Redefined with
+	IMAGE_SCN_ALIGN_POWER_CONST.
+	(IMAGE_SCN_ALIGN_2BYTES): Likewise.
+	(IMAGE_SCN_ALIGN_4BYTES): Likewise.
+	(IMAGE_SCN_ALIGN_8BYTES): Likewise.
+	(IMAGE_SCN_ALIGN_16BYTES): Likewise.
+	(IMAGE_SCN_ALIGN_32BYTES): Likewise.
+	(IMAGE_SCN_ALIGN_64BYTES): Likewise.
+
+2007-07-12  Kai Tietz   <kai.tietz@onevision.com>
+
+	* internal.h (struct internal_syment): Use bfd_hostptr_t for
+	_n_zeroes and _n_offset fields.
+
+2007-04-27  Alan Modra  <amodra@bigpond.net.au>
+
+	* rs6000.h: Write Mimi's name in ASCII.
+
+2007-03-19  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* internal.h (internal_extra_pe_aouthdr): Add Magic,
+	MajorLinkerVersion, MinorLinkerVersion, SizeOfCode,
+	SizeOfInitializedData, SizeOfUninitializedData,
+	AddressOfEntryPoint, BaseOfCode and BaseOfData.
+
+2006-12-05  Michael Tautschnig  <tautschn@model.in.tum.de>
+	    Nick Clifton  <nickc@redhat.com>
+
+	* external.h (struct external_aouthdr): Add ATTRIBUTE_PACKED.
+	(struct external_syment): Likewise.
+	(union external_auxent): Likewise.
+
+2006-11-14  Phil Lello  <phil.lello@homecall.co.uk>
+
+	* pe.h: Added defines for IMAGE_SUBSYSTEM_EFI_ROM and
+	IMAGE_SUBSYSTEM_XBOX.
+	* internal.h: Added defines for PE directory entry types.
+	NB: in internal.h because IMAGE_NUMBEROF_DIRECTORY_ENTRYIES is in
+	pe.h
+
 2006-09-20  Kai Tietz  <Kai.Tietz@onevision.com>
 
 	* external.h: Add proper external_aouthdr64 structure (without

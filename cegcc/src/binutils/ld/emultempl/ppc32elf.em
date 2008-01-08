@@ -1,11 +1,11 @@
 # This shell script emits a C file. -*- C -*-
-#   Copyright 2003, 2005 Free Software Foundation, Inc.
+#   Copyright 2003, 2005, 2007 Free Software Foundation, Inc.
 #
-# This file is part of GLD, the Gnu Linker.
+# This file is part of the GNU Binutils.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -15,13 +15,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+# MA 02110-1301, USA.
 #
 
 # This file is sourced from elf32.em, and defines extra powerpc32-elf
 # specific routines.
 #
-cat >>e${EMULATION_NAME}.c <<EOF
+fragment <<EOF
 
 #include "libbfd.h"
 #include "elf32-ppc.h"
@@ -45,7 +46,7 @@ static int notlsopt = 0;
 static int emit_stub_syms = 0;
 
 /* Chooses the correct place for .plt and .got.  */
-static int old_plt = 0;
+static enum ppc_elf_plt_type plt_style = PLT_UNSET;
 static int old_got = 0;
 
 static void
@@ -62,7 +63,7 @@ ppc_after_open (void)
       lang_output_section_statement_type *got_os[2];
 
       emit_stub_syms |= link_info.emitrelocations;
-      new_plt = ppc_elf_select_plt_layout (output_bfd, &link_info, old_plt,
+      new_plt = ppc_elf_select_plt_layout (output_bfd, &link_info, plt_style,
 					   emit_stub_syms);
       if (new_plt < 0)
 	einfo ("%X%P: select_plt_layout problem %E\n");
@@ -124,29 +125,51 @@ ppc_before_allocation (void)
 
 EOF
 
+if grep -q 'ld_elf32_spu_emulation' ldemul-list.h; then
+  fragment <<EOF
+/* Special handling for embedded SPU executables.  */
+extern bfd_boolean embedded_spu_file (lang_input_statement_type *, const char *);
+static bfd_boolean gld${EMULATION_NAME}_load_symbols (lang_input_statement_type *);
+
+static bfd_boolean
+ppc_recognized_file (lang_input_statement_type *entry)
+{
+  if (embedded_spu_file (entry, "-m32"))
+    return TRUE;
+
+  return gld${EMULATION_NAME}_load_symbols (entry);
+}
+
+EOF
+LDEMUL_RECOGNIZED_FILE=ppc_recognized_file
+fi
+
 # Define some shell vars to insert bits of code into the standard elf
 # parse_args and list_options functions.
 #
 PARSE_AND_LIST_PROLOGUE='
 #define OPTION_NO_TLS_OPT		301
-#define OPTION_OLD_PLT			302
-#define OPTION_OLD_GOT			303
-#define OPTION_STUBSYMS			304
+#define OPTION_NEW_PLT			302
+#define OPTION_OLD_PLT			303
+#define OPTION_OLD_GOT			304
+#define OPTION_STUBSYMS			305
 '
 
 PARSE_AND_LIST_LONGOPTS='
   { "emit-stub-syms", no_argument, NULL, OPTION_STUBSYMS },
   { "no-tls-optimize", no_argument, NULL, OPTION_NO_TLS_OPT },
+  { "secure-plt", no_argument, NULL, OPTION_NEW_PLT },
   { "bss-plt", no_argument, NULL, OPTION_OLD_PLT },
   { "sdata-got", no_argument, NULL, OPTION_OLD_GOT },
 '
 
 PARSE_AND_LIST_OPTIONS='
   fprintf (file, _("\
-  --emit-stub-syms      Label linker stubs with a symbol.\n\
-  --no-tls-optimize     Don'\''t try to optimize TLS accesses.\n\
-  --bss-plt             Force old-style BSS PLT.\n\
-  --sdata-got           Force GOT location just before .sdata.\n"
+  --emit-stub-syms            Label linker stubs with a symbol.\n\
+  --no-tls-optimize           Don'\''t try to optimize TLS accesses.\n\
+  --secure-plt                Use new-style PLT if possible.\n\
+  --bss-plt                   Force old-style BSS PLT.\n\
+  --sdata-got                 Force GOT location just before .sdata.\n"
 		   ));
 '
 
@@ -159,8 +182,12 @@ PARSE_AND_LIST_ARGS_CASES='
       notlsopt = 1;
       break;
 
+    case OPTION_NEW_PLT:
+      plt_style = PLT_NEW;
+      break;
+
     case OPTION_OLD_PLT:
-      old_plt = 1;
+      plt_style = PLT_OLD;
       break;
 
     case OPTION_OLD_GOT:

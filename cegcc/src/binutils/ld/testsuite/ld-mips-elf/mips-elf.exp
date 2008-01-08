@@ -1,9 +1,11 @@
 # Expect script for MIPS ELF linker tests
-#   Copyright 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
+#   Copyright 2002, 2003, 2004, 2005, 2007 Free Software Foundation, Inc.
 #
-# This file is free software; you can redistribute it and/or modify
+# This file is part of the GNU Binutils.
+#
+# This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -13,7 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+# MA 02110-1301, USA.
 #
 
 if {[istarget "mips*-*-vxworks"]} {
@@ -21,7 +24,7 @@ if {[istarget "mips*-*-vxworks"]} {
 	{"VxWorks shared library test 1" "-shared -Tvxworks1.ld"
 	 "-mips2" {vxworks1-lib.s}
 	 {{readelf --relocs vxworks1-lib.rd} {objdump -dr vxworks1-lib.dd}
-	  {readelf --symbols vxworks1-lib.nd}}
+	  {readelf --symbols vxworks1-lib.nd} {readelf -d vxworks1-lib.td}}
 	 "libvxworks1.so"}
 	{"VxWorks executable test 1 (dynamic)" \
 	 "tmpdir/libvxworks1.so -Tvxworks1.ld -q --force-dynamic"
@@ -41,6 +44,7 @@ if {[istarget "mips*-*-vxworks"]} {
     }
     run_ld_link_tests $mipsvxtests
     run_dump_test "vxworks1-static"
+    run_dump_test "vxworks-forced-local-1"
     return
 }
 
@@ -64,6 +68,8 @@ run_dump_test "branch-misc-1"
 if { $linux_gnu } {
     run_dump_test "multi-got-1"
     run_dump_test "multi-got-no-shared"
+    run_dump_test "multi-got-hidden-1"
+    run_dump_test "multi-got-hidden-2"
 }
 
 if $has_newabi {
@@ -111,6 +117,9 @@ run_dump_test "reloc-3"
 if {$has_newabi} {
     run_dump_test "reloc-3-n32"
 }
+run_dump_test "reloc-4"
+run_dump_test "reloc-5"
+
 if {$has_newabi && $linux_gnu} {
     run_dump_test "eh-frame1-n32"
     run_dump_test "eh-frame1-n64"
@@ -135,6 +144,11 @@ if {$has_newabi} {
 
 if { $linux_gnu } {
     run_dump_test "textrel-1"
+    run_dump_test "got-page-1"
+    if $has_newabi {
+	run_dump_test "got-page-2"
+    }
+    run_dump_test "got-page-3"
 }
 
 if $has_newabi {
@@ -147,14 +161,13 @@ run_dump_test "hash1c"
 
 if {[istarget mips*-*-linux*]} {
      # The number of symbols that are always included in the symbol table
-     # for these tests.  The 5 are:
+     # for these tests.  The 4 are:
      #
      #     the null symbol entry
      #     the .MIPS.stubs section symbol
-     #     the .text section symbol
      #     _gp
      #     _GLOBAL_OFFSET_TABLE_
-     set base_syms 5
+     set base_syms 4
      foreach dynsym { 7fff 8000 fff0 10000 2fe80 } {
 	 run_ld_link_tests \
 	     [list [list \
@@ -260,3 +273,47 @@ set mips16_call_global_test {
 }
 
 run_ld_link_tests $mips16_call_global_test
+
+set mips16_intermix_test {
+    {"Intermixing mips32 and mips16 functions"
+     ""
+     "-mips32r2" {mips16-intermix-1.s mips16-intermix-2.s}
+     {{objdump -t mips16-intermix.d}}
+     "mips16-intermix"}
+}
+
+run_ld_link_tests $mips16_intermix_test
+
+run_dump_test "mips16-local-stubs-1"
+
+run_dump_test "attr-gnu-4-00"
+run_dump_test "attr-gnu-4-01"
+run_dump_test "attr-gnu-4-02"
+run_dump_test "attr-gnu-4-03"
+run_dump_test "attr-gnu-4-04"
+run_dump_test "attr-gnu-4-05"
+run_dump_test "attr-gnu-4-10"
+run_dump_test "attr-gnu-4-11"
+run_dump_test "attr-gnu-4-12"
+run_dump_test "attr-gnu-4-13"
+run_dump_test "attr-gnu-4-14"
+run_dump_test "attr-gnu-4-15"
+run_dump_test "attr-gnu-4-20"
+run_dump_test "attr-gnu-4-21"
+run_dump_test "attr-gnu-4-22"
+run_dump_test "attr-gnu-4-23"
+run_dump_test "attr-gnu-4-24"
+run_dump_test "attr-gnu-4-25"
+run_dump_test "attr-gnu-4-30"
+run_dump_test "attr-gnu-4-31"
+run_dump_test "attr-gnu-4-32"
+run_dump_test "attr-gnu-4-33"
+run_dump_test "attr-gnu-4-34"
+run_dump_test "attr-gnu-4-35"
+run_dump_test "attr-gnu-4-40"
+run_dump_test "attr-gnu-4-41"
+run_dump_test "attr-gnu-4-42"
+run_dump_test "attr-gnu-4-43"
+run_dump_test "attr-gnu-4-44"
+run_dump_test "attr-gnu-4-45"
+run_dump_test "attr-gnu-4-51"

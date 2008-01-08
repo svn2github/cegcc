@@ -1,13 +1,13 @@
 /* corefile.c
 
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007
    Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -25,7 +25,9 @@
 #include "search_list.h"
 #include "source.h"
 #include "symtab.h"
+#include "hist.h"
 #include "corefile.h"
+#include "safe-ctype.h"
 
 bfd *core_bfd;
 static int core_num_syms;
@@ -53,6 +55,13 @@ extern void sparc_find_call (Sym *, bfd_vma, bfd_vma);
 extern void mips_find_call  (Sym *, bfd_vma, bfd_vma);
 
 static void
+parse_error (const char *filename)
+{
+  fprintf (stderr, _("%s: unable to parse mapping file %s.\n"), whoami, filename);
+  done (1);
+}
+
+static void
 read_function_mappings (const char *filename)
 {
   FILE *file = fopen (filename, "r");
@@ -74,21 +83,21 @@ read_function_mappings (const char *filename)
 
       matches = fscanf (file, "%[^\n:]", dummy);
       if (!matches)
-	{
-	  fprintf (stderr, _("%s: unable to parse mapping file %s.\n"),
-		   whoami, filename);
-	  done (1);
-	}
+	parse_error (filename);
 
       /* Just skip messages about files with no symbols.  */
       if (!strncmp (dummy, "No symbols in ", 14))
 	{
-	  fscanf (file, "\n");
+	  matches = fscanf (file, "\n");
+	  if (matches == EOF)
+	    parse_error (filename);
 	  continue;
 	}
 
       /* Don't care what else is on this line at this point.  */
-      fscanf (file, "%[^\n]\n", dummy);
+      matches = fscanf (file, "%[^\n]\n", dummy);
+      if (!matches)
+	parse_error (filename);
       count++;
     }
 
@@ -108,16 +117,14 @@ read_function_mappings (const char *filename)
 
       matches = fscanf (file, "%[^\n:]", dummy);
       if (!matches)
-	{
-	  fprintf (stderr, _("%s: unable to parse mapping file %s.\n"),
-		   whoami, filename);
-	  done (1);
-	}
+	parse_error (filename);
 
       /* Just skip messages about files with no symbols.  */
       if (!strncmp (dummy, "No symbols in ", 14))
 	{
-	  fscanf (file, "\n");
+	  matches = fscanf (file, "\n");
+	  if (matches == EOF)
+	    parse_error (filename);
 	  continue;
 	}
 
@@ -126,7 +133,9 @@ read_function_mappings (const char *filename)
       strcpy (symbol_map[count].file_name, dummy);
 
       /* Now we need the function name.  */
-      fscanf (file, "%[^\n]\n", dummy);
+      matches = fscanf (file, "%[^\n]\n", dummy);
+      if (!matches)
+	parse_error (filename);
       tmp = strrchr (dummy, ' ') + 1;
       symbol_map[count].function_name = xmalloc (strlen (tmp) + 1);
       strcpy (symbol_map[count].function_name, tmp);
@@ -262,6 +271,11 @@ core_get_text_space (bfd *cbfd)
 void
 find_call (Sym *parent, bfd_vma p_lowpc, bfd_vma p_highpc)
 {
+  if (core_text_space == 0)
+    return;
+
+  hist_clip_symbol_address (&p_lowpc, &p_highpc);
+
   switch (bfd_get_arch (core_bfd))
     {
     case bfd_arch_i386:
@@ -352,8 +366,15 @@ core_sym_class (asymbol *sym)
 
   for (name = sym->name; *name; ++name)
     {
-      if (*name == '.' || *name == '$')
-	return 0;
+      if (*name == '$')
+        return 0;
+
+      /* Do not discard nested subprograms (those
+	 which end with .NNN, where N are digits).  */
+      if (*name == '.')
+	for (name++; *name; name++)
+	  if (! ISDIGIT (*name))
+	    return 0;
     }
 
   /* On systems where the C compiler adds an underscore to all
@@ -568,12 +589,6 @@ core_create_function_syms ()
       else
 	max_vma = MAX (symtab.limit->addr, max_vma);
 
-      /* If we see "main" without an initial '_', we assume names
-	 are *not* prefixed by '_'.  */
-      if (symtab.limit->name[0] == 'm' && discard_underscores
-	  && strcmp (symtab.limit->name, "main") == 0)
-	discard_underscores = 0;
-
       DBG (AOUTDEBUG, printf ("[core_create_function_syms] %ld %s 0x%lx\n",
 			      (long) (symtab.limit - symtab.base),
 			      symtab.limit->name,
@@ -732,12 +747,6 @@ core_create_line_syms ()
 	}
 
       prev = ltab.limit;
-
-      /* If we see "main" without an initial '_', we assume names
-	 are *not* prefixed by '_'.  */
-      if (ltab.limit->name[0] == 'm' && discard_underscores
-	  && strcmp (ltab.limit->name, "main") == 0)
-	discard_underscores = 0;
 
       DBG (AOUTDEBUG, printf ("[core_create_line_syms] %lu %s 0x%lx\n",
 			      (unsigned long) (ltab.limit - ltab.base),

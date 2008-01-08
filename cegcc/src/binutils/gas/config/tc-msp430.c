@@ -1,13 +1,14 @@
 /* tc-msp430.c -- Assembler code for the Texas Instruments MSP430
 
-  Copyright (C) 2002, 2003, 2004, 2005, 2006 Free Software Foundation, Inc.
+  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007
+  Free Software Foundation, Inc.
   Contributed by Dmitry Diky <diwil@mail.ru>
 
   This file is part of GAS, the GNU Assembler.
 
   GAS is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2, or (at your option)
+  the Free Software Foundation; either version 3, or (at your option)
   any later version.
 
   GAS is distributed in the hope that it will be useful,
@@ -29,8 +30,7 @@
 #include "safe-ctype.h"
 #include "dwarf2dbg.h"
 
-/*
-   We will disable polymorphs by default because it is dangerous.
+/* We will disable polymorphs by default because it is dangerous.
    The potential problem here is the following: assume we got the
    following code:
 
@@ -49,8 +49,8 @@
 	8: nop
 	10: ret
 
-   If the 'subroutine' wiys thin +-1024 bytes range then linker
-   will produce
+   If the 'subroutine' is within +-1024 bytes range then linker
+   will produce:
 	0: jmp .text +0x08
 	2: nop
 	4: jmp subroutine
@@ -58,16 +58,14 @@
 	6: nop
 	8: ret	; 'jmp .text +0x08' will land here. WRONG!!!
 
-
    The workaround is the following:
-   1. Declare global var enable_polymorphs which set to 1 via option -mP.
+   1. Declare global var enable_polymorphs which set to 1 via option -mp.
    2. Declare global var enable_relax	which set to 1 via option -mQ.
 
    If polymorphs are enabled, and relax isn't, treat all jumps as long jumps,
    do not delete any relocs and leave them for linker.
    
-   If relax is enabled, relax at assembly time and kill relocs as necessary.
- */
+   If relax is enabled, relax at assembly time and kill relocs as necessary.  */
 
 int msp430_enable_relax;
 int msp430_enable_polys;
@@ -165,7 +163,7 @@ static struct hcodes_s msp430_hcodes[] =
 
 const char comment_chars[] = ";";
 const char line_comment_chars[] = "#";
-const char line_separator_chars[] = "|";
+const char line_separator_chars[] = "{";
 const char EXP_CHARS[] = "eE";
 const char FLT_CHARS[] = "dD";
 
@@ -393,7 +391,7 @@ static struct mcu_type_s * msp430_mcu = & default_mcu;
 	push r8
       .profiler "cdp",fxx,0, .LFrameOffset_fxx	; check stack value at this point
 						; (this is a prologue end)
-						; note, that spare var filled with the farme size
+						; note, that spare var filled with the frame size
 	mov r15,r8
 	....
       .profiler cdE,fxx		; check stack
@@ -621,17 +619,17 @@ msp430_profiler (int dummy ATTRIBUTE_UNUSED)
 	  || ! pow2value (p_flags & (  MSP430_PROFILER_FLAG_INITSECT
 				     | MSP430_PROFILER_FLAG_FINISECT))))
     {
-      as_bad (_("ambigious flags combination - '.profiler' directive ignored."));
+      as_bad (_("ambiguous flags combination - '.profiler' directive ignored."));
       input_line_pointer = end;
       return;
     }
 
   /* Generate temp symbol which denotes current location.  */
-  if (now_seg == absolute_section)	/* Paranoja ?  */
+  if (now_seg == absolute_section)	/* Paranoia ?  */
     {
       exp1.X_op = O_constant;
       exp1.X_add_number = abs_section_offset;
-      as_warn (_("profiling in absolute section? Hm..."));
+      as_warn (_("profiling in absolute section?"));
     }
   else
     {
@@ -844,46 +842,10 @@ extract_cmd (char * from, char * to, int limit)
   return from;
 }
 
-/* Turn a string in input_line_pointer into a floating point constant
-   of type TYPE, and store the appropriate bytes in *LITP.  The number
-   of LITTLENUMS emitted is stored in *SIZEP.  An error message is
-   returned, or NULL on OK.  */
-
 char *
 md_atof (int type, char * litP, int * sizeP)
 {
-  int prec;
-  LITTLENUM_TYPE words[4];
-  LITTLENUM_TYPE *wordP;
-  char *t;
-
-  switch (type)
-    {
-    case 'f':
-      prec = 2;
-      break;
-    case 'd':
-      prec = 4;
-      break;
-    default:
-      *sizeP = 0;
-      return _("bad call to md_atof");
-    }
-
-  t = atof_ieee (input_line_pointer, type, words);
-  if (t)
-    input_line_pointer = t;
-
-  *sizeP = prec * sizeof (LITTLENUM_TYPE);
-
-  /* This loop outputs the LITTLENUMs in REVERSE order.  */
-  for (wordP = words + prec - 1; prec--;)
-    {
-      md_number_to_chars (litP, (valueT) (*wordP--), sizeof (LITTLENUM_TYPE));
-      litP += sizeof (LITTLENUM_TYPE);
-    }
-
-  return NULL;
+  return ieee_md_atof (type, litP, sizeP, FALSE);
 }
 
 void
@@ -1141,7 +1103,7 @@ msp430_srcoperand (struct msp430_operand_s * op,
 	      op->mode = OP_REG;
 	    }
 	}
-      /* Redudant (yet) check.  */
+      /* Redundant (yet) check.  */
       else if (op->exp.X_op == O_register)
 	as_bad
 	  (_("Registers cannot be used within immediate expression [%s]"), l);
@@ -1176,7 +1138,7 @@ msp430_srcoperand (struct msp430_operand_s * op,
 	;
       else
 	{
-	  /* Redudant (yet) check.  */
+	  /* Redundant (yet) check.  */
 	  if (op->exp.X_op == O_register)
 	    as_bad
 	      (_("Registers cannot be used within absolute expression [%s]"), l);
@@ -1264,7 +1226,7 @@ msp430_srcoperand (struct msp430_operand_s * op,
       op->reg = *t - '0';
       if (op->reg > 9 || op->reg < 0)
 	{
-	  as_bad (_("unknown operator (r%s substituded as a register name"),
+	  as_bad (_("unknown operator (r%s substituted as a register name"),
 		  t);
 	  return 1;
 	}
@@ -1319,7 +1281,7 @@ msp430_srcoperand (struct msp430_operand_s * op,
 	;
       else
 	{
-	  /* Redudant (yet) check.  */
+	  /* Redundant (yet) check.  */
 	  if (op->exp.X_op == O_register)
 	    as_bad
 	      (_("Registers cannot be used as a prefix of indexed expression [%s]"), l);
@@ -1830,7 +1792,7 @@ msp430_operands (struct msp430_opcode_s * opcode, char * line)
       break;
 
     default:
-      as_bad (_("Ilegal instruction or not implmented opcode."));
+      as_bad (_("Illegal instruction or not implemented opcode."));
     }
 
   input_line_pointer = line;
@@ -1915,7 +1877,6 @@ msp430_force_relocation_local(fixS *fixp)
     return 1;
   else
     return (!fixp->fx_pcrel
-	    || fixp->fx_plt
 	    || generic_force_reloc(fixp));
 }
 
@@ -1987,7 +1948,7 @@ md_apply_fix (fixS * fixp, valueT * valuep, segT seg)
     {
       if (!fixp->fx_addsy || (fixp->fx_addsy 
 	  && S_GET_SEGMENT (fixp->fx_addsy) == absolute_section))
-	fixp->fx_done = 1;	/* it is ok to kill 'abs' reloc */
+	fixp->fx_done = 1;	/* It is ok to kill 'abs' reloc.  */
       else
       	fixp->fx_done = 0;
     }
@@ -2120,7 +2081,7 @@ md_estimate_size_before_relax (fragS * fragP ATTRIBUTE_UNUSED,
   else if (fragP->fr_symbol)
     {
       /* Its got a segment, but its not ours.   Even if fr_symbol is in
-	 an absolute segment, we dont know a displacement until we link
+	 an absolute segment, we don't know a displacement until we link
 	 object files. So it will always be long. This also applies to
 	 labels in a subsegment of current. Liker may relax it to short
 	 jump later. Return value == 8.  */
@@ -2130,7 +2091,7 @@ md_estimate_size_before_relax (fragS * fragP ATTRIBUTE_UNUSED,
   else
     {
       /* We know the abs value. may be it is a jump to fixed address.
-         Impossible in our case, cause all constants already handeled. */
+         Impossible in our case, cause all constants already handled. */
       fragP->fr_subtype =
 	  ENCODE_RELAX (RELAX_LEN (fragP->fr_subtype), STATE_UNDEF);
     }

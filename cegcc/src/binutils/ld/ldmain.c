@@ -1,29 +1,28 @@
 /* Main program of GNU linker.
    Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-   2002, 2003, 2004, 2005, 2006
+   2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Written by Steve Chamberlain steve@cygnus.com
 
-   This file is part of GLD, the Gnu Linker.
+   This file is part of the GNU Binutils.
 
-   GLD is free software; you can redistribute it and/or modify
+   This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
-   any later version.
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
 
-   GLD is distributed in the hope that it will be useful,
+   This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with GLD; see the file COPYING.  If not, write to the Free
-   Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA
-   02110-1301, USA.  */
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
-#include <stdio.h>
+#include "bfd.h"
 #include "safe-ctype.h"
 #include "libiberty.h"
 #include "progress.h"
@@ -161,7 +160,10 @@ static struct bfd_link_callbacks link_callbacks =
   reloc_dangerous,
   unattached_reloc,
   notice,
-  einfo
+  einfo,
+  info_msg,
+  minfo,
+  ldlang_override_segment_assignment
 };
 
 struct bfd_link_info link_info;
@@ -240,25 +242,17 @@ main (int argc, char **argv)
   }
 #endif
 
-  /* Initialize the data about options.  */
-  trace_files = trace_file_tries = version_printed = FALSE;
-  whole_archive = FALSE;
   config.build_constructors = TRUE;
-  config.dynamic_link = FALSE;
-  config.has_shared = FALSE;
+  config.rpath_separator = ':';
   config.split_by_reloc = (unsigned) -1;
   config.split_by_file = (bfd_size_type) -1;
-  config.hash_table_size = 0;
-  command_line.force_common_definition = FALSE;
-  command_line.inhibit_common_definition = FALSE;
-  command_line.interpreter = NULL;
-  command_line.rpath = NULL;
-  command_line.warn_mismatch = TRUE;
-  command_line.check_section_addresses = TRUE;
-  command_line.accept_unknown_input_arch = FALSE;
-  command_line.reduce_memory_overheads = FALSE;
+  config.make_executable = TRUE;
+  config.magic_demand_paged = TRUE;
+  config.text_read_only = TRUE;
 
-  sort_section = none;
+  command_line.warn_mismatch = TRUE;
+  command_line.warn_search_mismatch = TRUE;
+  command_line.check_section_addresses = TRUE;
 
   /* We initialize DEMANGLING based on the environment variable
      COLLECT_NO_DEMANGLE.  The gcc collect2 program will demangle the
@@ -267,70 +261,22 @@ main (int argc, char **argv)
      interface by default.  */
   demangling = getenv ("COLLECT_NO_DEMANGLE") == NULL;
 
-  link_info.relocatable = FALSE;
-  link_info.emitrelocations = FALSE;
-  link_info.task_link = FALSE;
-  link_info.shared = FALSE;
-  link_info.pie = FALSE;
-  link_info.executable = FALSE;
-  link_info.symbolic = FALSE;
-  link_info.export_dynamic = FALSE;
-  link_info.static_link = FALSE;
-  link_info.traditional_format = FALSE;
-  link_info.optimize = FALSE;
-  link_info.unresolved_syms_in_objects = RM_NOT_YET_SET;
-  link_info.unresolved_syms_in_shared_libs = RM_NOT_YET_SET;
-  link_info.allow_multiple_definition = FALSE;
   link_info.allow_undefined_version = TRUE;
-  link_info.create_default_symver = FALSE;
-  link_info.default_imported_symver = FALSE;
   link_info.keep_memory = TRUE;
-  link_info.notice_all = FALSE;
-  link_info.nocopyreloc = FALSE;
-  link_info.new_dtags = FALSE;
   link_info.combreloc = TRUE;
-  link_info.eh_frame_hdr = FALSE;
-  link_info.relro = FALSE;
   link_info.strip_discarded = TRUE;
-  link_info.strip = strip_none;
-  link_info.discard = discard_sec_merge;
-  link_info.common_skip_ar_aymbols = bfd_link_common_skip_none;
-  link_info.callbacks = &link_callbacks;
-  link_info.hash = NULL;
-  link_info.keep_hash = NULL;
-  link_info.notice_hash = NULL;
-  link_info.wrap_hash = NULL;
-  link_info.input_bfds = NULL;
-  link_info.create_object_symbols_section = NULL;
-  link_info.gc_sym_list = NULL;
-  link_info.base_file = NULL;
   link_info.emit_hash = TRUE;
-  link_info.emit_gnu_hash = FALSE;
+  link_info.callbacks = &link_callbacks;
+  link_info.input_bfds_tail = &link_info.input_bfds;
   /* SVR4 linkers seem to set DT_INIT and DT_FINI based on magic _init
      and _fini symbols.  We are compatible.  */
   link_info.init_function = "_init";
   link_info.fini_function = "_fini";
-  link_info.pei386_auto_import = -1;
-  link_info.pei386_runtime_pseudo_reloc = FALSE;
-  link_info.spare_dynamic_tags = 5;
-  link_info.flags = 0;
-  link_info.flags_1 = 0;
   link_info.relax_pass = 1;
-  link_info.warn_shared_textrel = FALSE;
-  link_info.gc_sections = FALSE;
-  link_info.print_gc_sections = FALSE;
-  link_info.dynamic = NULL;
-
-  config.maxpagesize = 0;
-  config.commonpagesize = 0;
+  link_info.pei386_auto_import = -1;
+  link_info.spare_dynamic_tags = 5;
 
   ldfile_add_arch ("");
-
-  config.make_executable = TRUE;
-  force_make_executable = FALSE;
-  config.magic_demand_paged = TRUE;
-  config.text_read_only = TRUE;
-
   emulation = get_emulation (argc, argv);
   ldemul_choose_mode (emulation);
   default_target = ldemul_choose_target (argc, argv);
@@ -342,13 +288,6 @@ main (int argc, char **argv)
   if (config.hash_table_size != 0)
     bfd_hash_set_default_size (config.hash_table_size);
 
-  if (config.maxpagesize != 0)
-    bfd_emul_set_maxpagesize (default_target, config.maxpagesize);
-
-  if (config.commonpagesize != 0)
-    bfd_emul_set_commonpagesize (default_target,
-				 config.commonpagesize);
-
   ldemul_set_symbols ();
 
   if (link_info.relocatable)
@@ -359,6 +298,43 @@ main (int argc, char **argv)
 	einfo (_("%P%F: --relax and -r may not be used together\n"));
       if (link_info.shared)
 	einfo (_("%P%F: -r and -shared may not be used together\n"));
+    }
+
+  /* We may have -Bsymbolic, -Bsymbolic-functions, --dynamic-list-data,
+     --dynamic-list-cpp-new, --dynamic-list-cpp-typeinfo and
+     --dynamic-list FILE.  -Bsymbolic and -Bsymbolic-functions are
+     for shared libraries.  -Bsymbolic overrides all others and vice
+     versa.  */
+  switch (command_line.symbolic)
+    {
+    case symbolic_unset:
+      break;
+    case symbolic:
+      /* -Bsymbolic is for shared library only.  */
+      if (link_info.shared)
+	{
+	  link_info.symbolic = TRUE;
+	  /* Should we free the unused memory?  */
+	  link_info.dynamic_list = NULL;
+	  command_line.dynamic_list = dynamic_list_unset;
+	}
+      break;
+    case symbolic_functions:
+      /* -Bsymbolic-functions is for shared library only.  */
+      if (link_info.shared)
+	command_line.dynamic_list = dynamic_list_data;
+      break;
+    }
+
+  switch (command_line.dynamic_list)
+    {
+    case dynamic_list_unset:
+      break;
+    case dynamic_list_data:
+      link_info.dynamic_data = TRUE;
+    case dynamic_list:
+      link_info.dynamic = TRUE;
+      break;
     }
 
   if (! link_info.shared)
@@ -385,6 +361,16 @@ main (int argc, char **argv)
   /* This essentially adds another -L directory so this must be done after
      the -L's in argv have been processed.  */
   set_scripts_dir ();
+
+  /* If we have not already opened and parsed a linker script,
+     try the default script from command line first.  */
+  if (saved_script_handle == NULL
+      && command_line.default_script != NULL)
+    {
+      ldfile_open_command_file (command_line.default_script);
+      parser_input = input_script;
+      yyparse ();
+    }
 
   /* If we have not already opened and parsed a linker script
      read the emulation's appropriate default script.  */

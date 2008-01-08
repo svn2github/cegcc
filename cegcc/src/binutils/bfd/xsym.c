@@ -1,12 +1,12 @@
 /* xSYM symbol-file support for BFD.
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -16,11 +16,12 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
+#include "sysdep.h"
 #include "xsym.h"
 #include "bfd.h"
-#include "sysdep.h"
 #include "libbfd.h"
 
 #define bfd_sym_close_and_cleanup                   _bfd_generic_close_and_cleanup
@@ -34,9 +35,6 @@
 #define bfd_sym_bfd_make_debug_symbol               _bfd_nosymbols_bfd_make_debug_symbol
 #define bfd_sym_read_minisymbols                    _bfd_generic_read_minisymbols
 #define bfd_sym_minisymbol_to_symbol                _bfd_generic_minisymbol_to_symbol
-#define bfd_sym_get_reloc_upper_bound               _bfd_norelocs_get_reloc_upper_bound
-#define bfd_sym_canonicalize_reloc                  _bfd_norelocs_canonicalize_reloc
-#define bfd_sym_bfd_reloc_type_lookup               _bfd_norelocs_bfd_reloc_type_lookup
 #define bfd_sym_set_arch_mach                       _bfd_generic_set_arch_mach
 #define bfd_sym_get_section_contents                _bfd_generic_get_section_contents
 #define bfd_sym_set_section_contents                _bfd_generic_set_section_contents
@@ -2275,11 +2273,7 @@ bfd_sym_object_p (bfd *abfd)
   return NULL;
 }
 
-asymbol *
-bfd_sym_make_empty_symbol (bfd *abfd)
-{
-  return bfd_alloc (abfd, sizeof (asymbol));
-}
+#define bfd_sym_make_empty_symbol _bfd_generic_make_empty_symbol
 
 void
 bfd_sym_get_symbol_info (bfd *abfd ATTRIBUTE_UNUSED, asymbol *symbol, symbol_info *ret)
@@ -2350,7 +2344,7 @@ const bfd_target sym_vec =
   BFD_JUMP_TABLE_CORE (_bfd_nocore),
   BFD_JUMP_TABLE_ARCHIVE (_bfd_noarchive),
   BFD_JUMP_TABLE_SYMBOLS (bfd_sym),
-  BFD_JUMP_TABLE_RELOCS (bfd_sym),
+  BFD_JUMP_TABLE_RELOCS (_bfd_norelocs),
   BFD_JUMP_TABLE_WRITE (bfd_sym),
   BFD_JUMP_TABLE_LINK (bfd_sym),
   BFD_JUMP_TABLE_DYNAMIC (_bfd_nodynamic),

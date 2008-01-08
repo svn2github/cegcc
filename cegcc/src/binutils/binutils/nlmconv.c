@@ -1,12 +1,12 @@
 /* nlmconv.c -- NLM conversion program
    Copyright 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005, 2006 Free Software Foundation, Inc.
+   2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -16,7 +16,9 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
+
 
 /* Written by Ian Lance Taylor <ian@cygnus.com>.
 
@@ -32,9 +34,9 @@
 #endif
 #endif
 
+#include "sysdep.h"
 #include "bfd.h"
 #include "libiberty.h"
-#include "bucomm.h"
 #include "safe-ctype.h"
 
 #include "ansidecl.h"
@@ -52,6 +54,8 @@
 #include "coff/sym.h"
 #include "coff/ecoff.h"
 #endif
+
+#include "bucomm.h"
 
 /* If strerror is just a macro, we want to use the one from libiberty
    since it will handle undefined values.  */
@@ -1109,7 +1113,7 @@ show_usage (FILE *file, int status)
   -h --help                     Display this information\n\
   -v --version                  Display the program's version\n\
 "));
-  if (status == 0)
+  if (REPORT_BUGS_TO[0] && status == 0)
     fprintf (file, _("Report bugs to %s\n"), REPORT_BUGS_TO);
   exit (status);
 }

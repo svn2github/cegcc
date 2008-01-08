@@ -1,22 +1,23 @@
 %{/* nlmheader.y - parse NLM header specification keywords.
-     Copyright 1993, 1994, 1995, 1997, 1998, 2001, 2002, 2003
+     Copyright 1993, 1994, 1995, 1997, 1998, 2001, 2002, 2003, 2007
      Free Software Foundation, Inc.
 
-This file is part of GNU Binutils.
+     This file is part of GNU Binutils.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+     This program is free software; you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation; either version 3 of the License, or
+     (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+     You should have received a copy of the GNU General Public License
+     along with this program; if not, write to the Free Software
+     Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+     MA 02110-1301, USA.  */
 
 /* Written by Ian Lance Taylor <ian@cygnus.com>.
 
@@ -27,13 +28,12 @@ Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA. 
    This implementation is based on the description in the NetWare Tool
    Maker Specification manual, edition 1.0.  */
 
-#include "ansidecl.h"
-#include <stdio.h>
+#include "sysdep.h"
 #include "safe-ctype.h"
 #include "bfd.h"
-#include "bucomm.h"
 #include "nlm/common.h"
 #include "nlm/internal.h"
+#include "bucomm.h"
 #include "nlmconv.h"
 
 /* Information is stored in the structures pointed to by these

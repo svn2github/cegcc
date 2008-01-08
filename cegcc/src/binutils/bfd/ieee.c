@@ -1,6 +1,6 @@
 /* BFD back-end for ieee-695 objects.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2006
+   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    Written by Steve Chamberlain of Cygnus Support.
@@ -9,7 +9,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -19,7 +19,9 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
+
 
 #define KEEPMINUSPCININST 0
 
@@ -27,8 +29,8 @@
    token (which is one byte in this lexicon) lookahead recursive decent
    parser.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "ieee.h"
 #include "libieee.h"
@@ -370,7 +372,7 @@ parse_int (common_header_type *ieee, bfd_vma *value_ptr)
 static int
 parse_i (common_header_type *ieee, bfd_boolean *ok)
 {
-  bfd_vma x;
+  bfd_vma x = 0;
   *ok = parse_int (ieee, &x);
   return x;
 }
@@ -378,7 +380,7 @@ parse_i (common_header_type *ieee, bfd_boolean *ok)
 static bfd_vma
 must_parse_int (common_header_type *ieee)
 {
-  bfd_vma result;
+  bfd_vma result = 0;
   BFD_ASSERT (parse_int (ieee, &result));
   return result;
 }
@@ -767,7 +769,7 @@ ieee_slurp_external_symbols (bfd *abfd)
 	    unsigned int symbol_name_index;
 	    unsigned int symbol_type_index;
 	    unsigned int symbol_attribute_def;
-	    bfd_vma value;
+	    bfd_vma value = 0;
 
 	    switch (read_2bytes (&ieee->h))
 	      {
@@ -3485,6 +3487,12 @@ ieee_write_processor (bfd *abfd)
 	  case bfd_mach_mcf_isa_b_float: id = "isa-b:float"; break;
 	  case bfd_mach_mcf_isa_b_float_mac: id = "isa-b:float:mac"; break;
 	  case bfd_mach_mcf_isa_b_float_emac: id = "isa-b:float:emac"; break;
+	  case bfd_mach_mcf_isa_c: id = "isa-c"; break;
+	  case bfd_mach_mcf_isa_c_mac: id = "isa-c:mac"; break;
+	  case bfd_mach_mcf_isa_c_emac: id = "isa-c:emac"; break;
+	  case bfd_mach_mcf_isa_c_nodiv: id = "isa-c:nodiv"; break;
+	  case bfd_mach_mcf_isa_c_nodiv_mac: id = "isa-c:nodiv:mac"; break;
+	  case bfd_mach_mcf_isa_c_nodiv_emac: id = "isa-c:nodiv:emac"; break;
 	  }
 
 	if (! ieee_write_id (abfd, id))
@@ -3747,6 +3755,7 @@ ieee_sizeof_headers (bfd *abfd ATTRIBUTE_UNUSED,
 #define ieee_minisymbol_to_symbol _bfd_generic_minisymbol_to_symbol
 
 #define ieee_bfd_reloc_type_lookup _bfd_norelocs_bfd_reloc_type_lookup
+#define ieee_bfd_reloc_name_lookup _bfd_norelocs_bfd_reloc_name_lookup
 
 #define ieee_set_arch_mach _bfd_generic_set_arch_mach
 

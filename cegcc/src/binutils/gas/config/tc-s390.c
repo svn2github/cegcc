@@ -1,5 +1,5 @@
 /* tc-s390.c -- Assemble for the S390
-   Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Contributed by Martin Schwidefsky (schwidefsky@de.ibm.com).
 
@@ -7,7 +7,7 @@
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -95,7 +95,7 @@ const pseudo_typeS md_pseudo_table[] =
   { "long",	s390_elf_cons,	4 },
   { "quad",     s390_elf_cons,  8 },
   { "ltorg",    s390_literals,  0 },
-  { "string",   stringer,       2 },
+  { "string",   stringer,       8 + 1 },
   { NULL,	NULL,		0 }
 };
 
@@ -411,6 +411,8 @@ md_parse_option (c, arg)
 	    current_cpu = S390_OPCODE_Z990;
 	  else if (strcmp (arg + 5, "z9-109") == 0)
 	    current_cpu = S390_OPCODE_Z9_109;
+	  else if (strcmp (arg + 5, "z9-ec") == 0)
+	    current_cpu = S390_OPCODE_Z9_EC;
 	  else
 	    {
 	      as_bad (_("invalid switch -m%s"), arg);
@@ -510,17 +512,22 @@ md_begin ()
 
   op_end = s390_opcodes + s390_num_opcodes;
   for (op = s390_opcodes; op < op_end; op++)
-    if (op->min_cpu <= current_cpu)
-      {
-	retval = hash_insert (s390_opcode_hash, op->name, (PTR) op);
-	if (retval != (const char *) NULL)
-	  {
-	    as_bad (_("Internal assembler error for instruction %s"),
-		    op->name);
-	    dup_insn = TRUE;
-	  }
-	while (op < op_end - 1 && strcmp (op->name, op[1].name) == 0)
+    {
+      while (op < op_end - 1 && strcmp(op->name, op[1].name) == 0)
+	{
+          if (op->min_cpu <= current_cpu && (op->modes & current_mode_mask))
+	    break;
 	  op++;
+        }
+      retval = hash_insert (s390_opcode_hash, op->name, (PTR) op);
+      if (retval != (const char *) NULL)
+        {
+          as_bad (_("Internal assembler error for instruction %s"),
+		  op->name);
+	  dup_insn = TRUE;
+	}
+      while (op < op_end - 1 && strcmp (op->name, op[1].name) == 0)
+	op++;
       }
 
   if (dup_insn)
@@ -1767,50 +1774,10 @@ s390_literals (ignore)
   lpe_count = 0;
 }
 
-/* Turn a string in input_line_pointer into a floating point constant
-   of type type, and store the appropriate bytes in *litp.  The number
-   of LITTLENUMS emitted is stored in *sizep .  An error message is
-   returned, or NULL on OK.  */
-
 char *
-md_atof (type, litp, sizep)
-     int type;
-     char *litp;
-     int *sizep;
+md_atof (int type, char *litp, int *sizep)
 {
-  int prec;
-  LITTLENUM_TYPE words[4];
-  char *t;
-  int i;
-
-  switch (type)
-    {
-    case 'f':
-      prec = 2;
-      break;
-
-    case 'd':
-      prec = 4;
-      break;
-
-    default:
-      *sizep = 0;
-      return "bad call to md_atof";
-    }
-
-  t = atof_ieee (input_line_pointer, type, words);
-  if (t)
-    input_line_pointer = t;
-
-  *sizep = prec * 2;
-
-  for (i = 0; i < prec; i++)
-    {
-      md_number_to_chars (litp, (valueT) words[i], 2);
-      litp += 2;
-    }
-
-  return NULL;
+  return ieee_md_atof (type, litp, sizep, TRUE);
 }
 
 /* Align a section (I don't know why this is machine dependent).  */

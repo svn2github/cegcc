@@ -1,12 +1,12 @@
 /* tc-h8300.c -- Assemble code for the Renesas H8/300
    Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 2000,
-   2001, 2002, 2003, 2004, 2005, 2006 Free Software Foundation, Inc.
+   2001, 2002, 2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -1389,7 +1389,7 @@ build_bytes (const struct h8_instruction *this_try, struct h8_op *operand)
 {
   int i;
   char *output = frag_more (this_try->length);
-  op_type *nibble_ptr = this_try->opcode->data.nib;
+  const op_type *nibble_ptr = this_try->opcode->data.nib;
   op_type c;
   unsigned int nibble_count = 0;
   int op_at[3];
@@ -2005,64 +2005,12 @@ md_undefined_symbol (char *name ATTRIBUTE_UNUSED)
   return 0;
 }
 
-/* Various routines to kill one day */
-/* Equal to MAX_PRECISION in atof-ieee.c */
-#define MAX_LITTLENUMS 6
-
-/* Turn a string in input_line_pointer into a floating point constant
-   of type TYPE, and store the appropriate bytes in *LITP.  The number
-   of LITTLENUMS emitted is stored in *SIZEP.  An error message is
-   returned, or NULL on OK.  */
+/* Various routines to kill one day.  */
 
 char *
 md_atof (int type, char *litP, int *sizeP)
 {
-  int prec;
-  LITTLENUM_TYPE words[MAX_LITTLENUMS];
-  LITTLENUM_TYPE *wordP;
-  char *t;
-
-  switch (type)
-    {
-    case 'f':
-    case 'F':
-    case 's':
-    case 'S':
-      prec = 2;
-      break;
-
-    case 'd':
-    case 'D':
-    case 'r':
-    case 'R':
-      prec = 4;
-      break;
-
-    case 'x':
-    case 'X':
-      prec = 6;
-      break;
-
-    case 'p':
-    case 'P':
-      prec = 6;
-      break;
-
-    default:
-      *sizeP = 0;
-      return _("Bad call to MD_ATOF()");
-    }
-  t = atof_ieee (input_line_pointer, type, words);
-  if (t)
-    input_line_pointer = t;
-
-  *sizeP = prec * sizeof (LITTLENUM_TYPE);
-  for (wordP = words; prec--;)
-    {
-      md_number_to_chars (litP, (long) (*wordP++), sizeof (LITTLENUM_TYPE));
-      litP += sizeof (LITTLENUM_TYPE);
-    }
-  return 0;
+  return ieee_md_atof (type, litP, sizeP, TRUE);
 }
 
 const char *md_shortopts = "";
@@ -2129,6 +2077,13 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
       *buf++ = (val >> 8);
       *buf++ = val;
       break;
+    case 8:
+      /* This can arise when the .quad or .8byte pseudo-ops are used.
+	 Returning here (without setting fx_done) will cause the code
+	 to attempt to generate a reloc which will then fail with the
+	 slightly more helpful error message: "Cannot represent
+	 relocation type BFD_RELOC_64".  */
+      return;
     default:
       abort ();
     }
@@ -2138,10 +2093,10 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
 }
 
 int
-md_estimate_size_before_relax (register fragS *fragP ATTRIBUTE_UNUSED,
-			       register segT segment_type ATTRIBUTE_UNUSED)
+md_estimate_size_before_relax (fragS *fragP ATTRIBUTE_UNUSED,
+			       segT segment_type ATTRIBUTE_UNUSED)
 {
-  printf (_("call tomd_estimate_size_before_relax \n"));
+  printf (_("call to md_estimate_size_before_relax \n"));
   abort ();
 }
 
@@ -2170,13 +2125,13 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS *fixp)
 	  || S_GET_SEGMENT (fixp->fx_addsy) == undefined_section)
 	{
 	  as_bad_where (fixp->fx_file, fixp->fx_line,
-			"Difference of symbols in different sections is not supported");
+			_("Difference of symbols in different sections is not supported"));
 	  return NULL;
 	}
     }
 
-  rel = (arelent *) xmalloc (sizeof (arelent));
-  rel->sym_ptr_ptr = (asymbol **) xmalloc (sizeof (asymbol *));
+  rel = xmalloc (sizeof (arelent));
+  rel->sym_ptr_ptr = xmalloc (sizeof (asymbol *));
   *rel->sym_ptr_ptr = symbol_get_bfdsym (fixp->fx_addsy);
   rel->address = fixp->fx_frag->fr_address + fixp->fx_where;
   rel->addend = fixp->fx_offset;
@@ -2186,7 +2141,7 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS *fixp)
 #define DEBUG 0
 #if DEBUG
   fprintf (stderr, "%s\n", bfd_get_reloc_code_name (r_type));
-  fflush(stderr);
+  fflush (stderr);
 #endif
   rel->howto = bfd_reloc_type_lookup (stdoutput, r_type);
   if (rel->howto == NULL)

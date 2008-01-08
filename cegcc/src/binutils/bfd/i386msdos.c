@@ -1,6 +1,6 @@
 /* BFD back-end for MS-DOS executables.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1998, 1999, 2001, 2002,
-   2003, 2004, 2005, 2006 Free Software Foundation, Inc.
+   2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
    Written by Bryan Ford of the University of Utah.
 
    Contributed by the Center for Software Science at the
@@ -10,7 +10,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -20,11 +20,12 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "libaout.h"
 
@@ -130,6 +131,7 @@ msdos_set_section_contents (bfd *abfd,
 #define msdos_mkobject aout_32_mkobject
 #define msdos_make_empty_symbol aout_32_make_empty_symbol
 #define msdos_bfd_reloc_type_lookup aout_32_reloc_type_lookup
+#define msdos_bfd_reloc_name_lookup aout_32_reloc_name_lookup
 
 #define	msdos_close_and_cleanup _bfd_generic_close_and_cleanup
 #define msdos_bfd_free_cached_info _bfd_generic_bfd_free_cached_info

@@ -1,12 +1,12 @@
 /* SPARC-specific support for 64-bit ELF
    Copyright 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005 Free Software Foundation, Inc.
+   2003, 2004, 2005, 2007 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -16,10 +16,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "elf-bfd.h"
 #include "elf/sparc.h"
@@ -797,6 +798,7 @@ const struct elf_size_info elf64_sparc_size_info =
   EV_CURRENT,
   bfd_elf64_write_out_phdrs,
   bfd_elf64_write_shdrs_and_ehdr,
+  bfd_elf64_checksum_contents,
   elf64_sparc_write_relocs,
   bfd_elf64_swap_symbol_in,
   bfd_elf64_swap_symbol_out,
@@ -859,6 +861,8 @@ const struct elf_size_info elf64_sparc_size_info =
   _bfd_sparc_elf_copy_indirect_symbol
 #define bfd_elf64_bfd_reloc_type_lookup \
   _bfd_sparc_elf_reloc_type_lookup
+#define bfd_elf64_bfd_reloc_name_lookup \
+  _bfd_sparc_elf_reloc_name_lookup
 #define bfd_elf64_bfd_relax_section \
   _bfd_sparc_elf_relax_section
 #define bfd_elf64_new_section_hook \
@@ -866,6 +870,8 @@ const struct elf_size_info elf64_sparc_size_info =
 
 #define elf_backend_create_dynamic_sections \
   _bfd_sparc_elf_create_dynamic_sections
+#define elf_backend_relocs_compatible \
+  _bfd_elf_relocs_compatible
 #define elf_backend_check_relocs \
   _bfd_sparc_elf_check_relocs
 #define elf_backend_adjust_dynamic_symbol \
@@ -889,6 +895,8 @@ const struct elf_size_info elf64_sparc_size_info =
   _bfd_sparc_elf_gc_mark_hook
 #define elf_backend_gc_sweep_hook \
   _bfd_sparc_elf_gc_sweep_hook
+#define elf_backend_init_index_section \
+  _bfd_elf_init_1_index_section
 
 #define elf_backend_can_gc_sections 1
 #define elf_backend_can_refcount 1
@@ -902,3 +910,19 @@ const struct elf_size_info elf64_sparc_size_info =
 #define elf_backend_plt_alignment 8
 
 #include "elf64-target.h"
+
+/* FreeBSD support */
+#undef  TARGET_BIG_SYM
+#define TARGET_BIG_SYM bfd_elf64_sparc_freebsd_vec
+#undef  TARGET_BIG_NAME
+#define TARGET_BIG_NAME "elf64-sparc-freebsd"
+#undef	ELF_OSABI
+#define	ELF_OSABI ELFOSABI_FREEBSD
+
+#undef  elf_backend_post_process_headers
+#define elf_backend_post_process_headers	_bfd_elf_set_osabi
+#undef  elf64_bed
+#define elf64_bed				elf64_sparc_fbsd_bed
+
+#include "elf64-target.h"
+

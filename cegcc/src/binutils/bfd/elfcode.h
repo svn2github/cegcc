@@ -1,6 +1,7 @@
 /* ELF executable support for BFD.
    Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005, 2006 Free Software Foundation, Inc.
+   2001, 2002, 2003, 2004, 2005, 2006, 2007
+   Free Software Foundation, Inc.
 
    Written by Fred Fish @ Cygnus Support, from information published
    in "UNIX System V Release 4, Programmers Guide: ANSI C and
@@ -14,21 +15,23 @@
    Meissner (Open Software Foundation), and Peter Hoogenboom (University
    of Utah) to finish and extend this.
 
-This file is part of BFD, the Binary File Descriptor library.
+   This file is part of BFD, the Binary File Descriptor library.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
+
 
 /* Problems and other issues to resolve.
 
@@ -64,8 +67,8 @@ Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA. 
 	it's cast in stone.
  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libiberty.h"
 #include "bfdlink.h"
 #include "libbfd.h"
@@ -119,6 +122,7 @@ Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA. 
 #define elf_find_section		NAME(bfd_elf,find_section)
 #define elf_write_shdrs_and_ehdr	NAME(bfd_elf,write_shdrs_and_ehdr)
 #define elf_write_out_phdrs		NAME(bfd_elf,write_out_phdrs)
+#define elf_checksum_contents		NAME(bfd_elf,checksum_contents)
 #define elf_write_relocs		NAME(bfd_elf,write_relocs)
 #define elf_slurp_reloc_table		NAME(bfd_elf,slurp_reloc_table)
 
@@ -366,11 +370,17 @@ elf_swap_phdr_out (bfd *abfd,
 		   const Elf_Internal_Phdr *src,
 		   Elf_External_Phdr *dst)
 {
+  const struct elf_backend_data *bed;
+  bfd_vma p_paddr;
+
+  bed = get_elf_backend_data (abfd);
+  p_paddr = bed->want_p_paddr_set_to_zero ? 0 : src->p_paddr;
+
   /* note that all elements of dst are *arrays of unsigned char* already...  */
   H_PUT_32 (abfd, src->p_type, dst->p_type);
   H_PUT_WORD (abfd, src->p_offset, dst->p_offset);
   H_PUT_WORD (abfd, src->p_vaddr, dst->p_vaddr);
-  H_PUT_WORD (abfd, src->p_paddr, dst->p_paddr);
+  H_PUT_WORD (abfd, p_paddr, dst->p_paddr);
   H_PUT_WORD (abfd, src->p_filesz, dst->p_filesz);
   H_PUT_WORD (abfd, src->p_memsz, dst->p_memsz);
   H_PUT_32 (abfd, src->p_flags, dst->p_flags);
@@ -468,7 +478,7 @@ valid_section_index_p (unsigned index, unsigned num_sections)
   /* Note: We allow SHN_UNDEF as a valid section index.  */
   if (index < SHN_LORESERVE || index > SHN_HIRESERVE)
     return index < num_sections;
-  
+
   /* We disallow the use of reserved indcies, except for those
      with OS or Application specific meaning.  The test make use
      of the knowledge that:
@@ -500,6 +510,8 @@ elf_object_p (bfd *abfd)
   struct bfd_preserve preserve;
   asection *s;
   bfd_size_type amt;
+  const bfd_target *target;
+  const bfd_target * const *target_ptr;
 
   preserve.marker = NULL;
 
@@ -543,10 +555,12 @@ elf_object_p (bfd *abfd)
   if (!bfd_preserve_save (abfd, &preserve))
     goto got_no_match;
 
+  target = abfd->xvec;
+
   /* Allocate an instance of the elf_obj_tdata structure and hook it up to
      the tdata pointer in the bfd.  */
 
-  if (! (*abfd->xvec->_bfd_set_format[bfd_object]) (abfd))
+  if (! (*target->_bfd_set_format[bfd_object]) (abfd))
     goto got_no_match;
   preserve.marker = elf_tdata (abfd);
 
@@ -586,8 +600,6 @@ elf_object_p (bfd *abfd)
       && (ebd->elf_machine_alt2 == 0
 	  || i_ehdrp->e_machine != ebd->elf_machine_alt2))
     {
-      const bfd_target * const *target_ptr;
-
       if (ebd->elf_machine_code != EM_NONE)
 	goto got_wrong_format_error;
 
@@ -599,7 +611,7 @@ elf_object_p (bfd *abfd)
 
 	  if ((*target_ptr)->flavour != bfd_target_elf_flavour)
 	    continue;
-	  back = (const struct elf_backend_data *) (*target_ptr)->backend_data;
+	  back = xvec_get_elf_backend_data (*target_ptr);
 	  if (back->elf_machine_code == i_ehdrp->e_machine
 	      || (back->elf_machine_alt1 != 0
 		  && back->elf_machine_alt1 == i_ehdrp->e_machine)
@@ -626,6 +638,45 @@ elf_object_p (bfd *abfd)
       /* It's OK if this fails for the generic target.  */
       if (ebd->elf_machine_code != EM_NONE)
 	goto got_no_match;
+    }
+
+  if (ebd->elf_machine_code != EM_NONE
+      && i_ehdrp->e_ident[EI_OSABI] != ebd->elf_osabi)
+    {
+      if (ebd->elf_osabi != ELFOSABI_NONE)
+	goto got_wrong_format_error;
+
+      /* This is an ELFOSABI_NONE ELF target.  Let it match any ELF
+	 target of the compatible machine for which we do not have a
+	 backend with matching ELFOSABI.  */
+      for (target_ptr = bfd_target_vector;
+	   *target_ptr != NULL;
+	   target_ptr++)
+	{
+	  const struct elf_backend_data *back;
+
+	  /* Skip this target and targets with incompatible byte
+	     order.  */
+	  if (*target_ptr == target
+	      || (*target_ptr)->flavour != bfd_target_elf_flavour
+	      || (*target_ptr)->byteorder != target->byteorder
+	      || ((*target_ptr)->header_byteorder
+		  != target->header_byteorder))
+	    continue;
+
+	  back = xvec_get_elf_backend_data (*target_ptr);
+	  if (back->elf_osabi == i_ehdrp->e_ident[EI_OSABI]
+	      && (back->elf_machine_code == i_ehdrp->e_machine
+		  || (back->elf_machine_alt1 != 0
+		      && back->elf_machine_alt1 == i_ehdrp->e_machine)
+		  || (back->elf_machine_alt2 != 0
+		      && back->elf_machine_alt2 == i_ehdrp->e_machine)))
+	    {
+	      /* target_ptr is an ELF backend which matches this
+		 object file, so reject the ELFOSABI_NONE ELF target.  */
+	      goto got_wrong_format_error;
+	    }
+	}
     }
 
   if (i_ehdrp->e_shoff != 0)
@@ -848,7 +899,7 @@ elf_object_p (bfd *abfd)
     }
 
   bfd_preserve_finish (abfd, &preserve);
-  return abfd->xvec;
+  return target;
 
  got_wrong_format_error:
   /* There is way too much undoing of half-known state here.  The caller,
@@ -1061,6 +1112,53 @@ elf_write_shdrs_and_ehdr (bfd *abfd)
   return TRUE;
 }
 
+bfd_boolean
+elf_checksum_contents (bfd *abfd,
+		       void (*process) (const void *, size_t, void *),
+		       void *arg)
+{
+  Elf_Internal_Ehdr *i_ehdrp = elf_elfheader (abfd);
+  Elf_Internal_Shdr **i_shdrp = elf_elfsections (abfd);
+  Elf_Internal_Phdr *i_phdrp = elf_tdata (abfd)->phdr;
+  unsigned int count, num;
+
+  {
+    Elf_External_Ehdr x_ehdr;
+    Elf_Internal_Ehdr i_ehdr;
+
+    i_ehdr = *i_ehdrp;
+    i_ehdr.e_phoff = i_ehdr.e_shoff = 0;
+    elf_swap_ehdr_out (abfd, &i_ehdr, &x_ehdr);
+    (*process) (&x_ehdr, sizeof x_ehdr, arg);
+  }
+
+  num = i_ehdrp->e_phnum;
+  for (count = 0; count < num; count++)
+    {
+      Elf_External_Phdr x_phdr;
+      elf_swap_phdr_out (abfd, &i_phdrp[count], &x_phdr);
+      (*process) (&x_phdr, sizeof x_phdr, arg);
+    }
+
+  num = elf_numsections (abfd);
+  for (count = 0; count < num; count++)
+    {
+      Elf_Internal_Shdr i_shdr;
+      Elf_External_Shdr x_shdr;
+
+      i_shdr = *i_shdrp[count];
+      i_shdr.sh_offset = 0;
+
+      elf_swap_shdr_out (abfd, &i_shdr, &x_shdr);
+      (*process) (&x_shdr, sizeof x_shdr, arg);
+
+      if (i_shdr.contents)
+	(*process) (i_shdr.contents, i_shdr.sh_size, arg);
+    }
+
+  return TRUE;
+}
+
 long
 elf_slurp_symbol_table (bfd *abfd, asymbol **symptrs, bfd_boolean dynamic)
 {
@@ -1231,11 +1329,21 @@ elf_slurp_symbol_table (bfd *abfd, asymbol **symptrs, bfd_boolean dynamic)
 	    case STT_FUNC:
 	      sym->symbol.flags |= BSF_FUNCTION;
 	      break;
+	    case STT_COMMON:
+	      /* FIXME: Do we have to put the size field into the value field
+		 as we do with symbols in SHN_COMMON sections (see above) ?  */
+	      /* Fall through.  */
 	    case STT_OBJECT:
 	      sym->symbol.flags |= BSF_OBJECT;
 	      break;
 	    case STT_TLS:
 	      sym->symbol.flags |= BSF_THREAD_LOCAL;
+	      break;
+	    case STT_RELC:
+	      sym->symbol.flags |= BSF_RELC;
+	      break;
+	    case STT_SRELC:
+	      sym->symbol.flags |= BSF_SRELC;
 	      break;
 	    }
 
@@ -1537,6 +1645,7 @@ NAME(_bfd_elf,bfd_from_remote_memory)
   int err;
   unsigned int i;
   bfd_vma loadbase;
+  bfd_boolean loadbase_set;
 
   /* Read in the ELF header in external format.  */
   err = target_read_memory (ehdr_vma, (bfd_byte *) &x_ehdr, sizeof x_ehdr);
@@ -1613,13 +1722,11 @@ NAME(_bfd_elf,bfd_from_remote_memory)
   contents_size = 0;
   last_phdr = NULL;
   loadbase = ehdr_vma;
+  loadbase_set = FALSE;
   for (i = 0; i < i_ehdr.e_phnum; ++i)
     {
       elf_swap_phdr_in (templ, &x_phdrs[i], &i_phdrs[i]);
-      /* IA-64 vDSO may have two mappings for one segment, where one mapping
-	 is executable only, and one is read only.  We must not use the
-	 executable one.  */
-      if (i_phdrs[i].p_type == PT_LOAD && (i_phdrs[i].p_flags & PF_R))
+      if (i_phdrs[i].p_type == PT_LOAD)
 	{
 	  bfd_vma segment_end;
 	  segment_end = (i_phdrs[i].p_offset + i_phdrs[i].p_filesz
@@ -1627,8 +1734,14 @@ NAME(_bfd_elf,bfd_from_remote_memory)
 	  if (segment_end > (bfd_vma) contents_size)
 	    contents_size = segment_end;
 
-	  if ((i_phdrs[i].p_offset & -i_phdrs[i].p_align) == 0)
-	    loadbase = ehdr_vma - (i_phdrs[i].p_vaddr & -i_phdrs[i].p_align);
+	  /* LOADADDR is the `Base address' from the gELF specification:
+	     `lowest p_vaddr value for a PT_LOAD segment' is P_VADDR from the
+	     first PT_LOAD as PT_LOADs are ordered by P_VADDR.  */
+	  if (!loadbase_set && (i_phdrs[i].p_offset & -i_phdrs[i].p_align) == 0)
+	    {
+	      loadbase = ehdr_vma - (i_phdrs[i].p_vaddr & -i_phdrs[i].p_align);
+	      loadbase_set = TRUE;
+	    }
 
 	  last_phdr = &i_phdrs[i];
 	}
@@ -1666,10 +1779,7 @@ NAME(_bfd_elf,bfd_from_remote_memory)
     }
 
   for (i = 0; i < i_ehdr.e_phnum; ++i)
-    /* IA-64 vDSO may have two mappings for one segment, where one mapping
-       is executable only, and one is read only.  We must not use the
-       executable one.  */
-    if (i_phdrs[i].p_type == PT_LOAD && (i_phdrs[i].p_flags & PF_R))
+    if (i_phdrs[i].p_type == PT_LOAD)
       {
 	bfd_vma start = i_phdrs[i].p_offset & -i_phdrs[i].p_align;
 	bfd_vma end = (i_phdrs[i].p_offset + i_phdrs[i].p_filesz
@@ -1753,6 +1863,7 @@ const struct elf_size_info NAME(_bfd_elf,size_info) = {
   ELFCLASS, EV_CURRENT,
   elf_write_out_phdrs,
   elf_write_shdrs_and_ehdr,
+  elf_checksum_contents,
   elf_write_relocs,
   elf_swap_symbol_in,
   elf_swap_symbol_out,

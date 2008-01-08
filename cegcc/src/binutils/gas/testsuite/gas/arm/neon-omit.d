@@ -9,8 +9,8 @@ Disassembly of section .text:
 0[0-9a-f]+ <[^>]+> f26cc0c6 	vhadd\.s32	q14, q14, q3
 0[0-9a-f]+ <[^>]+> f2222144 	vrhadd\.s32	q1, q1, q2
 0[0-9a-f]+ <[^>]+> f22aa24e 	vhsub\.s32	q5, q5, q7
-0[0-9a-f]+ <[^>]+> f3166448 	vshl\.u16	q3, q3, q4
-0[0-9a-f]+ <[^>]+> f32aa45c 	vqshl\.u32	q5, q5, q6
+0[0-9a-f]+ <[^>]+> f3186446 	vshl\.u16	q3, q3, q4
+0[0-9a-f]+ <[^>]+> f32ca45a 	vqshl\.u32	q5, q5, q6
 0[0-9a-f]+ <[^>]+> f20ee170 	vand	q7, q7, q8
 0[0-9a-f]+ <[^>]+> f30ee170 	veor	q7, q7, q8
 0[0-9a-f]+ <[^>]+> f3b5a14a 	vceq\.i16	q5, q5, #0
@@ -37,7 +37,9 @@ Disassembly of section .text:
 0[0-9a-f]+ <[^>]+> f30cae5a 	vacge\.f32	q5, q6, q5
 0[0-9a-f]+ <[^>]+> f320eede 	vacgt\.f32	q7, q8, q7
 0[0-9a-f]+ <[^>]+> f32ee370 	vcge\.u32	q7, q7, q8
+0[0-9a-f]+ <[^>]+> f32ee360 	vcgt\.u32	q7, q7, q8
 0[0-9a-f]+ <[^>]+> f320e3de 	vcge\.u32	q7, q8, q7
+0[0-9a-f]+ <[^>]+> f320e3ce 	vcgt\.u32	q7, q8, q7
 0[0-9a-f]+ <[^>]+> f3a22102 	vaddw\.u32	q1, q1, d2
 0[0-9a-f]+ <[^>]+> f2a66304 	vsubw\.s32	q3, q3, d4
 0[0-9a-f]+ <[^>]+> f2244856 	vtst\.32	q2, q2, q3
@@ -53,8 +55,8 @@ Disassembly of section .text:
 0[0-9a-f]+ <[^>]+> f262c0c6 	vhadd\.s32	q14, q9, q3
 0[0-9a-f]+ <[^>]+> f22a2144 	vrhadd\.s32	q1, q5, q2
 0[0-9a-f]+ <[^>]+> f220a2ce 	vhsub\.s32	q5, q8, q7
-0[0-9a-f]+ <[^>]+> f318644a 	vshl\.u16	q3, q4, q5
-0[0-9a-f]+ <[^>]+> f32ca452 	vqshl\.u32	q5, q6, q1
+0[0-9a-f]+ <[^>]+> f31a6448 	vshl\.u16	q3, q4, q5
+0[0-9a-f]+ <[^>]+> f322a45c 	vqshl\.u32	q5, q6, q1
 0[0-9a-f]+ <[^>]+> f200e1dc 	vand	q7, q8, q6
 0[0-9a-f]+ <[^>]+> f300e1dc 	veor	q7, q8, q6
 0[0-9a-f]+ <[^>]+> f3b5a146 	vceq\.i16	q5, q3, #0

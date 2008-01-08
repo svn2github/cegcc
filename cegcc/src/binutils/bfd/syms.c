@@ -1,6 +1,6 @@
 /* Generic symbol-table support for the BFD library.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004
+   2000, 2001, 2002, 2003, 2004, 2007
    Free Software Foundation, Inc.
    Written by Cygnus Support.
 
@@ -8,7 +8,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -18,7 +18,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 /*
 SECTION
@@ -288,6 +289,14 @@ CODE_FRAGMENT
 .  {* This symbol is thread local.  Used in ELF.  *}
 .#define BSF_THREAD_LOCAL  0x40000
 .
+.  {* This symbol represents a complex relocation expression,
+.     with the expression tree serialized in the symbol name.  *}
+.#define BSF_RELC 0x80000
+.
+.  {* This symbol represents a signed complex relocation expression,
+.     with the expression tree serialized in the symbol name.  *}
+.#define BSF_SRELC 0x100000
+.
 .  flagword flags;
 .
 .  {* A pointer to the section to which this symbol is
@@ -307,8 +316,8 @@ CODE_FRAGMENT
 .
 */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "safe-ctype.h"
 #include "bfdlink.h"
@@ -642,7 +651,7 @@ bfd_decode_symclass (asymbol *symbol)
 {
   char c;
 
-  if (bfd_is_com_section (symbol->section))
+  if (symbol->section && bfd_is_com_section (symbol->section))
     return 'C';
   if (bfd_is_und_section (symbol->section))
     {
@@ -980,10 +989,17 @@ _bfd_stab_section_find_nearest_line (bfd *abfd,
 
       if (info->stabsec == NULL || info->strsec == NULL)
 	{
-	  /* No stabs debugging information.  Set *pinfo so that we
-             can return quickly in the info != NULL case above.  */
-	  *pinfo = info;
-	  return TRUE;
+	  /* Try SOM section names.  */
+	  info->stabsec = bfd_get_section_by_name (abfd, "$GDB_SYMBOLS$");
+	  info->strsec  = bfd_get_section_by_name (abfd, "$GDB_STRINGS$");
+  
+	  if (info->stabsec == NULL || info->strsec == NULL)
+	    {
+	      /* No stabs debugging information.  Set *pinfo so that we
+		 can return quickly in the info != NULL case above.  */
+	      *pinfo = info;
+	      return TRUE;
+	    }
 	}
 
       stabsize = (info->stabsec->rawsize

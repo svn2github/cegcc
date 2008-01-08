@@ -1,5 +1,5 @@
 /* tc-c30.c -- Assembly code for the Texas Instruments TMS320C30
-   Copyright 1998, 1999, 2000, 2001, 2002, 2003, 2006
+   Copyright 1998, 1999, 2000, 2001, 2002, 2003, 2006, 2007
    Free Software Foundation, Inc.
    Contributed by Steven Haworth (steve@pm.cse.rmit.edu.au)
 
@@ -7,7 +7,7 @@
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -1258,7 +1258,7 @@ md_atof (int what_statement_type,
 
     default:
       *sizeP = 0;
-      return "Bad call to MD_ATOF()";
+      return _("Unrecognized or unsupported floating point constant");
     }
 
   if (float_value == 0.0)
@@ -1349,7 +1349,7 @@ md_atof (int what_statement_type,
     }
   md_number_to_chars (literalP, value, prec);
   *sizeP = prec;
-  return 0;
+  return NULL;
 }
 
 void

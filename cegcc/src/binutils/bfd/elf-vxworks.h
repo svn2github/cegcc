@@ -1,11 +1,11 @@
 /* VxWorks support for ELF
-   Copyright 2005 Free Software Foundation, Inc.
+   Copyright 2005, 2007 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -15,8 +15,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+   MA 02111-1307, USA.  */
 
 #include "elf/common.h"
 #include "elf/internal.h"
@@ -33,3 +33,6 @@ bfd_boolean elf_vxworks_emit_relocs
 void elf_vxworks_final_write_processing (bfd *, bfd_boolean);
 bfd_boolean elf_vxworks_create_dynamic_sections
   (bfd *, struct bfd_link_info *, asection **);
+bfd_boolean elf_vxworks_add_dynamic_entries (bfd *, struct bfd_link_info *);
+bfd_boolean elf_vxworks_finish_dynamic_entry (bfd *, Elf_Internal_Dyn *);
+

@@ -1,12 +1,12 @@
 /* Ubicom IP2xxx specific support for 32-bit ELF
-   Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006
+   Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -19,8 +19,8 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
    MA 02110-1301, USA.  */
 
-#include "bfd.h"
 #include "sysdep.h"
+#include "bfd.h"
 #include "libbfd.h"
 #include "elf-bfd.h"
 #include "elf/ip2k.h"
@@ -220,6 +220,21 @@ ip2k_reloc_type_lookup (bfd * abfd ATTRIBUTE_UNUSED,
       /* Pacify gcc -Wall.  */
       return NULL;
     }
+  return NULL;
+}
+
+static reloc_howto_type *
+ip2k_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED, const char *r_name)
+{
+  unsigned int i;
+
+  for (i = 0;
+       i < sizeof (ip2k_elf_howto_table) / sizeof (ip2k_elf_howto_table[0]);
+       i++)
+    if (ip2k_elf_howto_table[i].name != NULL
+	&& strcasecmp (ip2k_elf_howto_table[i].name, r_name) == 0)
+      return &ip2k_elf_howto_table[i];
+
   return NULL;
 }
 
@@ -1399,9 +1414,6 @@ ip2k_elf_relocate_section (bfd *output_bfd ATTRIBUTE_UNUSED,
   Elf_Internal_Rela *rel;
   Elf_Internal_Rela *relend;
 
-  if (info->relocatable)
-    return TRUE;
-
   symtab_hdr = & elf_tdata (input_bfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (input_bfd);
   relend     = relocs + input_section->reloc_count;
@@ -1418,7 +1430,6 @@ ip2k_elf_relocate_section (bfd *output_bfd ATTRIBUTE_UNUSED,
       const char *                 name = NULL;
       int                          r_type;
 
-      /* This is a final link.  */
       r_type = ELF32_R_TYPE (rel->r_info);
       r_symndx = ELF32_R_SYM (rel->r_info);
       howto  = ip2k_elf_howto_table + ELF32_R_TYPE (rel->r_info);
@@ -1448,6 +1459,20 @@ ip2k_elf_relocate_section (bfd *output_bfd ATTRIBUTE_UNUSED,
 
 	  name = h->root.root.string;
 	}
+
+      if (sec != NULL && elf_discarded_section (sec))
+	{
+	  /* For relocs against symbols from removed linkonce sections,
+	     or sections discarded by a linker script, we just want the
+	     section contents zeroed.  Avoid any special processing.  */
+	  _bfd_clear_contents (howto, input_bfd, contents + rel->r_offset);
+	  rel->r_info = 0;
+	  rel->r_addend = 0;
+	  continue;
+	}
+
+      if (info->relocatable)
+	continue;
 
       /* Finally, the sole IP2K-specific part.  */
       r = ip2k_final_link_relocate (howto, input_bfd, input_section,
@@ -1519,6 +1544,7 @@ ip2k_elf_relocate_section (bfd *output_bfd ATTRIBUTE_UNUSED,
 
 #define elf_symbol_leading_char			'_'
 #define bfd_elf32_bfd_reloc_type_lookup		ip2k_reloc_type_lookup
+#define bfd_elf32_bfd_reloc_name_lookup	ip2k_reloc_name_lookup
 #define bfd_elf32_bfd_relax_section		ip2k_elf_relax_section
 
 #include "elf32-target.h"

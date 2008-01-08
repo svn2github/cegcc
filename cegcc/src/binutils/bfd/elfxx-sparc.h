@@ -1,21 +1,22 @@
 /* SPARC ELF specific backend routines.
-   Copyright 2005 Free Software Foundation, Inc.
+   Copyright 2005, 2007 Free Software Foundation, Inc.
 
-This file is part of BFD, the Binary File Descriptor library.
+   This file is part of BFD, the Binary File Descriptor library.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 #include "elf/common.h"
 #include "elf/internal.h"
@@ -71,7 +72,6 @@ struct _bfd_sparc_elf_link_hash_table
   asection *sgotplt;
 
   void (*put_word) (bfd *, bfd_vma, void *);
-  void (*append_rela) (bfd *, asection *, Elf_Internal_Rela *);
   bfd_vma (*r_info) (Elf_Internal_Rela *, bfd_vma, bfd_vma);
   bfd_vma (*r_symndx) (bfd_vma);
   int (*build_plt_entry) (bfd *, asection *, bfd_vma, bfd_vma, bfd_vma *);
@@ -97,6 +97,8 @@ struct _bfd_sparc_elf_link_hash_table
 
 extern reloc_howto_type *_bfd_sparc_elf_reloc_type_lookup
   (bfd *, bfd_reloc_code_real_type);
+extern reloc_howto_type *_bfd_sparc_elf_reloc_name_lookup
+  (bfd *, const char *);
 extern void _bfd_sparc_elf_info_to_howto
   (bfd *, arelent *, Elf_Internal_Rela *);
 extern reloc_howto_type *_bfd_sparc_elf_info_to_howto_ptr

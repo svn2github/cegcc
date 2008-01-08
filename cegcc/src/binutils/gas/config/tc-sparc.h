@@ -1,12 +1,13 @@
 /* tc-sparc.h - Macros and type defines for the sparc.
    Copyright 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2005 Free Software Foundation, Inc.
+   1999, 2000, 2001, 2002, 2003, 2005, 2007
+   Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2,
+   published by the Free Software Foundation; either version 3,
    or (at your option) any later version.
 
    GAS is distributed in the hope that it will be useful, but
@@ -30,6 +31,19 @@ struct frag;
 #define LOCAL_LABELS_FB 1
 
 #define TARGET_ARCH bfd_arch_sparc
+
+#ifdef TE_FreeBSD
+#define ELF_TARGET_FORMAT	"elf32-sparc-freebsd"
+#define ELF64_TARGET_FORMAT	"elf64-sparc-freebsd"
+#endif
+
+#ifndef ELF_TARGET_FORMAT
+#define ELF_TARGET_FORMAT	"elf32-sparc"
+#endif
+
+#ifndef ELF64_TARGET_FORMAT
+#define ELF64_TARGET_FORMAT	"elf64-sparc"
+#endif
 
 extern const char *sparc_target_format PARAMS ((void));
 #define TARGET_FORMAT sparc_target_format ()
@@ -78,7 +92,6 @@ extern void sparc_handle_align PARAMS ((struct frag *));
 
 #define TC_FORCE_RELOCATION_LOCAL(FIX)		\
   (!(FIX)->fx_pcrel				\
-   || (FIX)->fx_plt				\
    || (sparc_pic_code				\
        && S_IS_EXTERNAL ((FIX)->fx_addsy))	\
    || TC_FORCE_RELOCATION (FIX))

@@ -1,6 +1,6 @@
 /* Generic BFD library interface and support routines.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2006
+   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Written by Cygnus Support.
 
@@ -8,7 +8,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -18,7 +18,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 /*
 SECTION
@@ -139,7 +140,7 @@ CODE_FRAGMENT
 .  {* Stuff only useful for archives.  *}
 .  void *arelt_data;
 .  struct bfd *my_archive;      {* The containing archive BFD.  *}
-.  struct bfd *next;            {* The next BFD in the archive.  *}
+.  struct bfd *archive_next;    {* The next BFD in the archive.  *}
 .  struct bfd *archive_head;    {* The first BFD in the archive.  *}
 .  bfd_boolean has_armap;
 .
@@ -202,11 +203,12 @@ CODE_FRAGMENT
 .
 */
 
-#include "bfd.h"
-#include "bfdver.h"
 #include "sysdep.h"
 #include <stdarg.h>
+#include "bfd.h"
+#include "bfdver.h"
 #include "libiberty.h"
+#include "demangle.h"
 #include "safe-ctype.h"
 #include "bfdlink.h"
 #include "libbfd.h"
@@ -271,6 +273,7 @@ CODE_FRAGMENT
 .  bfd_error_bad_value,
 .  bfd_error_file_truncated,
 .  bfd_error_file_too_big,
+.  bfd_error_on_input,
 .  bfd_error_invalid_error_code
 .}
 .bfd_error_type;
@@ -278,6 +281,8 @@ CODE_FRAGMENT
 */
 
 static bfd_error_type bfd_error = bfd_error_no_error;
+static bfd *input_bfd = NULL;
+static bfd_error_type input_error = bfd_error_no_error;
 
 const char *const bfd_errmsgs[] =
 {
@@ -300,6 +305,7 @@ const char *const bfd_errmsgs[] =
   N_("Bad value"),
   N_("File truncated"),
   N_("File too big"),
+  N_("Error reading %s: %s"),
   N_("#<Invalid error code>")
 };
 
@@ -325,16 +331,32 @@ FUNCTION
 	bfd_set_error
 
 SYNOPSIS
-	void bfd_set_error (bfd_error_type error_tag);
+	void bfd_set_error (bfd_error_type error_tag, ...);
 
 DESCRIPTION
 	Set the BFD error condition to be @var{error_tag}.
+	If @var{error_tag} is bfd_error_on_input, then this function
+	takes two more parameters, the input bfd where the error
+	occurred, and the bfd_error_type error.
 */
 
 void
-bfd_set_error (bfd_error_type error_tag)
+bfd_set_error (bfd_error_type error_tag, ...)
 {
   bfd_error = error_tag;
+  if (error_tag == bfd_error_on_input)
+    {
+      /* This is an error that occurred during bfd_close when
+	 writing an archive, but on one of the input files.  */
+      va_list ap;
+
+      va_start (ap, error_tag);
+      input_bfd = va_arg (ap, bfd *);
+      input_error = va_arg (ap, int);
+      if (input_error >= bfd_error_on_input)
+	abort ();
+      va_end (ap);
+    }
 }
 
 /*
@@ -355,6 +377,19 @@ bfd_errmsg (bfd_error_type error_tag)
 #ifndef errno
   extern int errno;
 #endif
+  if (error_tag == bfd_error_on_input)
+    {
+      char *buf;
+      const char *msg = bfd_errmsg (input_error);
+
+      if (asprintf (&buf, _(bfd_errmsgs [error_tag]), input_bfd->filename, msg)
+	  != -1)
+	return buf;
+
+      /* Ick, what to do on out of memory?  */
+      return msg;
+    }
+
   if (error_tag == bfd_error_system_call)
     return xstrerror (errno);
 
@@ -382,16 +417,10 @@ DESCRIPTION
 void
 bfd_perror (const char *message)
 {
-  if (bfd_get_error () == bfd_error_system_call)
-    /* Must be a system error then.  */
-    perror ((char *) message);
+  if (message == NULL || *message == '\0')
+    fprintf (stderr, "%s\n", bfd_errmsg (bfd_get_error ()));
   else
-    {
-      if (message == NULL || *message == '\0')
-	fprintf (stderr, "%s\n", bfd_errmsg (bfd_get_error ()));
-      else
-	fprintf (stderr, "%s: %s\n", message, bfd_errmsg (bfd_get_error ()));
-    }
+    fprintf (stderr, "%s: %s\n", message, bfd_errmsg (bfd_get_error ()));
 }
 
 /*
@@ -446,6 +475,9 @@ _bfd_default_error_handler (const char *fmt, ...)
   const char *new_fmt, *p;
   size_t avail = 1000;
   char buf[1000];
+
+  /* PR 4992: Don't interrupt output being sent to stdout.  */
+  fflush (stdout);
 
   if (_bfd_error_program_name != NULL)
     fprintf (stderr, "%s: ", _bfd_error_program_name);
@@ -991,7 +1023,7 @@ void
 _bfd_set_gp_value (bfd *abfd, bfd_vma v)
 {
   if (! abfd)
-    BFD_FAIL ();
+    abort ();
   if (abfd->format != bfd_object)
     return;
 
@@ -1325,11 +1357,10 @@ bfd_record_phdr (bfd *abfd,
 
   amt = sizeof (struct elf_segment_map);
   amt += ((bfd_size_type) count - 1) * sizeof (asection *);
-  m = bfd_alloc (abfd, amt);
+  m = bfd_zalloc (abfd, amt);
   if (m == NULL)
     return FALSE;
 
-  m->next = NULL;
   m->p_type = type;
   m->p_flags = flags;
   m->p_paddr = at;
@@ -1338,8 +1369,6 @@ bfd_record_phdr (bfd *abfd,
   m->includes_filehdr = includes_filehdr;
   m->includes_phdrs = includes_phdrs;
   m->count = count;
-  m->p_align_valid = FALSE;
-  m->p_align = 0;
   if (count > 0)
     memcpy (m->sections, secs, count * sizeof (asection *));
 
@@ -1350,22 +1379,51 @@ bfd_record_phdr (bfd *abfd,
   return TRUE;
 }
 
-void
-bfd_sprintf_vma (bfd *abfd, char *buf, bfd_vma value)
+#ifdef BFD64
+/* Return true iff this target is 32-bit.  */
+
+static bfd_boolean
+is32bit (bfd *abfd)
 {
   if (bfd_get_flavour (abfd) == bfd_target_elf_flavour)
-    get_elf_backend_data (abfd)->elf_backend_sprintf_vma (abfd, buf, value);
-  else
-    sprintf_vma (buf, value);
+    {
+      const struct elf_backend_data *bed = get_elf_backend_data (abfd);
+      return bed->s->elfclass == ELFCLASS32;
+    }
+
+  /* For non-ELF, make a guess based on the target name.  */
+  return (strstr (bfd_get_target (abfd), "64") == NULL
+	  && strcmp (bfd_get_target (abfd), "mmo") != 0);
+}
+#endif
+
+/* bfd_sprintf_vma and bfd_fprintf_vma display an address in the
+   target's address size.  */
+
+void
+bfd_sprintf_vma (bfd *abfd ATTRIBUTE_UNUSED, char *buf, bfd_vma value)
+{
+#ifdef BFD64
+  if (is32bit (abfd))
+    {
+      sprintf (buf, "%08lx", (unsigned long) value & 0xffffffff);
+      return;
+    }
+#endif
+  sprintf_vma (buf, value);
 }
 
 void
-bfd_fprintf_vma (bfd *abfd, void *stream, bfd_vma value)
+bfd_fprintf_vma (bfd *abfd ATTRIBUTE_UNUSED, void *stream, bfd_vma value)
 {
-  if (bfd_get_flavour (abfd) == bfd_target_elf_flavour)
-    get_elf_backend_data (abfd)->elf_backend_fprintf_vma (abfd, stream, value);
-  else
-    fprintf_vma ((FILE *) stream, value);
+#ifdef BFD64
+  if (is32bit (abfd))
+    {
+      fprintf ((FILE *) stream, "%08lx", (unsigned long) value & 0xffffffff);
+      return;
+    }
+#endif
+  fprintf_vma ((FILE *) stream, value);
 }
 
 /*
@@ -1668,4 +1726,86 @@ bfd_emul_set_commonpagesize (const char *emul, bfd_vma size)
     bfd_elf_set_pagesize (target, size,
 			  offsetof (struct elf_backend_data,
 				    commonpagesize), target);
+}
+
+/*
+FUNCTION
+	bfd_demangle
+
+SYNOPSIS
+	char *bfd_demangle (bfd *, const char *, int);
+
+DESCRIPTION
+	Wrapper around cplus_demangle.  Strips leading underscores and
+	other such chars that would otherwise confuse the demangler.
+	If passed a g++ v3 ABI mangled name, returns a buffer allocated
+	with malloc holding the demangled name.  Returns NULL otherwise
+	and on memory alloc failure.
+*/
+
+char *
+bfd_demangle (bfd *abfd, const char *name, int options)
+{
+  char *res, *alloc;
+  const char *pre, *suf;
+  size_t pre_len;
+
+  if (abfd != NULL
+      && *name != '\0'
+      && bfd_get_symbol_leading_char (abfd) == *name)
+    ++name;
+
+  /* This is a hack for better error reporting on XCOFF, PowerPC64-ELF
+     or the MS PE format.  These formats have a number of leading '.'s
+     on at least some symbols, so we remove all dots to avoid
+     confusing the demangler.  */
+  pre = name;
+  while (*name == '.' || *name == '$')
+    ++name;
+  pre_len = name - pre;
+
+  /* Strip off @plt and suchlike too.  */
+  alloc = NULL;
+  suf = strchr (name, '@');
+  if (suf != NULL)
+    {
+      alloc = bfd_malloc (suf - name + 1);
+      if (alloc == NULL)
+	return NULL;
+      memcpy (alloc, name, suf - name);
+      alloc[suf - name] = '\0';
+      name = alloc;
+    }
+
+  res = cplus_demangle (name, options);
+
+  if (alloc != NULL)
+    free (alloc);
+
+  if (res == NULL)
+    return NULL;
+
+  /* Put back any prefix or suffix.  */
+  if (pre_len != 0 || suf != NULL)
+    {
+      size_t len;
+      size_t suf_len;
+      char *final;
+
+      len = strlen (res);
+      if (suf == NULL)
+	suf = res + len;
+      suf_len = strlen (suf) + 1;
+      final = bfd_malloc (pre_len + len + suf_len);
+      if (final != NULL)
+	{
+	  memcpy (final, pre, pre_len);
+	  memcpy (final + pre_len, res, len);
+	  memcpy (final + pre_len + len, suf, suf_len);
+	}
+      free (res);
+      res = final;
+    }
+
+  return res;
 }

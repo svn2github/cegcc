@@ -1,13 +1,13 @@
 /* bfdlink.h -- header file for BFD link routines
    Copyright 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005 Free Software Foundation, Inc.
+   2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
    Written by Steve Chamberlain and Ian Lance Taylor, Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -17,7 +17,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
+   MA 02110-1301, USA.  */
 
 #ifndef BFDLINK_H
 #define BFDLINK_H
@@ -335,6 +336,21 @@ struct bfd_link_info
   /* TRUE if .gnu.hash section should be created.  */
   unsigned int emit_gnu_hash: 1;
 
+  /* If TRUE reduce memory overheads, at the expense of speed. This will
+     cause map file generation to use an O(N^2) algorithm and disable
+     caching ELF symbol buffer.  */
+  unsigned int reduce_memory_overheads: 1;
+
+  /* TRUE if all data symbols should be dynamic.  */
+   unsigned int dynamic_data: 1;
+
+  /* TRUE if some symbols have to be dynamic, controlled by
+     --dynamic-list command line options.  */
+  unsigned int dynamic: 1;
+
+  /* Non-NULL if .note.gnu.build-id section should be created.  */
+  char *emit_note_gnu_build_id;
+
   /* What to do with unresolved symbols in an object file.
      When producing executables the default is GENERATE_ERROR.
      When producing shared libraries the default is IGNORE.  The
@@ -383,6 +399,7 @@ struct bfd_link_info
   /* The list of input BFD's involved in the link.  These are chained
      together via the link_next field.  */
   bfd *input_bfds;
+  bfd **input_bfds_tail;
 
   /* If a symbol should be created for each input BFD, this is section
      where those symbols should be placed.  It must be a section in
@@ -412,6 +429,11 @@ struct bfd_link_info
      current pass, starting from 0.  */
   int relax_pass;
 
+  /* Number of relaxation trips.  This number is incremented every
+     time the relaxation pass is restarted due to a previous
+     relaxation returning true in *AGAIN.  */
+  int relax_trip;
+
   /* Non-zero if auto-import thunks for DATA items in pei386 DLLs
      should be generated/linked against.  Set to 1 if this feature
      is explicitly requested by the user, -1 if enabled by default.  */
@@ -435,11 +457,11 @@ struct bfd_link_info
   bfd_vma relro_start, relro_end;
 
   /* List of symbols should be dynamic.  */
-  struct bfd_elf_dynamic_list *dynamic;
+  struct bfd_elf_dynamic_list *dynamic_list;
 };
 
-/* This structures holds a set of callback functions.  These are
-   called by the BFD linker routines.  Except for einfo, the first
+/* This structures holds a set of callback functions.  These are called
+   by the BFD linker routines.  Except for the info functions, the first
    argument to each callback function is the bfd_link_info structure
    being used and each function returns a boolean value.  If the
    function returns FALSE, then the BFD function which called it should
@@ -551,9 +573,22 @@ struct bfd_link_callbacks
   bfd_boolean (*notice)
     (struct bfd_link_info *, const char *name,
      bfd *abfd, asection *section, bfd_vma address);
-  /* General link info message.  */
+  /* Error or warning link info message.  */
   void (*einfo)
     (const char *fmt, ...);
+  /* General link info message.  */
+  void (*info)
+    (const char *fmt, ...);
+  /* Message to be printed in linker map file.  */
+  void (*minfo)
+    (const char *fmt, ...);
+  /* This callback provides a chance for users of the BFD library to
+     override its decision about whether to place two adjacent sections
+     into the same segment.  */
+  bfd_boolean (*override_segment_assignment)
+    (struct bfd_link_info *, bfd * abfd,
+     asection * current_section, asection * previous_section,
+     bfd_boolean new_segment);
 };
 
 /* The linker builds link_order structures which tell the code how to

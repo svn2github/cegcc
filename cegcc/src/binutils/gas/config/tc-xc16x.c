@@ -1,12 +1,12 @@
 /* tc-xc16x.c -- Assembler for the Infineon XC16X.
-   Copyright 2006 Free Software Foundation, Inc.
+   Copyright 2006, 2007 Free Software Foundation, Inc.
    Contributed by KPIT Cummins Infosystems 
 
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
+   the Free Software Foundation; either version 3, or (at your option)
    any later version.
 
    GAS is distributed in the hope that it will be useful,
@@ -189,7 +189,7 @@ md_cgen_lookup_reloc (const CGEN_INSN *insn ATTRIBUTE_UNUSED,
       fixP->fx_where += 2;
       return BFD_RELOC_XC16X_SOF;
 
-    default : /* avoid -Wall warning */
+    default : /* Avoid -Wall warning.  */
       break;
     }
 
@@ -218,59 +218,10 @@ md_parse_option (int c ATTRIBUTE_UNUSED,
   return 0;
 }
 
-/* Turn a string in input_line_pointer into a floating point constant
-   of type TYPE, and store the appropriate bytes in *LITP.  The number
-   of LITTLENUMS emitted is stored in *SIZEP.  An error message is
-   returned, or NULL on OK.  */
-
-/* Equal to MAX_PRECISION in atof-ieee.c.  */
-#define MAX_LITTLENUMS 6
-
 char *
 md_atof (int type, char *litP, int *sizeP)
 {
-  int i;
-  int prec;
-  LITTLENUM_TYPE words[MAX_LITTLENUMS];
-  char *t;
-
-  switch (type)
-    {
-    case 'f':
-    case 'F':
-    case 's':
-    case 'S':
-      prec = 2;
-      break;
-
-    case 'd':
-    case 'D':
-    case 'r':
-    case 'R':
-      prec = 4;
-      break;
-
-      /* FIXME: Some targets allow other format chars for bigger sizes
-         here.  */
-
-    default:
-      *sizeP = 0;
-      return _("Bad call to md_atof()");
-    }
-
-  t = atof_ieee (input_line_pointer, type, words);
-  if (t)
-    input_line_pointer = t;
-  *sizeP = prec * sizeof (LITTLENUM_TYPE);
-
-   for (i = prec - 1; i >= 0; i--)
-     {
-       md_number_to_chars (litP, (valueT) words[i],
-			   sizeof (LITTLENUM_TYPE));
-       litP += sizeof (LITTLENUM_TYPE);
-     }
-
-  return NULL;
+  return ieee_md_atof (type, litP, sizeP, FALSE);
 }
 
 valueT
@@ -290,7 +241,7 @@ int
 md_estimate_size_before_relax (fragS *fragP ATTRIBUTE_UNUSED,
 			       segT segment_type ATTRIBUTE_UNUSED)
 {
-  printf (_("call tomd_estimate_size_before_relax \n"));
+  printf (_("call to md_estimate_size_before_relax \n"));
   abort ();
 }
 
@@ -331,7 +282,7 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS *fixp)
 	  || S_GET_SEGMENT (fixp->fx_addsy) == undefined_section)
 	{
 	  as_bad_where (fixp->fx_file, fixp->fx_line,
-			"Difference of symbols in different sections is not supported");
+			_("Difference of symbols in different sections is not supported"));
 	  return NULL;
 	}
     }
@@ -347,7 +298,7 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS *fixp)
 #define DEBUG 0
 #if DEBUG
   fprintf (stderr, "%s\n", bfd_get_reloc_code_name (r_type));
-  fflush(stderr);
+  fflush (stderr);
 #endif
 
   rel->howto = bfd_reloc_type_lookup (stdoutput, r_type);
@@ -365,7 +316,7 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS *fixp)
 void
 md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
 {
-  if(!strstr (seg->name,".debug"))
+  if (!strstr (seg->name,".debug"))
     {
       if (*valP < 128)
 	*valP /= 2;
@@ -389,5 +340,3 @@ md_convert_frag (bfd *headers ATTRIBUTE_UNUSED,
   printf (_("call to md_convert_frag \n"));
   abort ();
 }
-
-
