@@ -80,32 +80,6 @@ extern BOOL SHInvokeContextMenuCommand(HWND,UINT,HANDLE);
 extern BOOL SHHandleWMSettingChange(HWND, WPARAM, LPARAM, SHACTIVATEINFO *);
 extern BOOL SHHandleWMActivate(HWND, WPARAM, LPARAM, SHACTIVATEINFO *, DWORD);
 
-/*
- * Query the SIP state
- */
-typedef	struct SIPINFO {
-	DWORD		cbSize;
-	DWORD		fdwFlags;
-	RECT		rcVisibleDesktop;
-	RECT		rcSipRect;
-	DWORD		dwImDataSize;
-	void		*pvImData;
-} SIPINFO, *PSIPINFO;
-
-#define	SPI_SETCOMPLETIONINFO	223
-#define	SPI_SETSIPINFO		224
-#define	SPI_GETSIPINFO		225
-#define	SPI_SETCURRENTIM	226
-#define	SPI_GETCURRENTIM	227
-#define	SPI_APPBUTTONCHANGE	228
-#define	SPI_RESERVED		229
-#define	SPI_SYNCSETTINGSCHANGE	230
-
-#define	SIPF_OFF	0
-#define	SIPF_ON		1
-#define	SIPF_DOCKED	2
-#define	SIPF_LOCKED	4
-
 #if (_WIN32_WCE >= 0x0300)
 typedef enum
 {
