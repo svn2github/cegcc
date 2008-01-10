@@ -1,3 +1,11 @@
+2008-01-10  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	binutils/
+	* testsuite/binutils-all/windres/windres.c: Enable testing on
+	*-*-mingw*.
+	* windres.c (set_endianess): Better extract the target's
+	architecture from the bfd target name.
+
 2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	bfd/

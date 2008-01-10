@@ -19,7 +19,7 @@
 
 # Written by DJ Delorie <dj@redhat.com>
 
-if {![istarget "i*86-*-*"] && ![istarget "x86_64-*-mingw*"] } {
+if {![istarget "i*86-*-*"] && ![istarget "*-*-mingw*"] } {
     return
 }
 

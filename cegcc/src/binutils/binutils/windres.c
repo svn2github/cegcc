@@ -1076,8 +1076,20 @@ static void set_endianess (bfd *abfd, const char *target)
     const char **arch = bfd_arch_list();
     if (arch && tname)
       {
-	if (strchr (tname, '-') != NULL)
-	  tname = strchr (tname, '-') + 1;
+	char *hyp = strchr (tname, '-');
+	if (hyp != NULL)
+	  {
+	    tname = hyp + 1;
+	    hyp = strchr (tname, '-');
+	    if (hyp != NULL)
+	      {
+		size_t l = hyp - tname;
+		char *n = alloca (l + 1);
+		memcpy (n, tname, l);
+		n[l] = '\0';
+		tname = n;
+	      }
+	  }
 	while (*arch != NULL)
 	  {
 	    const char *in_a = strstr (*arch, tname);
