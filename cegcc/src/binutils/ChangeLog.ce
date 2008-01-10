@@ -1,0 +1,52 @@
+2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	bfd/
+	* config.bfd: Add arm*-*-cegcc* target.
+
+2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	binutils/
+	* configure.in: Add arm*-*-cegcc* and arm*-*-mingw32ce* targets.
+	* configure: Regenerate.
+
+2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	gas/
+	* configure.tgt: Add arm*-*-cegcc* target.
+
+2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	ld/
+	* configure.tgt: Add arm*-*-cegcc* target.
+
+2007-12-17  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	bfd/
+	* config.bfd: Add arm-*-mingw32ce* target.
+
+2007-12-17  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	gas/
+	* configure.tgt: Add arm-*-mingw32ce* target.
+
+2007-12-17  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	ld/
+	* configure.tgt: Add arm-*-mingw32ce* target.
+
+2006-11-27  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	ld/
+	* pe-dll.c (autofilter_objlist) : Add crt3.o and dllcrt3.o.
+
+2006-10-31  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	gas/
+	* config/te-wince-pe-h (CPU_DEFAULT): Define to ARM_ARCH_V4.
+	(FPU_DEFAULT) Default to FPU_ARCH_VFP.
+
+2006-10-17  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	ld/
+	* pe-dll.c (autofilter_objlist) : Add gcrt3.o.
+	* ChangeLog.ce : New file.

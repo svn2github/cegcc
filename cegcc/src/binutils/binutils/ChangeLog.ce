@@ -1,4 +1,0 @@
-2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
-
-	* configure.in: Add arm*-*-cegcc* and arm*-*-mingw32ce* targets.
-	* configure: Regenerate.
