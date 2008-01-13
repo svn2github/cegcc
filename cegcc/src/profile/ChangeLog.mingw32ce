@@ -1,3 +1,8 @@
+2008-01-13  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* profile/config.sub profile/Makefile.in : Adjust so arm-cegcc and
+	arm-mingw32ce will also work.
+
 2006-12-30  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* configure.in profile/Makefile.in profile/configure.in : Avoid use of
