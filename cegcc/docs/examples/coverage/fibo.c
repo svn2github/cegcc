@@ -16,11 +16,11 @@ int APIENTRY WinMain(HINSTANCE a,HINSTANCE b,LPWSTR c,int d)
 {
 	FILE	*f;
 	int	i, r, len;
-	wchar_t	*ws, buf[MAXPATHLEN];
+	wchar_t	*ws, buf[MAX_PATH];
 	char	*s;
 
 	f = fopen(FN, "w");
-	len = GetModuleFileNameW(NULL, buf, MAXPATHLEN);
+	len = GetModuleFileNameW(NULL, buf, MAX_PATH);
 	s = malloc(len+1);
 	wcstombs(s, buf, len+1);
 	fprintf(f, "Command [%s] ", s);

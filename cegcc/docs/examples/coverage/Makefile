@@ -1,10 +1,11 @@
 .SUFFIXES:	.exe .c .h .rc .rsc .C
 
-ARCH=		arm-wince-cegcc
+ARCH=		arm-mingw32ce
 CC=		${ARCH}-gcc ${CFLAGS}
 
 EXECS=		fibo.exe m1.exe
-CFLAGS=		-g -D_WIN32_IE=0x0400 --coverage
+CFLAGS=		-g -D_WIN32_IE=0x0400 --coverage \
+		-fcoverage-base="/storage card/devel"
 
 .o.exe:
 	${ARCH}-gcc ${CFLAGS} -o $@ $?
