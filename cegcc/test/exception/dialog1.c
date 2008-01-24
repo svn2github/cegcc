@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "myexcpt.h"
+#include <excpt.h>
 
 void handler(struct _EXCEPTION_RECORD *ExceptionRecord,
 		void *EstablisherFrame,

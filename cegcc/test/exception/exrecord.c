@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "myexcpt.h"
+#include <excpt.h>
 
 wchar_t	msg[256];
 int	i = 0;
