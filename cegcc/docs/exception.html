@@ -79,7 +79,7 @@ int handler(struct _EXCEPTION_RECORD *ExceptionRecord,
     This technology is not mature in cegcc,
     we know that applications that use stdio based I/O
     combined with an exception handler
-    don't work.
+    don't work reliably.
     <p>
     Also no effort has been spent yet to integrate this into the <i>arm-cegcc</i>
     (formerly <i>arm-wince-cegcc</i>) target,
@@ -112,6 +112,8 @@ int handler(struct _EXCEPTION_RECORD *ExceptionRecord,
     <ul>
 	    <li> <a href"http://www.howzatt.demon.co.uk/articles/oct04.html">Microsoft Visual C++ and Win32 structured exception handling</a> </li>
 	    <li> <a href="http://pisoft.ru/verstak/insider/cw_seh.htm">Win32 Structured Exception Handling (or, How to handle a GPF programmatically)</a> </li>
+	    <li> <a href="http://www.microsoft.com/msj/0197/exception/exception.aspx">A Crash Course on the Depths of Win32™ Structured Exception Handling</a> </li>
+	    <li> <a href="http://msdn.microsoft.com/msdnmag/issues/01/09/hood/">New Vectored Exception Handling in Windows XP</a> </li>
 	    <li> <a href="http://blogs.msdn.com/david_leblanc/archive/2007/04/03/exception-handlers-are-baaad.aspx">Exception handlers are baaad</a> </li>
     </ul>
     </p>
