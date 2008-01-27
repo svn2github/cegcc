@@ -1,0 +1,139 @@
+<html>
+  <head>
+    <title>Exception Handling</title>
+    <meta name="vs_showGrid" content="True">
+  </head>
+  <body>
+    <img src="../images/banner1.png" alt="CeGCC cross compiler for PocketPC">
+    <h2>Exception Handling with CeGCC</h2>
+    <p>
+    <h3>Overview</h3>
+    <p>
+    When an application on our target platform performs
+    an illegal action trapped by the operating system,
+    a predefined exception handling scenario is executed.
+    <p>
+    On a Linux or UNIX system, the process gets a signal.
+    This behaviour is well known and documented, you can trap most signals with a signal handler.
+    On a Windows CE device, either your application installs an exception handler,
+    or it silently dies.
+    <p>
+    This is where our exception handling fits in.
+    <a href="http://msdn2.microsoft.com/en-us/visualc/default.aspx">That other CE development tool</a>
+    is rumoured to install a default exception handler.
+    <h3>How to use</h3>
+    <p>
+    We've extended gcc so you can say which function is the exception handler for another function.
+    An example :
+    <pre>
+#include &lt;windows.h&gt;
+#include &lt;excpt.h&gt;
+
+void handler(void)
+{
+        MessageBoxW(0, L"Crash !", L"Handler : error", 0);
+}
+
+<i>int main(int argc, char *argv[])
+	__attribute__((__exception_handler__(handler)));</i>
+
+int main(int argc, char *argv[])
+{
+        int     *i = 0;
+        *i = 1;
+}
+    </pre>
+    <p>
+    The separate declaration of <i>main</i> basically says that exceptions that occur
+    in <i>main</i> will be handled by the <i>handler</i> function.
+    Note that this handler function is overly simplified for the sake of clarity.
+    <p>
+    A correctly declared handler should have four parameters,
+    and return the correct value.
+    A more correct and interesting example of the handler function is
+    <pre>
+int handler(struct _EXCEPTION_RECORD *ExceptionRecord,
+                void *EstablisherFrame,
+                struct _CONTEXT *ContextRecord,
+                struct _DISPATCHER_CONTEXT *DispatcherContext)
+{
+	static wchar_t	msg[256];
+	static int	i = 0;
+
+        wsprintf(msg, L"Crash, count %d\nExc Code %x Addr %x Nparams %d\n",
+                        i,
+                        ExceptionRecord->ExceptionCode,
+                        ExceptionRecord->ExceptionAddress,
+                        ExceptionRecord->NumberParameters);
+        MessageBoxW(0, msg, L"WinCE Exception", 0);
+        i++;
+        return EXCEPTION_EXECUTE_HANDLER;
+}
+    </pre>
+    <p>
+    Please note that use of EXCEPTION_CONTINUE_SEARCH as a return value for this function
+    is dangerous : it should be used with extreme care,
+    it will likely cause infinite recursion problems.
+    <h3>Current limitations</h3>
+    <p>
+    This technology is not mature in cegcc,
+    we know that applications that use stdio based I/O
+    combined with an exception handler
+    don't work.
+    <p>
+    Also no effort has been spent yet to integrate this into the <i>arm-cegcc</i>
+    (formerly <i>arm-wince-cegcc</i>) target,
+    only the <i>arm-mingw32ce</i> (formerly <i>arm-wince-mingw32ce</i>) target
+    is supported.
+    <h3>Technical detail</h3>
+    <h4>Augmenting the C syntax</h4>
+    <h4>ARM specifics</h4>
+    <h4>arm-mingw32ce runtime</h4>
+    <h4>arm-cegcc runtime</h4>
+    <p>
+    Exception handling has not been implemented yet in the arm-cegcc runtime.
+    <h3>Reference material</h3>
+    <p>
+    This is not specific to Windows CE or ARM,
+    this behaviour is documented in the reference material by
+    <a href="http://www.arm.com">ARM Ltd</a>,
+    see e.g. <a href="http://www.arm.com/documentation/White_Papers/index.html">White Papers</a>.
+    <p>
+    The <a href="http://infocenter.arm.com/help/topic/com.arm.doc.ihi0038a/IHI0038A_ehabi.pdf">
+	    Exception handling ABI for the ARM architecture</a>
+    contains a the most accurate description I could find.
+    <p>
+    Also several sources point to the
+    <a href="http://www.codesourcery.com/cxx-abi/abi-eh.html">Intel Itanium reference material</a>
+    which is said to be very generic in nature.
+    <p>
+    Also there are a lot of articles on forum sites which describe how to deal with
+    exception in similar environments, usually Windows on x86 :
+    <ul>
+	    <li> <a href"http://www.howzatt.demon.co.uk/articles/oct04.html">Microsoft Visual C++ and Win32 structured exception handling</a> </li>
+	    <li> <a href="http://pisoft.ru/verstak/insider/cw_seh.htm">Win32 Structured Exception Handling (or, How to handle a GPF programmatically)</a> </li>
+	    <li> <a href="http://blogs.msdn.com/david_leblanc/archive/2007/04/03/exception-handlers-are-baaad.aspx">Exception handlers are baaad</a> </li>
+    </ul>
+    </p>
+  </body>
+<table border=0 cellspacing=10 width="100%"> <tr>
+	<td align=left valign=top bgcolor="#ededed" width="50%">
+		<h2 align=center>Information</h2>
+		<ul>
+			<li> <a href="http://cegcc.sourceforge.net"> CeGCC Home Page on SourceForge </a>
+			<li> <a href="index.html"> CeGCC Documentation </a>
+			<li> <a href="http://sourceforge.net/projects/cegcc"> Project page on SourceForge </a>
+			<li> <a href="http://cegcc.wiki.sourceforge.net"> CeGCC wiki </a>
+		</ul>
+	</td>
+	<td align=left valign=top bgcolor="#ededed" width="50%">
+		<h2 align=center>Support</h2>
+		<ul>
+			<li> <a href="faq.html">Frequently asked questions ? Read the FAQ</a>.
+			<li> <a href="mailto:cegcc-devel@lists.sourceforge.net">Questions ? Use the mailing list</a>.
+			<li> <a href="http://sourceforge.net/tracker/?group_id=173455&atid=865514"> CeGCC Bug tracker </a>
+			<li><a href="reporting.html">Information to including when asking help or when reporting problems</a></li>
+		</ul>
+	</td>
+</tr></table>
+</html>
