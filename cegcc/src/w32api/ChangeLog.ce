@@ -1,3 +1,10 @@
+2008-02-17  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/aygshell.h (SHInitExtraControls): Move into the extern "C"
+	construction.
+	* include/aygshell.h (SHDoneButton, WS_NONAVDONEBUTTON, SHDB_SHOW,
+	SHDB_HIDE): Define.
+
 2008-01-09  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/aygshell.h (SIPINFO): Remove, this was a duplicate.

@@ -5,15 +5,15 @@
 #pragma GCC system_header
 #endif
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #if _WIN32_WCE >= 400
 
 #include <windows.h>
 #include <basetyps.h>	/* Make sure we have a CLSID definition */
 #include <shellapi.h>	/* for WINSHELLAPI */
-
-#ifdef	__cplusplus
-extern "C" {
-#endif
 
 /*
  * Menu Bar
@@ -229,14 +229,21 @@ HBITMAP SHLoadImageFile(LPCTSTR pszFileName);
 HBITMAP SHLoadImageResource(HINSTANCE hinst, UINT uIdImageFile);
 #endif	/*  _WIN32_WCE >= 0x0300 */
 
-#ifdef	__cplusplus
-}
-#endif
-
 #endif	/* _WIN32_WCE >= 400 */
 
 #if (_WIN32_WCE >= 0x0300)
 BOOL SHInitExtraControls(void);
+
+#define	WS_NONAVDONEBUTTON	WS_MINIMIZEBOX
+
+BOOL SHDoneButton(HWND, DWORD);
+#define	SHDB_SHOW	1
+#define	SHDB_HIDE	2
+
+#endif	/* _WIN32_WCE >= 0x0300 */
+
+#ifdef	__cplusplus
+}
 #endif
 
 #endif	/* _AYGSHELL_H */
