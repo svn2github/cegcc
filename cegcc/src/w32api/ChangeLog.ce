@@ -1,3 +1,7 @@
+2008-02-21  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/winnt.h (VER_PLATFORM_WIN32_CE): Define.
+
 2008-02-17  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/aygshell.h (SHInitExtraControls): Move into the extern "C"
