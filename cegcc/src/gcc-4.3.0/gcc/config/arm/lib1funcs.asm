@@ -52,21 +52,21 @@ Boston, MA 02110-1301, USA.  */
 #define SYM(x) CONCAT1 (__USER_LABEL_PREFIX__, x)
 
 #ifdef __ELF__
-#ifdef __thumb__
-#define __PLT__  /* Not supported in Thumb assembler (for now).  */
-#elif defined __vxworks && !defined __PIC__
-#define __PLT__ /* Not supported by the kernel loader.  */
+# ifdef __thumb__
+#  define __PLT__  /* Not supported in Thumb assembler (for now).  */
+# elif defined __vxworks && !defined __PIC__
+#  define __PLT__ /* Not supported by the kernel loader.  */
+# else
+#  define __PLT__ (PLT)
+# endif
+# define TYPE(x) .type SYM(x),function
+# define SIZE(x) .size SYM(x), . - SYM(x)
+# define LSYM(x) .x
 #else
-#define __PLT__ (PLT)
-#endif
-#define TYPE(x) .type SYM(x),function
-#define SIZE(x) .size SYM(x), . - SYM(x)
-#define LSYM(x) .x
-#else
-#define __PLT__
-#define TYPE(x)
-#define SIZE(x)
-#define LSYM(x) x
+# define __PLT__
+# define TYPE(x) .def SYM(x); .scl 2; .type 32; .endef
+# define SIZE(x)
+# define LSYM(x) CONCAT1 (__LPREFIX__, x)
 #endif
 
 /* Function end macros.  Variants for interworking.  */
@@ -162,9 +162,9 @@ Boston, MA 02110-1301, USA.  */
 .macro cfi_start	start_label, end_label
 #ifdef __ELF__
 	.pushsection	.debug_frame
-LSYM(Lstart_frame):
-	.4byte	LSYM(Lend_cie) - LSYM(Lstart_cie) @ Length of CIE
-LSYM(Lstart_cie):
+LSYM(start_frame):
+	.4byte	LSYM(end_cie) - LSYM(start_cie) @ Length of CIE
+LSYM(start_cie):
         .4byte	0xffffffff	@ CIE Identifier Tag
         .byte	0x1	@ CIE Version
         .ascii	"\0"	@ CIE Augmentation
@@ -176,10 +176,10 @@ LSYM(Lstart_cie):
         .uleb128 0x0
 
 	.align 2
-LSYM(Lend_cie):
-	.4byte	LSYM(Lend_fde)-LSYM(Lstart_fde)	@ FDE Length
-LSYM(Lstart_fde):
-	.4byte	LSYM(Lstart_frame)	@ FDE CIE offset
+LSYM(end_cie):
+	.4byte	LSYM(end_fde)-LSYM(start_fde)	@ FDE Length
+LSYM(start_fde):
+	.4byte	LSYM(start_frame)	@ FDE CIE offset
 	.4byte	\start_label	@ FDE initial location
 	.4byte	\end_label-\start_label	@ FDE address range
 	.popsection
@@ -189,7 +189,7 @@ LSYM(Lstart_fde):
 #ifdef __ELF__
 	.pushsection	.debug_frame
 	.align	2
-LSYM(Lend_fde):
+LSYM(end_fde):
 	.popsection
 \end_label:
 #endif
@@ -287,14 +287,14 @@ LSYM(Lend_fde):
 .endm
 
 .macro DIV_FUNC_END name
-	cfi_start	__\name, LSYM(Lend_div0)
-LSYM(Ldiv0):
+	cfi_start	__\name, LSYM(end_div0)
+LSYM(div0):
 #ifdef __thumb__
 	THUMB_LDIV0 \name
 #else
 	ARM_LDIV0 \name
 #endif
-	cfi_end	LSYM(Lend_div0)
+	cfi_end	LSYM(end_div0)
 	FUNC_END \name
 .endm
 
@@ -384,6 +384,7 @@ SYM (__\name):
 
 .macro	FUNC_ALIAS new old
 	.globl	SYM (__\new)
+	TYPE (__\new)
 #if defined (__thumb__)
 	.thumb_set	SYM (__\new), SYM (__\old)
 #else
@@ -393,6 +394,7 @@ SYM (__\name):
 
 .macro	ARM_FUNC_ALIAS new old
 	.globl	SYM (__\new)
+	TYPE (__\new)
 	EQUIV	SYM (__\new), SYM (__\old)
 #if defined(__INTERWORKING_STUBS__)
 	.set	SYM (_L__\new), SYM (_L__\old)
@@ -628,32 +630,32 @@ pc		.req	r15
 	@ Load the constant 0x10000000 into our work register.
 	mov	work, #1
 	lsl	work, #28
-LSYM(Loop1):
+LSYM(oop1):
 	@ Unless the divisor is very big, shift it up in multiples of
 	@ four bits, since this is the amount of unwinding in the main
 	@ division loop.  Continue shifting until the divisor is 
 	@ larger than the dividend.
 	cmp	divisor, work
-	bhs	LSYM(Lbignum)
+	bhs	LSYM(bignum)
 	cmp	divisor, dividend
-	bhs	LSYM(Lbignum)
+	bhs	LSYM(bignum)
 	lsl	divisor, #4
 	lsl	curbit,  #4
-	b	LSYM(Loop1)
-LSYM(Lbignum):
+	b	LSYM(oop1)
+LSYM(bignum):
 	@ Set work to 0x80000000
 	lsl	work, #3
-LSYM(Loop2):
+LSYM(oop2):
 	@ For very big divisors, we must shift it a bit at a time, or
 	@ we will be in danger of overflowing.
 	cmp	divisor, work
-	bhs	LSYM(Loop3)
+	bhs	LSYM(oop3)
 	cmp	divisor, dividend
-	bhs	LSYM(Loop3)
+	bhs	LSYM(oop3)
 	lsl	divisor, #1
 	lsl	curbit,  #1
-	b	LSYM(Loop2)
-LSYM(Loop3):
+	b	LSYM(oop2)
+LSYM(oop3):
 	@ Test for possible subtractions ...
   .if \modulo
 	@ ... On the final pass, this may subtract too much from the dividend, 
@@ -661,79 +663,79 @@ LSYM(Loop3):
 	@ afterwards.
 	mov	overdone, #0
 	cmp	dividend, divisor
-	blo	LSYM(Lover1)
+	blo	LSYM(over1)
 	sub	dividend, dividend, divisor
-LSYM(Lover1):
+LSYM(over1):
 	lsr	work, divisor, #1
 	cmp	dividend, work
-	blo	LSYM(Lover2)
+	blo	LSYM(over2)
 	sub	dividend, dividend, work
 	mov	ip, curbit
 	mov	work, #1
 	ror	curbit, work
 	orr	overdone, curbit
 	mov	curbit, ip
-LSYM(Lover2):
+LSYM(over2):
 	lsr	work, divisor, #2
 	cmp	dividend, work
-	blo	LSYM(Lover3)
+	blo	LSYM(over3)
 	sub	dividend, dividend, work
 	mov	ip, curbit
 	mov	work, #2
 	ror	curbit, work
 	orr	overdone, curbit
 	mov	curbit, ip
-LSYM(Lover3):
+LSYM(over3):
 	lsr	work, divisor, #3
 	cmp	dividend, work
-	blo	LSYM(Lover4)
+	blo	LSYM(over4)
 	sub	dividend, dividend, work
 	mov	ip, curbit
 	mov	work, #3
 	ror	curbit, work
 	orr	overdone, curbit
 	mov	curbit, ip
-LSYM(Lover4):
+LSYM(over4):
 	mov	ip, curbit
   .else
 	@ ... and note which bits are done in the result.  On the final pass,
 	@ this may subtract too much from the dividend, but the result will be ok,
 	@ since the "bit" will have been shifted out at the bottom.
 	cmp	dividend, divisor
-	blo	LSYM(Lover1)
+	blo	LSYM(over1)
 	sub	dividend, dividend, divisor
 	orr	result, result, curbit
-LSYM(Lover1):
+LSYM(over1):
 	lsr	work, divisor, #1
 	cmp	dividend, work
-	blo	LSYM(Lover2)
+	blo	LSYM(over2)
 	sub	dividend, dividend, work
 	lsr	work, curbit, #1
 	orr	result, work
-LSYM(Lover2):
+LSYM(over2):
 	lsr	work, divisor, #2
 	cmp	dividend, work
-	blo	LSYM(Lover3)
+	blo	LSYM(over3)
 	sub	dividend, dividend, work
 	lsr	work, curbit, #2
 	orr	result, work
-LSYM(Lover3):
+LSYM(over3):
 	lsr	work, divisor, #3
 	cmp	dividend, work
-	blo	LSYM(Lover4)
+	blo	LSYM(over4)
 	sub	dividend, dividend, work
 	lsr	work, curbit, #3
 	orr	result, work
-LSYM(Lover4):
+LSYM(over4):
   .endif
 	
 	cmp	dividend, #0			@ Early termination?
-	beq	LSYM(Lover5)
+	beq	LSYM(over5)
 	lsr	curbit,  #4			@ No, any more bits to do?
-	beq	LSYM(Lover5)
+	beq	LSYM(over5)
 	lsr	divisor, #4
-	b	LSYM(Loop3)
-LSYM(Lover5):
+	b	LSYM(oop3)
+LSYM(over5):
   .if \modulo
 	@ Any subtractions that we should not have done will be recorded in
 	@ the top three bits of "overdone".  Exactly which were not needed
@@ -741,7 +743,7 @@ LSYM(Lover5):
 	mov	work, #0xe
 	lsl	work, #28
 	and	overdone, work
-	beq	LSYM(Lgot_result)
+	beq	LSYM(got_result)
 	
 	@ If we terminated early, because dividend became zero, then the 
 	@ bit in ip will not be in the bottom nibble, and we should not
@@ -752,33 +754,33 @@ LSYM(Lover5):
 	mov	curbit, ip
 	mov	work, #0x7
 	tst	curbit, work
-	beq	LSYM(Lgot_result)
+	beq	LSYM(got_result)
 	
 	mov	curbit, ip
 	mov	work, #3
 	ror	curbit, work
 	tst	overdone, curbit
-	beq	LSYM(Lover6)
+	beq	LSYM(over6)
 	lsr	work, divisor, #3
 	add	dividend, work
-LSYM(Lover6):
+LSYM(over6):
 	mov	curbit, ip
 	mov	work, #2
 	ror	curbit, work
 	tst	overdone, curbit
-	beq	LSYM(Lover7)
+	beq	LSYM(over7)
 	lsr	work, divisor, #2
 	add	dividend, work
-LSYM(Lover7):
+LSYM(over7):
 	mov	curbit, ip
 	mov	work, #1
 	ror	curbit, work
 	tst	overdone, curbit
-	beq	LSYM(Lgot_result)
+	beq	LSYM(got_result)
 	lsr	work, divisor, #1
 	add	dividend, work
   .endif
-LSYM(Lgot_result):
+LSYM(got_result):
 .endm	
 /* ------------------------------------------------------------------------ */
 /*		Start of the Real Functions				    */
@@ -791,13 +793,13 @@ LSYM(Lgot_result):
 #ifdef __thumb__
 
 	cmp	divisor, #0
-	beq	LSYM(Ldiv0)
+	beq	LSYM(div0)
 	mov	curbit, #1
 	mov	result, #0
 	
 	push	{ work }
 	cmp	dividend, divisor
-	blo	LSYM(Lgot_result)
+	blo	LSYM(got_result)
 
 	THUMB_DIV_MOD_BODY 0
 	
@@ -809,7 +811,7 @@ LSYM(Lgot_result):
 
 	subs	r2, r1, #1
 	RETc(eq)
-	bcc	LSYM(Ldiv0)
+	bcc	LSYM(div0)
 	cmp	r0, r1
 	bls	11f
 	tst	r1, r2
@@ -860,13 +862,13 @@ FUNC_START aeabi_uidivmod
 #ifdef __thumb__
 
 	cmp	divisor, #0
-	beq	LSYM(Ldiv0)
+	beq	LSYM(div0)
 	mov	curbit, #1
 	cmp	dividend, divisor
-	bhs	LSYM(Lover10)
+	bhs	LSYM(over10)
 	RET	
 
-LSYM(Lover10):
+LSYM(over10):
 	push	{ work }
 
 	THUMB_DIV_MOD_BODY 1
@@ -877,7 +879,7 @@ LSYM(Lover10):
 #else  /* ARM version.  */
 	
 	subs	r2, r1, #1			@ compare divisor with 1
-	bcc	LSYM(Ldiv0)
+	bcc	LSYM(div0)
 	cmpne	r0, r1				@ compare dividend with divisor
 	moveq   r0, #0
 	tsthi	r1, r2				@ see if divisor is power of 2
@@ -901,7 +903,7 @@ LSYM(Lover10):
 
 #ifdef __thumb__
 	cmp	divisor, #0
-	beq	LSYM(Ldiv0)
+	beq	LSYM(div0)
 	
 	push	{ work }
 	mov	work, dividend
@@ -910,24 +912,24 @@ LSYM(Lover10):
 	mov	curbit, #1
 	mov	result, #0
 	cmp	divisor, #0
-	bpl	LSYM(Lover10)
+	bpl	LSYM(over10)
 	neg	divisor, divisor	@ Loops below use unsigned.
-LSYM(Lover10):
+LSYM(over10):
 	cmp	dividend, #0
-	bpl	LSYM(Lover11)
+	bpl	LSYM(over11)
 	neg	dividend, dividend
-LSYM(Lover11):
+LSYM(over11):
 	cmp	dividend, divisor
-	blo	LSYM(Lgot_result)
+	blo	LSYM(got_result)
 
 	THUMB_DIV_MOD_BODY 0
 	
 	mov	r0, result
 	mov	work, ip
 	cmp	work, #0
-	bpl	LSYM(Lover12)
+	bpl	LSYM(over12)
 	neg	r0, r0
-LSYM(Lover12):
+LSYM(over12):
 	pop	{ work }
 	RET
 
@@ -935,7 +937,7 @@ LSYM(Lover12):
 	
 	cmp	r1, #0
 	eor	ip, r0, r1			@ save the sign of the result.
-	beq	LSYM(Ldiv0)
+	beq	LSYM(div0)
 	rsbmi	r1, r1, #0			@ loops below use unsigned.
 	subs	r2, r1, #1			@ division by 1 or -1 ?
 	beq	10f
@@ -1000,36 +1002,36 @@ FUNC_START aeabi_idivmod
 
 	mov	curbit, #1
 	cmp	divisor, #0
-	beq	LSYM(Ldiv0)
-	bpl	LSYM(Lover10)
+	beq	LSYM(div0)
+	bpl	LSYM(over10)
 	neg	divisor, divisor		@ Loops below use unsigned.
-LSYM(Lover10):
+LSYM(over10):
 	push	{ work }
 	@ Need to save the sign of the dividend, unfortunately, we need
 	@ work later on.  Must do this after saving the original value of
 	@ the work register, because we will pop this value off first.
 	push	{ dividend }
 	cmp	dividend, #0
-	bpl	LSYM(Lover11)
+	bpl	LSYM(over11)
 	neg	dividend, dividend
-LSYM(Lover11):
+LSYM(over11):
 	cmp	dividend, divisor
-	blo	LSYM(Lgot_result)
+	blo	LSYM(got_result)
 
 	THUMB_DIV_MOD_BODY 1
 		
 	pop	{ work }
 	cmp	work, #0
-	bpl	LSYM(Lover12)
+	bpl	LSYM(over12)
 	neg	dividend, dividend
-LSYM(Lover12):
+LSYM(over12):
 	pop	{ work }
 	RET	
 
 #else /* ARM version.  */
 	
 	cmp	r1, #0
-	beq	LSYM(Ldiv0)
+	beq	LSYM(div0)
 	rsbmi	r1, r1, #0			@ loops below use unsigned.
 	movs	ip, r0				@ preserve sign of dividend
 	rsbmi	r0, r0, #0			@ if negative make positive
@@ -1290,14 +1292,14 @@ LSYM(Lover12):
 
 	.code   32
 	.globl _arm_return
-LSYM(Lstart_arm_return):
-	cfi_start	LSYM(Lstart_arm_return) LSYM(Lend_arm_return)
+LSYM(start_arm_return):
+	cfi_start	LSYM(start_arm_return) LSYM(end_arm_return)
 	cfi_push	0, 0xe, -0x8, 0x8
 	nop	@ This nop is for the benefit of debuggers, so that
 		@ backtraces will use the correct unwind information.
 _arm_return:
-	RETLDM	unwind=LSYM(Lstart_arm_return)
-	cfi_end	LSYM(Lend_arm_return)
+	RETLDM	unwind=LSYM(start_arm_return)
+	cfi_end	LSYM(end_arm_return)
 
 	.globl _arm_return_r7
 _arm_return_r7:
@@ -1335,8 +1337,8 @@ _arm_return_r11:
 	nop
 
 	.code	32
-	.globl LSYM(Lchange_\register)
-LSYM(Lchange_\register):
+	.globl LSYM(change_\register)
+LSYM(change_\register):
 	tst	\register, #1
 	streq	lr, [sp, #-8]!
 	adreq	lr, _arm_return

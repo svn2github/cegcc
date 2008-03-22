@@ -65,9 +65,13 @@ Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
 
 #define __GTHREADS 1
 
-#include <errno.h>
+// #include <errno.h>
 #ifdef __MINGW32__
 #include <_mingw.h>
+#endif
+
+#ifdef UNDER_CE
+# define __GTHREAD_HIDE_WIN32API 1
 #endif
 
 #ifdef _LIBOBJC

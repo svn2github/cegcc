@@ -93,13 +93,6 @@
 #endif
 
 
-/* Define to 1 if translation of program messages to the user's native
-   language is requested. */
-#ifndef USED_FOR_TARGET
-#undef ENABLE_NLS
-#endif
-
-
 /* Define if you want all operations on RTL (the basic data structure of the
    optimizer and back end) to be checked for dynamic type safety at runtime.
    This is quite expensive. */
@@ -919,12 +912,6 @@
 #endif
 
 
-/* Define if you have the iconv() function. */
-#ifndef USED_FOR_TARGET
-#undef HAVE_ICONV
-#endif
-
-
 /* Define to 1 if you have the <iconv.h> header file. */
 #ifndef USED_FOR_TARGET
 #undef HAVE_ICONV_H
@@ -949,21 +936,9 @@
 #endif
 
 
-/* Define if you have <langinfo.h> and nl_langinfo(CODESET). */
-#ifndef USED_FOR_TARGET
-#undef HAVE_LANGINFO_CODESET
-#endif
-
-
 /* Define to 1 if you have the <langinfo.h> header file. */
 #ifndef USED_FOR_TARGET
 #undef HAVE_LANGINFO_H
-#endif
-
-
-/* Define if your <locale.h> file defines LC_MESSAGES. */
-#ifndef USED_FOR_TARGET
-#undef HAVE_LC_MESSAGES
 #endif
 
 
@@ -1309,12 +1284,6 @@
 #endif
 
 
-/* Define as const if the declaration of iconv() needs const. */
-#ifndef USED_FOR_TARGET
-#undef ICONV_CONST
-#endif
-
-
 /* Define if host mkdir takes a single argument. */
 #ifndef USED_FOR_TARGET
 #undef MKDIR_TAKES_ONE_ARG
@@ -1369,37 +1338,37 @@
 #endif
 
 
-/* The size of `int', as computed by sizeof. */
+/* The size of a `int', as computed by sizeof. */
 #ifndef USED_FOR_TARGET
 #undef SIZEOF_INT
 #endif
 
 
-/* The size of `long', as computed by sizeof. */
+/* The size of a `long', as computed by sizeof. */
 #ifndef USED_FOR_TARGET
 #undef SIZEOF_LONG
 #endif
 
 
-/* The size of `long long', as computed by sizeof. */
+/* The size of a `long long', as computed by sizeof. */
 #ifndef USED_FOR_TARGET
 #undef SIZEOF_LONG_LONG
 #endif
 
 
-/* The size of `short', as computed by sizeof. */
+/* The size of a `short', as computed by sizeof. */
 #ifndef USED_FOR_TARGET
 #undef SIZEOF_SHORT
 #endif
 
 
-/* The size of `void *', as computed by sizeof. */
+/* The size of a `void *', as computed by sizeof. */
 #ifndef USED_FOR_TARGET
 #undef SIZEOF_VOID_P
 #endif
 
 
-/* The size of `__int64', as computed by sizeof. */
+/* The size of a `__int64', as computed by sizeof. */
 #ifndef USED_FOR_TARGET
 #undef SIZEOF___INT64
 #endif
@@ -1408,12 +1377,6 @@
 /* Define to 1 if you have the ANSI C header files. */
 #ifndef USED_FOR_TARGET
 #undef STDC_HEADERS
-#endif
-
-
-/* Define if you can safely include both <string.h> and <strings.h>. */
-#ifndef USED_FOR_TARGET
-#undef STRING_WITH_STRINGS
 #endif
 
 

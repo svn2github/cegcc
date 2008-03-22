@@ -1,0 +1,10 @@
+# cygwin and mingw always have a limits.h, but, depending upon how we are
+# doing the build, it may not be installed yet.
+LIMITS_H_TEST = true
+
+# If we are building next to winsup, this will let us find the real
+# limits.h when building libgcc2.  Otherwise, winsup must be installed
+# first.
+LIBGCC2_INCLUDES = -I$(srcdir)/../winsup/w32api/include
+
+STMP_FIXINC=stmp-fixinc

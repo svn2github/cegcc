@@ -1,4 +1,5 @@
-/* Prototypes for exported functions defined in arm.c and pe.c
+/* Prototypes for exported functions defined in arm.c, pe.c,
+   pe-cxx.c and pe-stubs.c.
    Copyright (C) 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Contributed by Richard Earnshaw (rearnsha@arm.com)
@@ -40,7 +41,10 @@ extern HOST_WIDE_INT thumb_compute_initial_elimination_offset (unsigned int,
 							       unsigned int);
 extern unsigned int arm_dbx_register_number (unsigned int);
 extern void arm_output_fn_unwind (FILE *, bool);
-  
+extern void arm_file_end (void);
+
+int arm_major_arch (void);
+bool arm_thumb_arch_p (void);
 
 #ifdef TREE_CODE
 extern int arm_return_in_memory (const_tree);
@@ -191,8 +195,26 @@ extern const char *thumb2_output_casesi(rtx *);
 #endif
 
 /* Defined in pe.c.  */
-extern int arm_dllexport_name_p (const char *);
-extern int arm_dllimport_name_p (const char *);
+extern void arm_pe_asm_named_section (const char *, unsigned int, tree);
+extern unsigned int arm_pe_section_type_flags (tree, const char *, int);
+// extern const char *arm_pe_strip_name_encoding (const char *);
+// extern void arm_pe_output_labelref (FILE *, const char *);
+extern int arm_pe_dllexport_name_p (const char *);
+extern int arm_pe_dllimport_name_p (const char *);
+extern void arm_pe_record_external_function (tree, const char *);
+extern void arm_pe_declare_function_type (FILE *, const char *, int);
+extern void arm_pe_record_exported_symbol (const char *, int);
+extern void arm_pe_file_end (void);
+extern int arm_pe_dllexport_name_p (const char *);
+extern int arm_pe_dllimport_name_p (const char *);
+extern bool arm_pe_valid_dllimport_attribute_p (tree);
+extern tree arm_pe_handle_selectany_attribute (tree *, tree, tree, int, bool *);
+extern tree arm_pe_handle_shared_attribute (tree *, tree, tree, int, bool *);
+
+/* In pe-cxx.c and pe-stubs.c  */
+extern void arm_pe_adjust_class_at_definition (tree);
+extern bool arm_pe_type_dllimport_p (tree);
+extern bool arm_pe_type_dllexport_p (tree);
 
 #ifdef TREE_CODE
 extern void arm_pe_unique_section (tree, int);
@@ -206,6 +228,14 @@ extern void arm_mark_dllimport (tree);
 extern void arm_pr_long_calls (struct cpp_reader *);
 extern void arm_pr_no_long_calls (struct cpp_reader *);
 extern void arm_pr_long_calls_off (struct cpp_reader *);
+
+tree arm_pe_handle_exception_handler_attribute (tree *node,
+						tree name,
+						tree args,
+						int ARG_UNUSED (flags),
+						bool *no_add_attrs);
+const char *
+arm_pe_exception_handler (FILE *fp, char *name, tree decl);
 
 extern void arm_lang_object_attributes_init(void);
 

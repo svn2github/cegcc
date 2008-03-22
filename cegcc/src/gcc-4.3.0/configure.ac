@@ -497,15 +497,15 @@ case "${target}" in
   sh-*-linux*)
     noconfigdirs="$noconfigdirs ${libgcj} target-newlib target-libgloss"
     ;;    
-  sh*-*-pe|mips*-*-pe|*arm-wince-pe)
+  sh*-*-pe|mips*-*-pe|*arm-wince-pe|*arm*-*-mingw*ce|*arm*-*-cegcc*)
     noconfigdirs="$noconfigdirs ${libgcj}"
     noconfigdirs="$noconfigdirs target-examples"
     noconfigdirs="$noconfigdirs target-libiberty texinfo send-pr"
     noconfigdirs="$noconfigdirs tcl tk itcl libgui sim"
     noconfigdirs="$noconfigdirs expect dejagnu"
     # the C++ libraries don't build on top of CE's C libraries
-    noconfigdirs="$noconfigdirs target-libstdc++-v3"
-    noconfigdirs="$noconfigdirs target-newlib"
+    # noconfigdirs="$noconfigdirs target-libstdc++-v3"
+    # noconfigdirs="$noconfigdirs target-newlib"
     case "${host}" in
       *-*-cygwin*) ;; # keep gdb and readline
       *) noconfigdirs="$noconfigdirs gdb readline"

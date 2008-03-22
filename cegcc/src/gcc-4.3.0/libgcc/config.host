@@ -234,7 +234,7 @@ arm*-*-rtems*)
 	;;
 arm*-*-elf | ep9312-*-elf)
 	;;
-arm*-wince-pe*)
+arm*-wince-pe* | arm*-*-cegcc* | arm*-*-mingw*ce*)
 	;;
 arm-*-pe*)
 	;;

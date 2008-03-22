@@ -155,7 +155,6 @@ static void arm_elf_asm_destructor (rtx, int) ATTRIBUTE_UNUSED;
 static void arm_encode_section_info (tree, rtx, int);
 #endif
 
-static void arm_file_end (void);
 static void arm_file_start (void);
 
 static void arm_setup_incoming_varargs (CUMULATIVE_ARGS *, enum machine_mode,
@@ -189,6 +188,8 @@ static unsigned HOST_WIDE_INT arm_shift_truncation_mask (enum machine_mode);
 static bool arm_cannot_copy_insn_p (rtx);
 static bool arm_tls_symbol_p (rtx x);
 static void arm_output_dwarf_dtprel (FILE *, int, rtx) ATTRIBUTE_UNUSED;
+static tree arm_handle_struct_attribute (tree *, tree, tree, int, bool *);
+static bool arm_ms_bitfield_layout_p (tree record_type);
 
 
 /* Initialize the GCC target structure.  */
@@ -197,18 +198,24 @@ static void arm_output_dwarf_dtprel (FILE *, int, rtx) ATTRIBUTE_UNUSED;
 #define TARGET_MERGE_DECL_ATTRIBUTES merge_dllimport_decl_attributes
 #endif
 
-#undef  TARGET_ATTRIBUTE_TABLE
-#define TARGET_ATTRIBUTE_TABLE arm_attribute_table
-
 #undef TARGET_ASM_FILE_START
 #define TARGET_ASM_FILE_START arm_file_start
-#undef TARGET_ASM_FILE_END
-#define TARGET_ASM_FILE_END arm_file_end
 
 #undef  TARGET_ASM_ALIGNED_SI_OP
 #define TARGET_ASM_ALIGNED_SI_OP NULL
 #undef  TARGET_ASM_INTEGER
 #define TARGET_ASM_INTEGER arm_assemble_integer
+
+#ifdef ARM_PE
+#undef  TARGET_ASM_UNALIGNED_HI_OP
+#define TARGET_ASM_UNALIGNED_HI_OP "\t.2byte\t"
+#undef  TARGET_ASM_UNALIGNED_SI_OP
+#define TARGET_ASM_UNALIGNED_SI_OP "\t.4byte\t"
+#undef  TARGET_ASM_UNALIGNED_DI_OP
+#define TARGET_ASM_UNALIGNED_DI_OP "\t.8byte\t"
+#undef  TARGET_ASM_UNALIGNED_TI_OP
+#define TARGET_ASM_UNALIGNED_TI_OP NULL
+#endif
 
 #undef  TARGET_ASM_FUNCTION_PROLOGUE
 #define TARGET_ASM_FUNCTION_PROLOGUE arm_output_function_prologue
@@ -218,6 +225,7 @@ static void arm_output_dwarf_dtprel (FILE *, int, rtx) ATTRIBUTE_UNUSED;
 
 #undef  TARGET_DEFAULT_TARGET_FLAGS
 #define TARGET_DEFAULT_TARGET_FLAGS (TARGET_DEFAULT | MASK_SCHED_PROLOG)
+
 #undef  TARGET_HANDLE_OPTION
 #define TARGET_HANDLE_OPTION arm_handle_option
 #undef  TARGET_HELP
@@ -231,16 +239,6 @@ static void arm_output_dwarf_dtprel (FILE *, int, rtx) ATTRIBUTE_UNUSED;
 
 #undef  TARGET_SCHED_ADJUST_COST
 #define TARGET_SCHED_ADJUST_COST arm_adjust_cost
-
-#undef TARGET_ENCODE_SECTION_INFO
-#ifdef ARM_PE
-#define TARGET_ENCODE_SECTION_INFO  arm_pe_encode_section_info
-#else
-#define TARGET_ENCODE_SECTION_INFO  arm_encode_section_info
-#endif
-
-#undef  TARGET_STRIP_NAME_ENCODING
-#define TARGET_STRIP_NAME_ENCODING arm_strip_name_encoding
 
 #undef  TARGET_ASM_INTERNAL_LABEL
 #define TARGET_ASM_INTERNAL_LABEL arm_internal_label
@@ -354,6 +352,9 @@ static void arm_output_dwarf_dtprel (FILE *, int, rtx) ATTRIBUTE_UNUSED;
 #undef TARGET_HAVE_TLS
 #define TARGET_HAVE_TLS true
 #endif
+
+#undef TARGET_MS_BITFIELD_LAYOUT_P
+#define TARGET_MS_BITFIELD_LAYOUT_P arm_ms_bitfield_layout_p
 
 #undef TARGET_CANNOT_FORCE_CONST_MEM
 #define TARGET_CANNOT_FORCE_CONST_MEM arm_cannot_force_const_mem
@@ -2757,9 +2758,11 @@ arm_return_in_memory (const_tree type)
       return (size < 0 || size > UNITS_PER_WORD);
     }
 
-  /* For the arm-wince targets we choose to be compatible with Microsoft's
-     ARM and Thumb compilers, which always return aggregates in memory.  */
-#ifndef ARM_WINCE
+  if (TARGET_RETURN_AGGREGATES_IN_MEMORY
+      && (TREE_CODE (type) == RECORD_TYPE
+	      || TREE_CODE (type) == UNION_TYPE))
+    return 1;
+
   /* All structures/unions bigger than one word are returned in memory.
      Also catch the case where int_size_in_bytes returns -1.  In this case
      the aggregate is either huge or of variable size, and in either case
@@ -2836,7 +2839,6 @@ arm_return_in_memory (const_tree type)
 
       return 0;
     }
-#endif /* not ARM_WINCE */
 
   /* Return all other types in memory.  */
   return 1;
@@ -3031,27 +3033,28 @@ const struct attribute_spec arm_attribute_table[] =
   /* Whereas these functions are always known to reside within the 26 bit
      addressing range.  */
   { "short_call",   0, 0, false, true,  true,  NULL },
+  /* Cdecl attribute says the callee is a normal C declaration
+     this is the default */
+  { "cdecl",     0, 0, false, true,  true,  NULL },
   /* Interrupt Service Routines have special prologue and epilogue requirements.  */
   { "isr",          0, 1, false, false, false, arm_handle_isr_attribute },
   { "interrupt",    0, 1, false, false, false, arm_handle_isr_attribute },
   { "naked",        0, 0, true,  false, false, arm_handle_fndecl_attribute },
-#ifdef ARM_PE
-  /* ARM/PE has three new attributes:
-     interfacearm - ?
-     dllexport - for exporting a function/variable that will live in a dll
-     dllimport - for importing a function/variable from a dll
-
-     Microsoft allows multiple declspecs in one __declspec, separating
+  { "interfacearm", 0, 0, true,  false, false, arm_handle_fndecl_attribute },
+#if TARGET_DLLIMPORT_DECL_ATTRIBUTES
+  /* Microsoft allows multiple declspecs in one __declspec, separating
      them with spaces.  We do NOT support this.  Instead, use __declspec
      multiple times.
   */
-  { "dllimport",    0, 0, true,  false, false, NULL },
-  { "dllexport",    0, 0, true,  false, false, NULL },
-  { "interfacearm", 0, 0, true,  false, false, arm_handle_fndecl_attribute },
-#elif TARGET_DLLIMPORT_DECL_ATTRIBUTES
   { "dllimport",    0, 0, false, false, false, handle_dll_attribute },
   { "dllexport",    0, 0, false, false, false, handle_dll_attribute },
   { "notshared",    0, 0, false, true, false, arm_handle_notshared_attribute },
+  { "shared",       0, 0, true,  false, false, arm_pe_handle_shared_attribute },
+#endif
+  { "ms_struct", 0, 0, false, false,  false, arm_handle_struct_attribute },
+  { "gcc_struct", 0, 0, false, false,  false, arm_handle_struct_attribute },
+#ifdef SUBTARGET_ATTRIBUTE_TABLE
+  SUBTARGET_ATTRIBUTE_TABLE,
 #endif
   { NULL,           0, 0, false, false, false, NULL }
 };
@@ -3334,6 +3337,12 @@ arm_function_ok_for_sibcall (tree decl, tree exp ATTRIBUTE_UNUSED)
   /* Never tailcall if function may be called with a misaligned SP.  */
   if (IS_STACKALIGN (func_type))
     return false;
+
+#if TARGET_DLLIMPORT_DECL_ATTRIBUTES
+  /* Dllimport'd functions are also called indirectly.  */
+  if (decl && DECL_DLLIMPORT_P (decl))
+    return false;
+#endif
 
   /* Everything else is ok.  */
   return true;
@@ -13148,6 +13157,7 @@ arm_assemble_integer (rtx x, unsigned int size, int aligned_p)
   return default_assemble_integer (x, size, aligned_p);
 }
 
+#ifdef OBJECT_FORMAT_ELF
 static void
 arm_elf_asm_cdtor (rtx symbol, int priority, bool is_ctor)
 {
@@ -13197,6 +13207,7 @@ arm_elf_asm_destructor (rtx symbol, int priority)
 {
   arm_elf_asm_cdtor (symbol, priority, /*is_ctor=*/false);
 }
+#endif
 
 /* A finite state machine takes care of noticing whether or not instructions
    can be conditionally executed, and thus decrease execution time and code
@@ -16929,8 +16940,8 @@ thumb1_output_function_prologue (FILE *f, HOST_WIDE_INT size ATTRIBUTE_UNUSED)
 
       fprintf (f, "\t.code\t16\n");
 #ifdef ARM_PE
-      if (arm_dllexport_name_p (name))
-        name = arm_strip_name_encoding (name);
+      if (arm_pe_dllexport_name_p (name))
+	name = arm_strip_name_encoding (name);
 #endif
       asm_fprintf (f, "\t.globl %s%U%s\n", STUB_NAME, name);
       fprintf (f, "\t.thumb_func\n");
@@ -17552,7 +17563,7 @@ arm_file_start (void)
   default_file_start();
 }
 
-static void
+void
 arm_file_end (void)
 {
   int regno;
@@ -18713,5 +18724,176 @@ arm_mangle_type (const_tree type)
      vector types.  */
   return NULL;
 }
+
+/* Handle a "ms_struct" or "gcc_struct" attribute; arguments as in
+   struct attribute_spec.handler.  */
+static tree
+arm_handle_struct_attribute (tree *node,
+			     tree name,
+			     tree args ATTRIBUTE_UNUSED,
+			     int flags ATTRIBUTE_UNUSED,
+			     bool *no_add_attrs)
+{
+  tree *type = NULL;
+  if (DECL_P (*node))
+    {
+      if (TREE_CODE (*node) == TYPE_DECL)
+	type = &TREE_TYPE (*node);
+    }
+  else
+    type = node;
+
+  if (!(type && (TREE_CODE (*type) == RECORD_TYPE
+		 || TREE_CODE (*type) == UNION_TYPE)))
+    {
+      warning (OPT_Wattributes, "%qs attribute ignored",
+	       IDENTIFIER_POINTER (name));
+      *no_add_attrs = true;
+    }
+
+  else if ((is_attribute_p ("ms_struct", name)
+	    && lookup_attribute ("gcc_struct", TYPE_ATTRIBUTES (*type)))
+	   || ((is_attribute_p ("gcc_struct", name)
+		&& lookup_attribute ("ms_struct", TYPE_ATTRIBUTES (*type)))))
+    {
+      warning (OPT_Wattributes, "%qs incompatible attribute ignored",
+               IDENTIFIER_POINTER (name));
+      *no_add_attrs = true;
+    }
+
+  return NULL_TREE;
+}
+
+static bool
+arm_ms_bitfield_layout_p (tree record_type)
+{
+  return (TARGET_MS_BITFIELD_LAYOUT &&
+	  !lookup_attribute ("gcc_struct", TYPE_ATTRIBUTES (record_type)))
+    || lookup_attribute ("ms_struct", TYPE_ATTRIBUTES (record_type));
+}
+
+int
+arm_major_arch (void)
+{
+  if ((insn_flags & FL_FOR_ARCH6) == FL_FOR_ARCH6)
+    return 6;
+  else if ((insn_flags & FL_FOR_ARCH5) == FL_FOR_ARCH5)
+    return 5;
+  else if ((insn_flags & FL_FOR_ARCH4) == FL_FOR_ARCH4)
+    return 4;
+  else if ((insn_flags & FL_FOR_ARCH3) == FL_FOR_ARCH3)
+    return 3;
+  else if ((insn_flags & FL_FOR_ARCH2) == FL_FOR_ARCH2)
+    return 2;
+
+  /* This should gives us a nice ICE somewhere.  */
+  return -1;
+}
+
+bool
+arm_thumb_arch_p (void)
+{
+  return (insn_flags & FL_THUMB) == FL_THUMB;
+}
+
+/* Called from ASM_DECLARE_FUNCTION_NAME in gcc/config/arm/wince-pe.h */
+const char *
+arm_pe_exception_handler (FILE * ARG_UNUSED (fp), char *name, tree decl)
+{
+  tree attr, a2;
+
+  attr = DECL_ATTRIBUTES (decl);
+  {
+//	tree format_num_expr = TREE_VALUE (TREE_CHAIN (attr));
+//	tree format_num_expr = TREE_VALUE (attr);
+//	tree format_num_expr = (attr);
+
+// deze doet iets zinnig :
+//	tree format_num_expr = TREE_VALUE(decl);
+// exarg.c: In function 'handler':
+// exarg.c:13: internal compiler error: tree check: expected tree_list, have function_decl in arm_pe_exception_handler, at config/arm/arm.c:15568
+//
+
+//	a2 = lookup_attribute ("__exception_handler__", decl);
+//	tree format_num_expr = TREE_VALUE(a2);
+
+//	tree format_num_expr = TREE_VALUE(TREE_CHAIN(decl));
+//	tree format_num_expr = TREE_VALUE(decl);
+	tree format_num_expr = decl;
+
+#if 0
+	fprintf(stderr, "Yow arm_pe_exception_handler %p\n", format_num_expr);
+	if (TREE_CODE(format_num_expr) == STRING_CST) {
+		fprintf(stderr, "arm_pe_exception_handler : string\n");
+	} else if (TREE_CODE(format_num_expr) == INTEGER_CST) {
+		fprintf(stderr, "arm_pe_exception_handler : integer\n");
+	} else {
+		fprintf(stderr, "arm_pe_exception_handler : unknown\n");
+	}
+#endif
+  }
+  if (! attr)
+    return NULL;
+  a2 = lookup_attribute ("__exception_handler__", attr);
+  if (a2)
+      return IDENTIFIER_POINTER (TREE_VALUE (TREE_VALUE (a2)));
+
+//  warning (0, "exception handler information not found for function %s", name);
+  return NULL;
+}
+
+/* Handle a "exception_handler" attribute.
+  
+   One argument is required : the name of a function to call in case of exceptions.
+   Example syntax :
+  
+   int main(int argc, char *argv[])
+           __attribute__((__exception_handler__(handler))); */
+
+tree
+arm_pe_handle_exception_handler_attribute (tree *node, tree name,
+				tree args,
+				int ARG_UNUSED (flags),
+				bool *no_add_attrs)
+{
+  if (TREE_CODE (*node) == FUNCTION_DECL)
+    {
+      tree a;
+
+      /* We need to pass the name of the exception handler. The
+         right code then gets generated from config/arm/wince-pe.h
+	 or similar, the assembler and linker will do the hard work.
+
+	 FIX ME We don't support passing data to the exception handler.
+
+	 This should be possible though, by using an additional argument
+	 which needs to fit in the dword (e.g. a pointer) and storing that
+	 in the right field as we do with the exception handler.  */
+	tree attr = NULL_TREE;
+
+//	fprintf(stderr, "arm_pe_handle_exception_handler_attribute: arg %p no_add_attrs %d\n",
+//			flags, *no_add_attrs);
+
+	tree format_num_expr = TREE_VALUE (TREE_CHAIN (args));
+#if 0
+	if (TREE_CODE(format_num_expr) == STRING_CST) {
+		fprintf(stderr, "arm_pe_handle_exception_handler_attribute : string\n");
+	} else if (TREE_CODE(format_num_expr) == INTEGER_CST) {
+		fprintf(stderr, "arm_pe_handle_exception_handler_attribute : integer\n");
+	} else {
+		fprintf(stderr, "arm_pe_handle_exception_handler_attribute : unknown\n");
+	}
+#endif
+	attr = tree_cons (get_identifier ("exception_handler"), args, attr);
+    }
+  else
+    {
+      warning (OPT_Wattributes, "%qs attribute ignored", IDENTIFIER_POINTER (name));
+      *no_add_attrs = true;
+    }
+
+  return NULL_TREE;
+}
+
 
 #include "gt-arm.h"

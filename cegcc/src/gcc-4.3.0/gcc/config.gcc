@@ -1,4 +1,5 @@
 # GCC target-specific configuration file.
+date >>/tmp/xyz
 # Copyright 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
 # 2008 Free Software Foundation, Inc.
 
@@ -800,11 +801,37 @@ arm*-*-elf | ep9312-*-elf)
 	tm_file="dbxelf.h elfos.h arm/unknown-elf.h arm/elf.h arm/aout.h arm/arm.h"
 	tmake_file="arm/t-arm arm/t-arm-elf"
 	;;
-arm*-wince-pe*)
-	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h arm/wince-pe.h"
-	tmake_file="arm/t-arm arm/t-wince-pe"
-	extra_options="${extra_options} arm/pe.opt"
-	extra_objs="pe.o"
+arm*-wince-pe* | arm*-*-cegcc*)
+	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h arm/wince-pe.h arm/wince-cegcc.h"
+	tmake_file="arm/t-arm arm/t-wince-pe arm/t-wince-cegcc"
+	extra_options="${extra_options} arm/pe.opt arm/cegcc.opt"
+	extra_objs="pe.o pe-stubs.o"
+	extra_gcc_objs=cegcc1.o
+	c_target_objs="arm-c.o"
+	cxx_target_objs="arm-c.o pe-cxx.o"
+	target_gtfiles="\$(srcdir)/config/arm/pe.c"
+	case ${enable_threads} in
+	  "" | yes | win32)
+	    thread_file='win32'
+	    tmake_file="${tmake_file} arm/t-gthr-win32"
+	    ;;
+	esac
+	;;
+arm*-*-mingw*ce* | arm*-mingw*ce)
+	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h arm/wince-pe.h arm/mingw32.h"
+	xm_file=arm/xm-mingw32.h
+	tmake_file="arm/t-arm arm/t-wince-pe arm/t-cygming arm/t-mingw32"
+	extra_options="${extra_options} arm/pe.opt arm/cygming.opt"
+	extra_objs="pe.o pe-stubs.o"
+	c_target_objs="arm-c.o"
+	cxx_target_objs="arm-c.o pe-cxx.o"
+	target_gtfiles="\$(srcdir)/config/arm/pe.c"
+	case ${enable_threads} in
+	  "" | yes | win32)
+	    thread_file='win32'
+	    tmake_file="${tmake_file} arm/t-gthr-win32"
+	    ;;
+	esac
 	;;
 arm-*-pe*)
 	tm_file="arm/semi.h arm/aout.h arm/arm.h arm/coff.h dbxcoff.h arm/pe.h"
