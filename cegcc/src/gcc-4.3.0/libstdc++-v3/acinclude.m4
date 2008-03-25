@@ -959,6 +959,23 @@ AC_DEFUN([GLIBCXX_ENABLE_C99], [
                     namespace test { using ::wcstof; } ], [],
  	    	   [AC_DEFINE(HAVE_WCSTOF,1,[Defined if wcstof exists.])],[])
 
+    AC_TRY_COMPILE([#include <wchar.h>
+		    namespace test { using ::wcscoll; } ], [],
+		   [AC_DEFINE(HAVE_WCSCOLL,1,[Defined if wcscoll exists.])],[])
+
+    AC_TRY_COMPILE([#include <wchar.h>
+		    namespace test { using ::wcsxfrm; } ], [],
+		   [AC_DEFINE(HAVE_WCSXFRM,1,[Defined if wcsxfrm exists.])],[])
+
+    # The next two checks should probably be moved somewhere else.
+    AC_TRY_COMPILE([#include <string.h>
+		    namespace test { using ::strcoll; } ], [],
+		   [AC_DEFINE(HAVE_STRCOLL,1,[Defined if strcoll exists.])],[])
+
+    AC_TRY_COMPILE([#include <string.h>
+		    namespace test { using ::strxfrm; } ], [],
+		   [AC_DEFINE(HAVE_STRXFRM,1,[Defined if strxfrm exists.])],[])
+
     AC_TRY_COMPILE([#include <wctype.h>],
                    [ wint_t t; int i = iswblank(t);], 
  	    	   [AC_DEFINE(HAVE_ISWBLANK,1,
@@ -1944,7 +1961,6 @@ AC_DEFUN([GLIBCXX_ENABLE_WCHAR_T], [
 			using ::wcscat; 
 			using ::wcschr; 
 			using ::wcscmp; 
-			using ::wcscoll; 
 			using ::wcscpy; 
 			using ::wcscspn; 
 			using ::wcsftime; 
@@ -1961,7 +1977,6 @@ AC_DEFUN([GLIBCXX_ENABLE_WCHAR_T], [
 			using ::wcstok; 
 			using ::wcstol;
 			using ::wcstoul; 
-			using ::wcsxfrm; 
 			using ::wctob; 
 			using ::wmemchr;
 			using ::wmemcmp;

@@ -113,7 +113,9 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
   using ::fputc;
   using ::fputs;
   using ::fread;
+#ifndef __MINGW32CE__
   using ::freopen;
+#endif
   using ::fscanf;
   using ::fseek;
   using ::fsetpos;
@@ -122,21 +124,29 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
   using ::getc;
   using ::getchar;
   using ::gets;
+#ifndef __MINGW32CE__
   using ::perror;
+#endif
   using ::printf;
   using ::putc;
   using ::putchar;
   using ::puts;
+#ifndef __MINGW32CE__
   using ::remove;
   using ::rename;
   using ::rewind;
+#endif
   using ::scanf;
+#ifndef __MINGW32CE__
   using ::setbuf;
+#endif
   using ::setvbuf;
   using ::sprintf;
   using ::sscanf;
+#ifndef __MINGW32CE__
   using ::tmpfile;
   using ::tmpnam;
+#endif
   using ::ungetc;
   using ::vfprintf;
   using ::vprintf;

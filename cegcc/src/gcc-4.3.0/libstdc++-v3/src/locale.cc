@@ -26,7 +26,9 @@
 // invalidate any other reasons why the executable file might be covered by
 // the GNU General Public License.
 
+#ifdef _GLIBCXX_HAVE_LOCALE_H
 #include <clocale>
+#endif
 #include <cstring>
 #include <cstdlib>     // For getenv
 #include <cctype>
@@ -145,6 +147,9 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
   locale::category
   locale::_S_normalize_category(category __cat) 
   {
+#ifdef __MINGW32CE__
+    return __cat;
+#else
     int __ret = 0;
     if (__cat == none || ((__cat & all) && !(__cat & ~all)))
       __ret = __cat;
@@ -182,6 +187,7 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
 	  }
       }
     return __ret;
+#endif
   }
 
   // locale::facet

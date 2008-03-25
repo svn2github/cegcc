@@ -1,0 +1,128 @@
+2008-03-25  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* Port src/gcc/libstdc++v3 adaptations from cegcc svn into gcc-4.3.0 .
+
+2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* crossconfig.m4: Place *-*-mingw32* case below mingw32ce so
+	it isn't picked up with arm-mingw32ce.  Don't use
+	arm-unknown-mingw32ce*, use arm*-*-mingw32ce* instead.
+
+2007-02-04  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* acinclude.m4 (GLIBCXX_ENABLE_C99]): Remove wcscoll and wcsxfrm.
+	Check for wcscoll, wcsxfrm, strcoll and strxfrm.
+	* configure: Regenerate.
+	* include/c_std/std_cwchar.h: Use _GLIBCXX_HAVE_WCSCOLL, and 
+	_GLIBCXX_HAVE_WCSXFRM.
+	* config/locale/generic/collate_members.cc
+	(collate<char>::_M_compare): Use _GLIBCXX_HAVE_STRCOLL.
+	Use strcmp as alternative.
+	(collate<char>::_M_transform): Use _GLIBCXX_HAVE_STRXFRM.
+	Use strncpy as alternative.
+	(collate<wchar_t>::_M_compare): Use _GLIBCXX_HAVE_WCSCOLL.
+	Use wcscmp as alternative.
+	(collate<wchar_t>::_M_transform): Use _GLIBCXX_HAVE_WCSXFRM.
+	Use wcsncpy as alternative.
+	
+2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config/io/basic_file_stdio.cc (__gnu_internal::read,
+	__gnu_internal::write, __gnu_internal::lseek,
+	__gnu_internal::fdopen): Delete.
+	(__basic_file<char>::sys_open): Fix typo.
+
+2006-10-22  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config/locale/generic/time_members.cc : 
+	(__timepunct<char>::_M_put): Enable on __MINGW32CE__.
+	(__timepunct<char>::_M_initialize_timepunct) : Likewise.
+	(__timepunct<wchar_t>::_M_put) : Likewise.
+	(__timepunct<wchar_t>::_M_initialize_timepunct) : Likewise.
+
+2006-10-18  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config/io/basic_file_stdio.cc : Include <windows.h> on mingw32ce.
+	(__gnu_internal::read) : New.
+	(__gnu_internal::write) : New.
+	(__gnu_internal::lseek) : New.
+	(__gnu_internal::fdopen) : New.
+	(__gnu_internal::xwrite): Revert to always using file 
+	descriptors (handles on CE).
+	(__basic_file<char>::sys_open) : Enable on mingw32ce too. Don't 
+	special case __fd == 0.
+	(__basic_file<char>::fd) : Enable on mingw32ce too.
+	(__basic_file<char>::xsgetn) : Use file descriptors on mingw32ce too.
+	(__basic_file<char>::xsputn) : Likewise.
+	(__basic_file<char>::xsputn_2) : Likewise.
+	(__basic_file<char>::seekoff) : Likewise, using __gnu_internal::lseek.
+ 	(__basic_file<char>::showmanyc) : Implement for mingw32ce using Win32 api.
+
+2006-10-17  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* crossconfig.m4 (cegcc*, mingw32*): Add fnctl.h to AC_CHECK_HEADERS.
+	* configure : Regenerate.
+	* config.h.in : Regenerate.
+	* config/io/basic_file_stdio.cc : Wrap fnctl.h inclusion 
+	on _GLIBCXX_HAVE_FCNTL_H.
+
+2006-10-16  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* include/ext/pool_allocator.h : Include runtimeopts.h.
+	(allocate) : Use runtimeopts::force_new_p.
+	* include/ext/stdio_filebuf.h (stdio_filebuf) : Don't build 
+	fildes constructor version on mingw32ce. 
+	(fd) : Don't build on mingw32ce.
+	* include/ext/stdio_sync_filebuf.h : Wrap unistd.h inclusion 
+	on _GLIBCXX_HAVE_UNISTD_H.
+	* include/ext/mt_allocator.h : Include runtimeopts.h.
+	(_Tune) : Use runtimeopts::force_new_p.
+	(_S_tune) : Likewise.
+	* include/Makefile.am (host_headers) : Add runtimeopts.h 
+	* include/Makefile.in : Regenerate.
+	* include/stdc++.h : Include <bits/c++config.h>.
+	Wrap errno.h inclusion with _GLIBCXX_HAVE_ERRNO_H.
+	Wrap clocale.h inclusion with _GLIBCXX_HAVE_LOCALE_H.
+	Wrap csignal.h inclusion with _GLIBCXX_HAVE_SIGNAL_H.
+	* include/c_std/std_cstdlib.h (bsearch, calloc, getenv, 
+	mblen, mbstowcs, mbtowc, system, freopen, perror, 
+	remove, rename, rewind, setbuf, tmpfile, tmpnam,
+	clock, mktime, time, asctime, ctime, gmtime, 
+	localtime, strftime) : These function on exist on coredll. Wrap with
+	ifndef __MINGW32CE__.
+	* include/c_std/std_cstring.h (strcoll, strxfrm, strerror): Likewise.
+	* src/localename.cc : Wrap clocale.h inclusion with
+	_GLIBCXX_HAVE_LOCALE_H.
+	(locale) : No locale support on coredll, Always use _S_classic.
+	* src/locale_init.cc : Wrap clocale.h inclusion with
+	_GLIBCXX_HAVE_LOCALE_H.
+	(global) : No setlocale on coredll. Wrap with ifndef __MINGW32CE__.
+	* src/locale.cc : Wrap clocale.h inclusion with
+	_GLIBCXX_HAVE_LOCALE_H.
+	(_S_normalize_category) : Always return __cat on mingw32ce.
+	* crossconfig.m4 (cegcc): Add errno.h, signal.h and unistd.h 
+	to AC_CHECK_HEADERS. Call GLIBCXX_CHECK_STDLIB_SUPPORT.
+	* config/locale/generic/collate_members.cc (_M_compare) : 
+	No strcoll on coredll. Call strcmp instead.
+	(_M_transform) : No strxfrm on coredll. Call strncpy + strlen instead.
+	* config/locale/generic/c_locale.cc: Include <bits/c++config.h>.
+	Wrap errno.h inclusion with _GLIBCXX_HAVE_ERRNO_H.
+	Provice a default ERANGE for mingw32ce.
+	(__convert_to_v) Adapt to lack of errno and setlocale.
+	* config/locale/generic/c_locale.h :
+	Wrap clocale.h inclusion with _GLIBCXX_HAVE_LOCALE_H.
+	(__convert_from_v) : Don't handle locale on mingw32ce.
+	* config/locale/generic/time_members.cc (_M_put) : Don't build on 
+	mingw32ce.
+	* config/io/basic_file_stdio.cc : 
+	Wrap errno.h inclusion with _GLIBCXX_HAVE_ERRNO_H.
+	Use FILE* instead of file descriptors on mingw32ce throughout.
+	Adapt to lack of errno.
+	* configure: Regenerate.
+	* config.h.in : Regenerate.
+
+2006-10-10  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* config/os/generic/runtimeopts.h : New file.
+	* configure: Regenerate with autoconf 2.59.
+	* ChangeLog.ce : New file.

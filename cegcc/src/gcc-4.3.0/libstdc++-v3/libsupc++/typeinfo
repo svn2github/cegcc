@@ -113,7 +113,9 @@ namespace std
     bool operator==(const type_info& __arg) const;
 #else
   #if !__GXX_MERGED_TYPEINFO_NAMES
+#ifndef __MINGW32CE__
     #error "Inline implementation of type_info comparision requires merging of type_info objects"
+#endif
   #endif
     /** Returns true if @c *this precedes @c __arg in the implementation's
      *  collation order.  */

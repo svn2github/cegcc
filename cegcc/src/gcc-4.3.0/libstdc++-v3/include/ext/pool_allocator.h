@@ -54,6 +54,7 @@
 #include <bits/functexcept.h>
 #include <ext/atomicity.h>
 #include <ext/concurrence.h>
+#include <bits/runtimeopts.h>
 #include <bits/stl_move.h>
 
 _GLIBCXX_BEGIN_NAMESPACE(__gnu_cxx)
@@ -205,12 +206,17 @@ _GLIBCXX_BEGIN_NAMESPACE(__gnu_cxx)
 	  if (__builtin_expect(__n > this->max_size(), false))
 	    std::__throw_bad_alloc();
 
-	  // If there is a race through here, assume answer from getenv
-	  // will resolve in same direction.  Inspired by techniques
-	  // to efficiently support threading found in basic_string.h.
+	  // If there is a race through here, assume answer from 
+	  // runtime_opts::force_new_p will resolve in same direction.
+	  // Inspired by techniques to efficiently support threading
+	  // found in basic_string.h.
 	  if (_S_force_new == 0)
 	    {
+#ifdef __MINGW32CE__
+	      if (runtime_opts::force_new_p())
+#else
 	      if (std::getenv("GLIBCXX_FORCE_NEW"))
+#endif
 		__atomic_add_dispatch(&_S_force_new, 1);
 	      else
 		__atomic_add_dispatch(&_S_force_new, -1);

@@ -38,7 +38,7 @@
 // System-specific #define, typedefs, corrections, etc, go here.  This
 // file will come before all others.
 
-#ifdef __CYGWIN__
+#if defined __CYGWIN__ || defined UNDER_CE
 #define _GLIBCXX_GTHREAD_USE_WEAK 0
 
 // See libstdc++/20806.

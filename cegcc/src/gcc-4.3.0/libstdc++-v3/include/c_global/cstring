@@ -84,17 +84,23 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
   using ::memset;
   using ::strcat;
   using ::strcmp;
+#ifndef __MINGW32CE__
   using ::strcoll;
+#endif
   using ::strcpy;
   using ::strcspn;
+#ifndef __MINGW32CE__
   using ::strerror;
+#endif
   using ::strlen;
   using ::strncat;
   using ::strncmp;
   using ::strncpy;
   using ::strspn;
   using ::strtok;
+#ifndef __MINGW32CE__
   using ::strxfrm;
+#endif
 
   inline void*
   memchr(void* __p, int __c, size_t __n)

@@ -1,7 +1,6 @@
-// -*- C++ -*- forwarding header.
+// Locale support -*- C++ -*-
 
-// Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005
-// Free Software Foundation, Inc.
+// Copyright (C) 1997, 1998, 1999, 2003 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -28,59 +27,32 @@
 // invalidate any other reasons why the executable file might be covered by
 // the GNU General Public License.
 
-/** @file include/ctime
- *  This is a Standard C++ Library file.  You should @c #include this file
- *  in your programs, rather than any of the "*.h" implementation files.
- *
- *  This is the C++ version of the Standard C Library header @c time.h,
- *  and its contents are (mostly) the same as that header, but are all
- *  contained in the namespace @c std (except for names which are defined
- *  as macros in C).
- */
-
 //
-// ISO C++ 14882: 20.5  Date and time
+// ISO C++ 14882: 22.1  Locales
 //
+  
+// Default information, may not be appropriate for specific host.
+  
+  struct ctype_base
+  {
+    // Non-standard typedefs.
+    typedef const int* 		__to_type;
 
-#ifndef _GLIBCXX_CTIME
-#define _GLIBCXX_CTIME 1
+    // NB: Offsets into ctype<char>::_M_table force a particular size
+    // on the mask type. Because of this, we don't use an enum.
+    typedef unsigned int 	mask;   
+    static const mask upper    	= 1 << 0;
+    static const mask lower 	= 1 << 1;
+    static const mask alpha 	= 1 << 2;
+    static const mask digit 	= 1 << 3;
+    static const mask xdigit 	= 1 << 4;
+    static const mask space 	= 1 << 5;
+    static const mask print 	= 1 << 6;
+    static const mask graph 	= (1 << 2) | (1 << 3) | (1 << 9);  // alnum|punct
+    static const mask cntrl 	= 1 << 8;
+    static const mask punct 	= 1 << 9;
+    static const mask alnum 	= (1 << 2) | (1 << 3);  // alpha|digit
+  };
 
-#pragma GCC system_header
 
-#include <cstddef>
-#include <time.h>
 
-// Get rid of those macros defined in <time.h> in lieu of real functions.
-#undef clock
-#undef difftime
-#undef mktime
-#undef time
-#undef asctime
-#undef ctime
-#undef gmtime
-#undef localtime
-#undef strftime
-
-_GLIBCXX_BEGIN_NAMESPACE(std)
-
-  using ::clock_t;
-  using ::time_t;
-  using ::tm;
-
-#ifndef __MINGW32CE__
-  using ::clock;
-#endif
-  using ::difftime;
-#ifndef __MINGW32CE__
-  using ::mktime;
-  using ::time;
-  using ::asctime;
-  using ::ctime;
-  using ::gmtime;
-  using ::localtime;
-  using ::strftime;
-#endif
-
-_GLIBCXX_END_NAMESPACE
-
-#endif

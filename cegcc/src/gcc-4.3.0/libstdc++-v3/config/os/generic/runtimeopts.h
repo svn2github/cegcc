@@ -1,7 +1,4 @@
-// -*- C++ -*- forwarding header.
-
-// Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005
-// Free Software Foundation, Inc.
+// Copyright (C) 2006 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -28,59 +25,21 @@
 // invalidate any other reasons why the executable file might be covered by
 // the GNU General Public License.
 
-/** @file include/ctime
- *  This is a Standard C++ Library file.  You should @c #include this file
- *  in your programs, rather than any of the "*.h" implementation files.
- *
- *  This is the C++ version of the Standard C Library header @c time.h,
- *  and its contents are (mostly) the same as that header, but are all
- *  contained in the namespace @c std (except for names which are defined
- *  as macros in C).
- */
 
-//
-// ISO C++ 14882: 20.5  Date and time
-//
-
-#ifndef _GLIBCXX_CTIME
-#define _GLIBCXX_CTIME 1
+#ifndef _GLIBCXX_RUNTIMEOPTS_H
+#define _GLIBCXX_RUNTIMEOPTS_H 1
 
 #pragma GCC system_header
 
-#include <cstddef>
-#include <time.h>
-
-// Get rid of those macros defined in <time.h> in lieu of real functions.
-#undef clock
-#undef difftime
-#undef mktime
-#undef time
-#undef asctime
-#undef ctime
-#undef gmtime
-#undef localtime
-#undef strftime
-
-_GLIBCXX_BEGIN_NAMESPACE(std)
-
-  using ::clock_t;
-  using ::time_t;
-  using ::tm;
-
-#ifndef __MINGW32CE__
-  using ::clock;
-#endif
-  using ::difftime;
-#ifndef __MINGW32CE__
-  using ::mktime;
-  using ::time;
-  using ::asctime;
-  using ::ctime;
-  using ::gmtime;
-  using ::localtime;
-  using ::strftime;
-#endif
-
-_GLIBCXX_END_NAMESPACE
+namespace __gnu_cxx
+{
+	namespace runtime_opts
+	{
+		inline bool force_new_p()
+		{
+			return getenv ("GLIBCXX_FORCE_NEW") != 0;
+		}
+	} // namespace runtime_opts
+} // namespace __gnu_cxx
 
 #endif

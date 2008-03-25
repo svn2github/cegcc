@@ -232,6 +232,15 @@ case "${host}" in
       ],
       [AC_DEFINE(HAVE_SIGSETJMP, 1, [Define if sigsetjmp is available.])])
     ;;
+  arm-wince-pe | arm*-*-cegcc* | arm*-*-mingw32ce*)
+    AC_CHECK_HEADERS([sys/types.h locale.h float.h errno.h signal.h unistd.h fcntl.h])
+#    AC_DEFINE(_GLIBCXX_HAVE_SYS_IOCTL_H)
+#    AC_DEFINE(HAVE_SYS_IOCTL_H)
+    GLIBCXX_CHECK_LINKER_FEATURES
+    GLIBCXX_CHECK_COMPLEX_MATH_SUPPORT
+    GLIBCXX_CHECK_STDLIB_SUPPORT
+#    GLIBCXX_CHECK_WCHAR_T_SUPPORT
+    ;;
   *-mingw32*)
     AC_CHECK_HEADERS([sys/types.h locale.h float.h])
     GLIBCXX_CHECK_LINKER_FEATURES

@@ -1,7 +1,6 @@
-// -*- C++ -*- forwarding header.
+// Specific definitions for generic platforms  -*- C++ -*-
 
-// Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005
-// Free Software Foundation, Inc.
+// Copyright (C) 2000, 2001, 2002, 2003, 2005 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
@@ -28,59 +27,25 @@
 // invalidate any other reasons why the executable file might be covered by
 // the GNU General Public License.
 
-/** @file include/ctime
- *  This is a Standard C++ Library file.  You should @c #include this file
- *  in your programs, rather than any of the "*.h" implementation files.
- *
- *  This is the C++ version of the Standard C Library header @c time.h,
- *  and its contents are (mostly) the same as that header, but are all
- *  contained in the namespace @c std (except for names which are defined
- *  as macros in C).
- */
 
-//
-// ISO C++ 14882: 20.5  Date and time
-//
+#ifndef _GLIBCXX_OS_DEFINES
+#  define _GLIBCXX_OS_DEFINES
 
-#ifndef _GLIBCXX_CTIME
-#define _GLIBCXX_CTIME 1
+// System-specific #define, typedefs, corrections, etc, go here.  This
+// file will come before all others.
 
-#pragma GCC system_header
-
-#include <cstddef>
-#include <time.h>
-
-// Get rid of those macros defined in <time.h> in lieu of real functions.
-#undef clock
-#undef difftime
-#undef mktime
-#undef time
-#undef asctime
-#undef ctime
-#undef gmtime
-#undef localtime
-#undef strftime
-
-_GLIBCXX_BEGIN_NAMESPACE(std)
-
-  using ::clock_t;
-  using ::time_t;
-  using ::tm;
-
-#ifndef __MINGW32CE__
-  using ::clock;
-#endif
-  using ::difftime;
-#ifndef __MINGW32CE__
-  using ::mktime;
-  using ::time;
-  using ::asctime;
-  using ::ctime;
-  using ::gmtime;
-  using ::localtime;
-  using ::strftime;
+//  Define as 0, if you want, to enable inlining of gthread functions.
+//  By default, don't pollute libstdc++ with win32api names.
+#if !defined (__GTHREAD_HIDE_WIN32API)
+# define __GTHREAD_HIDE_WIN32API 1
 #endif
 
-_GLIBCXX_END_NAMESPACE
+// Don't let win32api windef.h define min and max as macros
+// if included after stl_algobase.h. 
+#undef NOMINMAX
+#define NOMINMAX 1
+
+// See libstdc++/20806.
+#define _GLIBCXX_HAVE_DOS_BASED_FILESYSTEM 1
 
 #endif
