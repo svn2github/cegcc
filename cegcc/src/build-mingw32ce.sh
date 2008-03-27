@@ -23,7 +23,7 @@ Usage: $0 [OPTIONS] ...
 			  [$ac_default_prefix]
   --components=LIST       specify which components to build
                           valid components are: all,binutils,bootstrapgcc,
-                          gcc,w32api,mingw, gdb,gdbstub,docs and profile
+                          mingw,w32api,gcc,docs,profile,gdb,gdbstub,dlls
 			  [all]
 
 Report bugs to <cegcc-devel@lists.sourceforge.net>.
@@ -367,7 +367,7 @@ build_profile()
     cd ${BUILD_DIR}
 }
 
-build_dlls()
+obuild_dlls()
 {
     echo ""
     echo "BUILDING DLL libraries --------------------------"
@@ -381,6 +381,22 @@ build_dlls()
 
     cd ${BASE_DIRECTORY} || exit 1
     ${BASE_DIRECTORY}/build-mingw32ce-dlls.sh || exit 1
+
+    cd ${BUILD_DIR}
+}
+
+build_dlls()
+{
+    echo ""
+    echo "BUILDING DLL libraries --------------------------"
+    echo ""
+    echo ""
+
+    cd ${BUILD_DIR}
+
+    cd ${BASE_DIRECTORY}/mingwdll || exit 1
+    make         || exit 1
+    make install || exit 1
 
     cd ${BUILD_DIR}
 }

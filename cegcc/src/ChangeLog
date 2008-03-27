@@ -1,3 +1,12 @@
+2008-03-27  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* mingwdll: Add new directory structure, containing mostly
+	Makefiles, to deal with creation of DLL files, to replace
+	the build-mingw32ce-dlls.sh script.
+	* build-mingw32ce.sh: Adapt to use mingwdll directory.
+	* build-mingw32ce.sh: Change order of items in the help text so it
+	reflects the reality.
+
 2008-01-02  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* cegcc/cegccdll/Makefile, cegcc/libstdc++/Makefile: Use "?=" to
