@@ -18803,35 +18803,6 @@ arm_pe_exception_handler (FILE * ARG_UNUSED (fp), char *name, tree decl)
   tree attr, a2;
 
   attr = DECL_ATTRIBUTES (decl);
-  {
-//	tree format_num_expr = TREE_VALUE (TREE_CHAIN (attr));
-//	tree format_num_expr = TREE_VALUE (attr);
-//	tree format_num_expr = (attr);
-
-// deze doet iets zinnig :
-//	tree format_num_expr = TREE_VALUE(decl);
-// exarg.c: In function 'handler':
-// exarg.c:13: internal compiler error: tree check: expected tree_list, have function_decl in arm_pe_exception_handler, at config/arm/arm.c:15568
-//
-
-//	a2 = lookup_attribute ("__exception_handler__", decl);
-//	tree format_num_expr = TREE_VALUE(a2);
-
-//	tree format_num_expr = TREE_VALUE(TREE_CHAIN(decl));
-//	tree format_num_expr = TREE_VALUE(decl);
-	tree format_num_expr = decl;
-
-#if 0
-	fprintf(stderr, "Yow arm_pe_exception_handler %p\n", format_num_expr);
-	if (TREE_CODE(format_num_expr) == STRING_CST) {
-		fprintf(stderr, "arm_pe_exception_handler : string\n");
-	} else if (TREE_CODE(format_num_expr) == INTEGER_CST) {
-		fprintf(stderr, "arm_pe_exception_handler : integer\n");
-	} else {
-		fprintf(stderr, "arm_pe_exception_handler : unknown\n");
-	}
-#endif
-  }
   if (! attr)
     return NULL;
   a2 = lookup_attribute ("__exception_handler__", attr);
@@ -18871,19 +18842,6 @@ arm_pe_handle_exception_handler_attribute (tree *node, tree name,
 	 in the right field as we do with the exception handler.  */
 	tree attr = NULL_TREE;
 
-//	fprintf(stderr, "arm_pe_handle_exception_handler_attribute: arg %p no_add_attrs %d\n",
-//			flags, *no_add_attrs);
-
-	tree format_num_expr = TREE_VALUE (TREE_CHAIN (args));
-#if 0
-	if (TREE_CODE(format_num_expr) == STRING_CST) {
-		fprintf(stderr, "arm_pe_handle_exception_handler_attribute : string\n");
-	} else if (TREE_CODE(format_num_expr) == INTEGER_CST) {
-		fprintf(stderr, "arm_pe_handle_exception_handler_attribute : integer\n");
-	} else {
-		fprintf(stderr, "arm_pe_handle_exception_handler_attribute : unknown\n");
-	}
-#endif
 	attr = tree_cons (get_identifier ("exception_handler"), args, attr);
     }
   else

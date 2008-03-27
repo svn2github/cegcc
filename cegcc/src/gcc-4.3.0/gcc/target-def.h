@@ -391,7 +391,9 @@
 /* In tree.c.  */
 #define TARGET_MERGE_DECL_ATTRIBUTES merge_decl_attributes
 #define TARGET_MERGE_TYPE_ATTRIBUTES merge_type_attributes
+#ifndef TARGET_ATTRIBUTE_TABLE
 #define TARGET_ATTRIBUTE_TABLE NULL
+#endif
 
 /* In cse.c.  */
 #define TARGET_ADDRESS_COST default_address_cost
