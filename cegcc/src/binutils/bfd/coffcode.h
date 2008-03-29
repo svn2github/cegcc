@@ -5263,7 +5263,8 @@ static const bfd_coff_backend_data bfd_coff_std_swap_table ATTRIBUTE_UNUSED =
   coff_classify_symbol, coff_compute_section_file_positions,
   coff_start_final_link, coff_relocate_section, coff_rtype_to_howto,
   coff_adjust_symndx, coff_link_add_one_symbol,
-  coff_link_output_has_begun, coff_final_link_postscript
+  coff_link_output_has_begun, coff_final_link_postscript,
+  bfd_pe_print_pdata
 };
 
 #ifdef TICOFF
@@ -5306,7 +5307,8 @@ static const bfd_coff_backend_data ticoff0_swap_table =
   coff_classify_symbol, coff_compute_section_file_positions,
   coff_start_final_link, coff_relocate_section, coff_rtype_to_howto,
   coff_adjust_symndx, coff_link_add_one_symbol,
-  coff_link_output_has_begun, coff_final_link_postscript
+  coff_link_output_has_begun, coff_final_link_postscript,
+  bfd_pe_print_pdata
 };
 #endif
 
@@ -5350,7 +5352,8 @@ static const bfd_coff_backend_data ticoff1_swap_table =
   coff_classify_symbol, coff_compute_section_file_positions,
   coff_start_final_link, coff_relocate_section, coff_rtype_to_howto,
   coff_adjust_symndx, coff_link_add_one_symbol,
-  coff_link_output_has_begun, coff_final_link_postscript
+  coff_link_output_has_begun, coff_final_link_postscript,
+  bfd_pe_print_pdata
 };
 #endif
 
