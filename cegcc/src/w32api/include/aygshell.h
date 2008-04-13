@@ -14,6 +14,7 @@ extern "C" {
 #include <windows.h>
 #include <basetyps.h>	/* Make sure we have a CLSID definition */
 #include <shellapi.h>	/* for WINSHELLAPI */
+#include <sipapi.h>
 
 /*
  * Menu Bar

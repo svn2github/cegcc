@@ -1,3 +1,7 @@
+2008-04-13  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/aygshell.h: Add <sipapi.h> include.
+
 2008-02-21  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/winnt.h (VER_PLATFORM_WIN32_CE): Define.
