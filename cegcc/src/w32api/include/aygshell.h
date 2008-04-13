@@ -241,6 +241,7 @@ BOOL SHDoneButton(HWND, DWORD);
 #define	SHDB_SHOW	1
 #define	SHDB_HIDE	2
 
+BOOL SHSetAppKeyWndAssoc(BYTE bVk, HWND hwnd);
 #endif	/* _WIN32_WCE >= 0x0300 */
 
 #ifdef	__cplusplus

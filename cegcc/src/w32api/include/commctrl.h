@@ -3750,6 +3750,7 @@ COMMCTRLAPI BOOL WINAPI CommandBar_DrawMenuBar(HWND,WORD);
 COMMCTRLAPI HMENU WINAPI CommandBar_GetMenu(HWND,WORD);
 COMMCTRLAPI BOOL WINAPI CommandBar_AddAdornments(HWND,DWORD,DWORD);
 COMMCTRLAPI int WINAPI CommandBar_Height(HWND);
+BOOL CommandBar_AddButtons(HWND hwndCB, UINT uNumButtons, LPTBBUTTON lpButtons); 
 
 #define CommandBar_InsertButton(hwnd,i,lptbbutton) ((BOOL)SendMessage((hwnd),TB_INSERTBUTTON,(i),(lptbbutton)))
 #define CommandBar_Destroy(hwnd) ((void)DestroyWindow(hwnd))

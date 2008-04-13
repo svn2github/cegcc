@@ -1,5 +1,11 @@
 2008-04-13  Danny Backx  <dannybackx@users.sourceforge.net>
 
+	* include/notify.h: Add.
+	* include/aygshell.h (SHSetAppKeyWndAssoc): Define.
+	* include/commctrl (CommandBar_AddButtons): Define.
+
+2008-04-13  Danny Backx  <dannybackx@users.sourceforge.net>
+
 	* include/aygshell.h: Add <sipapi.h> include.
 
 2008-02-21  Danny Backx  <dannybackx@users.sourceforge.net>
