@@ -1,4 +1,13 @@
 2008-04-13  Danny Backx  <dannybackx@users.sourceforge.net>
+	* include/commctrl.h (CommandBar_AddButtons): Change from a
+	function definition into a macro.
+	* include/prsht.h (PSH_MAXIMIZE): Define.
+	* include/winioctl.h (FILE_DEVICE_HAL, FILE_DEVICE_SERVICE,
+	IOCTL_SERVICE_START, IOCTL_SERVICE_STOP, IOCTL_SERVICE_STATUS,
+	IOCTL_SERVICE_CONNECTION): Define.
+
+
+2008-04-13  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/winuser.h (SystemIdleTimerReset): Define.
 
@@ -6,7 +15,7 @@
 
 	* include/notify.h: Add.
 	* include/aygshell.h (SHSetAppKeyWndAssoc): Define.
-	* include/commctrl (CommandBar_AddButtons): Define.
+	* include/commctrl.h (CommandBar_AddButtons): Define.
 
 2008-04-13  Danny Backx  <dannybackx@users.sourceforge.net>
 
