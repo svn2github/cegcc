@@ -1,3 +1,7 @@
+2008-05-22  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/projects.h: Add.
+
 2008-04-13  Danny Backx  <dannybackx@users.sourceforge.net>
 	* include/commctrl.h (CommandBar_AddButtons): Change from a
 	function definition into a macro.
