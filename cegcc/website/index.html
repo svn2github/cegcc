@@ -8,6 +8,7 @@
 <body>
 <p>
 <img src="images/banner1.png" alt="CeGCC cross compiler for PocketPC">
+<a href="http://sourceforge.net/awards/cca/?group_id=173455"><img src="http://sourceforge.net/awards/cca/badge_img.php?group_id=173455&style=5" border="0" /></a>
 <p>
 <table border="3">
 <tr><td width="66%">
@@ -22,22 +23,28 @@ You can develop on a PC, and create apps that run on a PDA or a WinCE cell phone
 <p>
 We're aiming at providing a consistent and working set of development tools that
 generate code for Windows CE devices such as PDA's and smart phones.
-Our intended development platforms are
-the <a href="http://www.cygwin.com">cygwin</a> environment
-and <a href="http://www.linux.org">GNU/Linux</a> systems.
+Our intended development platforms are the usual GNU development workstations,
+e.g. <a href="http://www.linux.org">GNU/Linux</a>,
+<a href="http://www.freebsd.org">FreeBSD</a>, or 
+<a href="http://www.cygwin.com">cygwin</a>.
 <p>
 We have two products :
 <ul>
-	<li>arm-wince-mingw32ce : toolset to build native Windows CE applications
-	<li>arm-wince-cegcc : toolset to port unix source to Windows CE
+	<li>arm-mingw32ce : toolset to build native Windows CE applications
+	<li>arm-cegcc : toolset to port unix source to Windows CE
 </ul>
+<i>In versions prior to 0.55, these were called <b>arm-wince-mingw32ce</b>
+and <b>arm-wince-cegcc</b> but we changed this in agreement with other projects,
+to facilitate feedback of patches.</i>
+<p>
 Both toolsets allow you to develop on a PC,
 and create apps that run on a PDA or a WinCE cell phone.
 <p>
-What's the meaning of <b>arm-wince-cegcc</b> and <b>arm-wince-mingw32ce</b> ?
+What's the meaning of <b>arm-cegcc</b> and <b>arm-mingw32ce</b> ?
 They both describe the target platform :
 we're building for an <b>ARM</b> processor,
-running the <b>wince</b> (Windows CE) operating system.
+running the Windows CE operating system,
+on unknown hardware (could be any brand of PDA or smart phone).
 In the <b>cegcc</b> case, there's a portability layer;
 in the <b>mingw32ce</b> case there isn't.
 <p>
@@ -49,12 +56,12 @@ Combine this with our development platforms, and you get four choices :
 		<td> Cygwin host </td>
 	</tr>
 	<tr>
-		<td> arm-wince-mingw32ce </td>
+		<td> arm-mingw32ce </td>
 		<td> Develop on Linux, create Windows CE native apps </td>
 		<td> Develop on Cygwin, create Windows CE native apps </td>
 	</tr>
 	<tr>
-		<td> arm-wince-cegcc</td>
+		<td> arm-cegcc</td>
 		<td> Develop on Linux, port *nix sources to Windows CE </td>
 		<td> Develop on Cygwin, port *nix sources to Windows CE </td>
 	</tr>
