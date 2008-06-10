@@ -128,7 +128,11 @@ typedef _fpos64_t fpos64_t;
 #endif
 
 #ifndef __STRICT_ANSI__
+#ifdef UNDER_CE
+#define P_tmpdir        "/temp"
+#else
 #define P_tmpdir        "/tmp"
+#endif
 #endif
 
 #ifndef SEEK_SET

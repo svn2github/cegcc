@@ -1,3 +1,8 @@
+2008-06-10  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* newlib/libc/include/stdio.h (P_tmpdir) : Point to a directory that
+	exists on CE, not /tmp.
+
 2007-12-23  Pavel Chernikov <pchernik@gmail.com>
 
 	* newlib/libc/sys/wince/sys/dirent.h (readdir_r) : Add declaration.
