@@ -1,3 +1,9 @@
+2008-06-20  Eric House <eehouse@eehouse.org>
+
+	* cegcc/importlibs/defs/aygshell.def, w32api/include/aygshell.h,
+	w32api/libce/aygshell.def (SHSendBackToFocusWindow, SHMBOF_NODEFAULT,
+	SHMBOF_NOTIFY, SHCMBM_OVERRIDEKEY, VK_TBACK) : Define.
+
 2008-06-20  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* build-mingw32ce.sh: Export BASE_DIRECTORY, the mingwdll build stuff

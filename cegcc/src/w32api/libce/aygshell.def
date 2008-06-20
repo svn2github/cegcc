@@ -87,6 +87,7 @@ SubClassThisWindow
 ;
 SHHandleWMSettingChange		@83     NONAME	; described as NONAME on MSDN
 SHHandleWMActivate		@84     NONAME	; described as NONAME on MSDN
+SHSendBackToFocusWindow		@97	NONAME  ; http://groups.google.hu/group/microsoft.public.windowsce.embedded/msg/e407143ac07929b9
 ;
 ; These are described by MinGW to be in aygshell.lib but are not published by name
 ; in the DLL, nor do we have confirmation of their ordinal.

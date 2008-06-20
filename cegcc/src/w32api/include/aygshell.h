@@ -15,6 +15,7 @@ extern "C" {
 #include <basetyps.h>	/* Make sure we have a CLSID definition */
 #include <shellapi.h>	/* for WINSHELLAPI */
 #include <sipapi.h>
+#include <prsht.h>
 
 /*
  * Menu Bar
@@ -223,6 +224,14 @@ WINSHELLAPI DWORD SHRecognizeGesture(SHRGINFO *shrg);
 #define	SHCMBM_SETSUBMENU	0x0590
 #define	SHCMBM_GETSUBMENU	0x0591
 #define	SHCMBM_GETMENU		0x0592
+
+/* from http://forums.microsoft.com/MSDN/ShowPost.aspx?PostID=1733046&SiteID=1 */
+#define SHMBOF_NODEFAULT    0x00000001
+#define SHMBOF_NOTIFY       0x00000002
+#define SHCMBM_OVERRIDEKEY  (WM_USER + 403)
+#define VK_TBACK VK_ESCAPE
+
+void SHSendBackToFocusWindow(UINT,WPARAM,LPARAM);
 #endif /* _WIN32_WCE */
 
 #if (_WIN32_WCE >= 0x0400)
