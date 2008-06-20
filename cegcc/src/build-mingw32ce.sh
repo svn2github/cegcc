@@ -1,7 +1,7 @@
 #!/bin/sh
 
-BASE_DIRECTORY=`dirname $0`
-BASE_DIRECTORY=`(cd ${BASE_DIRECTORY}; pwd)`
+export BASE_DIRECTORY=`dirname $0`
+export BASE_DIRECTORY=`(cd ${BASE_DIRECTORY}; pwd)`
 ME=`basename $0`
 
 #
@@ -434,6 +434,7 @@ while [ -n "$1" ]; do
 done
 
 export TARGET="arm-mingw32ce"
+#export TARGET="arm-wince-mingw32ce"
 export BUILD=`sh ${BASE_DIRECTORY}/gcc/config.guess`
 export PATH=${PREFIX}/bin:${PATH}
 

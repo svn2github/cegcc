@@ -1,3 +1,8 @@
+2008-06-20  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* build-mingw32ce.sh: Export BASE_DIRECTORY, the mingwdll build stuff
+	requires it.
+
 2008-03-27  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* mingwdll: Add new directory structure, containing mostly
