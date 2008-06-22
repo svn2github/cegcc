@@ -32,7 +32,7 @@ echo "prefix: ${PREFIX}"
 mkdir -p ${BUILD_DIR} || exit 1
 mkdir -p ${PREFIX} || exit 1
 
-function build_binutils()
+build_binutils()
 {
     echo ""
     echo "BUILDING BINUTILS --------------------------"
@@ -53,7 +53,7 @@ function build_binutils()
     cd ${BASE_DIRECTORY} || exit 1
 }
 
-function build_import_libs()
+build_import_libs()
 {
     echo ""
     echo "Building import libs. --------------------------"
@@ -68,7 +68,7 @@ function build_import_libs()
 }
 
 
-function copy_w32api_headers()
+copy_w32api_headers()
 {
     echo ""
     echo "Copying w32api headers. ----------------------"
@@ -82,7 +82,7 @@ function copy_w32api_headers()
     cp -fp ${BASE_DIRECTORY}/w32api/include/ddk/*.h ${PREFIX}/${TARGET}/include/w32api/ddk || exit 1
 }
 
-function build_dummy_cegccdll()
+build_dummy_cegccdll()
 {
     echo ""
     echo "Building dummy libcegcc.dll.a ----------------------"
@@ -94,7 +94,7 @@ function build_dummy_cegccdll()
     popd || exit 1
 }
 
-function build_bootstrap_gcc()
+build_bootstrap_gcc()
 {
     echo ""
     echo "Building bootstrap gcc. ----------------------"
@@ -124,7 +124,7 @@ function build_bootstrap_gcc()
     cd ${BASE_DIRECTORY} || exit 1
 }
 
-function build_newlib()
+build_newlib()
 {
     echo ""
     echo "Building newlib. --------------------------"
@@ -144,7 +144,7 @@ function build_newlib()
     cd ${BASE_DIRECTORY} || exit 1
 }
 
-function build_gcc()
+build_gcc()
 {
     echo ""
     echo "Building full gcc. --------------------------"
@@ -189,7 +189,7 @@ function build_gcc()
     popd || exit 1
 }
 
-function build_cegccdll()
+build_cegccdll()
 {
     echo ""
     echo "Building cegcc.dll --------------------------"
@@ -201,7 +201,7 @@ function build_cegccdll()
     make install || exit 1
 }
 
-function build_cegccthrddll()
+build_cegccthrddll()
 {
     echo ""
     echo "Building cegccthrd.dll --------------------------"
@@ -213,7 +213,7 @@ function build_cegccthrddll()
     make install || exit 1
 }
 
-function build_libstdcppdll()
+build_libstdcppdll()
 {
     echo ""
     echo "Building libstdc++.dll --------------------------"
@@ -225,7 +225,7 @@ function build_libstdcppdll()
     make install || exit 1
 }
 
-function build_gdb()
+build_gdb()
 {
     echo ""
     echo "BUILDING GDB --------------------------"
@@ -257,7 +257,7 @@ function build_gdb()
     make install || exit 1
 }
 
-function build_gdbstub()
+build_gdbstub()
 {
     echo ""
     echo "BUILDING GDB stub --------------------------"
@@ -281,7 +281,7 @@ function build_gdbstub()
     cd ${BASE_DIRECTORY} || exit 1
 }
 
-function build_profile()
+build_profile()
 {
     echo ""
     echo "BUILDING profiling libraries --------------------------"
@@ -302,7 +302,7 @@ function build_profile()
     make install || exit 1
 }
 
-function build_docs()
+build_docs()
 {
     echo ""
     echo "INSTALLING documentation --------------------------"
@@ -324,7 +324,7 @@ function build_docs()
     cp src/binutils/COPYING.NEWLIB ${PREFIX} || exit 1
 }
 
-function build_all()
+build_all()
 {
     build_binutils
     build_import_libs

@@ -1,3 +1,8 @@
+2008-06-22  Danny Backx  <dannybackx@sourceforge.net>
+
+	* build-cegcc.sh : Remove all instances of the function keyword for
+	POSIX compliance. Based on info by Mosfet, see the mailing list.
+
 2008-06-20  Eric House <eehouse@eehouse.org>
 
 	* cegcc/importlibs/defs/aygshell.def, w32api/include/aygshell.h,
