@@ -214,7 +214,7 @@ case "${targ}" in
     targ_underscore=no
     targ_cflags=-DARM_COFF_BUGFIX
     ;;
-  arm-wince-* | arm-*-wince | arm-wince-cegcc )
+  arm-wince-* | arm-*-wince | arm-wince-cegcc | arm-*-cegcc* | arm-*-mingw*)
     targ_defvec=armpe_little_vec
     targ_selvecs="armpe_little_vec armpe_big_vec armpei_little_vec armpei_big_vec"
     targ_underscore=no

@@ -667,6 +667,14 @@ case $basic_machine in
 		basic_machine=ns32k-utek
 		os=-sysv
 		;;
+	cegcc)
+		basic_machine=arm-unknown
+		os=-cegcc
+		;;
+	mingw32ce)
+		basic_machine=arm-unknown
+		os=-mingw32ce
+		;;
 	mingw32)
 		basic_machine=i386-pc
 		os=-mingw32

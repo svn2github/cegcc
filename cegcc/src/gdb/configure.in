@@ -449,7 +449,7 @@ case "${target}" in
   sh-*-linux*)
     noconfigdirs="$noconfigdirs ${libgcj} target-newlib target-libgloss"
     ;;    
-  sh*-*-pe|mips*-*-pe|*arm-wince-pe|*arm-wince-cegcc)
+  sh*-*-pe|mips*-*-pe|*arm-wince-pe|*arm-wince-cegcc | arm-*-cegcc | arm-*-mingw*)
     noconfigdirs="$noconfigdirs ${libgcj}"
     noconfigdirs="$noconfigdirs target-examples"
     noconfigdirs="$noconfigdirs target-libiberty texinfo send-pr"
@@ -1519,7 +1519,7 @@ case "${target}" in
     # ranlib from Darwin requires the -c flag to look at common symbols.
     extra_ranlibflags_for_target=" -c"
     ;;
-  mips*-*-pe | sh*-*-pe | *arm-wince-pe | *arm-wince-cegcc )
+  mips*-*-pe | sh*-*-pe | *arm-wince-pe | *arm-*-cegcc | arm-*-mingw*)
     target_makefile_frag="config/mt-wince"
     ;;
 esac

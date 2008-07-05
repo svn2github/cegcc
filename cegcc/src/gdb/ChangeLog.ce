@@ -1,3 +1,7 @@
+2008-07-05  Danny Backx  <danny.backx@users.sourceforge.net>
+
+	* config.sub, configure.in, bfd/config.bfd : Add arm-*-mingw32ce*
+	and arm-*-cegcc* .
 2007-12-21  Danny Backx  <danny.backx@users.sourceforge.net>
 
 	* configure.tgt : Add arm-*-mingw32ce* and arm-*-cegcc* .
