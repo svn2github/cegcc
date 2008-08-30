@@ -1,6 +1,7 @@
 2008-08-29  Pawel Veselov <pawel.veselov@gmail.com>
+	* newlib/libc/sys/wince/io.c (fsync, fdatasync) : Implement.
 	* newlib/libc/sys/wince/sys/io.h newlib/libc/sys/wince/io.c
-	newlib/libc/sys/wince/stat.c : add critical section parameter
+	newlib/libc/sys/wince/stat.c : Add critical section parameter
 	to FDCHECK to prevent deadlock when FDCHECK returns.
 
 2008-06-10  Danny Backx  <dannybackx@users.sourceforge.net>

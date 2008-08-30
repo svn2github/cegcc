@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <string.h>
+#include <sys/unistd.h>
 #include <fcntl.h>
 #include <reent.h>
 #include <errno.h>
@@ -97,6 +98,21 @@ _initfds_p(int end)
     _fdtab[i].fd = -1;
   }
   LeaveCriticalSection(&critsect);
+}
+
+int fsync(int fd) {
+  WCETRACE(WCE_IO, "syncing descriptor %d", fd);
+  FDCHECK(fd, 0);
+  if (FlushFileBuffers(_fdtab[fd].hnd)) {
+      errno = _winerr2errno(GetLastError());
+      WCETRACE(WCE_IO, "FlushFileBuffers(%d): errno=%d oserr=%d\n", fd, errno, GetLastError());
+      return -1;
+  }
+  return 0;
+}
+
+int fdatasync(int fd) {
+    return fsync(fd);
 }
 
 void
