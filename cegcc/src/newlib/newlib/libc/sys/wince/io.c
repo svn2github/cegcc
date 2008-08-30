@@ -72,7 +72,7 @@ extern _DEVOPS _fifo_devops;
 
 int getfiletype(int fd)
 {
-	FDCHECK(fd);
+	FDCHECK(fd, 0);
 	return _fdtab[fd].type;
 }
 
@@ -418,7 +418,7 @@ _close_r(struct _reent *reent, int fd)
            _fdtab[fd].type, _fdtab[fd].flags, _fdtab[fd].hnd, _fdtab[fd].cxt);
 
   EnterCriticalSection(&critsect);
-  FDCHECK(fd);
+  FDCHECK(fd, &critsect);
 
   if (_fdtab[fd].devops == NULL) {
     if (_fdtab[fd].type == IO_FILE_TYPE_FILE) {
@@ -458,7 +458,7 @@ _read_r(struct _reent *reent, int fd, void *buf, size_t count)
 	return count;
   }
 
-  FDCHECK(fd);
+  FDCHECK(fd, 0);
 
   if (_fdtab[fd].devops == NULL) {
     if (_fdtab[fd].type == IO_FILE_TYPE_FILE || _fdtab[fd].type == IO_FILE_TYPE_CONSOLE) {
@@ -560,7 +560,7 @@ _lseek_r(struct _reent *reent, int fd, off_t offset, int whence) {
   int method;
   WCETRACE(WCE_IO, "lseek(%d, %d, %d)", fd, offset, whence);
 
-  FDCHECK(fd);
+  FDCHECK(fd, 0);
 
   if (_fdtab[fd].devops == NULL) {
     switch (whence) {
@@ -653,7 +653,7 @@ _fd_to_socket(struct fd_set *set, int *hndmap)
 
   for (i = 0; i < set->fd_count; i++) {
     int fd = (int)set->fd_array[i];
-    FDCHECK(fd);
+    FDCHECK(fd, 0);
 
     /* On WINCE, only IO_FILE_TYPE_SOCKET is handled */
     if (_fdtab[fd].type == IO_FILE_TYPE_SOCKET) {
@@ -773,7 +773,7 @@ ioctl(int fd, unsigned int request, void *arg)
 
   WCETRACE(WCE_IO, "ioctl(%d, %p %p)", fd, request, arg);
 
-  FDCHECK(fd);
+  FDCHECK(fd, 0);
 
   if (_fdtab[fd].devops == NULL) {
     if (_fdtab[fd].type == IO_FILE_TYPE_FILE) {
@@ -858,7 +858,7 @@ ftruncate(int fd, off_t size)
 {
   DWORD newpos;
 
-  FDCHECK(fd);
+  FDCHECK(fd, 0);
 
   if (_fdtab[fd].type != IO_FILE_TYPE_FILE) {
     errno = EBADF;

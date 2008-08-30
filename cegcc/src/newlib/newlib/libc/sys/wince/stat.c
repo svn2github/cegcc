@@ -21,7 +21,7 @@ _fstat_r(struct _reent *reent, int fd, struct stat *st) {
 
   WCETRACE(WCE_IO, "fstat(%d)", fd);
 
-  FDCHECK(fd);
+  FDCHECK(fd, 0);
 #if 0
   static int first_time = 1;
 

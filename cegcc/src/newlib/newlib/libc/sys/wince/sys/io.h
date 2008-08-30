@@ -34,11 +34,12 @@ typedef struct _fdent_s
   _DEVOPS devops;
 } _fdent_t;
 
-#define FDCHECK(F) \
+#define FDCHECK(F, CS) \
 	do { \
 		if (F < 0 || F >= MAXFDS || _fdtab[F].fd == -1) { \
 			WCETRACE(WCE_IO, "Invalid file handle: %d", F); \
 			errno = EBADF; \
+                        if (CS) { LeaveCriticalSection(CS); } \
 			return(-1); \
 		} \
 	} while (0)
