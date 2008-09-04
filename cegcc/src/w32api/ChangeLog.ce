@@ -1,3 +1,8 @@
+2008-09-04  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/winbase.h: Fix SetSystemPowerState as indicated by Klaus
+	Rechert.
+
 2008-06-20  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/aygshell.h: Include prsht.h.
