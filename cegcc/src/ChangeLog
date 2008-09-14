@@ -3,12 +3,6 @@
 	* build-cegcc.sh : Remove all instances of the function keyword for
 	POSIX compliance. Based on info by Mosfet, see the mailing list.
 
-2008-06-20  Eric House <eehouse@eehouse.org>
-
-	* cegcc/importlibs/defs/aygshell.def, w32api/include/aygshell.h,
-	w32api/libce/aygshell.def (SHSendBackToFocusWindow, SHMBOF_NODEFAULT,
-	SHMBOF_NOTIFY, SHCMBM_OVERRIDEKEY, VK_TBACK) : Define.
-
 2008-06-20  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* build-mingw32ce.sh: Export BASE_DIRECTORY, the mingwdll build stuff

@@ -3,6 +3,13 @@
 	* include/winbase.h: Fix SetSystemPowerState as indicated by Klaus
 	Rechert.
 
+2008-06-20  Eric House  <eehouse@eehouse.org>
+
+	* libce/aygshell.def (SHSendBackToFocusWindow): Define.
+	* include/aygshell.h (SHSendBackToFocusWindow): Declare.
+	(SHMBOF_NODEFAULT, SHMBOF_NOTIFY, SHCMBM_OVERRIDEKEY, VK_TBACK):
+	Define.
+
 2008-06-20  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/aygshell.h: Include prsht.h.

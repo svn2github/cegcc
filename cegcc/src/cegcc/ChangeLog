@@ -1,0 +1,3 @@
+2008-06-20  Eric House <eehouse@eehouse.org>
+
+	* importlibs/defs/aygshell.def (SHSendBackToFocusWindow): Define.
