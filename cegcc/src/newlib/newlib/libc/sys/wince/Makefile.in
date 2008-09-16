@@ -86,7 +86,7 @@ noinst_LIBRARIES = lib.a
 
 net_SOURCES = ascii2addr.c htons.c htonl.c inet_aton.c inet_lnaof.c inet_mkadr.c 			  inet_net.c inet_netof.c inet_ntoa.c msnet.c wsdb.c rexec.c wsstrerror.c
 
-unix_SOURCES = getcwd.c getlogin.c sleep.c usleep.c vfork.c
+unix_SOURCES = getcwd.c getlogin.c sleep.c usleep.c vfork.c realpath.c
 celib_SOURCES = cecopyfile.c cefileattr.c cefindfile.c cefixpath.c ceirda.c ceutil.c cethread.c cemakeunixpath.c 				cemovefile.c cecreatefile.c cecreatefilemap.c ceregistry.c cecurrentdir.c ceprofile.c 				ceshared2.c ceremovedir.c cemisc.c
 
 
@@ -116,7 +116,7 @@ spawn.o startup.o startup_thunk.o stat.o system.o termios.o timefcns.o \
 trace.o tzset_hook_r.o uid.o unistd.o utime.o main.o ascii2addr.o \
 htons.o htonl.o inet_aton.o inet_lnaof.o inet_mkadr.o inet_net.o \
 inet_netof.o inet_ntoa.o msnet.o wsdb.o rexec.o wsstrerror.o getcwd.o \
-getlogin.o sleep.o usleep.o vfork.o cecopyfile.o cefileattr.o \
+getlogin.o realpath.o sleep.o usleep.o vfork.o cecopyfile.o cefileattr.o \
 cefindfile.o cefixpath.o ceirda.o ceutil.o cethread.o cemakeunixpath.o \
 cemovefile.o cecreatefile.o cecreatefilemap.o ceregistry.o \
 cecurrentdir.o ceprofile.o ceshared2.o ceremovedir.o cemisc.o _crt_mt.o \

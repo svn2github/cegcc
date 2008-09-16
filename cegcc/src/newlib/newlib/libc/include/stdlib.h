@@ -122,6 +122,7 @@ unsigned long _EXFUN(_strtoul_r,(struct _reent *,const char *__n, char **__end_P
 int	_EXFUN(system,(const char *__string));
 
 #ifndef __STRICT_ANSI__
+char *  _EXFUN(realpath,(const char *__path, char *__resolved_path)); 
 long    _EXFUN(a64l,(const char *__input));
 char *  _EXFUN(l64a,(long __input));
 char *  _EXFUN(_l64a_r,(struct _reent *,long __input));

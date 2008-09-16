@@ -8,7 +8,7 @@ noinst_LIBRARIES = lib.a
 
 net_SOURCES = ascii2addr.c htons.c htonl.c inet_aton.c inet_lnaof.c inet_mkadr.c \
 			  inet_net.c inet_netof.c inet_ntoa.c msnet.c wsdb.c rexec.c wsstrerror.c
-unix_SOURCES = getcwd.c getlogin.c sleep.c usleep.c vfork.c
+unix_SOURCES = getcwd.c getlogin.c sleep.c usleep.c vfork.c realpath.c
 celib_SOURCES = cecopyfile.c cefileattr.c cefindfile.c cefixpath.c ceirda.c ceutil.c cethread.c cemakeunixpath.c \
 				cemovefile.c cecreatefile.c cecreatefilemap.c ceregistry.c cecurrentdir.c ceprofile.c \
 				ceshared2.c ceremovedir.c cemisc.c

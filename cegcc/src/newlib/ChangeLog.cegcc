@@ -1,3 +1,12 @@
+2008-09-12  Pawel Veselov <pawel.veselov@gmail.com>
+        * newlib/newlib/libc/include/stdlib.h : added realpath() declaration
+        * newlib/libc/sys/wince/Makefile.in newlib/libc/sys/wince/Makefile.am :
+          compile realpath.c
+        * newlib/libc/sys/wince/sys/unistd.h : declare fdatasync()
+        * newlib/libc/sys/wince/realpath.c : defines realpath(), Linux compliant
+        * newlib/libc/sys/wince/getcwd.c : buffer is now allocated if NULL.
+          ENOENT is returned if current directory doesn't exist
+
 2008-08-29  Pawel Veselov <pawel.veselov@gmail.com>
 	* newlib/libc/sys/wince/io.c (fsync, fdatasync) : Implement.
 	* newlib/libc/sys/wince/sys/io.h newlib/libc/sys/wince/io.c

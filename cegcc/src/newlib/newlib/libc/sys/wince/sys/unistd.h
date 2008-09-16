@@ -21,6 +21,7 @@ unsigned  _EXFUN(alarm, (unsigned __secs ));
 int     _EXFUN(chdir, (const char *__path ));
 int     _EXFUN(chmod, (const char *__path, mode_t __mode ));
 int     _EXFUN(chown, (const char *__path, uid_t __owner, gid_t __group ));
+int     _EXFUN(fdatasync, (int __fd));
 #if defined(__CYGWIN__) || defined(__rtems__)
 int     _EXFUN(chroot, (const char *__path ));
 #endif

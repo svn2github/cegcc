@@ -68,9 +68,33 @@ chdir(const char *path)
 char *
 getcwd(char *buf, size_t size)
 {
-  /* This is NOT compliant with what Linux does.. */
-  if (buf == NULL || size == 0) {
-	/* ### TODO malloc a buffer here. Be careful with size-1 below */
+
+    int alloced = 0;
+
+  // realize glibc behavior to allocate buffer if the buf is 0.
+  // This is also a POSIX.1-2001 extension
+
+  if (!buf) {
+    if (!size) {
+        size = XCEGetCurrentDirectoryW(0, 0); // fastest way to get size
+        if (!size) {
+            WCETRACE(WCE_IO, "getcwd WARNING: curr dir is unset");
+            // ENOENT The current working directory has been unlinked.
+            errno = ENOENT;
+            return NULL;
+        }
+    }
+
+    buf = malloc(size);
+    if (!buf) {
+        errno = ENOMEM;
+        return NULL;
+    }
+    alloced = 1;
+
+  } else if (!size) {
+    // EINVAL The size argument is zero and buf is not a null pointer.
+    errno = EINVAL;
     return(NULL);
   }
 
@@ -78,18 +102,32 @@ getcwd(char *buf, size_t size)
 
   if (len > size)
   {
-	  XCEToUnixPath(buf, size-1);
-	  errno = ERANGE;
-	  return(NULL);
+    // XCEToUnixPath(buf, size-1);
+    // ^^ commented out, why do we care? the spec says:
+    // the contents of the array pointed to by buf is undefined on error.
+    errno = ERANGE;
+    return(NULL);
   }
   else if (!len)
   {
-	  WCETRACE(WCE_IO, "getcwd WARNING: curr dir is unset");
-	  return NULL;
+    WCETRACE(WCE_IO, "getcwd WARNING: curr dir is unset");
+    // ENOENT The current working directory has been unlinked.
+    // well, that's the next best thing
+    errno = ENOENT;
+    return NULL;
   }
   else
   {
-	  XCEToUnixPath(buf, -1);
+    struct stat st;
+    XCEToUnixPath(buf, -1);
+    if (lstat(buf, &st)) {
+        // ENOENT The current working directory has been unlinked.
+        if (alloced) {
+            free(buf);
+        }
+        errno = ENOENT;
+        return NULL;
+    }
   }
   return buf;
 }
