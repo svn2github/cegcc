@@ -4,19 +4,19 @@ Versions of the subdirectories below are :
 	ftp://ftp.gnu.org/pub/gnu/gcc/gcc-4.1.0
 	gcc-core-4.1.0.tar.bz2
 	gcc-g++-4.1.0.tar.bz2
+
+  Note : gcc-4.3.2 is added to the source tree as src/gcc-4.3.2,
+  it's not the default build yet.
 	
 - newlib 1.14.0
 	ftp://sources.redhat.com/pub/newlib/index.html
 	ftp://sources.redhat.com/pub/newlib/newlib-1.14.0.tar.gz
 	
-- gdb 6.4
-	ftp://ftp.gnu.org/pub/gnu/gdb/gdb-6.4.tar.bz2
+- gdb : there is no longer a gdb source in our tree.
+  We can use the gdb version from the GNU distribution sites without change.
 	
-- binutils from cvs, 5 October 2006
-	We are using this version because there is no recent released version of
-	binutils that works for arm-wince-pe target.
-	cvs -d :pserver:anoncvs@sourceware.org:/cvs/src ...
-	
+- binutils from CVS (latest update: 8 January 2008)
+
 - w32api from cvs, 5 February 2007
     cvs -d :pserver:anoncvs@cygwin.com:/cvs/src/winsup/w32api ...
 
