@@ -1,86 +1,178 @@
-#!/bin/sh
+#! /usr/bin/env bash
 
-if [ $# -lt 2 ] ; then
-  echo "Using defaults:"
-  export BASE_DIRECTORY=`readlink -f .`
-  export BUILD_DIR=${BASE_DIRECTORY}/build-cegcc
-  export PREFIX=/opt/cegcc
+BASE_DIRECTORY=`dirname $0`
+BASE_DIRECTORY=`(cd ${BASE_DIRECTORY}; pwd)`
+ME=`basename $0`
 
-  if [ $# -lt 1 ] ; then
-    BUILD_OPT="all"
-  else
-    BUILD_OPT="$1"
-    shift
+#
+# Initializations.
+#
+export BUILD_DIR=`pwd`
+
+ac_default_prefix="/opt/cegcc"
+ac_default_destdir="${BUILD_DIR}/install"
+
+gcc_src=gcc
+
+# The list of components, in build order.  There's a build_FOO
+# function for each of these components
+COMPONENTS=( binutils bootstrapgcc w32api newlib dummy_cegccdll gcc cegccdll cegccthrddll libstdcppdll profile docs )
+COMPONENTS_NUM=${#COMPONENTS}
+
+# Build comma separated list of components, for user display.
+for ((i=0;i<$COMPONENTS_NUM;i++)); do
+    if [ $i = 0 ]; then
+	COMPONENTS_COMMA_LIST=${COMPONENTS[${i}]}
+    else
+	COMPONENTS_COMMA_LIST="${COMPONENTS_COMMA_LIST}, ${COMPONENTS[${i}]}"
+    fi
+done
+
+usage()
+{
+    cat << _ACEOF
+
+$ME builds the mingw32ce toolchain.
+
+Usage: $0 [OPTIONS] ...
+
+  -h, --help              print this help, then exit
+  --prefix=PREFIX         install toolchain in PREFIX
+			  [$ac_default_prefix]
+  --components=LIST       specify which components to build
+                          valid components are: ${COMPONENTS_COMMA_LIST}
+			  [all]
+
+Report bugs to <cegcc-devel@lists.sourceforge.net>.
+_ACEOF
+
+}
+
+ac_prev=
+for ac_option
+do
+  # If the previous option needs an argument, assign it.
+  if test -n "$ac_prev"; then
+    eval "$ac_prev=\$ac_option"
+    ac_prev=
+    continue
   fi
-else
-  export BASE_DIRECTORY=`readlink -f $1`
-  export BUILD_DIR=`readlink -f $2`
-  export PREFIX=`readlink -f $3`
-  BUILD_OPT="$4"
-  shift 4
+
+  ac_optarg=`expr "x$ac_option" : 'x[^=]*=\(.*\)'`
+
+  case $ac_option in
+
+  -help | --help | --hel | --he | -h)
+    usage; exit 0 ;;
+
+  -prefix | --prefix | --prefi | --pref | --pre | --pr | --p)
+    ac_prev=prefix ;;
+  -prefix=* | --prefix=* | --prefi=* | --pref=* | --pre=* | --pr=* | --p=*)
+    prefix=$ac_optarg ;;
+
+  -components | --components | --component | --componen | \
+      --compone | --compon | --compo | --comp | --com \
+      | --co | --c)
+    ac_prev=components ;;
+  -components=* | --components=* | --component=* | --componen=* \
+      | --compone=* | --compon=* | --compo=* | --comp=* | --com=* \
+      | --co=* | --c=*)
+    components=$ac_optarg ;;
+
+  -destdir | --destdir | --destdi | --destd | --dest | --des | --de | --d)
+    ac_prev=destdir ;;
+  -destdir=* | --destdir=* | --destdi=* | --destd=* | --dest=* | --des=* | --de=* | --d=*)
+    destdir=$ac_optarg ;;
+
+  -*) { echo "$as_me: error: unrecognized option: $ac_option
+Try \`$0 --help' for more information." >&2
+   { (exit 1); exit 1; }; }
+    ;;
+
+  *=*)
+    ac_envvar=`expr "x$ac_option" : 'x\([^=]*\)='`
+    # Reject names that are not valid shell variable names.
+    expr "x$ac_envvar" : ".*[^_$as_cr_alnum]" >/dev/null &&
+      { echo "$as_me: error: invalid variable name: $ac_envvar" >&2
+   { (exit 1); exit 1; }; }
+    ac_optarg=`echo "$ac_optarg" | sed "s/'/'\\\\\\\\''/g"`
+    eval "$ac_envvar='$ac_optarg'"
+    export $ac_envvar ;;
+
+  *)
+    ;;
+  esac
+done
+
+# We don't want no errors from here on.
+set -e
+
+if test -n "$ac_prev"; then
+  ac_option=--`echo $ac_prev | sed 's/_/-/g'`
+  { echo "$as_me: error: missing argument to $ac_option" >&2
+   { (exit 1); exit 1; }; }
 fi
 
-export TARGET="arm-wince-cegcc"
-export PATH=${PREFIX}/bin:${PATH}
-#export CFLAGS="-g3 -O0"
+# Be sure to have absolute paths.
+for ac_var in prefix
+do
+  eval ac_val=$`echo $ac_var`
+  case $ac_val in
+    [\\/$]* | ?:[\\/]* | NONE | '' ) ;;
+    *)  { echo "$as_me: error: expected an absolute directory name for --$ac_var: $ac_val" >&2
+   { (exit 1); exit 1; }; };;
+  esac
+done
 
-echo "Building cegcc:"
-echo "source: ${BASE_DIRECTORY}"
-echo "build: ${BUILD_DIR}"
-echo "prefix: ${PREFIX}"
+if [ "x${prefix}" != "x" ]; then
+    export PREFIX="${prefix}"
+else
+    export PREFIX=${ac_default_prefix}
+fi
 
-mkdir -p ${BUILD_DIR} || exit 1
-mkdir -p ${PREFIX} || exit 1
+# Figure out what components where requested to be built.
+if test x"${components+set}" != xset; then
+    components=all
+else
+    if test x"${components}" = x ||
+	test x"${components}" = xyes;
+	then
+	echo --components needs at least one argument 1>&2
+	exit 1
+    fi
+fi
+
+# embedded tabs in the sed below -- do not untabify
+components=`echo "${components}" | sed -e 's/[ 	,][ 	,]*/,/g' -e 's/,$//'`
+
+# Don't build in source directory, it will clobber things and cleanup is hard.
+if [ -d ${BUILD_DIR}/.svn ]; then
+	echo "Don't build in a source directory, please create an empty directory and build there."
+	echo "Example :"
+	echo "  mkdir build-mingw32ce"
+	echo "  cd build-mingw32ce"
+	echo "  sh ../build-mingw32ce.sh $@"
+	exit 1
+fi
 
 build_binutils()
 {
     echo ""
     echo "BUILDING BINUTILS --------------------------"
     echo ""
-
-    mkdir -p ${BUILD_DIR}/binutils || exit 1
-    cd ${BUILD_DIR}/binutils || exit 1
+    echo ""
+    mkdir -p binutils
+    cd binutils
     ${BASE_DIRECTORY}/binutils/configure \
 	--prefix=${PREFIX}      \
-	--exec-prefix=${PREFIX} \
-	--bindir=${PREFIX}/bin  \
 	--target=${TARGET}      \
-	--disable-nls           \
-	--includedir=${PREFIX}/include || exit 1
-    make         || exit 1
-    make install || exit 1
-    
-    cd ${BASE_DIRECTORY} || exit 1
-}
+	--disable-nls
 
-build_import_libs()
-{
-    echo ""
-    echo "Building import libs. --------------------------"
-    echo ""
-    echo ""
+    make
+    make install
 
-    mkdir -p ${PREFIX}/${TARGET}/lib || exit 1
-    cd ${BASE_DIRECTORY}/cegcc/importlibs || exit 1
-    ./build.sh ./defs ${PREFIX}/${TARGET}/lib || exit 1
-    
-    cd ${BASE_DIRECTORY} || exit 1
-}
-
-
-copy_w32api_headers()
-{
-    echo ""
-    echo "Copying w32api headers. ----------------------"
-    echo ""
-    echo ""
-
-    mkdir -p ${PREFIX}/${TARGET}/include/w32api/{GL,directx,ddk}
-    cp -fp ${BASE_DIRECTORY}/w32api/include/*.h ${PREFIX}/${TARGET}/include/w32api || exit 1
-    cp -fp ${BASE_DIRECTORY}/w32api/include/GL/*.h ${PREFIX}/${TARGET}/include/w32api/GL || exit 1
-    cp -fp ${BASE_DIRECTORY}/w32api/include/directx/*.h ${PREFIX}/${TARGET}/include/w32api/directx || exit 1
-    cp -fp ${BASE_DIRECTORY}/w32api/include/ddk/*.h ${PREFIX}/${TARGET}/include/w32api/ddk || exit 1
-}
+    cd ${BUILD_DIR}
+}    
 
 build_dummy_cegccdll()
 {
@@ -89,21 +181,19 @@ build_dummy_cegccdll()
     echo ""
     echo ""
     
-    pushd ${BASE_DIRECTORY}/cegcc/fakecegccdll || exit 1
-    ./install.sh ${PREFIX} || exit 1
-    popd || exit 1
+    cd ${BASE_DIRECTORY}/cegcc/fakecegccdll
+
+    sh ./install.sh ${PREFIX}
+
+    cd ${BUILD_DIR}
 }
 
 build_bootstrap_gcc()
 {
-    echo ""
-    echo "Building bootstrap gcc. ----------------------"
-    echo ""
+    mkdir -p gcc-bootstrap
+    cd gcc-bootstrap
 
-    mkdir -p ${BUILD_DIR}/gcc-bootstrap || exit 1
-    cd ${BUILD_DIR}/gcc-bootstrap || exit 1
-
-    ${BASE_DIRECTORY}/gcc/configure		 \
+    ${BASE_DIRECTORY}/${gcc_src}/configure	       \
 	--with-gcc                     \
 	--with-gnu-ld                  \
 	--with-gnu-as                  \
@@ -114,47 +204,47 @@ build_bootstrap_gcc()
 	--enable-languages=c           \
 	--disable-win32-registry       \
 	--disable-multilib             \
+	--disable-shared               \
 	--disable-interwork            \
-	--without-headers              \
-	--enable-checking              \
-	|| exit 1
+	--without-newlib               \
+	--enable-checking
     
-    make all-gcc        || exit 1
-    make install-gcc || exit 1
-    cd ${BASE_DIRECTORY} || exit 1
+    make all-gcc
+
+    if [ ${gcc_src} != "gcc" ];
+    then
+	make all-target-libgcc
+    fi
+    make install-gcc
+    if [ ${gcc_src} != "gcc" ];
+    then
+	make install-target-libgcc
+    fi
+
+    cd ${BUILD_DIR}
 }
 
-build_newlib()
+build_w32api()
 {
-    echo ""
-    echo "Building newlib. --------------------------"
-    echo ""
-    echo ""
+    mkdir -p w32api
+    cd w32api
 
-    mkdir -p ${BUILD_DIR}/newlib || exit 1
-    cd ${BUILD_DIR}/newlib || exit 1
+    ${BASE_DIRECTORY}/w32api/configure \
+	--host=${TARGET}               \
+	--prefix=${PREFIX}
 
-    ${BASE_DIRECTORY}/newlib/configure   \
-	--target=${TARGET}                 \
-	--prefix=${PREFIX}                 \
-	|| exit 1
+    make
+    make install
 
-    make || exit 1
-    make install || exit 1
-    cd ${BASE_DIRECTORY} || exit 1
+    cd ${BUILD_DIR}
 }
 
 build_gcc()
 {
-    echo ""
-    echo "Building full gcc. --------------------------"
-    echo ""
-    echo ""
-    
-    mkdir -p ${BUILD_DIR}/gcc || exit 1
-    pushd ${BUILD_DIR}/gcc || exit 1
-    
-    ${BASE_DIRECTORY}/gcc/configure    \
+    mkdir -p gcc
+    cd gcc
+
+    ${BASE_DIRECTORY}/${gcc_src}/configure	\
 	--with-gcc                     \
 	--with-gnu-ld                  \
 	--with-gnu-as                  \
@@ -168,25 +258,36 @@ build_gcc()
 	--disable-interwork            \
 	--without-newlib               \
 	--enable-checking              \
-	--with-headers                 \
-	|| exit 1
+	--with-headers
 
+# we build libstdc++ as dll, so we don't need this.    
+#  --enable-fully-dynamic-string  \
 
-    #
-    # Below, the first "make" followed by a file removal, are a workaround
-    # for a gcc build bug. The existence of the script causes the first
-    # make to fail, the second one should succeed. Therefore, not checking
-    # the error code of the first make is intentional.
-    #
+#  --disable-clocale              \
+
+    make -j4
+    make install
+
+    cd ${BUILD_DIR}
+}
+
+build_newlib()
+{
+    echo ""
+    echo "Building newlib. --------------------------"
+    echo ""
+    echo ""
+
+    mkdir -p newlib
+    cd newlib
+
+    ${BASE_DIRECTORY}/newlib/configure   \
+	--target=${TARGET}               \
+	--prefix=${PREFIX}
+
     make
-    rm -f gcc/as
-    make || exit 1
-    #
-    # End workaround
-    #
-    make install || exit 1
-
-    popd || exit 1
+    make install
+    cd ${BASE_DIRECTORY}
 }
 
 build_cegccdll()
@@ -196,9 +297,9 @@ build_cegccdll()
     echo ""
     echo ""
 
-    cd ${BASE_DIRECTORY}/cegcc/cegccdll || exit 1
-    make || exit 1
-    make install || exit 1
+    cd ${BASE_DIRECTORY}/cegcc/cegccdll
+    make
+    make install
 }
 
 build_cegccthrddll()
@@ -208,9 +309,9 @@ build_cegccthrddll()
     echo ""
     echo ""
 
-    cd ${BASE_DIRECTORY}/cegcc/cegccthrd || exit 1
-    make  || exit 1
-    make install || exit 1
+    cd ${BASE_DIRECTORY}/cegcc/cegccthrd
+    make
+    make install
 }
 
 build_libstdcppdll()
@@ -220,65 +321,9 @@ build_libstdcppdll()
     echo ""
     echo ""
 
-    cd ${BASE_DIRECTORY}/cegcc/libstdc++ || exit 1
-    make || exit 1
-    make install || exit 1
-}
-
-build_gdb()
-{
-    echo ""
-    echo "BUILDING GDB --------------------------"
-    echo ""
-    echo ""
-
-    mkdir -p ${BUILD_DIR}/gdb || exit 1
-    cd ${BUILD_DIR}/gdb || exit 1
-
-    PREV_CFLAGS=${CFLAGS}
-    export CFLAGS="-I${BASE_DIRECTORY}/w32api/include"
-
-    ${BASE_DIRECTORY}/gdb/configure  \
-	--with-gcc                     \
-	--with-gnu-ld                  \
-	--with-gnu-as                  \
-	--target=${TARGET}             \
-	--prefix=${PREFIX}             \
-	--disable-nls                  \
-	--disable-win32-registry       \
-	--disable-multilib             \
-	--disable-interwork            \
-	--enable-checking              \
-	|| exit
-
-    export CFLAGS=${PREV_CFLAGS}
-
-    make         || exit 1
-    make install || exit 1
-}
-
-build_gdbstub()
-{
-    echo ""
-    echo "BUILDING GDB stub --------------------------"
-    echo ""
-    echo ""
-
-    STUB_EXE=${PREFIX}/bin/${TARGET}-stub.exe
-    STUB_SRC=${BASE_DIRECTORY}/gdb/gdb/wince-stub.c
-
-    #pass -static so the stub doesn't depend on cegcc.dll. 
-    #Useful for debugging cegcc.dll itself.
-    #Actually, the stub would better be built with -mno-cegcc/arm-wince-mingw32
-    #To remove the newlib/cegcc.dll dependency, since it mostly uses win32 api.
-    #Removed for now, as it is giving problems.
-    ${TARGET}-gcc -O2 -mwin32  \
-           ${STUB_SRC}         \
-           -o ${STUB_EXE}      \
-           -lwinsock || exit 1
-    ${TARGET}-strip ${STUB_EXE} || exit 1
-
-    cd ${BASE_DIRECTORY} || exit 1
+    cd ${BASE_DIRECTORY}/cegcc/libstdc++
+    make
+    make install
 }
 
 build_profile()
@@ -288,18 +333,17 @@ build_profile()
     echo ""
     echo ""
 
-    mkdir -p ${BUILD_DIR}/profile || exit 1
-    cd ${BUILD_DIR}/profile || exit 1
+    mkdir -p ${BUILD_DIR}/profile
+    cd ${BUILD_DIR}/profile
 
     ${BASE_DIRECTORY}/profile/configure  \
 	--build=${BUILD}              \
 	--host=${TARGET}              \
 	--target=${TARGET}            \
-	--prefix=${PREFIX}            \
-	|| exit
+	--prefix=${PREFIX}
 
-    make         || exit 1
-    make install || exit 1
+    make
+    make install
 }
 
 build_docs()
@@ -309,67 +353,71 @@ build_docs()
     echo ""
     echo ""
 
-    mkdir -p ${PREFIX}/share/docs || exit 1
-    mkdir -p ${PREFIX}/share/images || exit 1
+    mkdir -p ${PREFIX}/share/docs
+    mkdir -p ${PREFIX}/share/images
 
-    cd ${BASE_DIRECTORY}/../docs || exit 1
-    tar cf - . | (cd ${PREFIX}/share/docs; tar xf -) || exit 1
-    cd ${BASE_DIRECTORY}/../website || exit 1
-    tar cf - images | (cd ${PREFIX}/share; tar xf -) || exit 1
+    cd ${BASE_DIRECTORY}/../docs
+    tar cf - . | (cd ${PREFIX}/share/docs; tar xf -)
+    cd ${BASE_DIRECTORY}/../website
+    tar cf - images | (cd ${PREFIX}/share; tar xf -)
 
-    cd ${BASE_DIRECTORY}/.. || exit 1
-    cp NEWS README ${PREFIX} || exit 1
-    cp src/binutils/COPYING ${PREFIX} || exit 1
-    cp src/binutils/COPYING.LIB ${PREFIX} || exit 1
-    cp src/binutils/COPYING.NEWLIB ${PREFIX} || exit 1
+    cd ${BASE_DIRECTORY}/..
+    cp NEWS README ${PREFIX}
+    cp src/binutils/COPYING ${PREFIX}
+    cp src/binutils/COPYING.LIB ${PREFIX}
+    cp src/binutils/COPYING.NEWLIB ${PREFIX}
 }
 
 build_all()
 {
-    build_binutils
-    build_import_libs
-    copy_w32api_headers
-    build_dummy_cegccdll
-    build_bootstrap_gcc
-    build_newlib
-    build_gcc
-    build_cegccdll
-    build_cegccthrddll
-    build_libstdcppdll
-    build_profile
-    build_docs
-    build_gdb
-    build_gdbstub
+    for ((i=0;i<$COMPONENTS_NUM;i++)); do
+	comp=${COMPONENTS[${i}]}
+	build_$comp
+    done
 }
 
-case $BUILD_OPT in
- --help)
-        echo "usage:"
-        echo "$0 [source dir] [build directory] [prefix dir] [build_opt]"
-	echo " "
-	echo "Valid build options : binutils importlibs w32api dummy_cegccdll"
-	echo "  bootstrapgcc newlib gcc cegccdll cegccthrd libstdc++ gdb"
-	echo "  gdbstub docs profile all"
-		;;
- binutils) build_binutils ;;
- importlibs) build_import_libs ;;
- w32api) copy_w32api_headers ;;
- dummy_cegccdll) build_dummy_cegccdll ;;
- bootstrapgcc) build_bootstrap_gcc ;;
- newlib) build_newlib ;;
- gcc) build_gcc ;;
- cegccdll) build_cegccdll ;;
- cegccthrd) build_cegccthrddll ;;
- libstdc++) build_libstdcppdll ;; 
- gdb) build_gdb ;;
- gdbstub) build_gdbstub ;;
- docs) build_docs ;;
- profile) build_profile ;;
- all) build_all ;;
- *) echo "Please enter a valid build option." ;;
-esac
+split_components=`echo "${components}" | sed -e 's/,/ /g'`
+
+# check for valid options before trying to build them all.
+eval "set -- $split_components"
+while [ -n "$1" ]; do
+    if [ "$1" != "all" ]; then
+	found=false
+	for ((i=0;i<$COMPONENTS_NUM;i++)); do
+	    if [ "${COMPONENTS[${i}]}" = "$1" ]; then
+		found=true
+	    fi
+	done
+	if [ $found = false ] ; then
+	    echo "Please enter a valid build option."
+	    exit 1
+	fi
+    fi
+
+    shift
+done
+
+export TARGET="arm-cegcc"
+export BUILD=`sh ${BASE_DIRECTORY}/gcc/config.guess`
+export PATH=${PREFIX}/bin:${PATH}
+
+echo "Building cegcc:"
+echo "source: ${BASE_DIRECTORY}"
+echo "building in: ${BUILD_DIR}"
+echo "prefix: ${PREFIX}"
+echo "components: ${components}"
+
+mkdir -p ${BUILD_DIR}
+mkdir -p ${PREFIX}
+
+# Now actually build them.
+eval "set -- $split_components"
+while [ -n "$1" ]; do
+    build_${1}
+    shift
+done
 
 echo ""
-echo "Done. --------------------------"
+echo "DONE --------------------------"
 echo ""
 echo ""

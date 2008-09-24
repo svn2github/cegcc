@@ -1,5 +1,9 @@
 2008-09-24  Pedro Alves  <pedroalves@users.sourceforge.net>
 
+	* build-cegcc.sh: Rewrite based on build-mingw32ce.sh.
+
+2008-09-24  Pedro Alves  <pedroalves@users.sourceforge.net>
+
 	* build-mingw32ce.sh: Require bash.  Use a central a module list
 	instead of hardcoding it in several places.  Use set -e, instead
 	of a `|| exit 1' construct throughout.
