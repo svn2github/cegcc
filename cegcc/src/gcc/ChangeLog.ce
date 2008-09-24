@@ -1,3 +1,8 @@
+2008-09-24  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	gcc/libstdc++/
+	* configure: Regenerate.
+
 2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* configure.in: Use $target_alias instead of $target.
