@@ -265,7 +265,7 @@ build_gcc()
 
 #  --disable-clocale              \
 
-    make -j4
+    make
     make install
 
     cd ${BUILD_DIR}

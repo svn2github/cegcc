@@ -1,5 +1,10 @@
 2008-09-24  Pedro Alves  <pedroalves@users.sourceforge.net>
 
+	* build-cegcc.sh (build_gcc): Remove -j4.
+	* build-mingw32ce.sh (build_gcc): Likewise.
+
+2008-09-24  Pedro Alves  <pedroalves@users.sourceforge.net>
+
 	* build-cegcc.sh: Rewrite based on build-mingw32ce.sh.
 
 2008-09-24  Pedro Alves  <pedroalves@users.sourceforge.net>
