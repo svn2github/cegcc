@@ -1,3 +1,10 @@
+2008-09-24  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	* config.sub: Add support for cegcc.
+	* libce/Makefile.in (inst_includedir, inst_libdir) [cegcc]: Set to
+	a w32api subdir.
+	(EXTRA_INCLUDES) [cegcc]: Point at newlib headers.
+
 2008-09-04  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/winbase.h: Fix SetSystemPowerState as indicated by Klaus

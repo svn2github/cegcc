@@ -43,8 +43,19 @@ tooldir:=$(exec_prefix)/$(host_alias)
 endif
 datadir = @datadir@
 infodir = @infodir@
-inst_includedir:=$(tooldir)/include
+
+ifneq (,$(findstring cegcc,$(host_alias)))
+inst_includedir:=$(tooldir)/include/w32api
+inst_libdir:=$(tooldir)/lib/w32api
+else
+ifneq (,$(with_cross_host))
+inst_includedir:=$(tooldir)/include/w32api
 inst_libdir:=$(tooldir)/lib
+else
+inst_includedir:=$(includedir)
+inst_libdir:=$(libdir)
+endif
+endif
 
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
@@ -73,6 +84,12 @@ EXTRA_INCLUDES = -I$(srcdir)/../../include -I$(srcdir)/../../../newlib/libc/incl
 endif
 ifeq ($(BUILDENV), mingw)
 EXTRA_INCLUDES = -I$(srcdir)/../../mingw/include
+endif
+
+# This would be better passed from configure.  Not so important to do
+# until winsup is cleaned up too.
+ifneq (,$(findstring cegcc, $(host_alias)))
+EXTRA_INCLUDES = -I$(srcdir)/../../include -I$(srcdir)/../../newlib/newlib/libc/include
 endif
 
 INCLUDES = -I$(srcdir)/../include $(EXTRA_INCLUDES)
