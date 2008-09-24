@@ -1,6 +1,12 @@
+2008-09-24  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	* build-mingw32ce.sh: Require bash.  Use a central a module list
+	instead of hardcoding it in several places.  Use set -e, instead
+	of a `|| exit 1' construct throughout.
+
 2008-06-22  Danny Backx  <dannybackx@sourceforge.net>
 
-	* build-cegcc.sh : Remove all instances of the function keyword for
+	* build-cegcc.sh: Remove all instances of the function keyword for
 	POSIX compliance. Based on info by Mosfet, see the mailing list.
 
 2008-06-20  Danny Backx  <dannybackx@users.sourceforge.net>

@@ -1,14 +1,34 @@
-#!/bin/sh
+#! /usr/bin/env bash
 
-export BASE_DIRECTORY=`dirname $0`
-export BASE_DIRECTORY=`(cd ${BASE_DIRECTORY}; pwd)`
+BASE_DIRECTORY=`dirname $0`
+BASE_DIRECTORY=`(cd ${BASE_DIRECTORY}; pwd)`
 ME=`basename $0`
+
+# FIXME: some components need this (mingwdll), but they shouldn't.
+export BASE_DIRECTORY
 
 #
 # Initializations.
 #
-ac_default_prefix="/opt/mingw32ce"
 export BUILD_DIR=`pwd`
+
+ac_default_prefix="/opt/mingw32ce"
+
+gcc_src=gcc
+
+# The list of components, in build order.  There's a build_FOO
+# function for each of these components
+COMPONENTS=( binutils bootstrap_gcc mingw w32api gcc profile dlls docs )
+COMPONENTS_NUM=${#COMPONENTS}
+
+# Build comma separated list of components, for user display.
+for ((i=0;i<$COMPONENTS_NUM;i++)); do
+    if [ $i = 0 ]; then
+	COMPONENTS_COMMA_LIST=${COMPONENTS[${i}]}
+    else
+	COMPONENTS_COMMA_LIST="${COMPONENTS_COMMA_LIST}, ${COMPONENTS[${i}]}"
+    fi
+done
 
 usage()
 {
@@ -22,8 +42,7 @@ Usage: $0 [OPTIONS] ...
   --prefix=PREFIX         install toolchain in PREFIX
 			  [$ac_default_prefix]
   --components=LIST       specify which components to build
-                          valid components are: all,binutils,bootstrapgcc,
-                          mingw,w32api,gcc,docs,profile,gdb,gdbstub,dlls
+                          valid components are: ${COMPONENTS_COMMA_LIST}
 			  [all]
 
 Report bugs to <cegcc-devel@lists.sourceforge.net>.
@@ -82,6 +101,9 @@ Try \`$0 --help' for more information." >&2
   esac
 done
 
+# We don't want no errors from here on.
+set -e
+
 if test -n "$ac_prev"; then
   ac_option=--`echo $ac_prev | sed 's/_/-/g'`
   { echo "$as_me: error: missing argument to $ac_option" >&2
@@ -136,25 +158,25 @@ build_binutils()
     echo "BUILDING BINUTILS --------------------------"
     echo ""
     echo ""
-    mkdir -p binutils || exit 1
+    mkdir -p binutils
     cd binutils
     ${BASE_DIRECTORY}/binutils/configure \
 	--prefix=${PREFIX}      \
 	--target=${TARGET}      \
-	--disable-nls || exit 1
+	--disable-nls
 
-    make         || exit 1
-    make install || exit 1
-    
+    make
+    make install
+
     cd ${BUILD_DIR}
 }    
 
 build_bootstrap_gcc()
 {
-    mkdir -p gcc-bootstrap || exit 1
+    mkdir -p gcc-bootstrap
     cd gcc-bootstrap
 
-    ${BASE_DIRECTORY}/gcc/configure	       \
+    ${BASE_DIRECTORY}/${gcc_src}/configure	       \
 	--with-gcc                     \
 	--with-gnu-ld                  \
 	--with-gnu-as                  \
@@ -165,70 +187,59 @@ build_bootstrap_gcc()
 	--enable-languages=c           \
 	--disable-win32-registry       \
 	--disable-multilib             \
+	--disable-shared               \
 	--disable-interwork            \
 	--without-newlib               \
-	--enable-checking              \
-	|| exit 1
+	--enable-checking
     
-    make all-gcc || exit 1
-    make install-gcc || exit 1
+    make all-gcc
+
+    if [ ${gcc_src} != "gcc" ];
+    then
+	make all-target-libgcc
+    fi
+    make install-gcc
+    if [ ${gcc_src} != "gcc" ];
+    then
+	make install-target-libgcc
+    fi
 
     cd ${BUILD_DIR}
 }
 
 build_w32api()
 {
-#I have this normally set by ccache.
-#Must unset them, because mingw being a lib,
-#uses $host==$target, and CC instead of CC_FOR_TARGET.
-    PREV_CC=${CC}
-    unset CC
-
-    mkdir -p w32api || exit 1
+    mkdir -p w32api
     cd w32api
 
     ${BASE_DIRECTORY}/w32api/configure \
 	--host=${TARGET}               \
-	--prefix=${PREFIX}             \
-	|| exit 1
+	--prefix=${PREFIX}
 
-    make || exit 1
-    make install || exit 1
-
-    export CC=${PREV_CC}
-    cd ${BUILD_DIR}
+    make
+    make install
 }
 
-build_mingw_runtime()
+build_mingw()
 {
-#I have this normally set by ccache.
-#Must unset them, because mingw being a lib,
-#uses $host==$target, and CC instead of CC_FOR_TARGET.
-    PREV_CC=${CC}
-    unset CC
-
-    mkdir -p mingw || exit 1
+    mkdir -p mingw
     cd mingw
     ${BASE_DIRECTORY}/mingw/configure \
 	--build=${BUILD}              \
 	--host=${TARGET}              \
 	--target=${TARGET}            \
-	--prefix=${PREFIX}            \
-	|| exit 1
+	--prefix=${PREFIX}
 
-    make || exit 1
-    make install || exit 1
-
-    export CC=${PREV_CC}
-    cd ${BUILD_DIR}
+    make
+    make install
 }
 
 build_gcc()
 {
-    mkdir -p gcc || exit 1
+    mkdir -p gcc
     cd gcc
 
-    ${BASE_DIRECTORY}/gcc/configure	\
+    ${BASE_DIRECTORY}/${gcc_src}/configure	\
 	--with-gcc                     \
 	--with-gnu-ld                  \
 	--with-gnu-as                  \
@@ -242,27 +253,15 @@ build_gcc()
 	--disable-interwork            \
 	--without-newlib               \
 	--enable-checking              \
-	--with-headers                 \
-	|| exit
+	--with-headers
 
 # we build libstdc++ as dll, so we don't need this.    
 #  --enable-fully-dynamic-string  \
 
 #  --disable-clocale              \
 
-    #
-    # Below, the first "make" followed by a file removal, are a workaround
-    # for a gcc build bug. The existence of the script causes the first
-    # make to fail, the second one should succeed. Therefore, not checking
-    # the error code of the first make is intentional.
-    #
-    make
-    rm -f gcc/as
-    make || exit 1
-    #
-    # End workaround
-    #
-    make install || exit 1
+    make -j4
+    make install
 
     cd ${BUILD_DIR}
 }
@@ -274,11 +273,8 @@ build_gdb()
     echo ""
     echo ""
 
-    mkdir -p gdb || exit 1
-    cd gdb || exit 1
-
-    PREV_CFLAGS=${CFLAGS}
-    export CFLAGS="-I${BASE_DIRECTORY}/w32api/include"
+    mkdir -p gdb
+    cd gdb
 
     ${BASE_DIRECTORY}/gdb/configure  \
 	--with-gcc                     \
@@ -290,32 +286,33 @@ build_gdb()
 	--disable-win32-registry       \
 	--disable-multilib             \
 	--disable-interwork            \
-	--enable-checking              \
-	|| exit 1
+	--enable-checking
 
     export CFLAGS=${PREV_CFLAGS}
 
-    make         || exit 1
-    make install || exit 1
+    make
+    make install
 
     cd ${BUILD_DIR}
 }
 
-build_gdbstub()
+build_gdbserver()
 {
     echo ""
-    echo "BUILDING GDB stub --------------------------"
+    echo "BUILDING gdbserver --------------------------"
     echo ""
     echo ""
 
-    STUB_EXE=${PREFIX}/bin/${TARGET}-stub.exe
-    STUB_SRC=${BASE_DIRECTORY}/gdb/gdb/wince-stub.c
+    mkdir -p gdbserver
+    cd gdbserver
 
-    ${TARGET}-gcc -O2  \
-           ${STUB_SRC}         \
-           -o ${STUB_EXE}      \
-           -lwinsock || exit 1
-    ${TARGET}-strip ${STUB_EXE} || exit 1
+    ${BASE_DIRECTORY}/gdb/gdbserver/configure  \
+	--target=${TARGET}             \
+	--host=${TARGET}               \
+	--prefix=${PREFIX}             \
+
+    make
+    make install
 
     cd ${BUILD_DIR}
 }
@@ -327,19 +324,19 @@ build_docs()
     echo ""
     echo ""
 
-    mkdir -p ${PREFIX}/share/docs || exit 1
-    mkdir -p ${PREFIX}/share/images || exit 1
+    mkdir -p ${PREFIX}/share/docs
+    mkdir -p ${PREFIX}/share/images
 
-    cd ${BASE_DIRECTORY}/../docs || exit 1
-    tar cf - . | (cd ${PREFIX}/share/docs; tar xf -) || exit 1
-    cd ${BASE_DIRECTORY}/../website || exit 1
-    tar cf - images | (cd ${PREFIX}/share; tar xf -) || exit 1
+    cd ${BASE_DIRECTORY}/../docs
+    tar cf - . | (cd ${PREFIX}/share/docs; tar xf -)
+    cd ${BASE_DIRECTORY}/../website
+    tar cf - images | (cd ${PREFIX}/share; tar xf -)
 
-    cd ${BASE_DIRECTORY}/.. || exit 1
-    cp NEWS README ${PREFIX} || exit 1
-    cp src/binutils/COPYING ${PREFIX} || exit 1
-    cp src/binutils/COPYING.LIB ${PREFIX} || exit 1
-    cp src/newlib/COPYING.NEWLIB ${PREFIX} || exit 1
+    cd ${BASE_DIRECTORY}/..
+    cp NEWS README ${PREFIX}
+    cp src/binutils/COPYING ${PREFIX}
+    cp src/binutils/COPYING.LIB ${PREFIX}
+    cp src/newlib/COPYING.NEWLIB ${PREFIX}
 
     cd ${BUILD_DIR}
 }
@@ -351,7 +348,7 @@ build_profile()
     echo ""
     echo ""
 
-    mkdir -p profile || exit 1
+    mkdir -p profile
     cd profile
 
     ${BASE_DIRECTORY}/profile/configure  \
@@ -361,8 +358,8 @@ build_profile()
 	--prefix=${PREFIX}            \
 	|| exit
 
-    make         || exit 1
-    make install || exit 1
+    make
+    make install
 
     cd ${BUILD_DIR}
 }
@@ -376,11 +373,11 @@ obuild_dlls()
 
     cd ${BUILD_DIR}
 
-    mkdir -p dll || exit 1
+    mkdir -p dll
     cd dll
 
-    cd ${BASE_DIRECTORY} || exit 1
-    ${BASE_DIRECTORY}/build-mingw32ce-dlls.sh || exit 1
+    cd ${BASE_DIRECTORY}
+    ${BASE_DIRECTORY}/build-mingw32ce-dlls.sh
 
     cd ${BUILD_DIR}
 }
@@ -394,25 +391,19 @@ build_dlls()
 
     cd ${BUILD_DIR}
 
-    cd ${BASE_DIRECTORY}/mingwdll || exit 1
-    make         || exit 1
-    make install || exit 1
+    cd ${BASE_DIRECTORY}/mingwdll
+    make
+    make install
 
     cd ${BUILD_DIR}
 }
 
 build_all()
 {
-    build_binutils
-    build_bootstrap_gcc
-    build_mingw_runtime
-    build_w32api
-    build_gcc
-    build_docs
-    build_profile
-    build_gdb
-    build_gdbstub
-    build_dlls
+    for ((i=0;i<$COMPONENTS_NUM;i++)); do
+	comp=${COMPONENTS[${i}]}
+	build_$comp
+    done
 }
 
 split_components=`echo "${components}" | sed -e 's/,/ /g'`
@@ -420,16 +411,19 @@ split_components=`echo "${components}" | sed -e 's/,/ /g'`
 # check for valid options before trying to build them all.
 eval "set -- $split_components"
 while [ -n "$1" ]; do
-    case $1 in
-	binutils | bootstrapgcc | w32api | \
-	    mingw | gcc | gdb | gdbstub | \
-	    docs | profile | dlls | all) 
-	    ;;
-	*)
+    if [ "$1" != "all" ]; then
+	found=false
+	for ((i=0;i<$COMPONENTS_NUM;i++)); do
+	    if [ "${COMPONENTS[${i}]}" = "$1" ]; then
+		found=true
+	    fi
+	done
+	if [ $found = false ] ; then
 	    echo "Please enter a valid build option."
 	    exit 1
-	    ;;
-    esac
+	fi
+    fi
+
     shift
 done
 
@@ -444,25 +438,13 @@ echo "building in: ${BUILD_DIR}"
 echo "prefix: ${PREFIX}"
 echo "components: ${components}"
 
-mkdir -p ${BUILD_DIR} || exit 1
-mkdir -p ${PREFIX} || exit 1
+mkdir -p ${BUILD_DIR}
+mkdir -p ${PREFIX}
 
-# now actually try to build them.
+# Now actually build them.
 eval "set -- $split_components"
 while [ -n "$1" ]; do
-    case $1 in
-	binutils) build_binutils ;;
-	bootstrapgcc) build_bootstrap_gcc ;;
-	w32api) build_w32api ;;
-	mingw) build_mingw_runtime ;;
-	gcc) build_gcc ;;
-	gdb) build_gdb ;;
-	gdbstub) build_gdbstub ;;
-	docs) build_docs ;;
-	profile) build_profile ;;
-	dlls) build_dlls ;;
-	all) build_all ;;
-    esac
+    build_${1}
     shift
 done
 
