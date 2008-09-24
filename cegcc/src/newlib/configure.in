@@ -449,7 +449,7 @@ case "${target}" in
   sh-*-linux*)
     noconfigdirs="$noconfigdirs ${libgcj} target-newlib target-libgloss"
     ;;    
-  sh*-*-pe|mips*-*-pe|*arm-wince-pe|*arm-wince-cegcc)
+  sh*-*-pe | mips*-*-pe | arm*-wince-pe | arm*-*-cegcc)
     noconfigdirs="$noconfigdirs target-libgloss"
     noconfigdirs="$noconfigdirs ${libgcj}"
     noconfigdirs="$noconfigdirs target-examples"

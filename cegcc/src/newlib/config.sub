@@ -446,6 +446,10 @@ case $basic_machine in
 		basic_machine=c90-cray
 		os=-unicos
 		;;
+	cegcc)
+		basic_machine=arm-unknown
+		os=-cegcc
+		;;
 	convex-c1)
 		basic_machine=c1-convex
 		os=-bsd

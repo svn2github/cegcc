@@ -1,3 +1,12 @@
+2008-09-24  Pedro Alves  <pedroalves@users.sourceforce.net>
+
+	* config.sub: Add cegcc support.
+	* configure.in: Adjust to allow arm-cegcc.
+	* configure: Regenerate.
+
+	newlib/
+	* configure.host: Adjust to allow arm-cegcc.
+
 2008-09-12  Pawel Veselov <pawel.veselov@gmail.com>
         * newlib/newlib/libc/include/stdlib.h : added realpath() declaration
         * newlib/libc/sys/wince/Makefile.in newlib/libc/sys/wince/Makefile.am :
