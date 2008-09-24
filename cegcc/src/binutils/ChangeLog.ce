@@ -1,3 +1,9 @@
+2008-09-24  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	ld/
+	* configure.tgt (arm*-*-cegcc*): Set LIB_PATH to
+	${tooldir}/lib/w32api.
+
 2008-03-29  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* pe-arm-wince.c (pe_print_compressed_pdata): Define new function to
