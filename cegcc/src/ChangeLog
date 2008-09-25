@@ -1,3 +1,10 @@
+2008-09-25  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	* build-cegcc.sh (build_newlib, build_cegccdll)
+	(build_cegccthrddll, build_stdcppdll, build_profile, build_docs):
+	cd to BUILD_DIR on exit.
+	* build-mingw32ce.sh (build_w32api, build_mingw): Likewise.
+
 2008-09-24  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	* build-cegcc.sh (build_gcc): Remove -j4.

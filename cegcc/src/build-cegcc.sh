@@ -287,7 +287,8 @@ build_newlib()
 
     make
     make install
-    cd ${BASE_DIRECTORY}
+
+    cd ${BUILD_DIR}
 }
 
 build_cegccdll()
@@ -300,6 +301,8 @@ build_cegccdll()
     cd ${BASE_DIRECTORY}/cegcc/cegccdll
     make
     make install
+
+    cd ${BUILD_DIR}
 }
 
 build_cegccthrddll()
@@ -312,6 +315,8 @@ build_cegccthrddll()
     cd ${BASE_DIRECTORY}/cegcc/cegccthrd
     make
     make install
+
+    cd ${BUILD_DIR}
 }
 
 build_libstdcppdll()
@@ -324,6 +329,8 @@ build_libstdcppdll()
     cd ${BASE_DIRECTORY}/cegcc/libstdc++
     make
     make install
+
+    cd ${BUILD_DIR}
 }
 
 build_profile()
@@ -344,6 +351,8 @@ build_profile()
 
     make
     make install
+
+    cd ${BUILD_DIR}
 }
 
 build_docs()
@@ -366,6 +375,8 @@ build_docs()
     cp src/binutils/COPYING ${PREFIX}
     cp src/binutils/COPYING.LIB ${PREFIX}
     cp src/binutils/COPYING.NEWLIB ${PREFIX}
+
+    cd ${BUILD_DIR}
 }
 
 build_all()

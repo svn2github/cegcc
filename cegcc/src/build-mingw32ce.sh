@@ -218,6 +218,8 @@ build_w32api()
 
     make
     make install
+
+    cd ${BUILD_DIR}
 }
 
 build_mingw()
@@ -232,6 +234,8 @@ build_mingw()
 
     make
     make install
+
+    cd ${BUILD_DIR}
 }
 
 build_gcc()
