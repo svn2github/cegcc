@@ -41,6 +41,8 @@ Usage: $0 [OPTIONS] ...
   -h, --help              print this help, then exit
   --prefix=PREFIX         install toolchain in PREFIX
 			  [$ac_default_prefix]
+  -j, --parallelism PARALLELISM  Pass PARALLELISM as -jPARALLELISM
+                          to make invocations.
   --components=LIST       specify which components to build
                           valid components are: ${COMPONENTS_COMMA_LIST}
 			  [all]
@@ -66,6 +68,17 @@ do
 
   -help | --help | --hel | --he | -h)
     usage; exit 0 ;;
+
+  -j | --parallelism | --parallelis | --paralleli | --parallel \
+      | --paralle | --parall | --paral | --para | --par \
+      | --pa)
+    ac_prev=parallelism ;;
+  -j=* | --parallelism=* | --parallelis=* | --paralleli=* | --parallel=* \
+      | --paralle=* | --parall=* | --paral=* | --para=* | --par=* \
+      | --pa=*)
+    parallelism=$ac_optarg ;;
+  -j*)
+    parallelism=`echo $ac_option | sed 's/-j//'` ;;
 
   -prefix | --prefix | --prefi | --pref | --pre | --pr | --p)
     ac_prev=prefix ;;
@@ -139,6 +152,12 @@ else
     fi
 fi
 
+if [ "x${parallelism}" != "x" ]; then
+    PARALLELISM="-j${parallelism}"
+else
+    PARALLELISM=
+fi
+
 # embedded tabs in the sed below -- do not untabify
 components=`echo "${components}" | sed -e 's/[ 	,][ 	,]*/,/g' -e 's/,$//'`
 
@@ -165,7 +184,7 @@ build_binutils()
 	--target=${TARGET}      \
 	--disable-nls
 
-    make
+    make ${PARALLELISM}
     make install
 
     cd ${BUILD_DIR}
@@ -192,11 +211,11 @@ build_bootstrap_gcc()
 	--without-newlib               \
 	--enable-checking
     
-    make all-gcc
+    make ${PARALLELISM} all-gcc
 
     if [ ${gcc_src} != "gcc" ];
     then
-	make all-target-libgcc
+	make ${PARALLELISM} all-target-libgcc
     fi
     make install-gcc
     if [ ${gcc_src} != "gcc" ];
@@ -216,7 +235,7 @@ build_w32api()
 	--host=${TARGET}               \
 	--prefix=${PREFIX}
 
-    make
+    make ${PARALLELISM}
     make install
 
     cd ${BUILD_DIR}
@@ -232,7 +251,7 @@ build_mingw()
 	--target=${TARGET}            \
 	--prefix=${PREFIX}
 
-    make
+    make ${PARALLELISM}
     make install
 
     cd ${BUILD_DIR}
@@ -264,7 +283,7 @@ build_gcc()
 
 #  --disable-clocale              \
 
-    make
+    make ${PARALLELISM}
     make install
 
     cd ${BUILD_DIR}
@@ -294,7 +313,7 @@ build_gdb()
 
     export CFLAGS=${PREV_CFLAGS}
 
-    make
+    make ${PARALLELISM}
     make install
 
     cd ${BUILD_DIR}
@@ -315,7 +334,7 @@ build_gdbserver()
 	--host=${TARGET}               \
 	--prefix=${PREFIX}             \
 
-    make
+    make ${PARALLELISM}
     make install
 
     cd ${BUILD_DIR}
@@ -362,7 +381,7 @@ build_profile()
 	--prefix=${PREFIX}            \
 	|| exit
 
-    make
+    make ${PARALLELISM}
     make install
 
     cd ${BUILD_DIR}
