@@ -1,5 +1,9 @@
 2008-09-25  Pedro Alves  <pedroalves@users.sourceforge.net>
 
+	* build-cegcc.sh (COMPONENTS): Fix typo.
+
+2008-09-25  Pedro Alves  <pedroalves@users.sourceforge.net>
+
 	* build-cegcc.sh (build_newlib, build_cegccdll)
 	(build_cegccthrddll, build_stdcppdll, build_profile, build_docs):
 	cd to BUILD_DIR on exit.

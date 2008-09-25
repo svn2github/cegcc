@@ -16,7 +16,7 @@ gcc_src=gcc
 
 # The list of components, in build order.  There's a build_FOO
 # function for each of these components
-COMPONENTS=( binutils bootstrapgcc w32api newlib dummy_cegccdll gcc cegccdll cegccthrddll libstdcppdll profile docs )
+COMPONENTS=( binutils bootstrap_gcc w32api newlib dummy_cegccdll gcc cegccdll cegccthrddll libstdcppdll profile docs )
 COMPONENTS_NUM=${#COMPONENTS}
 
 # Build comma separated list of components, for user display.
