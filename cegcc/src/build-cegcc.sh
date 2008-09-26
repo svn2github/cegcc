@@ -229,16 +229,7 @@ build_bootstrap_gcc()
 	--enable-checking
     
     make ${PARALLELISM} all-gcc
-
-    if [ ${gcc_src} != "gcc" ];
-    then
-	make ${PARALLELISM} all-target-libgcc
-    fi
     make install-gcc
-    if [ ${gcc_src} != "gcc" ];
-    then
-	make install-target-libgcc
-    fi
 
     cd ${BUILD_DIR}
 }

@@ -1,3 +1,21 @@
+2008-09-26  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	* build-cegcc.sh (build_bootstrap_gcc): Remove unneeded
+	target-libgcc steps.	
+	* build-mingw32ce.sh (build_bootstrap_gcc): Likewise.
+
+2008-09-25  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	Enable passing -jFOO to components that support it.
+
+	* build-cegcc.sh: Add support for -j/--parallelism option.
+	(build_binutils, build_bootstrap_gcc, build_w32api, build_gcc)
+	(build_newlib, build_profile): Use it.
+
+	* build-mingw32ce.sh: Add support for -j/--parallelism option.
+	(build_binutils, build_bootstrap_gcc, build_w32api, build_mingw)
+	(build_gcc, build_gdb, build_gdbserver, build_profile): Use it.
+
 2008-09-25  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	* build-cegcc.sh (COMPONENTS): Fix typo.
