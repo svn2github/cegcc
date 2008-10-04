@@ -194,7 +194,7 @@ _shared_setstderrfd(_SHMBLK shmblk, int fd)
 }
 
 void
-_shared_setenvblk(_SHMBLK shmblk, char **env)
+_shared_setenvironblk(_SHMBLK shmblk, char **env)
 {
 	char *d;
 	int i, len;
@@ -209,7 +209,8 @@ _shared_setenvblk(_SHMBLK shmblk, char **env)
 	for (i = 0, d = shmblk->pginfo.environ; env[i] != NULL; i++) {
 		len = strlen(env[i]);
 		if (d + len >= endp)	{
-			WCETRACE(WCE_IO, "_shared_setenvblk: FATAL space exhausted (max %d)",
+			WCETRACE(WCE_IO, "_shared_setenvironblk: "
+				 "FATAL space exhausted (max %d)",
 				MAX_ENVIRONBLK);
 			exit(1);
 		}
@@ -219,28 +220,33 @@ _shared_setenvblk(_SHMBLK shmblk, char **env)
 	*d = 0;
 }
 
-void
-_shared_getenvblk(_SHMBLK shmblk, char **env)
+int
+_shared_getenvironblk(_SHMBLK shmblk, char **env)
 {
 	char *s;
 	int i, len;
 
-	if (shmblk == NULL)
-		return;
+	if (shmblk == NULL) {
+		return 0;
+	}
 
 	for (i = 0, s = shmblk->pginfo.environ; *s; i++) {
-		len = strlen(s);
-		if (env[i] != NULL) {
-			free(env[i]);
-		}
-		env[i] = malloc(len + 1);
-		if (env[i] == NULL) {
-			WCETRACE(WCE_IO, "_shared_getenvblk: FATAL ERROR malloc failed");
-			exit(1);
-		}
-		memcpy(env[i], s, len + 1);
-		s += len + 1;
-	}
+            s += strlen(s) + 1;
+        }
+
+        if (i) {
+            len = s - shmblk->pginfo.environ + 1;
+            *env = malloc(len);
+            if (*env == NULL) {
+                WCETRACE(WCE_IO, "_shared_getenvironblk: "
+			 "FATAL ERROR malloc failed for %d more bytes", len);
+                exit(1);
+            }
+
+            memcpy(*env, shmblk->pginfo.environ, len);
+        }
+
+        return i;
 }
 
 BOOL

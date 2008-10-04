@@ -30,10 +30,15 @@ extern "C" {
 
 _SHMBLK _shared_init(int pgid);
 void    _shared_dump(_SHMBLK shmblk);
-int    _shared_getshowwindow();
+int     _shared_getshowwindow(_SHMBLK shmblk);
 void    _shared_setshowwindow(_SHMBLK shmblk, int show);
 void    _shared_setenvironblk(_SHMBLK shmblk, char **env);
-void    _shared_getenvironblk(_SHMBLK shmblk, char **env);
+
+/* Returns the number of environment variables extracted from the
+   shared block.  The environment variables are written into *ENV,
+   which is allocated using malloc.  */
+int     _shared_getenvironblk(_SHMBLK shmblk, char **env);
+
 void    _shared_reset(_SHMBLK shmblk);
 void    _shared_getcwd(_SHMBLK shmblk, char *cwd);
 void    _shared_setcwd(_SHMBLK shmblk, char *cwd);

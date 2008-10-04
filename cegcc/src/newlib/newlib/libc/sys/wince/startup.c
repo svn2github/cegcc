@@ -548,7 +548,6 @@ static void inherit_parent(void)
 
     atexit(_ioatexit);
     _shared_dump(shmblk);
-    _shared_getenvblk(shmblk, environ);
     __pgid = _shared_getpgid(shmblk);
     _shared_getcwd(shmblk, buf);
 

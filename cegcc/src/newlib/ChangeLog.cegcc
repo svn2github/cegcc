@@ -1,3 +1,22 @@
+2008-10-04  Pawel Veselov  <pawel.veselov@gmail.com>
+
+	newlib/
+	* libc/sys/wince/sys/shared.h (_shared_getshowwindow): Redefine to
+	include _SHMBLK argument.
+	* libc/sys/wince/sys/shared.h (_shared_getenvironblk): Redefine to
+	return int.  Add a comment explaining what the function does.
+	* libc/sys/wince/startup.c (inherit_parent): Don't call
+	_shared_getenvblk there, it's called somewhere else.
+	* libc/sys/wince/env.c (_initenv): Use new _shared_getenvironblk
+	semantics.
+	* libc/sys/wince/spawn.c (_spawnv, _spawnvp, _newlib_pre_spawn):
+	Use correct function name.
+	* libc/sys/wince/shared.c: Rename _shared_setenvblk to
+	_shared_setenvironblk to match the header file definition.
+	* libc/sys/wince/shared.c (_shared_getenvironblk): Allocate memory
+	for the copy of the shared environment block, and return the
+	number of variables found.
+
 2008-09-24  Pedro Alves  <pedroalves@users.sourceforce.net>
 
 	* config.sub: Add cegcc support.

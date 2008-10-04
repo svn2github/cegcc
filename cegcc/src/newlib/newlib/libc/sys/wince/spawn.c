@@ -93,7 +93,7 @@ _spawnv(const char *command, char * const argv[], int pgid, int infd, int outfd,
   }
 
   WCETRACE(WCE_IO, "spawnv: _shared_init returns %x", shmblk);
-  _shared_setenvblk(shmblk, environ);
+  _shared_setenvironblk(shmblk, environ);
   getcwd(buf, BUFSIZE);
   WCETRACE(WCE_IO, "spawnv: cwd \"%s\"", buf);
   _shared_setcwd(shmblk, buf);
@@ -155,7 +155,7 @@ _spawnvp(const char *command, char * const argv[], int pgid, int infd, int outfd
   }
 
   WCETRACE(WCE_IO, "spawnv: _shared_init returns %x", shmblk);
-  _shared_setenvblk(shmblk, environ);
+  _shared_setenvironblk(shmblk, environ);
   getcwd(buf, BUFSIZE);
   WCETRACE(WCE_IO, "spawnvp: cwd \"%s\"", buf);
   _shared_setcwd(shmblk, buf);
@@ -190,7 +190,7 @@ _newlib_pre_spawn(int pgid, int infd, int outfd, int errfd)
     return(-1);
   }
 
-  _shared_setenvblk(shmblk, environ);
+  _shared_setenvironblk(shmblk, environ);
   getcwd(buf, BUFSIZE);
   _shared_setcwd(shmblk, buf);
   _shared_setstdinfd(shmblk, (infd >= 0) ? _fdtab[infd].fd : infd);

@@ -28,14 +28,14 @@ _initenv_from_reg()
 
   if((res = XCERegOpenKeyExA(HKEY_LOCAL_MACHINE, "Environment", 0,
 	  KEY_READ, &hKey)) != 0)
-  {
-	  // use defaults
-	  putenv("UNIXROOTDIR=/");
-	  putenv("PATH=.:/:/Windows");
-	  putenv("HOME=/My Documents");
-	  putenv("TMP=/Temp");
-	  return;
-  }
+    {
+      // use defaults
+      putenv("UNIXROOTDIR=/");
+      putenv("PATH=.:/:/Windows");
+      putenv("HOME=/My Documents");
+      putenv("TMP=/Temp");
+      return;
+    }
 
   while(1)
     {
@@ -48,9 +48,7 @@ _initenv_from_reg()
       if(res != 0)
 	{
 	  if(res != ERROR_NO_MORE_ITEMS)
-	  {
 	    XCEShowMessageA("RegEnumValue: %d", res);
-	  }
 	  break;
 	}
 
@@ -79,21 +77,24 @@ _initenv_from_envblock(char *buf)
 void _initenv(_SHMBLK shmblk)
 {
   if (shmblk)
-  {
-	  char buf[MAX_ENVIRONBLK];
+    {
+      char *buf;
+      int no;
 
-          /* We are being initialized from a cegcc app.
-             Kill environ set from the registry.  */
-	  environ[0] = 0;
-	  _shared_getenvblk(shmblk, buf);
-	  if(buf[0] != 0)
-		  _initenv_from_envblock(buf);
-	  else
-		  _initenv_from_reg();
-	  _shared_setenvblk(shmblk, "");
+      /* We are being initialized from a cegcc app.  Only use the
+	 registry environment if there are no environment variables in
+	 the shared block.  */
+
+      no = _shared_getenvironblk(shmblk, &buf);
+
+      if (no)
+	{
+	  _initenv_from_envblock(buf);
+	  free(buf);
+	}
+      else
+	_initenv_from_reg();
   }
   else
-  {
-	  _initenv_from_reg();
-  }
+    _initenv_from_reg();
 }
