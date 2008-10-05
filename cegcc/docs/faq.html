@@ -71,6 +71,7 @@ Everything you always wanted to know about CeGCC but were afraid to ask.
   <LI><A HREF="#FileNotWinCEApplication">I get &quot;&#39;MyProgram&#39; is not a
       valid Windows CE application&quot; when I try to run MyProgram.</A></LI>
       
+  <LI><A HREF="#DllDoesNotWorkWithWindowsMobile6.1">DLL does not work with Windows Mobile 6.1</A></LI>
   <LI><A HREF="#More">Need More Informations?</A></LI>
   
   <!-- This should always remain THE LAST QUESTION -->
@@ -841,6 +842,32 @@ A temporary solution is to keep a copy of every &quot;DllName.dll&quot; file as 
       <P><A HREF="#ToC">Table of Contents</A></P>
   </LI>
       
+  <LI>
+      <STRONG><A NAME="DllDoesNotWorkWithWindowsMobile6.1">
+      DLL doesn't work with Windows Mobile 6.1
+      </A></STRONG><BR>
+      <P>
+      Memory management changes in Windows Mobile 6.1 cause some DLLs not to load.
+      It has been suggested (see
+      <a href="http://blogs.msdn.com/hopperx/archive/2008/09/19/writeable-code-sections-got-you-down-fear-no-more.aspx">
+	      this blog</a>
+      that the underlying problem is a writable code section in the DLL,
+      other reports suggest that the DLL size may be an issue.
+      <P>
+      The workaround or solution (I'm not sure what to call it) that we have
+      is to restrict this DLL to Slot 0 by adding the following registry key:
+      <pre>
+       [HKEY_LOCAL_MACHINE\System\Loader\LoadModuleLow] "MyDll.dll"=dword:1
+      </pre>
+      Obviously you need to change "MyDll" into the name of the DLL that causes the problem.
+      <P>
+      Please note that using the this approach will force your entire DLL into Slot 0 and,
+      it may prevent other modules from loading in that slot.
+      Therefore, the above registry setting should be used with caution.
+      </P>
+      <P><A HREF="#ToC">Table of Contents</A></P>
+  </LI>
+      
   <!-- Guilty - this should always remain THE LAST ANSWER -->
 
   <li>
@@ -883,7 +910,8 @@ A temporary solution is to keep a copy of every &quot;DllName.dll&quot; file as 
 			<li> <a href="faq.html">Frequently asked questions ? Read the FAQ</a>.
 			<li> <a href="mailto:cegcc-devel@lists.sourceforge.net">Questions ? Use the mailing list</a>.
 			<li> <a href="http://sourceforge.net/tracker/?group_id=173455&atid=865514"> CeGCC Bug tracker </a>
-			<LI><A HREF="reporting.html">Information to including when asking help or when reporting problems</A></LI>
+			<li><a href="reporting.html">Information to including when asking help or when reporting problems</a></li>
+			<li><a href="test.html">Test plan (work in progress!)</a></li>
 		</ul>
 	</td>
 </tr></table>
