@@ -1,3 +1,9 @@
+2008-10-05  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	* include/shellapi.h (SHCreateShortcut): Change return type to
+	DWORD.
+	(SHCreateShortcutEx): Declare.
+
 2008-09-25  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	* libce/Makefile.in (inst_includedir, inst_libdir) [!cegcc]:
