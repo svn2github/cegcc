@@ -515,13 +515,14 @@ _write_r(struct _reent *reent, int fd, const void *buf, size_t count){
   WCETRACE(WCE_IO, "write(%d, %d, %x)", fd, count, _fdtab[fd].hnd);
   EnterCriticalSection(&critsect);
 
-#if 1
-  if (fd == 2 || fd == 1)
-  {
-	  const char* out = fd == 2?"stderr: ":"stdout: ";
-    WCETRACE(WCE_IO, "%s : %s", out, buf);
+
+  if (WCETRACING(WCE_IO)) {
+      if (fd == 2 || fd == 1) {
+        char fmt[30];
+        snprintf(fmt, 29, "%s : %%.%ds", fd == 2?"stderr":"stdout", count);
+        WCETRACE(WCE_IO, fmt, buf);
+      }
   }
-#endif
 
   /* until we can call console stuff inside the PE loader */
   if ((!__StdioInited) && (fd >= 0) && (fd <= 2))

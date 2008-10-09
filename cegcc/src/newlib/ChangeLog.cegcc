@@ -1,3 +1,23 @@
+2008-10-09  Pawel Veselov  <pawel.veselov@gmail.com>
+
+	newlib/
+	* libc/sys/wince/trace.c (__trace_closed): New.
+	(get_level_name): New.
+	(WCETRACE): Rename to...
+	(__WCETrace): ... this.
+	(WCETRACESET): Do not change the trace level if the tracing
+	facilities have been closed.
+	(WCETRACECLOSE): Print out a message that the tracing has closed.
+	Reset tracing level to 0 after closing.
+	(__WCETrace): Print out the tracing level along with the message.
+	* libc/sys/wince/sys/wcetrace.h (WCETRACE): Define.
+	(WCETRACE): Rename to ...
+	(__WCETrace): ... this.
+	(WCETRACING): Define.
+	* libc/sys/wince/io.c (_write_r): When tracing out stdio/stderr
+	buffer, send out as many bytes as are in the buffer, instead of
+	using zero termination.
+
 2008-10-04  Pawel Veselov  <pawel.veselov@gmail.com>
 
 	newlib/

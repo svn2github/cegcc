@@ -32,16 +32,26 @@ extern "C" {
 #endif
 
 #ifndef CE_NOTRACE
+
 void WCETRACEGETENV(void);
 void WCETRACESET(int trace);
 int  WCETRACEGET(void);
-void WCETRACE(int level, const char *fmt, ...);
+#define WCETRACING(LEVEL) \
+  ((WCETRACE_DEBUGGER_GET() & (LEVEL)) || (WCETRACEGET() & (LEVEL)))
+#define WCETRACE(LEVEL, FMT...) do { \
+    if (WCETRACING(LEVEL))	     \
+      __WCETrace(LEVEL, FMT);	     \
+  } while(0)
+
 void WCETRACE_DEBUGGER_SET(int trace);
 int  WCETRACE_DEBUGGER_GET(void);
 void WCETRACECLOSE(void);
+void __WCETrace(int trace, const char * fmt, ...);
 void __WCETraceError(int level, unsigned long werr, const char* funct);
 #define WCETRACE_ERROR(T, ERR) __WCETraceError(T, ERR, __FUNCTION__)
+
 #else
+
 #define WCETRACEGETENV() do {} while (0)
 #define WCETRACESET(trace) do {} while (0)
 #define WCETRACEGET() do {} while (0)
@@ -50,6 +60,8 @@ void __WCETraceError(int level, unsigned long werr, const char* funct);
 #define WCETRACE_DEBUGGER_GET() do {} while (0)
 #define WCETRACECLOSE() do {} while (0)
 #define WCETRACE_ERROR(T, ERR) do {} while (0)
+#define WCETRACING(p) (0)
+
 #endif
 
 #ifdef __cplusplus
