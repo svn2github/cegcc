@@ -1,3 +1,7 @@
+2008-11-27  Klaus Rechert <klaus@rechert.de>
+	* binutils/dlltool.c, binutils/windmc.c: remove compiler warnings that
+	break the build on Ubuntu.
+
 2008-09-24  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	ld/

@@ -1206,7 +1206,7 @@ run (const char *what, char *args)
 
   if (pid == -1)
     {
-      inform (strerror (errno));
+      inform (_("%s"), strerror (errno));
 
       fatal (errmsg_fmt, errmsg_arg);
     }
@@ -1985,6 +1985,8 @@ gen_exp_file (void)
       long *copy;
       int j;
       int on_page;
+      long ret;
+
       fprintf (f, "\t.section\t.init\n");
       fprintf (f, "lab:\n");
 
@@ -1992,7 +1994,9 @@ gen_exp_file (void)
       numbytes = ftell (base_file);
       fseek (base_file, 0, SEEK_SET);
       copy = xmalloc (numbytes);
-      fread (copy, 1, numbytes, base_file);
+      ret = fread (copy, 1, numbytes, base_file);
+      if (ret < numbytes)
+	      fatal(_("Short read\n"));
       num_entries = numbytes / sizeof (long);
 
 

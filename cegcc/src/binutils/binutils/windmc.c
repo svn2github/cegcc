@@ -1137,6 +1137,7 @@ main (int argc, char **argv)
     rc_uint_type ul;
     char *buff;
     long flen;
+    long ret;
     FILE *fp = fopen (input_filename, "rb");
 
     if (!fp)
@@ -1147,7 +1148,9 @@ main (int argc, char **argv)
     fseek (fp, 0, SEEK_SET);
     buff = malloc (flen + 3);
     memset (buff, 0, flen + 3);
-    fread (buff, 1, flen, fp);
+    ret = fread (buff, 1, flen, fp);
+    if (ret < flen)
+	    fatal(_("Short read\n"));
     fclose (fp);
     if (mcset_text_in_is_unicode != 1)
       {
