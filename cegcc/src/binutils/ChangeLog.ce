@@ -1,3 +1,6 @@
+2008-12-19  mosfet <forumer@smartmobili.com>
+	* binutils/rcparse.y: Allow extra comma at the end of data lists.
+
 2008-11-27  Klaus Rechert <klaus@rechert.de>
 	* binutils/dlltool.c, binutils/windmc.c: remove compiler warnings that
 	break the build on Ubuntu.
