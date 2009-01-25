@@ -1,3 +1,12 @@
+2009-01-25  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/pm.h: Merge with version submitted by Lars Munch.
+	* include/winbase.h: Move SetSystemPowerState to pm.h for CE.
+
+2009-01-11  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/pm.h, include/msgqueue.h: Add.
+
 2008-10-07  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	* include/secext.h (EXTENDED_NAME_FORMAT): Allow on _WIN32_WCE >=

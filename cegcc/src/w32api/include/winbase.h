@@ -2027,10 +2027,7 @@ WINBASEAPI BOOL WINAPI SetSecurityDescriptorOwner(PSECURITY_DESCRIPTOR,PSID,BOOL
 WINBASEAPI BOOL WINAPI SetSecurityDescriptorSacl(PSECURITY_DESCRIPTOR,BOOL,PACL,BOOL);
 WINBASEAPI BOOL WINAPI SetStdHandle(DWORD,HANDLE);
 #define SetSwapAreaSize(w) (w)
-#if (_WIN32_WCE >= 0x0400)
-WINBASEAPI DWORD WINAPI SetSystemPowerState(LPCWSTR, DWORD, DWORD);
-#else
-/* Only on Windows Server 2008, Windows Server 2003, or Windows 2000 Server. */
+#if !defined (_WIN32_WCE)
 WINBASEAPI BOOL WINAPI SetSystemPowerState(BOOL,BOOL);
 #endif
 WINBASEAPI BOOL WINAPI SetSystemTime(const SYSTEMTIME*);
