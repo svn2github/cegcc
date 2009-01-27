@@ -184,6 +184,7 @@ struct  protoent {
 #define IPPROTO_UDP	17
 #define IPPROTO_IDP	22
 #define IPPROTO_ND	77
+#define	IPPROTO_RM	113
 #define IPPROTO_RAW	255
 #define IPPROTO_MAX	256
 /* IPv6 options */
@@ -196,6 +197,9 @@ struct  protoent {
 #define IPPROTO_ICMPV6		58 /* ICMPv6 */
 #define IPPROTO_NONE		59 /* IPv6 no next header */
 #define IPPROTO_DSTOPTS		60 /* IPv6 Destination options */
+
+#define BTHPROTO_RFCOMM	3
+
 #define IPPORT_ECHO	7
 #define IPPORT_DISCARD	9
 #define IPPORT_SYSTAT	11
@@ -340,9 +344,10 @@ typedef WSADATA *LPWSADATA;
 #else
 #define AF_IRDA     26
 #endif
+#define	AF_BTH	32
 #define AF_NETDES   28
 #if !(defined (__INSIDE_CYGWIN__) || defined (__INSIDE_MSYS__))
-#define AF_MAX	29
+#define AF_MAX	33
 struct sockaddr {
 	u_short sa_family;
 	char	sa_data[14];
@@ -400,6 +405,8 @@ struct sockproto {
 #define PF_BAN	AF_BAN
 #define PF_ATM	AF_ATM
 #define PF_INET6	AF_INET6
+#define PF_IRDA	AF_IRDA
+#define	PF_BTH	AF_BTH
 #define PF_MAX	AF_MAX
 #define SOL_SOCKET	0xffff
 #if ! (defined (__INSIDE_CYGWIN__) || defined (__INSIDE_MSYS__))

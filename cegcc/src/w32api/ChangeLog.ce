@@ -1,3 +1,8 @@
+2009-01-27  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/winsock.h, include/winsock2.h: Add various macros to define
+	constants used for Bluetooth.
+
 2009-01-25  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/pm.h: Merge with version submitted by Lars Munch.
