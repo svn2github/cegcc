@@ -1,4 +1,10 @@
-2009-01.28  Ryan Raasch  <ryan.raasch@gmail.com>
+2009-02-01  Ryan Raasch  <ryan.raasch@gmail.com>
+
+	* libce/directx/strmiids.c : New file, copy from src/lib/directx.
+	* include/bdatypes.h, include/dshow.h, include/strmif.h : Make the
+	UUIDs extern so executables can link.
+
+2009-01-28  Ryan Raasch  <ryan.raasch@gmail.com>
 
 	* libce/coredll.def, include/winbase.h : Add various definitions to
 	support EnumDeviceInterfaces, EnumDevices, FindFirstDevice,
