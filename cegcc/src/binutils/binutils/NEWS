@@ -1,4 +1,33 @@
 -*- text -*-
+
+* Added --prefix=PREFIX and --prefix-strip=LEVEL switches to objdump to
+  add absolute paths for -S.
+
+* Add new option --use-nul-prefixed-import-tables to dlltool to allow fall-
+  back to old import table generation with null element prefix.
+
+* Added --identify-strict switch to cause --identify <implib> to 
+  report an error when the import library is associated with
+  multiple DLLs.
+
+* Added --identify <implib> option to dlltool, which determines the
+  name of the DLL associated with the specified <implib>.
+
+* Support for PowerPC booke64 instructions has been removed.  The assembler no
+  longer accepts -mbooke32 or -mbooke64 and the disassembler no longer accepts
+  -Mbooke32 or -Mbooke64.  Instead, -mbooke and -Mbooke should be used.
+
+Changes in 2.19:
+
+* Added -wL switch to dump decoded contents of .debug_line.
+
+* Added support for "thin" archives which contain pathnames pointing to
+  object files rather than the files themselves and which contain a
+  flattened symbol index for all objects, and archives, which have been
+  added to the archive.
+  
+* Added -F switch to objdump to include file offsets in the disassembly.
+
 * Added -c switch to readelf to allow string dumps of archive symbol index.
 
 * Support for SSE5 has been added to the i386 port.
@@ -6,6 +35,7 @@
 * Added -p switch to readelf to allow string dumps of sections.
 
 Changes in 2.18:
+
 * Resolved 37 coding problems in bfd including static array overruns, null
   pointer dereferences and use of a malloc buffer after it has been freed, as
   revealed by static analysis donated by Coverity, Inc. (http://scan.coverity.com).

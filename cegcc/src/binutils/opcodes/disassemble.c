@@ -46,6 +46,7 @@
 #define ARCH_ia64
 #define ARCH_ip2k
 #define ARCH_iq2000
+#define ARCH_lm32
 #define ARCH_m32c
 #define ARCH_m32r
 #define ARCH_m68hc11
@@ -221,6 +222,11 @@ disassembler (abfd)
 #ifdef ARCH_fr30
     case bfd_arch_fr30:
       disassemble = print_insn_fr30;
+      break;
+#endif
+#ifdef ARCH_lm32
+    case bfd_arch_lm32:
+      disassemble = print_insn_lm32;
       break;
 #endif
 #ifdef ARCH_m32r
@@ -465,6 +471,9 @@ disassembler_usage (stream)
 #endif
 #ifdef ARCH_i386
   print_i386_disassembler_options (stream);
+#endif
+#ifdef ARCH_s390
+  print_s390_disassembler_options (stream);
 #endif
 
   return;

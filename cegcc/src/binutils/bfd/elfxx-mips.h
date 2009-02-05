@@ -50,8 +50,6 @@ extern bfd_boolean _bfd_mips_elf_check_relocs
   (bfd *, struct bfd_link_info *, asection *, const Elf_Internal_Rela *);
 extern bfd_boolean _bfd_mips_elf_adjust_dynamic_symbol
   (struct bfd_link_info *, struct elf_link_hash_entry *);
-extern bfd_boolean _bfd_mips_vxworks_adjust_dynamic_symbol
-  (struct bfd_link_info *, struct elf_link_hash_entry *);
 extern bfd_boolean _bfd_mips_elf_always_size_sections
   (bfd *, struct bfd_link_info *);
 extern bfd_boolean _bfd_mips_elf_size_dynamic_sections
@@ -81,8 +79,6 @@ extern bfd_boolean _bfd_mips_elf_gc_sweep_hook
 extern void _bfd_mips_elf_copy_indirect_symbol
   (struct bfd_link_info *, struct elf_link_hash_entry *,
    struct elf_link_hash_entry *);
-extern void _bfd_mips_elf_hide_symbol
-  (struct bfd_link_info *, struct elf_link_hash_entry *, bfd_boolean);
 extern bfd_boolean _bfd_mips_elf_ignore_discarded_relocs
   (asection *);
 extern bfd_boolean _bfd_mips_elf_find_nearest_line
@@ -95,6 +91,8 @@ extern bfd_boolean _bfd_mips_elf_set_section_contents
 extern bfd_byte *_bfd_elf_mips_get_relocated_section_contents
   (bfd *, struct bfd_link_info *, struct bfd_link_order *,
    bfd_byte *, bfd_boolean, asymbol **);
+extern bfd_boolean _bfd_mips_elf_mkobject
+  (bfd *);
 extern struct bfd_link_hash_table *_bfd_mips_elf_link_hash_table_create
   (bfd *);
 extern struct bfd_link_hash_table *_bfd_mips_vxworks_link_hash_table_create
@@ -138,8 +136,18 @@ extern bfd_vma _bfd_mips_elf_sign_extend
   (bfd_vma, int);
 extern void _bfd_mips_elf_merge_symbol_attribute
   (struct elf_link_hash_entry *, const Elf_Internal_Sym *, bfd_boolean, bfd_boolean);
+extern char *_bfd_mips_elf_get_target_dtag (bfd_vma);
 extern bfd_boolean _bfd_mips_elf_ignore_undef_symbol
   (struct elf_link_hash_entry *);
+extern void _bfd_mips_elf_use_plts_and_copy_relocs
+  (struct bfd_link_info *);
+extern bfd_boolean _bfd_mips_elf_init_stubs
+  (struct bfd_link_info *,
+   asection *(*) (const char *, asection *, asection *));
+extern bfd_vma _bfd_mips_elf_plt_sym_val
+  (bfd_vma, const asection *, const arelent *rel);
+extern void _bfd_mips_post_process_headers
+  (bfd *abfd, struct bfd_link_info *link_info);
 
 extern const struct bfd_elf_special_section _bfd_mips_elf_special_sections [];
 
@@ -152,3 +160,4 @@ extern bfd_boolean _bfd_mips_elf_common_definition (Elf_Internal_Sym *);
 #define elf_backend_eh_frame_address_size _bfd_mips_elf_eh_frame_address_size
 #define elf_backend_merge_symbol_attribute  _bfd_mips_elf_merge_symbol_attribute
 #define elf_backend_ignore_undef_symbol _bfd_mips_elf_ignore_undef_symbol
+#define elf_backend_post_process_headers _bfd_mips_post_process_headers

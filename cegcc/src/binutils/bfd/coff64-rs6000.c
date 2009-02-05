@@ -1,5 +1,5 @@
 /* BFD back-end for IBM RS/6000 "XCOFF64" files.
-   Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
+   Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
    Free Software Foundation, Inc.
    Written Clinton Popetz.
    Contributed by Cygnus Support.
@@ -271,6 +271,10 @@ extern int rs6000coff_core_file_failing_signal
 #define coff_swap_reloc_in xcoff64_swap_reloc_in
 #define coff_swap_reloc_out xcoff64_swap_reloc_out
 #define NO_COFF_RELOCS
+
+#ifndef bfd_pe_print_pdata
+#define bfd_pe_print_pdata	NULL
+#endif
 
 #include "coffcode.h"
 
@@ -2576,7 +2580,7 @@ static const struct xcoff_backend_data_rec bfd_xcoff_backend_data =
       coff_print_aux,
       dummy_reloc16_extra_cases,
       dummy_reloc16_estimate,
-      NULL,			/* bfd_coff_sym_is_global */
+      NULL,			/* bfd_coff_symbol_classification */
       coff_compute_section_file_positions,
       NULL,			/* _bfd_coff_start_final_link */
       xcoff64_ppc_relocate_section,
@@ -2585,7 +2589,7 @@ static const struct xcoff_backend_data_rec bfd_xcoff_backend_data =
       _bfd_generic_link_add_one_symbol,
       coff_link_output_has_begun,
       coff_final_link_postscript,
-      NULL			/* print_pdata */
+      NULL			/* print_pdata.  */
     },
 
     0x01EF,			/* magic number */
@@ -2839,7 +2843,7 @@ static const struct xcoff_backend_data_rec bfd_xcoff_aix5_backend_data =
       _bfd_generic_link_add_one_symbol,
       coff_link_output_has_begun,
       coff_final_link_postscript,
-      NULL			/* print_pdata */
+      NULL			/* print_pdata.  */
     },
 
     U64_TOCMAGIC,		/* magic number */

@@ -1,6 +1,6 @@
 /* as.c - GAS main program.
    Copyright 1987, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
+   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
@@ -50,7 +50,7 @@
 
 #ifdef HAVE_SBRK
 #ifdef NEED_DECLARATION_SBRK
-extern PTR sbrk ();
+extern void *sbrk ();
 #endif
 #endif
 
@@ -232,6 +232,7 @@ Options:\n\
                       	  Sub-options [default hls]:\n\
                       	  c      omit false conditionals\n\
                       	  d      omit debugging directives\n\
+                      	  g      include general info\n\
                       	  h      include high-level source\n\
                       	  l      include assembly\n\
                       	  m      include macro expansions\n\
@@ -599,7 +600,7 @@ parse_args (int * pargc, char *** pargv)
 	case OPTION_VERSION:
 	  /* This output is intended to follow the GNU standards document.  */
 	  printf (_("GNU assembler %s\n"), BFD_VERSION_STRING);
-	  printf (_("Copyright 2007 Free Software Foundation, Inc.\n"));
+	  printf (_("Copyright 2008 Free Software Foundation, Inc.\n"));
 	  printf (_("\
 This program is free software; you may redistribute it under the terms of\n\
 the GNU General Public License version 3 or later.\n\
@@ -824,6 +825,9 @@ This program has absolutely no warranty.\n"));
 		      break;
 		    case 'd':
 		      listing |= LISTING_NODEBUG;
+		      break;
+		    case 'g':
+		      listing |= LISTING_GENERAL;
 		      break;
 		    case 'h':
 		      listing |= LISTING_HLL;
@@ -1077,6 +1081,8 @@ create_obj_attrs_section (void)
 int
 main (int argc, char ** argv)
 {
+  char ** argv_orig = argv;
+
   int macro_strip_at;
   int keep_it;
 
@@ -1232,7 +1238,7 @@ main (int argc, char ** argv)
   fflush (stderr);
 
 #ifndef NO_LISTING
-  listing_print (listing_filename);
+  listing_print (listing_filename, argv_orig);
 #endif
 
   if (flag_fatal_warnings && had_warnings () > 0 && had_errors () == 0)

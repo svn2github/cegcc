@@ -45,7 +45,6 @@ d5 clc SS_L0RDRD "compare logical" g5 esa,zarch
 bd clm RS_RURD "compare logical characters under mask" g5 esa,zarch
 15 clr RR_RR "compare logical" g5 esa,zarch
 b25d clst RRE_RR "compare logical string" g5 esa,zarch
-b263 cmpsc RRE_RR "compression call" g5 esa,zarch
 f9 cp SS_LLRDRD "compare decimal" g5 esa,zarch
 b24d cpya RRE_AA "copy access" g5 esa,zarch
 19 cr RR_RR "compare" g5 esa,zarch
@@ -63,7 +62,7 @@ b250 csp RRE_RR "compare and swap and purge" g5 esa,zarch
 83 diag RS_RRRD "diagnose" g5 esa,zarch
 fd dp SS_LLRDRD "divide decimal" g5 esa,zarch
 1d dr RR_RR "divide" g5 esa,zarch
-b22d dxr RRE_F0 "divide (ext.)" g5 esa,zarch
+b22d dxr RRE_FF "divide (ext.)" g5 esa,zarch
 b24f ear RRE_RA "extract access" g5 esa,zarch
 de ed SS_L0RDRD "edit" g5 esa,zarch
 df edmk SS_L0RDRD "edit and mark" g5 esa,zarch
@@ -188,8 +187,8 @@ b20a spka S_RD "set PSW key from address" g5 esa,zarch
 04 spm RR_R0 "set program mask" g5 esa,zarch
 b208 spt S_RD "set CPU timer" g5 esa,zarch
 b210 spx S_RD "set prefix" g5 esa,zarch
-b244 sqdr RRE_F0 "square root (long)" g5 esa,zarch
-b245 sqer RRE_F0 "square root (short)" g5 esa,zarch
+b244 sqdr RRE_FF "square root (long)" g5 esa,zarch
+b245 sqer RRE_FF "square root (short)" g5 esa,zarch
 1b sr RR_RR "subtract" g5 esa,zarch
 8a sra RS_R0RD "shift right single" g5 esa,zarch
 8e srda RS_R0RD "shift right double (long)" g5 esa,zarch
@@ -284,9 +283,9 @@ b318 kdbr RRE_FF "compare and signal long bfp" g5 esa,zarch
 ed0000000018 kdb RXE_FRRD "compare and signal long bfp" g5 esa,zarch
 b308 kebr RRE_FF "compare and signal short bfp" g5 esa,zarch
 ed0000000008 keb RXE_FRRD "compare and signal short bfp" g5 esa,zarch
-b396 cxfbr RRE_RF "convert from fixed 32 to extended bfp" g5 esa,zarch
-b395 cdfbr RRE_RF "convert from fixed 32 to long bfp" g5 esa,zarch
-b394 cefbr RRE_RF "convert from fixed 32 to short bfp" g5 esa,zarch
+b396 cxfbr RRE_FR "convert from fixed 32 to extended bfp" g5 esa,zarch
+b395 cdfbr RRE_FR "convert from fixed 32 to long bfp" g5 esa,zarch
+b394 cefbr RRE_FR "convert from fixed 32 to short bfp" g5 esa,zarch
 b39a cfxbr RRF_U0RF "convert to fixed extended bfp to 32" g5 esa,zarch
 b399 cfdbr RRF_U0RF "convert to fixed long bfp to 32" g5 esa,zarch
 b398 cfebr RRF_U0RF "convert to fixed short bfp to 32" g5 esa,zarch
@@ -379,13 +378,13 @@ b991 trto RRE_RR "translate two to one" g5 esa,zarch
 b990 trtt RRE_RR "translate two to two" g5 esa,zarch
 ea unpka SS_L0RDRD "unpack ascii" g5 esa,zarch
 e2 unpku SS_L0RDRD "unpack unicode" g5 esa,zarch
-b358 thder RRE_RR "convert short bfp to long hfp" g5 esa,zarch
-b359 thdr RRE_RR "convert long bfp to long hfp" g5 esa,zarch
+b358 thder RRE_FF "convert short bfp to long hfp" g5 esa,zarch
+b359 thdr RRE_FF "convert long bfp to long hfp" g5 esa,zarch
 b350 tbedr RRF_U0FF "convert long hfp to short bfp" g5 esa,zarch
 b351 tbdr RRF_U0FF "convert long hfp to long bfp" g5 esa,zarch
-b374 lzer RRE_R0 "load short zero" g5 esa,zarch
-b375 lzdr RRE_R0 "load long zero" g5 esa,zarch
-b376 lzxr RRE_R0 "load extended zero" g5 esa,zarch
+b374 lzer RRE_F0 "load short zero" g5 esa,zarch
+b375 lzdr RRE_F0 "load long zero" g5 esa,zarch
+b376 lzxr RRE_F0 "load extended zero" g5 esa,zarch
 # Here are the new esame instructions:
 b946 bctgr RRE_RR "branch on count 64" z900 zarch
 b900 lpgr RRE_RR "load positive 64" z900 zarch
@@ -476,15 +475,15 @@ b90e eregg RRE_RR "extract stacked registers 64" z900 zarch
 b905 lurag RRE_RR "load using real address 64" z900 zarch
 b90c msgr RRE_RR "multiply single 64" z900 zarch
 b91c msgfr RRE_RR "multiply single 64<32" z900 zarch
-b3a4 cegbr RRE_RR "convert from fixed 64 to short bfp" z900 zarch
-b3a5 cdgbr RRE_RR "convert from fixed 64 to long bfp" z900 zarch
-b3a6 cxgbr RRE_RR "convert from fixed 64 to extended bfp" z900 zarch
+b3a4 cegbr RRE_FR "convert from fixed 64 to short bfp" z900 zarch
+b3a5 cdgbr RRE_FR "convert from fixed 64 to long bfp" z900 zarch
+b3a6 cxgbr RRE_FR "convert from fixed 64 to extended bfp" z900 zarch
 b3a8 cgebr RRF_U0RF "convert to fixed short bfd to 64" z900 zarch
 b3a9 cgdbr RRF_U0RF "convert to fixed long bfp to 64" z900 zarch
 b3aa cgxbr RRF_U0RF "convert to fixed extended bfp to 64" z900 zarch
-b3c4 cegr RRE_RR "convert from fixed 64 to short hfp" z900 zarch
-b3c5 cdgr RRE_RR "convert from fixed 64 to long hfp" z900 zarch
-b3c6 cxgr RRE_RR "convert from fixed 64 to extended hfp" z900 zarch
+b3c4 cegr RRE_FR "convert from fixed 64 to short hfp" z900 zarch
+b3c5 cdgr RRE_FR "convert from fixed 64 to long hfp" z900 zarch
+b3c6 cxgr RRE_FR "convert from fixed 64 to extended hfp" z900 zarch
 b3c8 cger RRF_U0RF "convert to fixed short hfp to 64" z900 zarch
 b3c9 cgdr RRF_U0RF "convert to fixed long hfp to 64" z900 zarch
 b3ca cgxr RRF_U0RF "convert to fixed extended hfp to 64" z900 zarch
@@ -552,17 +551,17 @@ e30000000091 llgh RXE_RRRD "load logical halfword" z900 zarch
 eb000000001c rllg RSE_RRRD "rotate left single logical 64" z900 zarch
 eb000000001d rll RSE_RRRD "rotate left single logical 32" z900 esa,zarch
 b369 cxr RRE_FF "compare extended hfp" g5 esa,zarch
-b3b6 cxfr RRE_RF "convert from fixed 32 to extended hfp" g5 esa,zarch
-b3b5 cdfr RRE_RF "convert from fixed 32 to long hfp" g5 esa,zarch
-b3b4 cefr RRE_RF "convert from fixed 32 to short hfp" g5 esa,zarch
-b3ba cfxr RRF_U0RF "convert to fixed extended hfp to 32" z900 zarch
-b3b9 cfdr RRF_U0RF "convert to fixed long hfp to 32" z900 zarch
-b3b8 cfer RRF_U0RF "convert to fixed short hfp to 32" z900 zarch
+b3b6 cxfr RRE_FR "convert from fixed 32 to extended hfp" g5 esa,zarch
+b3b5 cdfr RRE_FR "convert from fixed 32 to long hfp" g5 esa,zarch
+b3b4 cefr RRE_FR "convert from fixed 32 to short hfp" g5 esa,zarch
+b3ba cfxr RRF_U0RF "convert to fixed extended hfp to 32" z900 esa,zarch
+b3b9 cfdr RRF_U0RF "convert to fixed long hfp to 32" z900 esa,zarch
+b3b8 cfer RRF_U0RF "convert to fixed short hfp to 32" z900 esa,zarch
 b362 ltxr RRE_FF "load and test extended hfp" g5 esa,zarch
 b363 lcxr RRE_FF "load complement extended hfp" g5 esa,zarch
-b367 fixr RRF_U0FF "load fp integer extended hfp" g5 esa,zarch
-b37f fidr RRF_U0FF "load fp integer long hfp" g5 esa,zarch
-b377 fier RRF_U0FF "load fp integer short hfp" g5 esa,zarch
+b367 fixr RRE_FF "load fp integer extended hfp" g5 esa,zarch
+b37f fidr RRE_FF "load fp integer long hfp" g5 esa,zarch
+b377 fier RRE_FF "load fp integer short hfp" g5 esa,zarch
 b325 lxdr RRE_FF "load lengthened long to extended hfp" g5 esa,zarch
 ed0000000025 lxd RXE_FRRD "load lengthened long to extended hfp" g5 esa,zarch
 b326 lxer RRE_FF "load lengthened short to extended hfp" g5 esa,zarch
@@ -576,9 +575,10 @@ b337 meer RRE_FF "multiply short hfp" g5 esa,zarch
 ed0000000037 mee RXE_FRRD "multiply short hfp" g5 esa,zarch
 b336 sqxr RRE_FF "square root extended hfp" g5 esa,zarch
 ed0000000034 sqe RXE_FRRD "square root short hfp" g5 esa,zarch
+ed0000000035 sqd RXE_FRRD "square root long hfp" g5 esa,zarch
 b263 cmpsc RRE_RR "compression call" g5 esa,zarch
 eb00000000c0 tp RSL_R0RD "test decimal" g5 esa,zarch
-b365 lxr RRE_RR "load extended hfp" g5 esa,zarch
+b365 lxr RRE_FF "load extended fp" g5 esa,zarch
 b22e pgin RRE_RR "page in" g5 esa,zarch
 b22f pgout RRE_RR "page out" g5 esa,zarch
 b276 xsch S_00 "cancel subchannel" g5 esa,zarch
@@ -615,8 +615,8 @@ eb0000000052 mviy SIY_URD "move immediate with long offset" z990 zarch
 e30000000051 msy RXY_RRRD "multiply single with long offset" z990 zarch
 eb0000000056 oiy SIY_URD "or immediate with long offset" z990 zarch
 e30000000056 oy RXY_RRRD "or with long offset" z990 zarch
-ed0000000067 stdy RXY_FRRD "load (long) with long offset" z990 zarch
-ed0000000066 stey RXY_FRRD "load (short) with long offset" z990 zarch
+ed0000000067 stdy RXY_FRRD "store (long) with long offset" z990 zarch
+ed0000000066 stey RXY_FRRD "store (short) with long offset" z990 zarch
 e30000000050 sty RXY_RRRD "store with long offset" z990 zarch
 eb000000009b stamy RSY_AARD "store access multiple with long offset" z990 zarch
 e30000000072 stcy RXY_RRRD "store character with long offset" z990 zarch
@@ -696,7 +696,7 @@ eb0000000044 bxhg RSY_RRRD "branch on index high 64" z990 zarch
 eb0000000045 bxleg RSY_RRRD "branch on index low or equal 64" z990 zarch
 eb0000000080 icmh RSY_RURD "insert characters under mask high with long offset" z990 zarch
 eb000000008e mvclu RSY_RRRD "move long unicode" z990 esa,zarch
-eb000000008f clclu RSY_RRRD "compare logical long unicode with long offset" z990 zarch
+eb000000008f clclu RSY_RRRD "compare logical long unicode with long offset" z990 esa,zarch
 eb0000000096 lmh RSY_RRRD "load multiple high" z990 zarch
 # new z990 instructions
 b98a cspg RRE_RR "compare and swap and purge" z990 zarch
@@ -750,6 +750,7 @@ c00c oihf RIL_RU "or immediate high" z9-109 zarch
 c00d oilf RIL_RU "or immediate low" z9-109 zarch
 c205 slfi RIL_RU "subtract logical immediate 32" z9-109 zarch
 c204 slgfi RIL_RU "subtract logical immediate 64<32" z9-109 zarch
+0104 ptff E "perform timing facility function" z9-109 zarch
 # z9-109 store facility list extended
 b2b0 stfle S_RD "store facility list extended" z9-109 zarch
 # z9-109 store clock fast
@@ -769,8 +770,8 @@ b990 trtt RRF_M0RR "translate two to two" z9-109 esa,zarch
 b9b1 cu24 RRF_M0RR "convert utf-16 to utf-32" z9-109 zarch
 b2a6 cu21 RRF_M0RR "convert utf-16 to utf-8" z9-109 zarch
 b2a6 cuutf RRF_M0RR "convert unicode to utf-8" z9-109 zarch
-b9b3 cu42 RRF_M0RR "convert utf-32 to utf-16" z9-109 zarch
-b9b2 cu41 RRF_M0RR "convert utf-32 to utf-8" z9-109 zarch
+b9b3 cu42 RRE_RR "convert utf-32 to utf-16" z9-109 zarch
+b9b2 cu41 RRE_RR "convert utf-32 to utf-8" z9-109 zarch
 b2a7 cu12 RRF_M0RR "convert utf-8 to utf-16" z9-109 zarch
 b2a7 cutfu RRF_M0RR "convert utf-8 to unicode" z9-109 zarch
 b9b0 cu14 RRF_M0RR "convert utf-8 to utf-32" z9-109 zarch
@@ -832,10 +833,10 @@ b3d5 ledtr RRF_UUFF "load rounded long dfp" z9-ec zarch
 b3dd ldxtr RRF_UUFF "load rounded extended dfp" z9-ec zarch
 b3d0 mdtr RRR_F0FF "multiply long dfp" z9-ec zarch
 b3d8 mxtr RRR_F0FF "multiply extended dfp" z9-ec zarch
-b3f5 qadtr RRF_FFFU "Quantize long dfp" z9-ec zarch
-b3fd qaxtr RRF_FFFU "Quantize extended dfp" z9-ec zarch
-b3f7 rrdtr RRF_FFFU "Reround long dfp" z9-ec zarch
-b3ff rrxtr RRF_FFFU "Reround extended dfp" z9-ec zarch
+b3f5 qadtr RRF_FUFF "Quantize long dfp" z9-ec zarch
+b3fd qaxtr RRF_FUFF "Quantize extended dfp" z9-ec zarch
+b3f7 rrdtr RRF_FFRU "Reround long dfp" z9-ec zarch
+b3ff rrxtr RRF_FFRU "Reround extended dfp" z9-ec zarch
 b2b9 srnmt S_RD "set rounding mode dfp" z9-ec zarch
 b385 sfasr RRE_R0 "set fpc and signal" z9-ec zarch
 ed0000000040 sldt RXF_FRRDF "shift coefficient left long dfp" z9-ec zarch
@@ -853,3 +854,106 @@ ed0000000059 tdgxt RXE_FRRD "test data group extended dfp" z9-ec zarch
 010a pfpo E "perform floating point operation" z9-ec zarch
 c801 ectg SSF_RRDRD "extract cpu time" z9-ec zarch
 c802 csst SSF_RRDRD "compare and swap and store" z9-ec zarch
+# The new instructions of the System z10 Enterprise Class
+eb000000006a asi SIY_IRD "add immediate (32<8)" z10 zarch
+eb000000007a agsi SIY_IRD "add immediate (64<8)" z10 zarch
+eb000000006e alsi SIY_IRD "add logical with signed immediate (32<8)" z10 zarch
+eb000000007e algsi SIY_IRD "add logical with signed immediate (64<8)" z10 zarch
+c60d crl RIL_RP "compare relative long (32)" z10 zarch
+c608 cgrl RIL_RP "compare relative long (64)" z10 zarch
+c60c cgfrl RIL_RP "compare relative long (64<32)" z10 zarch
+ec00000000f6 crb$32 RRS_RRRD0 "compare and branch (32)" z10 zarch
+ec00000000f6 crb RRS_RRRDU "compare and branch (32)" z10 zarch
+ec00000000e4 cgrb$32 RRS_RRRD0 "compare and branch (64)" z10 zarch
+ec00000000e4 cgrb RRS_RRRDU "compare and branch (64)" z10 zarch
+ec0000000076 crj$32 RIE_RRP "compare and branch relative (32)" z10 zarch
+ec0000000076 crj RIE_RRPU "compare and branch relative (32)" z10 zarch
+ec0000000064 cgrj$32 RIE_RRP0 "compare and branch relative (64)" z10 zarch
+ec0000000064 cgrj RIE_RRPU "compare and branch relative (64)" z10 zarch
+ec00000000fe cib$12 RIS_R0RDI "compare immediate and branch (32<8)" z10 zarch
+ec00000000fe cib RIS_RURDI "compare immediate and branch (32<8)" z10 zarch
+ec00000000fc cgib$12 RIS_R0RDI "compare immediate and branch (64<8)" z10 zarch
+ec00000000fc cgib RIS_RURDI "compare immediate and branch (64<8)" z10 zarch
+ec000000007e cij$12 RIE_R0PI "compare immediate and branch relative (32<8)" z10 zarch
+ec000000007e cij RIE_RUPI "compare immediate and branch relative (32<8)" z10 zarch
+ec000000007c cgij$12 RIE_R0PI "compare immediate and branch relative (64<8)" z10 zarch
+ec000000007c cgij RIE_RUPI "compare immediate and branch relative (64<8)" z10 zarch
+b97200000000 crt$16 RRF_00RR "compare and trap" z10 zarch
+b972 crt RRF_U0RR "compare and trap" z10 zarch
+b96000000000 cgrt$16 RRF_00RR "compare and trap 64" z10 zarch
+b960 cgrt RRF_U0RR "compare and trap 64" z10 zarch
+ec0000000072 cit$32 RIE_R0I0 "compare immediate and trap (32<16)" z10 zarch
+ec0000000072 cit RIE_R0IU "compare immediate and trap (32<16)" z10 zarch
+ec0000000070 cgit$32 RIE_R0I0 "compare immediate and trap (64<16)" z10 zarch
+ec0000000070 cgit RIE_R0IU "compare immediate and trap (64<16)" z10 zarch
+e30000000034 cgh RXY_RRRD "compare halfword (64<16)" z10 zarch
+e554 chhsi SIL_RDI "compare halfword immediate (16<16)" z10 zarch
+e55c chsi SIL_RDI "compare halfword immediate (32<16)" z10 zarch
+e558 cghsi SIL_RDI "compare halfword immediate (64<16)" z10 zarch
+c605 chrl RIL_RP "compare halfword relative long (32<8)" z10 zarch
+c604 cghrl RIL_RP "compare halfword relative long (64<8)" z10 zarch
+e555 clhhsi SIL_RDU "compare logical immediate (16<16)" z10 zarch
+e55d clfhsi SIL_RDU "compare logical immediate (32<16)" z10 zarch
+e559 clghsi SIL_RDU "compare logical immediate (64<16)" z10 zarch
+c60f clrl RIL_RP "compare logical relative long (32)" z10 zarch
+c60a clgrl RIL_RP "compare logical relative long (64)" z10 zarch
+c60e clgfrl RIL_RP "compare logical relative long (64<32)" z10 zarch
+c607 clhrl RIL_RP "compare logical relative long (32<16)" z10 zarch
+c606 clghrl RIL_RP "compare logical relative long (64<16)" z10 zarch
+ec00000000f7 clrb$32 RRS_RRRD0 "compare logical and branch (32)" z10 zarch
+ec00000000f7 clrb RRS_RRRDU "compare logical and branch (32)" z10 zarch
+ec00000000e5 clgrb$32 RRS_RRRD0 "compare logical and branch (64)" z10 zarch
+ec00000000e5 clgrb RRS_RRRDU "compare logical and branch (64)" z10 zarch
+ec0000000077 clrj$32 RIE_RRP "compare logical and branch relative (32)" z10 zarch
+ec0000000077 clrj RIE_RRPU "compare logical and branch relative (32)" z10 zarch
+ec0000000065 clgrj$32 RIE_RRP "compare logical and branch relative (64)" z10 zarch
+ec0000000065 clgrj RIE_RRPU "compare logical and branch relative (64)" z10 zarch
+ec00000000ff clib$12 RIS_R0RDU "compare logical immediate and branch (32<8)" z10 zarch
+ec00000000ff clib RIS_RURDU "compare logical immediate and branch (32<8)" z10 zarch
+ec00000000fd clgib$12 RIS_R0RDU "compare logical immediate and branch (64<8)" z10 zarch
+ec00000000fd clgib RIS_RURDU "compare logical immediate and branch (64<8)" z10 zarch
+ec000000007f clij$12 RIE_R0PU "compare logical immediate and branch relative (32<8)" z10 zarch
+ec000000007f clij RIE_RUPU "compare logical immediate and branch relative (32<8)" z10 zarch
+ec000000007d clgij$12 RIE_R0PU "compare logical immediate and branch relative (64<8)" z10 zarch
+ec000000007d clgij RIE_RUPU "compare logical immediate and branch relative (64<8)" z10 zarch
+b97300000000 clrt$16 RRF_00RR "compare logical and trap (32)" z10 zarch
+b973 clrt RRF_U0RR "compare logical and trap (32)" z10 zarch
+b96100000000 clgrt$16 RRF_00RR "compare logical and trap (64)" z10 zarch
+b961 clgrt RRF_U0RR "compare logical and trap (64)" z10 zarch
+ec0000000073 clfit$32 RIE_R0U0 "compare logical and trap (32<16)" z10 zarch
+ec0000000073 clfit RIE_R0UU "compare logical and trap (32<16)" z10 zarch
+ec0000000071 clgit$32 RIE_R0U0 "compare logical and trap (64<16)" z10 zarch
+ec0000000071 clgit RIE_R0UU "compare logical and trap (64<16)" z10 zarch
+eb000000004c ecag RSY_RRRD "extract cache attribute" z10 zarch
+c40d lrl RIL_RP "load relative long (32)" z10 zarch
+c408 lgrl RIL_RP "load relative long (64)" z10 zarch
+c40c lgfrl RIL_RP "load relative long (64<32)" z10 zarch
+e30000000075 laey RXY_RRRD "load address extended" z10 zarch
+e30000000032 ltgf RXY_RRRD "load and test (64<32)" z10 zarch
+c405 lhrl RIL_RP "load halfword relative long (32<16)" z10 zarch
+c404 lghrl RIL_RP "load halfword relative long (64<16)" z10 zarch
+c40e llgfrl RIL_RP "load logical relative long (64<32)" z10 zarch
+c402 llhrl RIL_RP "load logical halfword relative long (32<16)" z10 zarch
+c406 llghrl RIL_RP "load logical halfword relative long (64<16)" z10 zarch
+e544 mvhhi SIL_RDI "move (16<16)" z10 zarch
+e54c mvhi SIL_RDI "move (32<16)" z10 zarch
+e548 mvghi SIL_RDI "move (64<16)" z10 zarch
+e3000000005c mfy RXY_RRRD "multiply" z10 zarch
+e3000000007c mhy RXY_RRRD "multiply halfword" z10 zarch
+c201 msfi RIL_RI "multiply single immediate (32)" z10 zarch
+c200 msgfi RIL_RI "multiply single immediate (64)" z10 zarch
+e30000000036 pfd RXY_URRD "prefetch data" z10 zarch
+c602 pfdrl RIL_UP "prefetch data relative long" z10 zarch
+ec0000000054 rnsbg RIE_RRUUU "rotate then and selected bits" z10 zarch
+ec0000000057 rxsbg RIE_RRUUU "rotate then exclusive or selected bits" z10 zarch
+ec0000000056 rosbg RIE_RRUUU "rotate then or selected bits" z10 zarch
+ec0000000055 risbg RIE_RRUUU "rotate then insert selected bits" z10 zarch
+c40f strl RIL_RP "store relative long (32)" z10 zarch
+c40b stgrl RIL_RP "store relative long (64)" z10 zarch
+c407 sthrl RIL_RP "store halfword relative long" z10 zarch
+c600 exrl RIL_RP "execute relative long" z10 zarch
+af00 mc SI_URD "monitor call" z10 zarch
+b9a2 ptf RRE_R0 "perform topology function" z10 zarch
+b9af pfmf RRE_RR "perform frame management function" z10 zarch
+b9bf trte RRF_M0RR "translate and test extended" z10 zarch
+b9bd trtre RRF_M0RR "translate and test reverse extended" z10 zarch

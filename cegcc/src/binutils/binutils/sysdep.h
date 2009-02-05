@@ -1,6 +1,7 @@
 /* sysdep.h -- handle host dependencies for binutils
    Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2005, 2006, 2007 Free Software Foundation, Inc.
+   2001, 2002, 2003, 2005, 2006, 2007, 2008
+   Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
@@ -67,6 +68,8 @@ extern char *strrchr ();
 #include <sys/file.h>
 #endif
 #endif
+
+#include "binary-io.h"
 
 #if !HAVE_DECL_STPCPY
 extern char *stpcpy (char *, const char *);
@@ -170,5 +173,24 @@ void *alloca ();
 
 /* Used by ar.c and objcopy.c.  */
 #define BUFSIZE 8192
+
+/* For PATH_MAX.  */
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#endif
+
+#ifndef PATH_MAX
+/* For MAXPATHLEN.  */
+# ifdef HAVE_SYS_PARAM_H
+#  include <sys/param.h>
+# endif
+# ifndef PATH_MAX
+#  ifdef MAXPATHLEN
+#   define PATH_MAX MAXPATHLEN
+#  else
+#   define PATH_MAX 1024
+#  endif
+# endif
+#endif
 
 #endif /* _BIN_SYSDEP_H */

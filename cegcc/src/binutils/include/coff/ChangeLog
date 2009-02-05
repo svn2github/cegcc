@@ -1,3 +1,21 @@
+2008-12-23  Johan Olmutz Nielsen  <jnielsen@ddci.com>
+
+	* ti.h (COFF_ADJUST_SCNHDR_OUT_PRE): Define.
+
+2008-06-17  Nick Clifton  <nickc@redhat.com>
+
+	* ti.h (GET_SCNHDR_NLNNO): Provide an alternative version of this
+	macro which does not trigger an array bounds warning in gcc.
+	(PUT_SCNHDR_NLNNO): Likewise.
+	(GET_SCNHDR_FLAGS): Likewise.
+	(PUT_SCNHDR_FLAGS): Likewise.
+	(GET_SCNHDR_PAGE): Likewise.
+	(PUT_SCNHDR_PAGE): Likewise.
+
+2007-11-05  Danny Smith  <dannysmith@users.sourceforge.net>
+
+	* pe.h (COFF_ENCODE_ALIGNMENT) Define.
+
 2007-08-02  H.J. Lu  <hongjiu.lu@intel.com>
 
 	* pe.h (IMAGE_SCN_ALIGN_POWER_BIT_POS): New.

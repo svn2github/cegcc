@@ -91,6 +91,7 @@ struct areltdata {
   char * arch_header;		/* it's actually a string */
   unsigned int parsed_size;	/* octets of filesize not including ar_hdr */
   char *filename;		/* null-terminated */
+  file_ptr origin;		/* for element of a thin archive */
 };
 
 #define arelt_size(bfd) (((struct areltdata *)((bfd)->arelt_data))->parsed_size)
@@ -98,6 +99,8 @@ struct areltdata {
 extern void *bfd_malloc
   (bfd_size_type);
 extern void *bfd_realloc
+  (void *, bfd_size_type);
+extern void *bfd_realloc_or_free
   (void *, bfd_size_type);
 extern void *bfd_zmalloc
   (bfd_size_type);

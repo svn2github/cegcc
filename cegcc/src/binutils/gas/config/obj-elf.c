@@ -1,6 +1,6 @@
 /* ELF object file format
    Copyright 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005, 2006, 2007
+   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2009
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
@@ -524,7 +524,7 @@ get_section (bfd *abfd ATTRIBUTE_UNUSED, asection *sec, void *inf)
 void
 obj_elf_change_section (const char *name,
 			int type,
-			int attr,
+			bfd_vma attr,
 			int entsize,
 			const char *group_name,
 			int linkonce,
@@ -720,10 +720,10 @@ obj_elf_change_section (const char *name,
 #endif
 }
 
-static int
+static bfd_vma
 obj_elf_parse_section_letters (char *str, size_t len)
 {
-  int attr = 0;
+  bfd_vma attr = 0;
 
   while (len > 0)
     {
@@ -766,8 +766,8 @@ obj_elf_parse_section_letters (char *str, size_t len)
 	  {
 	    char *bad_msg = _("unrecognized .section attribute: want a,w,x,M,S,G,T");
 #ifdef md_elf_section_letter
-	    int md_attr = md_elf_section_letter (*str, &bad_msg);
-	    if (md_attr >= 0)
+	    bfd_vma md_attr = md_elf_section_letter (*str, &bad_msg);
+	    if (md_attr > 0)
 	      attr |= md_attr;
 	    else
 #endif
@@ -782,31 +782,7 @@ obj_elf_parse_section_letters (char *str, size_t len)
 }
 
 static int
-obj_elf_section_word (char *str, size_t len)
-{
-  if (len == 5 && strncmp (str, "write", 5) == 0)
-    return SHF_WRITE;
-  if (len == 5 && strncmp (str, "alloc", 5) == 0)
-    return SHF_ALLOC;
-  if (len == 9 && strncmp (str, "execinstr", 9) == 0)
-    return SHF_EXECINSTR;
-  if (len == 3 && strncmp (str, "tls", 3) == 0)
-    return SHF_TLS;
-
-#ifdef md_elf_section_word
-  {
-    int md_attr = md_elf_section_word (str, len);
-    if (md_attr >= 0)
-      return md_attr;
-  }
-#endif
-
-  as_warn (_("unrecognized section attribute"));
-  return 0;
-}
-
-static int
-obj_elf_section_type (char *str, size_t len)
+obj_elf_section_type (char *str, size_t len, bfd_boolean warn)
 {
   if (len == 8 && strncmp (str, "progbits", 8) == 0)
     return SHT_PROGBITS;
@@ -829,7 +805,39 @@ obj_elf_section_type (char *str, size_t len)
   }
 #endif
 
-  as_warn (_("unrecognized section type"));
+  if (warn)
+    as_warn (_("unrecognized section type"));
+  return 0;
+}
+
+static bfd_vma
+obj_elf_section_word (char *str, size_t len, int *type)
+{
+  int ret;
+
+  if (len == 5 && strncmp (str, "write", 5) == 0)
+    return SHF_WRITE;
+  if (len == 5 && strncmp (str, "alloc", 5) == 0)
+    return SHF_ALLOC;
+  if (len == 9 && strncmp (str, "execinstr", 9) == 0)
+    return SHF_EXECINSTR;
+  if (len == 3 && strncmp (str, "tls", 3) == 0)
+    return SHF_TLS;
+
+#ifdef md_elf_section_word
+  {
+    bfd_vma md_attr = md_elf_section_word (str, len);
+    if (md_attr > 0)
+      return md_attr;
+  }
+#endif
+
+  ret = obj_elf_section_type (str, len, FALSE);
+  if (ret != 0)
+    *type = ret;
+  else
+    as_warn (_("unrecognized section attribute"));
+
   return 0;
 }
 
@@ -880,7 +888,8 @@ void
 obj_elf_section (int push)
 {
   char *name, *group_name, *beg;
-  int type, attr, dummy;
+  int type, dummy;
+  bfd_vma attr;
   int entsize;
   int linkonce;
   subsegT new_subsection = -1;
@@ -965,14 +974,14 @@ obj_elf_section (int push)
 		      ignore_rest_of_line ();
 		      return;
 		    }
-		  type = obj_elf_section_type (beg, strlen (beg));
+		  type = obj_elf_section_type (beg, strlen (beg), TRUE);
 		}
 	      else if (c == '@' || c == '%')
 		{
 		  beg = ++input_line_pointer;
 		  c = get_symbol_end ();
 		  *input_line_pointer = c;
-		  type = obj_elf_section_type (beg, input_line_pointer - beg);
+		  type = obj_elf_section_type (beg, input_line_pointer - beg, TRUE);
 		}
 	      else
 		input_line_pointer = save;
@@ -1035,7 +1044,7 @@ obj_elf_section (int push)
 	      c = get_symbol_end ();
 	      *input_line_pointer = c;
 
-	      attr |= obj_elf_section_word (beg, input_line_pointer - beg);
+	      attr |= obj_elf_section_word (beg, input_line_pointer - beg, & type);
 
 	      SKIP_WHITESPACE ();
 	    }
@@ -1543,7 +1552,7 @@ obj_elf_size (int ignore ATTRIBUTE_UNUSED)
 }
 
 /* Handle the ELF .type pseudo-op.  This sets the type of a symbol.
-   There are five syntaxes:
+   There are six syntaxes:
 
    The first (used on Solaris) is
        .type SYM,#function
@@ -1555,7 +1564,31 @@ obj_elf_size (int ignore ATTRIBUTE_UNUSED)
        .type SYM,%function
    The fifth (used on SVR4/860) is
        .type SYM,"function"
+   The sixth (emitted by recent SunPRO under Solaris) is
+       .type SYM,[0-9]
+   where the integer is the STT_* value.
    */
+
+static char *
+obj_elf_type_name (char *cp)
+{
+  char *p;
+
+  p = input_line_pointer;
+  if (*input_line_pointer >= '0'
+      && *input_line_pointer <= '9')
+    {
+      while (*input_line_pointer >= '0'
+	     && *input_line_pointer <= '9')
+	++input_line_pointer;
+      *cp = *input_line_pointer;
+      *input_line_pointer = '\0';
+    }
+  else
+    *cp = get_symbol_end ();
+
+  return p;
+}
 
 static void
 obj_elf_type (int ignore ATTRIBUTE_UNUSED)
@@ -1584,23 +1617,27 @@ obj_elf_type (int ignore ATTRIBUTE_UNUSED)
       || *input_line_pointer == '%')
     ++input_line_pointer;
 
-  typename = input_line_pointer;
-  c = get_symbol_end ();
+  typename = obj_elf_type_name (& c);
 
   type = 0;
   if (strcmp (typename, "function") == 0
+      || strcmp (typename, "2") == 0
       || strcmp (typename, "STT_FUNC") == 0)
     type = BSF_FUNCTION;
   else if (strcmp (typename, "object") == 0
+	   || strcmp (typename, "1") == 0
 	   || strcmp (typename, "STT_OBJECT") == 0)
     type = BSF_OBJECT;
   else if (strcmp (typename, "tls_object") == 0
+	   || strcmp (typename, "6") == 0
 	   || strcmp (typename, "STT_TLS") == 0)
     type = BSF_OBJECT | BSF_THREAD_LOCAL;
   else if (strcmp (typename, "notype") == 0
+	   || strcmp (typename, "0") == 0
 	   || strcmp (typename, "STT_NOTYPE") == 0)
     ;
   else if (strcmp (typename, "common") == 0
+	   || strcmp (typename, "5") == 0
 	   || strcmp (typename, "STT_COMMON") == 0)
     {
       type = BSF_OBJECT;

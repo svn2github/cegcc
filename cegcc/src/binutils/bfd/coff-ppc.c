@@ -1,6 +1,6 @@
 /* BFD back-end for PowerPC Microsoft Portable Executable files.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
+   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    Original version pieced together by Kim Knuttila (krk@cygnus.com)
@@ -1543,9 +1543,9 @@ dump_toc (vfile)
   FILE *file = (FILE *) vfile;
   struct list_ele *t;
 
-  fprintf (file, _(h1));
-  fprintf (file, _(h2));
-  fprintf (file, _(h3));
+  fputs (_(h1), file);
+  fputs (_(h2), file);
+  fputs (_(h3), file);
 
   for (t = head; t != 0; t=t->next)
     {
@@ -1566,8 +1566,8 @@ dump_toc (vfile)
 	    {
 	      fprintf (file,
 		      _("**** global_toc_size %ld(%lx), thunk_size %ld(%lx)\n"),
-		       global_toc_size, global_toc_size,
-		       thunk_size, thunk_size);
+		       global_toc_size, (unsigned long) global_toc_size,
+		       thunk_size, (unsigned long) thunk_size);
 	      cat = _("Out of bounds!");
 	    }
 	}

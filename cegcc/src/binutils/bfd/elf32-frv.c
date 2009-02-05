@@ -1,5 +1,5 @@
 /* FRV-specific support for 32-bit ELF.
-   Copyright 2002, 2003, 2004, 2005, 2006, 2007
+   Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008
    Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -1397,7 +1397,8 @@ _frvfdpic_emit_got_relocs_plt_entries (struct frvfdpic_relocs_info *entry,
 	dynindx = entry->d.h->dynindx;
       else
 	{
-	  if (sec->output_section
+	  if (sec
+	      && sec->output_section
 	      && ! bfd_is_abs_section (sec->output_section)
 	      && ! bfd_is_und_section (sec->output_section))
 	    dynindx = elf_section_data (sec->output_section)->dynindx;
@@ -1679,8 +1680,9 @@ _frvfdpic_emit_got_relocs_plt_entries (struct frvfdpic_relocs_info *entry,
 	     of the section.  For a non-local function, it's
 	     disregarded.  */
 	  lowword = ad;
-	  if (entry->symndx == -1 && entry->d.h->dynindx != -1
-	      && entry->d.h->dynindx == idx)
+	  if (sec == NULL
+	      || (entry->symndx == -1 && entry->d.h->dynindx != -1
+		  && entry->d.h->dynindx == idx))
 	    highword = 0;
 	  else
 	    highword = _frvfdpic_osec_to_segment
@@ -6836,7 +6838,7 @@ frv_elf_print_private_bfd_data (abfd, ptr)
   _bfd_elf_print_private_bfd_data (abfd, ptr);
 
   flags = elf_elfheader (abfd)->e_flags;
-  fprintf (file, _("private flags = 0x%lx:"), (long)flags);
+  fprintf (file, _("private flags = 0x%lx:"), (unsigned long) flags);
 
   switch (flags & EF_FRV_CPU_MASK)
     {

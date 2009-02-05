@@ -50,6 +50,13 @@ foo:	jaw	foo
 	insertq	$4,$2,%xmm2,%ebx
 	cvtsi2ssq (%eax),%xmm1
 	cvtsi2sdq (%eax),%xmm1
+	fnstsw %eax
+	fnstsw %al
+	fstsw %eax
+	fstsw %al
+
+movnti %ax, (%eax)
+movntiw %ax, (%eax)
 
 	.intel_syntax noprefix
 	cvtsi2ss xmm1,QWORD PTR [eax]
@@ -64,3 +71,14 @@ foo:	jaw	foo
 	movq DWORD PTR [esp],xmm1
 	movq WORD PTR [esp],xmm1
 	movq BYTE PTR [esp],xmm1
+	fnstsw eax
+	fnstsw al
+	fstsw eax
+	fstsw al
+
+movsx ax, [eax]
+movsx eax, [eax]
+movzx ax, [eax]
+movzx eax, [eax]
+
+movnti word ptr [eax], ax

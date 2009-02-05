@@ -1,6 +1,8 @@
 # name: ARM architecture 4t instructions
 # as: -march=armv4t
 # objdump: -dr --prefix-addresses --show-raw-insn
+# EABI targets have their own variant.
+# not-target: *-*-*eabi *-*-symbianelf
 
 .*: +file format .*arm.*
 

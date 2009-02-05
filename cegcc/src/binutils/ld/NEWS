@@ -1,4 +1,49 @@
 -*- text -*-
+
+* --as-needed now links in a dynamic library if it satisfies undefined
+  symbols in regular objects, or in other dynamic libraries.  In the
+  latter case the library is not linked if it is found in a DT_NEEDED
+  entry of one of the libraries already linked.
+
+* Add a new command line option, -Ttext-segment ADDR, for ELF targets
+  to set the address of the first byte of the text segment.
+
+* Add new option --use-nul-prefixed-import-tables to ld for PE targets to
+  allow fallback to old import table generation with null element prefix.
+
+* Windows PE systems now support a new --exclude-modules-for-implib option,
+  allowing users to partition object files and archive members between a DLL
+  and its associated import library as they are generated during linking.
+
+* Add support for Lattice Mico32 (lm32) architecture.
+
+* Add CR16 ELF --embedded-relocs (used to embedded relocations into binaries 
+  for Embedded-PIC code) option.
+
+* Add to the PE/PE+ targets the support of two different kinds of
+  pseudo-relocations.  They can be selected by the switches
+  --enable-runtime-pseudo-reloc-v1 and --enable-runtime-pseudo-reloc-v2.
+  For the switch --enable-runtime-pseudo-reloc it uses for 32-bit
+  runtime pseudo relocation version one, for 64-bit the version two.
+
+Changes in 2.19:
+
+* Linker scripts support a new INSERT command that makes it easier to
+  augment the default script.
+
+* Linker script input section filespecs may now specify a file within an
+  archive by writing "archive:file".
+
+* The --sort-common switch now has an optional argument which specifies the
+  direction of sorting.
+
+* The M68K linker now supports multiple GOT generation schemes controlled via
+  the --got=<type> command line option.
+
+* The ARM EABI linker will now generate stubs for function calls to symbols
+  that are too far away.  The placement of the stubs is controlled by a new
+  linker command line option: --stub-group-size=N.
+
 Changes in 2.18:
 
 * Linker sources now released under version 3 of the GNU General Public
@@ -297,6 +342,11 @@ Changes in version 2.6:
 of most ELF section names), the linker will automatically define symbols
 __start_SECNAME and __stop_SECNAME, where SECNAME is the section name, at the
 beginning and the end of the section.  This is used by glibc.
+
+  Addendum: Current versions of the linker (at least for version 2.18 onwards
+and possibly much earlier as well) place two restrictions on this feature:  The
+symbols are only implemented for orphaned sections, not for explicitly placed
+sections and they are PROVIDEd rather than being defined.
 
 * When an ELF section named .gnu.warning is encountered in an input file, the
 contents of the section are displayed as an error message, and the section is

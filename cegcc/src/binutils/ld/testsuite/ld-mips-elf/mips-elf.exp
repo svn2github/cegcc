@@ -56,6 +56,56 @@ set has_newabi [expr [istarget *-*-irix6*] || [istarget mips64*-*-linux*]]
 set linux_gnu [expr [istarget mips*-*-linux*]]
 set embedded_elf [expr [istarget mips*-*-elf]]
 
+if { $linux_gnu } {
+    run_ld_link_tests [list \
+	[list "Dummy shared library for MIPS16 PIC test 1" \
+	      "-shared -melf32btsmip" \
+	      "-EB -32" { mips16-pic-1-dummy.s } \
+	      {} \
+	      "mips16-pic-1-dummy.so"] \
+	[list "MIPS16 PIC test 1" \
+	      "-melf32btsmip -T mips16-pic-1.ld tmpdir/mips16-pic-1-dummy.so" \
+	      "-EB -32 -I $srcdir/$subdir" { mips16-pic-1a.s mips16-pic-1b.s } \
+	      { { objdump { -dr -j.text } mips16-pic-1.dd }
+		{ readelf -A mips16-pic-1.gd } } \
+	      "mips16-pic-1"] \
+	[list "MIPS16 PIC test 2" \
+	      "-melf32btsmip -T mips16-pic-1.ld -shared" \
+	      "-EB -32 -I $srcdir/$subdir" { mips16-pic-2a.s mips16-pic-2b.s } \
+	      { { objdump { -dr -j.text } mips16-pic-2.dd } \
+		{ readelf -A mips16-pic-2.gd } \
+	        { readelf --symbols mips16-pic-2.nd } \
+		{ readelf --relocs mips16-pic-2.rd } \
+		{ readelf -d mips16-pic-2.ad } } \
+	     "mips16-pic-2"] \
+	[list "MIPS16 PIC test 3" \
+	      "-melf32btsmip -T mips16-pic-1.ld tmpdir/mips16-pic-1-dummy.so" \
+	      "-EB -32 -I $srcdir/$subdir" { mips16-pic-3a.s mips16-pic-3b.s } \
+	      { { objdump -dr mips16-pic-3.dd } \
+		{ readelf --relocs mips16-pic-3.rd } \
+		{ readelf -A mips16-pic-3.gd } } \
+	      "mips16-pic-3"] \
+	[list "MIPS16 PIC test 4 (shared library)" \
+	      "-shared -melf32btsmip -T mips16-pic-1.ld --version-script mips16-pic-4.ver" \
+	      "-EB -32" { mips16-pic-4a.s mips16-pic-4b.s } \
+	      { { objdump -dr mips16-pic-4a.dd } \
+		{ readelf --symbols mips16-pic-4a.nd } \
+		{ readelf -A mips16-pic-4a.gd } } \
+	      "mips16-pic-4.so"] \
+	[list "MIPS16 PIC test 4 (executable)" \
+	      "-melf32btsmip -T mips16-pic-1.ld tmpdir/mips16-pic-4.so" \
+	      "-EB -32" { mips16-pic-4c.s } \
+	      { { objdump -dr mips16-pic-4b.dd } } \
+	      "mips16-pic-4"]]
+}
+
+if { [istarget mips64*-linux-gnu] } {
+    set o32_as_flags "-32 -EB"
+    set o32_ld_flags "-melf32btsmip"
+} else {
+    set o32_as_flags ""
+    set o32_ld_flags ""
+}
 
 # Check MIPS16 markings being passed through link.
 run_dump_test "mips16-1"
@@ -70,6 +120,15 @@ if { $linux_gnu } {
     run_dump_test "multi-got-no-shared"
     run_dump_test "multi-got-hidden-1"
     run_dump_test "multi-got-hidden-2"
+}
+
+# Test __gnu_local_gp accesses
+if { $linux_gnu } {
+    run_dump_test "no-shared-1-o32"
+    if { $has_newabi } {
+	run_dump_test "no-shared-1-n32"
+	run_dump_test "no-shared-1-n64"
+    }
 }
 
 if $has_newabi {
@@ -93,6 +152,114 @@ if { $linux_gnu } {
     run_dump_test "rel32-o32"
     run_dump_test "rel32-n32"
     run_dump_test "rel64"
+    # The first test checks that a mixed PIC/non-PIC relocatable link
+    # will not introduce any stubs itself, but will flag PIC functions
+    # for the final link.
+    #
+    # The second test checks that we insert stubs for calls from
+    # non-PIC functions to PIC functions when linking the original
+    # two objects together.
+    #
+    # The third test checks that we do the same when linking the
+    # result of the first link (with no other source files).
+    run_ld_link_tests {
+	{"PIC and non-PIC test 1 (relocatable)" "-r -melf32btsmip"
+	 "-32 -EB -mips2" {pic-and-nonpic-1a.s pic-and-nonpic-1b.s}
+	 {{objdump -dr pic-and-nonpic-1-rel.dd}
+	  {readelf --symbols pic-and-nonpic-1-rel.nd}}
+	 "pic-and-nonpic-1-rel.o"}
+	{"PIC and non-PIC test 1 (static 1)"
+	 "-melf32btsmip -Tpic-and-nonpic-1.ld"
+	 "-32 -EB -mips2" {pic-and-nonpic-1a.s pic-and-nonpic-1b.s}
+	 {{objdump -dr pic-and-nonpic-1.dd}
+	  {readelf --symbols pic-and-nonpic-1.nd}}
+	 "pic-and-nonpic-1-static1.o"}
+	{"PIC and non-PIC test 1 (static 2)"
+	 "-melf32btsmip -Tpic-and-nonpic-1.ld tmpdir/pic-and-nonpic-1-rel.o"
+	 "" {}
+	 {{objdump -dr pic-and-nonpic-1.dd}
+	  {readelf --symbols pic-and-nonpic-1.nd}}
+	 "pic-and-nonpic-1-static2.o"}
+    }
+    run_dump_test "pic-and-nonpic-2"
+    run_ld_link_tests {
+	{"PIC and non-PIC test 3 (shared library)"
+	 "-melf32btsmip -shared -Tpic-and-nonpic-3a.ld"
+	 "-32 -EB -mips2" {pic-and-nonpic-3a.s}
+	 {{readelf --segments pic-and-nonpic-3a.sd}
+	  {readelf -A pic-and-nonpic-3a.gd}
+	  {objdump -dr pic-and-nonpic-3a.dd}}
+	 "pic-and-nonpic-3a.so"}
+	{"PIC and non-PIC test 3 (executable)"
+	 "-melf32btsmip -Tpic-and-nonpic-3b.ld tmpdir/pic-and-nonpic-3a.so"
+	 "-32 -EB -mips2" {pic-and-nonpic-3b.s}
+	 {{readelf --segments pic-and-nonpic-3b.sd}
+	  {objdump -dr pic-and-nonpic-3b.dd}
+	  {objdump {-s -j.got.plt} pic-and-nonpic-3b.pd}
+	  {readelf -A pic-and-nonpic-3b.gd}
+	  {readelf --relocs pic-and-nonpic-3b.rd}
+	  {readelf --symbols pic-and-nonpic-3b.nd}
+	  {readelf -d pic-and-nonpic-3b.ad}}
+	 "pic-and-nonpic-3b"}
+    }
+    run_dump_test "pic-and-nonpic-3-error"
+    run_ld_link_tests {
+	{"PIC and non-PIC test 4 (shared library)"
+	 "-melf32btsmip -shared -Tpic-and-nonpic-3a.ld"
+	 "-32 -EB -mips2" {pic-and-nonpic-4a.s}
+	 {}
+	 "pic-and-nonpic-4a.so"}
+	{"PIC and non-PIC test 4 (executable)"
+	 "-melf32btsmip -Tpic-and-nonpic-4b.ld tmpdir/pic-and-nonpic-4a.so"
+	 "-32 -EB -mips2" {pic-and-nonpic-4b.s}
+	 {{readelf --segments pic-and-nonpic-4b.sd}
+	  {objdump -dr pic-and-nonpic-4b.dd}
+	  {objdump {-s -j.got -j.data} pic-and-nonpic-4b.gd}
+	  {readelf --relocs pic-and-nonpic-4b.rd}
+	  {readelf --symbols pic-and-nonpic-4b.nd}
+	  {readelf -d pic-and-nonpic-4b.ad}}
+	 "pic-and-nonpic-4b"}
+    }
+    run_dump_test "pic-and-nonpic-4-error"
+    run_ld_link_tests {
+	{"PIC and non-PIC test 5 (executable)"
+	 "-melf32btsmip -Tpic-and-nonpic-5b.ld tmpdir/pic-and-nonpic-3a.so tmpdir/pic-and-nonpic-4a.so"
+	 "-32 -EB -mips2" {pic-and-nonpic-5a.s pic-and-nonpic-5b.s}
+	 {{readelf --segments pic-and-nonpic-5b.sd}
+	  {objdump -dr pic-and-nonpic-5b.dd}
+	  {objdump {-s -j.got.plt -j.data} pic-and-nonpic-5b.pd}
+	  {readelf -A pic-and-nonpic-5b.gd}
+	  {readelf --relocs pic-and-nonpic-5b.rd}
+	  {readelf --symbols pic-and-nonpic-5b.nd}
+	  {readelf -d pic-and-nonpic-5b.ad}}
+	 "pic-and-nonpic-5b"}
+    }
+    set abis { o32 -32 elf32btsmip }
+    if $has_newabi {
+	lappend abis n32 -n32 elf32btsmipn32
+	lappend abis n64 -64 elf64btsmip
+    }
+    foreach { abi flag emul } $abis {
+	run_ld_link_tests [list \
+	    [list "PIC and non-PIC test 6 ($abi shared library)" \
+		 "-m$emul -shared -Tpic-and-nonpic-3a.ld" \
+		 "$flag -EB -mips3" \
+		 [list "pic-and-nonpic-6-${abi}a.s"] {} \
+		 "pic-and-nonpic-6-${abi}.so"] \
+	    [list "PIC and non-PIC test 6 ($abi executable)" \
+		 "-m$emul -Tpic-and-nonpic-6.ld tmpdir/pic-and-nonpic-6-${abi}.so" \
+		 "$flag -EB -mips3" \
+		 [list "pic-and-nonpic-6-${abi}b.s" \
+		      "pic-and-nonpic-6-${abi}c.s"] \
+		 [list "readelf {--wide --segments} pic-and-nonpic-6-${abi}.sd" \
+		      "objdump -dr pic-and-nonpic-6-${abi}.dd" \
+		      "objdump {-s -j.got.plt} pic-and-nonpic-6-${abi}.pd" \
+		      "readelf -A pic-and-nonpic-6-${abi}.gd" \
+		      "readelf --relocs pic-and-nonpic-6-${abi}.rd" \
+		      "readelf --symbols pic-and-nonpic-6-${abi}.nd" \
+		      "readelf -d pic-and-nonpic-6-${abi}.ad"] \
+		 "pic-and-nonpic-6-${abi}"]]
+    }
 }
 
 if { $embedded_elf } {
@@ -147,8 +314,14 @@ if { $linux_gnu } {
     run_dump_test "got-page-1"
     if $has_newabi {
 	run_dump_test "got-page-2"
+	run_dump_test "dyn-sec64"
     }
     run_dump_test "got-page-3"
+    run_dump_test "got-dump-1"
+    if $has_newabi {
+	run_dump_test "got-dump-2"
+    }
+    run_dump_test "reloc-estimate-1"
 }
 
 if $has_newabi {
@@ -264,23 +437,23 @@ if {[istarget mips*-*-linux*]} {
     run_ld_link_tests $mips_tls_tests
 }
 
-set mips16_call_global_test {
-    {"Global calls from mips16"
-     ""
-     "-mips32r2" {mips16-call-global-1.s mips16-call-global-2.s mips16-call-global-3.s}
-     {{objdump -dr mips16-call-global.d}}
-     "mips16-call-global"}
-}
+set mips16_call_global_test [list \
+    [list "Global calls from mips16" \
+	 "$o32_ld_flags" \
+	 "$o32_as_flags -mips32r2" \
+	 {mips16-call-global-1.s mips16-call-global-2.s mips16-call-global-3.s} \
+	 {{objdump -dr mips16-call-global.d}} \
+	 "mips16-call-global"]]
 
 run_ld_link_tests $mips16_call_global_test
 
-set mips16_intermix_test {
-    {"Intermixing mips32 and mips16 functions"
-     ""
-     "-mips32r2" {mips16-intermix-1.s mips16-intermix-2.s}
-     {{objdump -t mips16-intermix.d}}
-     "mips16-intermix"}
-}
+set mips16_intermix_test [list \
+    [list "Intermixing mips32 and mips16 functions" \
+	 "$o32_ld_flags" \
+	 "$o32_as_flags -mips32r2" \
+	 {mips16-intermix-1.s mips16-intermix-2.s} \
+	 {{objdump -t mips16-intermix.d}} \
+	 "mips16-intermix"]]
 
 run_ld_link_tests $mips16_intermix_test
 
@@ -317,3 +490,15 @@ run_dump_test "attr-gnu-4-43"
 run_dump_test "attr-gnu-4-44"
 run_dump_test "attr-gnu-4-45"
 run_dump_test "attr-gnu-4-51"
+
+if { $linux_gnu } {
+    run_ld_link_tests {
+	{"GOT and versioning 1"
+	 "-shared -melf32btsmip --version-script got-vers-1.ver"
+	 "-EB -mips2 -32" {got-vers-1a.s got-vers-1b.s}
+	 {{readelf -d got-vers-1.dd}
+	  {readelf --symbols got-vers-1.sd}
+	  {readelf --relocs got-vers-1.rd}}
+	 "got-vers-1.so"}
+    }
+}

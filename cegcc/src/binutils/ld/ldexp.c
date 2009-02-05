@@ -1,6 +1,6 @@
 /* This module handles expression trees.
    Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005, 2006, 2007
+   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
    Free Software Foundation, Inc.
    Written by Steve Chamberlain of Cygnus Support <sac@cygnus.com>.
 
@@ -103,7 +103,10 @@ exp_print_token (token_code_type code, int infix_p)
     { ADDR, "ADDR" },
     { LOADADDR, "LOADADDR" },
     { CONSTANT, "CONSTANT" },
-    { MAX_K, "MAX_K" },
+    { ABSOLUTE, "ABSOLUTE" },
+    { MAX_K, "MAX" },
+    { MIN_K, "MIN" },
+    { ASSERT_K, "ASSERT" },
     { REL, "relocatable" },
     { DATA_SEGMENT_ALIGN, "DATA_SEGMENT_ALIGN" },
     { DATA_SEGMENT_RELRO_END, "DATA_SEGMENT_RELRO_END" },
@@ -279,10 +282,13 @@ fold_unary (etree_type *tree)
 static void
 fold_binary (etree_type *tree)
 {
+  etree_value_type lhs;
   exp_fold_tree_1 (tree->binary.lhs);
 
   /* The SEGMENT_START operator is special because its first
-     operand is a string, not the name of a symbol.  */
+     operand is a string, not the name of a symbol.  Note that the
+     operands have been swapped, so binary.lhs is second (default)
+     operand, binary.rhs is first operand.  */
   if (expld.result.valid_p && tree->type.node_code == SEGMENT_START)
     {
       const char *segment_name;
@@ -296,172 +302,170 @@ fold_binary (etree_type *tree)
 	    seg->used = TRUE;
 	    expld.result.value = seg->value;
 	    expld.result.str = NULL;
-	    expld.result.section = NULL;
+	    expld.result.section = expld.section;
 	    break;
 	  }
+      return;
     }
-  else if (expld.result.valid_p)
+
+  lhs = expld.result;
+  exp_fold_tree_1 (tree->binary.rhs);
+  expld.result.valid_p &= lhs.valid_p;
+
+  if (expld.result.valid_p)
     {
-      etree_value_type lhs = expld.result;
-
-      exp_fold_tree_1 (tree->binary.rhs);
-      if (expld.result.valid_p)
+      /* If the values are from different sections, or this is an
+	 absolute expression, make both the source arguments
+	 absolute.  However, adding or subtracting an absolute
+	 value from a relative value is meaningful, and is an
+	 exception.  */
+      if (expld.section != bfd_abs_section_ptr
+	  && lhs.section == bfd_abs_section_ptr
+	  && tree->type.node_code == '+')
 	{
-	  /* If the values are from different sections, or this is an
-	     absolute expression, make both the source arguments
-	     absolute.  However, adding or subtracting an absolute
-	     value from a relative value is meaningful, and is an
-	     exception.  */
-	  if (expld.section != bfd_abs_section_ptr
-	      && lhs.section == bfd_abs_section_ptr
-	      && tree->type.node_code == '+')
-	    {
-	      /* Keep the section of the rhs term.  */
-	      expld.result.value = lhs.value + expld.result.value;
-	      return;
-	    }
-	  else if (expld.section != bfd_abs_section_ptr
-	      && expld.result.section == bfd_abs_section_ptr
-	      && (tree->type.node_code == '+'
-		  || tree->type.node_code == '-'))
-	    {
-	      /* Keep the section of the lhs term.  */
-	      expld.result.section = lhs.section;
-	    }
-	  else if (expld.result.section != lhs.section
-		   || expld.section == bfd_abs_section_ptr)
-	    {
-	      make_abs ();
-	      lhs.value += lhs.section->vma;
-	    }
+	  /* Keep the section of the rhs term.  */
+	  expld.result.value = lhs.value + expld.result.value;
+	  return;
+	}
+      else if (expld.section != bfd_abs_section_ptr
+	       && expld.result.section == bfd_abs_section_ptr
+	       && (tree->type.node_code == '+'
+		   || tree->type.node_code == '-'))
+	{
+	  /* Keep the section of the lhs term.  */
+	  expld.result.section = lhs.section;
+	}
+      else if (expld.result.section != lhs.section
+	       || expld.section == bfd_abs_section_ptr)
+	{
+	  make_abs ();
+	  lhs.value += lhs.section->vma;
+	}
 
-	  switch (tree->type.node_code)
-	    {
-	    case '%':
-	      if (expld.result.value != 0)
-		expld.result.value = ((bfd_signed_vma) lhs.value
-				      % (bfd_signed_vma) expld.result.value);
-	      else if (expld.phase != lang_mark_phase_enum)
-		einfo (_("%F%S %% by zero\n"));
-	      break;
+      switch (tree->type.node_code)
+	{
+	case '%':
+	  if (expld.result.value != 0)
+	    expld.result.value = ((bfd_signed_vma) lhs.value
+				  % (bfd_signed_vma) expld.result.value);
+	  else if (expld.phase != lang_mark_phase_enum)
+	    einfo (_("%F%S %% by zero\n"));
+	  break;
 
-	    case '/':
-	      if (expld.result.value != 0)
-		expld.result.value = ((bfd_signed_vma) lhs.value
-				      / (bfd_signed_vma) expld.result.value);
-	      else if (expld.phase != lang_mark_phase_enum)
-		einfo (_("%F%S / by zero\n"));
-	      break;
+	case '/':
+	  if (expld.result.value != 0)
+	    expld.result.value = ((bfd_signed_vma) lhs.value
+				  / (bfd_signed_vma) expld.result.value);
+	  else if (expld.phase != lang_mark_phase_enum)
+	    einfo (_("%F%S / by zero\n"));
+	  break;
 
 #define BOP(x, y) \
 	    case x:							\
 	      expld.result.value = lhs.value y expld.result.value;	\
 	      break;
 
-	      BOP ('+', +);
-	      BOP ('*', *);
-	      BOP ('-', -);
-	      BOP (LSHIFT, <<);
-	      BOP (RSHIFT, >>);
-	      BOP (EQ, ==);
-	      BOP (NE, !=);
-	      BOP ('<', <);
-	      BOP ('>', >);
-	      BOP (LE, <=);
-	      BOP (GE, >=);
-	      BOP ('&', &);
-	      BOP ('^', ^);
-	      BOP ('|', |);
-	      BOP (ANDAND, &&);
-	      BOP (OROR, ||);
+	  BOP ('+', +);
+	  BOP ('*', *);
+	  BOP ('-', -);
+	  BOP (LSHIFT, <<);
+	  BOP (RSHIFT, >>);
+	  BOP (EQ, ==);
+	  BOP (NE, !=);
+	  BOP ('<', <);
+	  BOP ('>', >);
+	  BOP (LE, <=);
+	  BOP (GE, >=);
+	  BOP ('&', &);
+	  BOP ('^', ^);
+	  BOP ('|', |);
+	  BOP (ANDAND, &&);
+	  BOP (OROR, ||);
 
-	    case MAX_K:
-	      if (lhs.value > expld.result.value)
-		expld.result.value = lhs.value;
-	      break;
+	case MAX_K:
+	  if (lhs.value > expld.result.value)
+	    expld.result.value = lhs.value;
+	  break;
 
-	    case MIN_K:
-	      if (lhs.value < expld.result.value)
-		expld.result.value = lhs.value;
-	      break;
+	case MIN_K:
+	  if (lhs.value < expld.result.value)
+	    expld.result.value = lhs.value;
+	  break;
 
-	    case ALIGN_K:
-	      expld.result.value = align_n (lhs.value, expld.result.value);
-	      break;
+	case ALIGN_K:
+	  expld.result.value = align_n (lhs.value, expld.result.value);
+	  break;
 
-	    case DATA_SEGMENT_ALIGN:
-	      expld.dataseg.relro = exp_dataseg_relro_start;
-	      if (expld.phase != lang_first_phase_enum
-		  && expld.section == bfd_abs_section_ptr
-		  && (expld.dataseg.phase == exp_dataseg_none
-		      || expld.dataseg.phase == exp_dataseg_adjust
-		      || expld.dataseg.phase == exp_dataseg_relro_adjust
-		      || expld.phase == lang_final_phase_enum))
+	case DATA_SEGMENT_ALIGN:
+	  expld.dataseg.relro = exp_dataseg_relro_start;
+	  if (expld.phase != lang_first_phase_enum
+	      && expld.section == bfd_abs_section_ptr
+	      && (expld.dataseg.phase == exp_dataseg_none
+		  || expld.dataseg.phase == exp_dataseg_adjust
+		  || expld.dataseg.phase == exp_dataseg_relro_adjust
+		  || expld.phase == lang_final_phase_enum))
+	    {
+	      bfd_vma maxpage = lhs.value;
+	      bfd_vma commonpage = expld.result.value;
+
+	      expld.result.value = align_n (expld.dot, maxpage);
+	      if (expld.dataseg.phase == exp_dataseg_relro_adjust)
+		expld.result.value = expld.dataseg.base;
+	      else if (expld.dataseg.phase != exp_dataseg_adjust)
 		{
-		  bfd_vma maxpage = lhs.value;
-		  bfd_vma commonpage = expld.result.value;
-
-		  expld.result.value = align_n (expld.dot, maxpage);
-		  if (expld.dataseg.phase == exp_dataseg_relro_adjust)
-		    expld.result.value = expld.dataseg.base;
-		  else if (expld.dataseg.phase != exp_dataseg_adjust)
+		  expld.result.value += expld.dot & (maxpage - 1);
+		  if (expld.phase == lang_allocating_phase_enum)
 		    {
-		      expld.result.value += expld.dot & (maxpage - 1);
-		      if (expld.phase == lang_allocating_phase_enum)
-			{
-			  expld.dataseg.phase = exp_dataseg_align_seen;
-			  expld.dataseg.min_base = align_n (expld.dot, maxpage);
-			  expld.dataseg.base = expld.result.value;
-			  expld.dataseg.pagesize = commonpage;
-			  expld.dataseg.maxpagesize = maxpage;
-			  expld.dataseg.relro_end = 0;
-			}
+		      expld.dataseg.phase = exp_dataseg_align_seen;
+		      expld.dataseg.min_base = expld.dot;
+		      expld.dataseg.base = expld.result.value;
+		      expld.dataseg.pagesize = commonpage;
+		      expld.dataseg.maxpagesize = maxpage;
+		      expld.dataseg.relro_end = 0;
 		    }
-		  else if (commonpage < maxpage)
-		    expld.result.value += ((expld.dot + commonpage - 1)
-					   & (maxpage - commonpage));
 		}
-	      else
-		expld.result.valid_p = FALSE;
-	      break;
-
-	    case DATA_SEGMENT_RELRO_END:
-	      expld.dataseg.relro = exp_dataseg_relro_end;
-	      if (expld.phase != lang_first_phase_enum
-		  && (expld.dataseg.phase == exp_dataseg_align_seen
-		      || expld.dataseg.phase == exp_dataseg_adjust
-		      || expld.dataseg.phase == exp_dataseg_relro_adjust
-		      || expld.phase == lang_final_phase_enum))
-		{
-		  if (expld.dataseg.phase == exp_dataseg_align_seen
-		      || expld.dataseg.phase == exp_dataseg_relro_adjust)
-		    expld.dataseg.relro_end = lhs.value + expld.result.value;
-
-		  if (expld.dataseg.phase == exp_dataseg_relro_adjust
-		      && (expld.dataseg.relro_end
-			  & (expld.dataseg.pagesize - 1)))
-		    {
-		      expld.dataseg.relro_end += expld.dataseg.pagesize - 1;
-		      expld.dataseg.relro_end &= ~(expld.dataseg.pagesize - 1);
-		      expld.result.value = (expld.dataseg.relro_end
-					    - expld.result.value);
-		    }
-		  else
-		    expld.result.value = lhs.value;
-
-		  if (expld.dataseg.phase == exp_dataseg_align_seen)
-		    expld.dataseg.phase = exp_dataseg_relro_seen;
-		}
-	      else
-		expld.result.valid_p = FALSE;
-	      break;
-
-	    default:
-	      FAIL ();
+	      else if (commonpage < maxpage)
+		expld.result.value += ((expld.dot + commonpage - 1)
+				       & (maxpage - commonpage));
 	    }
+	  else
+	    expld.result.valid_p = FALSE;
+	  break;
+
+	case DATA_SEGMENT_RELRO_END:
+	  expld.dataseg.relro = exp_dataseg_relro_end;
+	  if (expld.phase != lang_first_phase_enum
+	      && (expld.dataseg.phase == exp_dataseg_align_seen
+		  || expld.dataseg.phase == exp_dataseg_adjust
+		  || expld.dataseg.phase == exp_dataseg_relro_adjust
+		  || expld.phase == lang_final_phase_enum))
+	    {
+	      if (expld.dataseg.phase == exp_dataseg_align_seen
+		  || expld.dataseg.phase == exp_dataseg_relro_adjust)
+		expld.dataseg.relro_end = lhs.value + expld.result.value;
+
+	      if (expld.dataseg.phase == exp_dataseg_relro_adjust
+		  && (expld.dataseg.relro_end
+		      & (expld.dataseg.pagesize - 1)))
+		{
+		  expld.dataseg.relro_end += expld.dataseg.pagesize - 1;
+		  expld.dataseg.relro_end &= ~(expld.dataseg.pagesize - 1);
+		  expld.result.value = (expld.dataseg.relro_end
+					- expld.result.value);
+		}
+	      else
+		expld.result.value = lhs.value;
+
+	      if (expld.dataseg.phase == exp_dataseg_align_seen)
+		expld.dataseg.phase = exp_dataseg_relro_seen;
+	    }
+	  else
+	    expld.result.valid_p = FALSE;
+	  break;
+
+	default:
+	  FAIL ();
 	}
-      else
-	expld.result.valid_p = FALSE;
     }
 }
 
@@ -489,7 +493,7 @@ fold_name (etree_type *tree)
 	  /* Don't find the real header size if only marking sections;
 	     The bfd function may cache incorrect data.  */
 	  if (expld.phase != lang_mark_phase_enum)
-	    hdr_size = bfd_sizeof_headers (output_bfd, &link_info);
+	    hdr_size = bfd_sizeof_headers (link_info.output_bfd, &link_info);
 	  new_abs (hdr_size);
 	}
       break;
@@ -503,7 +507,8 @@ fold_name (etree_type *tree)
 	  int def_iteration
 	    = lang_symbol_definition_iteration (tree->name.name);
 
-	  h = bfd_wrapped_link_hash_lookup (output_bfd, &link_info,
+	  h = bfd_wrapped_link_hash_lookup (link_info.output_bfd,
+					    &link_info,
 					    tree->name.name,
 					    FALSE, FALSE, TRUE);
 	  expld.result.value = (h != NULL
@@ -512,7 +517,7 @@ fold_name (etree_type *tree)
 				    || h->type == bfd_link_hash_common)
 				&& (def_iteration == lang_statement_iteration
 				    || def_iteration == -1));
-	  expld.result.section = bfd_abs_section_ptr;
+	  expld.result.section = expld.section;
 	  expld.result.valid_p = TRUE;
 	}
       break;
@@ -526,7 +531,8 @@ fold_name (etree_type *tree)
 	{
 	  struct bfd_link_hash_entry *h;
 
-	  h = bfd_wrapped_link_hash_lookup (output_bfd, &link_info,
+	  h = bfd_wrapped_link_hash_lookup (link_info.output_bfd,
+					    &link_info,
 					    tree->name.name,
 					    TRUE, FALSE, TRUE);
 	  if (!h)
@@ -603,7 +609,8 @@ fold_name (etree_type *tree)
 	      else
 		{
 		  exp_fold_tree_1 (os->load_base);
-		  make_abs ();
+		  if (expld.result.valid_p)
+		    make_abs ();
 		}
 	    }
 	}
@@ -628,7 +635,8 @@ fold_name (etree_type *tree)
 	      bfd_vma val;
 
 	      if (tree->type.node_code == SIZEOF)
-		val = os->bfd_section->size / bfd_octets_per_byte (output_bfd);
+		val = (os->bfd_section->size
+		       / bfd_octets_per_byte (link_info.output_bfd));
 	      else
 		val = (bfd_vma)1 << os->bfd_section->alignment_power;
 	      

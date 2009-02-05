@@ -99,6 +99,8 @@ typedef struct name_list {
 }
 name_list;
 
+typedef enum {sort_none, sort_ascending, sort_descending} sort_order;
+  
 /* A wildcard specification.  */
 
 typedef enum {
@@ -165,10 +167,9 @@ typedef struct {
      search.  */
   bfd_boolean warn_search_mismatch;
 
-
-  /* If TRUE (the default) check section addresses, once compute,
-     fpor overlaps.  */
-  bfd_boolean check_section_addresses;
+  /* If non-zero check section addresses, once computed,
+     for overlaps.  Relocatable links only check when this is > 0.  */
+  signed char check_section_addresses;
 
   /* If TRUE allow the linking of input files in an unknown architecture
      assuming that the user knows what they are doing.  This was the old
@@ -265,7 +266,7 @@ typedef struct {
   /* If TRUE, warning messages are fatal */
   bfd_boolean fatal_warnings;
 
-  bfd_boolean sort_common;
+  sort_order sort_common;
 
   bfd_boolean text_read_only;
 

@@ -1,4 +1,32 @@
 -*- text -*-
+
+* Add support for Lattice Mico32 (lm32) architecture.
+
+Changes in 2.19:
+
+* New pseudo op .cfi_val_encoded_addr, to record constant addresses in unwind
+  tables without runtime relocation.
+
+* New command line option, -h-tick-hex, for sh, m32c, and h8/300 targets, which
+  adds compatibility with H'00 style hex constants.
+
+* New command line option, -msse-check=[none|error|warning], for x86
+  targets.
+
+* New sub-option added to the assembler's -a command line switch to
+  generate a listing output.  The 'g' sub-option will insert into the listing
+  various information about the assembly, such as assembler version, the
+  command line options used, and a time stamp.
+
+* New command line option -msse2avx for x86 target to encode SSE
+  instructions with VEX prefix.
+
+* Add Intel XSAVE, EPT, MOVBE, AES, PCLMUL, AVX/FMA support for x86 target.
+
+* New command line options, -march=CPU[,+EXTENSION...], -mtune=CPU,
+  -mmnemonic=[att|intel], -msyntax=[att|intel], -mindex-reg,
+  -mnaked-reg and -mold-gcc, for x86 targets.
+
 * Support for generating wide character strings has been added via the new
   pseudo ops: .string16, .string32 and .string64.
 

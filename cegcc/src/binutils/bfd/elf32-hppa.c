@@ -1,6 +1,7 @@
 /* BFD back-end for HP PA-RISC ELF files.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1999, 2000, 2001,
-   2002, 2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
+   2002, 2003, 2004, 2005, 2006, 2007, 2008
+   Free Software Foundation, Inc.
 
    Original code by
 	Center for Software Science
@@ -333,6 +334,15 @@ struct elf32_hppa_link_hash_table
 
 #define eh_name(eh) \
   (eh ? eh->root.root.string : "<undef>")
+
+/* Override the generic function because we want to mark our BFDs.  */
+
+static bfd_boolean
+elf32_hppa_mkobject (bfd *abfd)
+{
+  return bfd_elf_allocate_object (abfd, sizeof (struct elf_obj_tdata),
+				  HPPA_ELF_TDATA);
+}
 
 /* Assorted hash table functions.  */
 
@@ -1495,44 +1505,17 @@ elf32_hppa_check_relocs (bfd *abfd,
 		 this reloc.  */
 	      if (sreloc == NULL)
 		{
-		  char *name;
-		  bfd *dynobj;
-
-		  name = (bfd_elf_string_from_elf_section
-			  (abfd,
-			   elf_elfheader (abfd)->e_shstrndx,
-			   elf_section_data (sec)->rel_hdr.sh_name));
-		  if (name == NULL)
-		    {
-		      (*_bfd_error_handler)
-			(_("Could not find relocation section for %s"),
-			 sec->name);
-		      bfd_set_error (bfd_error_bad_value);
-		      return FALSE;
-		    }
-
 		  if (htab->etab.dynobj == NULL)
 		    htab->etab.dynobj = abfd;
 
-		  dynobj = htab->etab.dynobj;
-		  sreloc = bfd_get_section_by_name (dynobj, name);
+		  sreloc = _bfd_elf_make_dynamic_reloc_section
+		    (sec, htab->etab.dynobj, 2, abfd, /*rela?*/ TRUE);
+
 		  if (sreloc == NULL)
 		    {
-		      flagword flags;
-
-		      flags = (SEC_HAS_CONTENTS | SEC_READONLY
-			       | SEC_IN_MEMORY | SEC_LINKER_CREATED);
-		      if ((sec->flags & SEC_ALLOC) != 0)
-			flags |= SEC_ALLOC | SEC_LOAD;
-		      sreloc = bfd_make_section_with_flags (dynobj,
-							    name,
-							    flags);
-		      if (sreloc == NULL
-			  || !bfd_set_section_alignment (dynobj, sreloc, 2))
-			return FALSE;
+		      bfd_set_error (bfd_error_bad_value);
+		      return FALSE;
 		    }
-
-		  elf_section_data (sec)->sreloc = sreloc;
 		}
 
 	      /* If this is a global symbol, we count the number of
@@ -1621,6 +1604,9 @@ elf32_hppa_gc_sweep_hook (bfd *abfd,
   bfd_signed_vma *local_got_refcounts;
   bfd_signed_vma *local_plt_refcounts;
   const Elf_Internal_Rela *rela, *relend;
+
+  if (info->relocatable)
+    return TRUE;
 
   elf_section_data (sec)->local_dynrel = NULL;
 
@@ -2964,15 +2950,20 @@ elf32_hppa_size_stubs
 		      /* It's a local symbol.  */
 		      Elf_Internal_Sym *sym;
 		      Elf_Internal_Shdr *hdr;
+		      unsigned int shndx;
 
 		      sym = local_syms + r_indx;
-		      hdr = elf_elfsections (input_bfd)[sym->st_shndx];
-		      sym_sec = hdr->bfd_section;
 		      if (ELF_ST_TYPE (sym->st_info) != STT_SECTION)
 			sym_value = sym->st_value;
-		      destination = (sym_value + irela->r_addend
-				     + sym_sec->output_offset
-				     + sym_sec->output_section->vma);
+		      shndx = sym->st_shndx;
+		      if (shndx < elf_numsections (input_bfd))
+			{
+			  hdr = elf_elfsections (input_bfd)[shndx];
+			  sym_sec = hdr->bfd_section;
+			  destination = (sym_value + irela->r_addend
+					 + sym_sec->output_offset
+					 + sym_sec->output_section->vma);
+			}
 		    }
 		  else
 		    {
@@ -4599,11 +4590,12 @@ elf32_hppa_elf_get_symbol_type (Elf_Internal_Sym *elf_sym, int type)
 /* Misc BFD support code.  */
 #define bfd_elf32_bfd_is_local_label_name    elf_hppa_is_local_label_name
 #define bfd_elf32_bfd_reloc_type_lookup	     elf_hppa_reloc_type_lookup
-#define bfd_elf32_bfd_reloc_name_lookup elf_hppa_reloc_name_lookup
+#define bfd_elf32_bfd_reloc_name_lookup      elf_hppa_reloc_name_lookup
 #define elf_info_to_howto		     elf_hppa_info_to_howto
 #define elf_info_to_howto_rel		     elf_hppa_info_to_howto_rel
 
 /* Stuff for the BFD linker.  */
+#define bfd_elf32_mkobject		     elf32_hppa_mkobject
 #define bfd_elf32_bfd_final_link	     elf32_hppa_final_link
 #define bfd_elf32_bfd_link_hash_table_create elf32_hppa_link_hash_table_create
 #define bfd_elf32_bfd_link_hash_table_free   elf32_hppa_link_hash_table_free

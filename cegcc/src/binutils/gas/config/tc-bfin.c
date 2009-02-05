@@ -1,5 +1,5 @@
 /* tc-bfin.c -- Assembler for the ADI Blackfin.
-   Copyright 2005, 2006, 2007
+   Copyright 2005, 2006, 2007, 2008
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
@@ -37,8 +37,6 @@ typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern YY_BUFFER_STATE yy_scan_string (const char *yy_str);
 extern void yy_delete_buffer (YY_BUFFER_STATE b);
 static parse_state parse (char *line);
-static void bfin_s_bss PARAMS ((int));
-static int md_chars_to_number PARAMS ((char *, int));
 
 /* Global variables. */
 struct bfin_insn *insn;
@@ -50,8 +48,14 @@ FILE *errorf;
 /* Flags to set in the elf header */
 #define DEFAULT_FLAGS 0
 
-static flagword bfin_flags = DEFAULT_FLAGS;
-static const char *bfin_pic_flag = (const char *)0;
+#ifdef OBJ_FDPIC_ELF
+# define DEFAULT_FDPIC EF_BFIN_FDPIC
+#else
+# define DEFAULT_FDPIC 0
+#endif
+
+static flagword bfin_flags = DEFAULT_FLAGS | DEFAULT_FDPIC;
+static const char *bfin_pic_flag = DEFAULT_FDPIC ? "-mfdpic" : (const char *)0;
 
 /* Registers list.  */
 struct bfin_reg_entry
@@ -305,10 +309,13 @@ const char FLT_CHARS[] = "fFdDxX";
 const char *md_shortopts = "";
 
 #define OPTION_FDPIC		(OPTION_MD_BASE)
+#define OPTION_NOPIC		(OPTION_MD_BASE + 1)
 
 struct option md_longopts[] =
 {
-  { "mfdpic",		no_argument,		NULL, OPTION_FDPIC	   },
+  { "mfdpic",		no_argument,		NULL, OPTION_FDPIC      },
+  { "mnopic",		no_argument,		NULL, OPTION_NOPIC      },
+  { "mno-fdpic",	no_argument,		NULL, OPTION_NOPIC      },
   { NULL,		no_argument,		NULL, 0                 },
 };
 
@@ -326,6 +333,11 @@ md_parse_option (int c ATTRIBUTE_UNUSED, char *arg ATTRIBUTE_UNUSED)
     case OPTION_FDPIC:
       bfin_flags |= EF_BFIN_FDPIC;
       bfin_pic_flag = "-mfdpic";
+      break;
+
+    case OPTION_NOPIC:
+      bfin_flags &= ~(EF_BFIN_FDPIC);
+      bfin_pic_flag = 0;
       break;
     }
 
@@ -866,15 +878,17 @@ bfin_start_line_hook ()
   input_line_pointer = c;
   if (maybe_end)
     {
-      label_name = (char *) xmalloc ((c - c1) + strlen ("__END") + 1);
+      label_name = (char *) xmalloc ((c - c1) + strlen ("__END") + 5);
       label_name[0] = 0;
+      strcat (label_name, "L$L$");
       strncat (label_name, c1, c-c1);
       strcat (label_name, "__END");
     }
   else /* maybe_begin.  */
     {
-      label_name = (char *) xmalloc ((c - c1) + strlen ("__BEGIN") + 1);
+      label_name = (char *) xmalloc ((c - c1) + strlen ("__BEGIN") + 5);
       label_name[0] = 0;
+      strcat (label_name, "L$L$");
       strncat (label_name, c1, c-c1);
       strcat (label_name, "__BEGIN");
     }
@@ -884,8 +898,7 @@ bfin_start_line_hook ()
   /* Loop_End follows the last instruction in the loop.
      Adjust label address.  */
   if (maybe_end)
-    line_label->sy_value.X_add_number -= last_insn_size;
-
+    ((struct local_symbol *) line_label)->lsy_value -= last_insn_size;
 }
 
 /* Special extra functions that help bfin-parse.y perform its job.  */
@@ -947,7 +960,7 @@ note_reloc2 (INSTR_T code, const char *symbol, int reloc, int value, int pcrel)
 INSTR_T
 gencode (unsigned long x)
 {
-  INSTR_T cell = (INSTR_T) obstack_alloc (&mempool, sizeof (struct bfin_insn));
+  INSTR_T cell = obstack_alloc (&mempool, sizeof (struct bfin_insn));
   memset (cell, 0, sizeof (struct bfin_insn));
   cell->value = (x);
   return cell;
@@ -960,7 +973,7 @@ int count_insns;
 static void *
 allocate (int n)
 {
-  return (void *) obstack_alloc (&mempool, n);
+  return obstack_alloc (&mempool, n);
 }
 
 Expr_Node *
@@ -1439,14 +1452,14 @@ bfin_gen_ldstidxi (REG_T ptr, REG_T reg, int W, int sz, int Z, Expr_Node * poffs
     {
       int value, offset;
       switch (sz)
-	{				// load/store access size
-	case 0:			// 32 bit
+	{				/* load/store access size */
+	case 0:			/* 32 bit */
 	  value = EXPR_VALUE (poffset) >> 2;
 	  break;
-	case 1:			// 16 bit
+	case 1:			/* 16 bit */
 	  value = EXPR_VALUE (poffset) >> 1;
 	  break;
-	case 2:			// 8 bit
+	case 2:			/* 8 bit */
 	  value = EXPR_VALUE (poffset);
 	  break;
 	default:
@@ -1878,15 +1891,17 @@ bfin_gen_loop (Expr_Node *expr, REG_T reg, int rop, REG_T preg)
   Expr_Node *lbegin, *lend;
 
   loopsym = expr->value.s_value;
-  lbeginsym = (char *) xmalloc (strlen (loopsym) + strlen ("__BEGIN") + 1);
-  lendsym = (char *) xmalloc (strlen (loopsym) + strlen ("__END") + 1);
+  lbeginsym = (char *) xmalloc (strlen (loopsym) + strlen ("__BEGIN") + 5);
+  lendsym = (char *) xmalloc (strlen (loopsym) + strlen ("__END") + 5);
 
   lbeginsym[0] = 0;
   lendsym[0] = 0;
 
+  strcat (lbeginsym, "L$L$");
   strcat (lbeginsym, loopsym);
   strcat (lbeginsym, "__BEGIN");
 
+  strcat (lendsym, "L$L$");
   strcat (lendsym, loopsym);
   strcat (lendsym, "__END");
 
@@ -1895,6 +1910,9 @@ bfin_gen_loop (Expr_Node *expr, REG_T reg, int rop, REG_T preg)
 
   lbegin = Expr_Node_Create (Expr_Node_Reloc, lbeginval, NULL, NULL);
   lend   = Expr_Node_Create (Expr_Node_Reloc, lendval, NULL, NULL);
+
+  symbol_remove (symbol_find (loopsym), &symbol_rootP, &symbol_lastP);
+
   return bfin_gen_loopsetup(lbegin, reg, rop, lend, preg);
 }
 

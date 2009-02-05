@@ -76,6 +76,8 @@ typedef struct disassemble_info
   unsigned long mach;
   /* Endianness (for bi-endian cpus).  Mono-endian cpus can ignore this.  */
   enum bfd_endian endian;
+  /* Endianness of code, for mixed-endian situations such as ARM BE8.  */
+  enum bfd_endian endian_code;
   /* An arch/mach-specific bitmask of selected instruction subsets, mainly
      for processors with run-time-switchable instruction sets.  The default,
      zero, means that there is no constraint.  CGEN-based opcodes ports
@@ -243,6 +245,7 @@ extern int print_insn_little_mips	(bfd_vma, disassemble_info *);
 extern int print_insn_little_or32	(bfd_vma, disassemble_info *);
 extern int print_insn_little_powerpc	(bfd_vma, disassemble_info *);
 extern int print_insn_little_score      (bfd_vma, disassemble_info *); 
+extern int print_insn_lm32		(bfd_vma, disassemble_info *);
 extern int print_insn_m32c	        (bfd_vma, disassemble_info *);
 extern int print_insn_m32r		(bfd_vma, disassemble_info *);
 extern int print_insn_m68hc11		(bfd_vma, disassemble_info *);
@@ -291,6 +294,7 @@ extern void print_mips_disassembler_options (FILE *);
 extern void print_ppc_disassembler_options (FILE *);
 extern void print_arm_disassembler_options (FILE *);
 extern void parse_arm_disassembler_option (char *);
+extern void print_s390_disassembler_options (FILE *);
 extern int  get_arm_regname_num_options (void);
 extern int  set_arm_regname_option (int);
 extern int  get_arm_regnames (int, const char **, const char **, const char *const **);

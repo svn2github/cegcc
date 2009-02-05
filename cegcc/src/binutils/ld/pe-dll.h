@@ -35,15 +35,18 @@ extern int pe_dll_stdcall_aliases;
 extern int pe_dll_warn_dup_exports;
 extern int pe_dll_compat_implib;
 extern int pe_dll_extra_pe_debug;
+extern int pe_use_nul_prefixed_import_tables;
+
+typedef enum { EXCLUDESYMS, EXCLUDELIBS, EXCLUDEFORIMPLIB } exclude_type;
 
 extern void pe_dll_id_target
   (const char *);
 extern void pe_dll_add_excludes
-  (const char *, const int);
+  (const char *, const exclude_type);
 extern void pe_dll_generate_def_file
   (const char *);
 extern void pe_dll_generate_implib
-  (def_file *, const char *);
+  (def_file *, const char *, struct bfd_link_info *);
 extern void pe_process_import_defs
   (bfd *, struct bfd_link_info *);
 extern bfd_boolean pe_implied_import_dll
@@ -59,7 +62,7 @@ extern void pe_exe_fill_sections
 extern void pe_walk_relocs_of_symbol
   (struct bfd_link_info *, const char *, int (*) (arelent *, asection *));
 extern void pe_create_import_fixup
-  (arelent * rel, asection *, int);
+  (arelent * rel, asection *, bfd_vma);
 extern bfd_boolean pe_bfd_is_dll
   (bfd *);
 

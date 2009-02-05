@@ -1,5 +1,5 @@
 /* BFD back-end for Zilog Z80 COFF binaries.
-   Copyright 2005, 2007 Free Software Foundation, Inc.
+   Copyright 2005, 2007, 2008  Free Software Foundation, Inc.
    Contributed by Arnold Metselaar <arnold_m@operamail.com>
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -30,7 +30,7 @@
 #define COFF_DEFAULT_SECTION_ALIGNMENT_POWER 0
 
 static reloc_howto_type r_imm32 =
-HOWTO (R_IMM32, 0, 1, 32, FALSE, 0,
+HOWTO (R_IMM32, 0, 2, 32, FALSE, 0,
        complain_overflow_dont, 0, "r_imm32", TRUE, 0xffffffff, 0xffffffff,
        FALSE);
 
@@ -269,6 +269,10 @@ extra_case (bfd *in_abfd,
 #define coff_reloc16_extra_cases    extra_case
 #define coff_bfd_reloc_type_lookup  coff_z80_reloc_type_lookup
 #define coff_bfd_reloc_name_lookup coff_z80_reloc_name_lookup
+
+#ifndef bfd_pe_print_pdata
+#define bfd_pe_print_pdata	NULL
+#endif
 
 #include "coffcode.h"
 

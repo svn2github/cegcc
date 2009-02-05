@@ -1,5 +1,5 @@
 # This shell script emits a C file. -*- C -*-
-#   Copyright 2003, 2005, 2007 Free Software Foundation, Inc.
+#   Copyright 2003, 2005, 2007, 2008 Free Software Foundation, Inc.
 #
 # This file is part of the GNU Binutils.
 #
@@ -27,17 +27,9 @@ fragment <<EOF
 #include "libbfd.h"
 #include "elf32-ppc.h"
 
-extern const bfd_target bfd_elf32_powerpc_vec;
-extern const bfd_target bfd_elf32_powerpcle_vec;
-extern const bfd_target bfd_elf32_powerpc_vxworks_vec;
-
-static inline int
-is_ppc_elf32_vec(const bfd_target * vec)
-{
-  return (vec == &bfd_elf32_powerpc_vec
-	  || vec == &bfd_elf32_powerpc_vxworks_vec
-	  || vec == &bfd_elf32_powerpcle_vec);
-}
+#define is_ppc_elf(bfd) \
+  (bfd_get_flavour (bfd) == bfd_target_elf_flavour \
+   && elf_object_id (bfd) == PPC32_ELF_TDATA)
 
 /* Whether to run tls optimization.  */
 static int notlsopt = 0;
@@ -52,7 +44,7 @@ static int old_got = 0;
 static void
 ppc_after_open (void)
 {
-  if (is_ppc_elf32_vec (link_info.hash->creator))
+  if (is_ppc_elf (link_info.output_bfd))
     {
       int new_plt;
       int keep_new;
@@ -63,8 +55,8 @@ ppc_after_open (void)
       lang_output_section_statement_type *got_os[2];
 
       emit_stub_syms |= link_info.emitrelocations;
-      new_plt = ppc_elf_select_plt_layout (output_bfd, &link_info, plt_style,
-					   emit_stub_syms);
+      new_plt = ppc_elf_select_plt_layout (link_info.output_bfd, &link_info,
+					   plt_style, emit_stub_syms);
       if (new_plt < 0)
 	einfo ("%X%P: select_plt_layout problem %E\n");
 
@@ -109,11 +101,11 @@ ppc_after_open (void)
 static void
 ppc_before_allocation (void)
 {
-  if (is_ppc_elf32_vec (link_info.hash->creator))
+  if (is_ppc_elf (link_info.output_bfd))
     {
-      if (ppc_elf_tls_setup (output_bfd, &link_info) && !notlsopt)
+      if (ppc_elf_tls_setup (link_info.output_bfd, &link_info) && !notlsopt)
 	{
-	  if (!ppc_elf_tls_optimize (output_bfd, &link_info))
+	  if (!ppc_elf_tls_optimize (link_info.output_bfd, &link_info))
 	    {
 	      einfo ("%X%P: TLS problem %E\n");
 	      return;

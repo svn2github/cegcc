@@ -1,5 +1,5 @@
 /* Configurable Xtensa ISA support.
-   Copyright 2003, 2004, 2005, 2007 Free Software Foundation, Inc.
+   Copyright 2003, 2004, 2005, 2007, 2008 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -411,7 +411,12 @@ xtensa_isa_num_pipe_stages (xtensa_isa isa)
   xtensa_opcode opcode;
   xtensa_funcUnit_use *use;
   int num_opcodes, num_uses;
-  int i, stage, max_stage = XTENSA_UNDEFINED;
+  int i, stage;
+  static int max_stage = XTENSA_UNDEFINED;
+
+  /* Only compute the value once.  */
+  if (max_stage != XTENSA_UNDEFINED)
+    return max_stage + 1;
 
   num_opcodes = xtensa_isa_num_opcodes (isa);
   for (opcode = 0; opcode < num_opcodes; opcode++)
@@ -1516,6 +1521,17 @@ xtensa_state_is_exported (xtensa_isa isa, xtensa_state st)
   xtensa_isa_internal *intisa = (xtensa_isa_internal *) isa;
   CHECK_STATE (intisa, st, XTENSA_UNDEFINED);
   if ((intisa->states[st].flags & XTENSA_STATE_IS_EXPORTED) != 0)
+    return 1;
+  return 0;
+}
+
+
+int
+xtensa_state_is_shared_or (xtensa_isa isa, xtensa_state st)
+{
+  xtensa_isa_internal *intisa = (xtensa_isa_internal *) isa;
+  CHECK_STATE (intisa, st, XTENSA_UNDEFINED);
+  if ((intisa->states[st].flags & XTENSA_STATE_IS_SHARED_OR) != 0)
     return 1;
   return 0;
 }

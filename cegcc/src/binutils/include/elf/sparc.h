@@ -1,5 +1,5 @@
 /* SPARC ELF support for BFD.
-   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2003
+   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2003, 2008
    Free Software Foundation, Inc.
    By Doug Evans, Cygnus Support, <dje@cygnus.com>.
 
@@ -45,8 +45,8 @@ Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA. 
 
 /* Section indices.  */
 
-#define SHN_BEFORE		0xff00		/* used with SHF_ORDERED */
-#define SHN_AFTER		0xff01		/* used with SHF_ORDERED */
+#define SHN_BEFORE	SHN_LORESERVE		/* used with SHF_ORDERED */
+#define SHN_AFTER	(SHN_LORESERVE + 1)	/* used with SHF_ORDERED */
 
 /* Section flags.  */
 
@@ -151,6 +151,16 @@ START_RELOC_NUMBERS (elf_sparc_reloc_type)
   RELOC_NUMBER (R_SPARC_TLS_DTPOFF64, 77)
   RELOC_NUMBER (R_SPARC_TLS_TPOFF32, 78)
   RELOC_NUMBER (R_SPARC_TLS_TPOFF64, 79)
+
+  RELOC_NUMBER (R_SPARC_GOTDATA_HIX22, 80)
+  RELOC_NUMBER (R_SPARC_GOTDATA_LOX10, 81)
+  RELOC_NUMBER (R_SPARC_GOTDATA_OP_HIX22, 82)
+  RELOC_NUMBER (R_SPARC_GOTDATA_OP_LOX10, 83)
+  RELOC_NUMBER (R_SPARC_GOTDATA_OP, 84)
+
+  RELOC_NUMBER (R_SPARC_H34, 85)
+  RELOC_NUMBER (R_SPARC_SIZE32, 86)
+  RELOC_NUMBER (R_SPARC_SIZE64, 87)
   
   EMPTY_RELOC  (R_SPARC_max_std)
 

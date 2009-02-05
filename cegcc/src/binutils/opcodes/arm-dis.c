@@ -242,12 +242,27 @@ static const struct opcode32 coprocessor_opcodes[] =
   {FPU_FPA_EXT_V2, 0x0c100200, 0x0e100f00, "lfm%c\t%12-14f, %F, %A"},
 
   /* Register load/store */
-  {FPU_NEON_EXT_V1, 0x0d200b00, 0x0fb00f01, "vstmdb%c\t%16-19r%21'!, %B"},
-  {FPU_NEON_EXT_V1, 0x0d300b00, 0x0fb00f01, "vldmdb%c\t%16-19r%21'!, %B"},
-  {FPU_NEON_EXT_V1, 0x0c800b00, 0x0f900f01, "vstmia%c\t%16-19r%21'!, %B"},
-  {FPU_NEON_EXT_V1, 0x0c900b00, 0x0f900f01, "vldmia%c\t%16-19r%21'!, %B"},
-  {FPU_NEON_EXT_V1, 0x0d000b00, 0x0f300f00, "vstr%c\t%12-15,22D, %C"},
-  {FPU_NEON_EXT_V1, 0x0d100b00, 0x0f300f00, "vldr%c\t%12-15,22D, %C"},
+  {FPU_VFP_EXT_V1xD | FPU_NEON_EXT_V1, 0x0d2d0b00, 0x0fbf0f01, "vpush%c\t%B"},
+  {FPU_VFP_EXT_V1xD | FPU_NEON_EXT_V1, 0x0d200b00, 0x0fb00f01, "vstmdb%c\t%16-19r!, %B"},
+  {FPU_VFP_EXT_V1xD | FPU_NEON_EXT_V1, 0x0d300b00, 0x0fb00f01, "vldmdb%c\t%16-19r!, %B"},
+  {FPU_VFP_EXT_V1xD | FPU_NEON_EXT_V1, 0x0c800b00, 0x0f900f01, "vstmia%c\t%16-19r%21'!, %B"},
+  {FPU_VFP_EXT_V1xD | FPU_NEON_EXT_V1, 0x0cbd0b00, 0x0fbf0f01, "vpop%c\t%B"},
+  {FPU_VFP_EXT_V1xD | FPU_NEON_EXT_V1, 0x0c900b00, 0x0f900f01, "vldmia%c\t%16-19r%21'!, %B"},
+  {FPU_VFP_EXT_V1xD | FPU_NEON_EXT_V1, 0x0d000b00, 0x0f300f00, "vstr%c\t%12-15,22D, %C"},
+  {FPU_VFP_EXT_V1xD | FPU_NEON_EXT_V1, 0x0d100b00, 0x0f300f00, "vldr%c\t%12-15,22D, %C"},
+  {FPU_VFP_EXT_V1xD, 0x0d2d0a00, 0x0fbf0f00, "vpush%c\t%y3"},
+  {FPU_VFP_EXT_V1xD, 0x0d200a00, 0x0fb00f00, "vstmdb%c\t%16-19r!, %y3"},
+  {FPU_VFP_EXT_V1xD, 0x0d300a00, 0x0fb00f00, "vldmdb%c\t%16-19r!, %y3"},
+  {FPU_VFP_EXT_V1xD, 0x0c800a00, 0x0f900f00, "vstmia%c\t%16-19r%21'!, %y3"},
+  {FPU_VFP_EXT_V1xD, 0x0cbd0a00, 0x0fbf0f00, "vpop%c\t%y3"},
+  {FPU_VFP_EXT_V1xD, 0x0c900a00, 0x0f900f00, "vldmia%c\t%16-19r%21'!, %y3"},
+  {FPU_VFP_EXT_V1xD, 0x0d000a00, 0x0f300f00, "vstr%c\t%y1, %A"},
+  {FPU_VFP_EXT_V1xD, 0x0d100a00, 0x0f300f00, "vldr%c\t%y1, %A"},
+
+  {FPU_VFP_EXT_V1xD, 0x0d200b01, 0x0fb00f01, "fstmdbx%c\t%16-19r!, %z3\t;@ Deprecated"},
+  {FPU_VFP_EXT_V1xD, 0x0d300b01, 0x0fb00f01, "fldmdbx%c\t%16-19r!, %z3\t;@ Deprecated"},
+  {FPU_VFP_EXT_V1xD, 0x0c800b01, 0x0f900f01, "fstmiax%c\t%16-19r%21'!, %z3\t;@ Deprecated"},
+  {FPU_VFP_EXT_V1xD, 0x0c900b01, 0x0f900f01, "fldmiax%c\t%16-19r%21'!, %z3\t;@ Deprecated"},
 
   /* Data transfer between ARM and NEON registers */
   {FPU_NEON_EXT_V1, 0x0e800b10, 0x0ff00f70, "vdup%c.32\t%16-19,7D, %12-15r"},
@@ -264,91 +279,78 @@ static const struct opcode32 coprocessor_opcodes[] =
   {FPU_NEON_EXT_V1, 0x0e100b30, 0x0f500f30, "vmov%c.%23?us16\t%12-15r, %16-19,7D[%6,21d]"},
   {FPU_NEON_EXT_V1, 0x0e400b10, 0x0fd00f10, "vmov%c.8\t%16-19,7D[%5,6,21d], %12-15r"},
   {FPU_NEON_EXT_V1, 0x0e500b10, 0x0f500f10, "vmov%c.%23?us8\t%12-15r, %16-19,7D[%5,6,21d]"},
+  /* Half-precision conversion instructions.  */
+  {FPU_NEON_FP16,   0x0eb20a40, 0x0fbf0f50, "vcvt%7?tb%c.f32.f16\t%y1, %y0"},
+  {FPU_NEON_FP16,   0x0eb30a40, 0x0fbf0f50, "vcvt%7?tb%c.f16.f32\t%y1, %y0"},
 
   /* Floating point coprocessor (VFP) instructions */
-  {FPU_VFP_EXT_V1xD, 0x0ef1fa10, 0x0fffffff, "fmstat%c"},
-  {FPU_VFP_EXT_V1xD, 0x0ee00a10, 0x0fff0fff, "fmxr%c\tfpsid, %12-15r"},
-  {FPU_VFP_EXT_V1xD, 0x0ee10a10, 0x0fff0fff, "fmxr%c\tfpscr, %12-15r"},
-  {FPU_VFP_EXT_V1xD, 0x0ee60a10, 0x0fff0fff, "fmxr%c\tmvfr1, %12-15r"},
-  {FPU_VFP_EXT_V1xD, 0x0ee70a10, 0x0fff0fff, "fmxr%c\tmvfr0, %12-15r"},
-  {FPU_VFP_EXT_V1xD, 0x0ee80a10, 0x0fff0fff, "fmxr%c\tfpexc, %12-15r"},
-  {FPU_VFP_EXT_V1xD, 0x0ee90a10, 0x0fff0fff, "fmxr%c\tfpinst, %12-15r\t@ Impl def"},
-  {FPU_VFP_EXT_V1xD, 0x0eea0a10, 0x0fff0fff, "fmxr%c\tfpinst2, %12-15r\t@ Impl def"},
-  {FPU_VFP_EXT_V1xD, 0x0ef00a10, 0x0fff0fff, "fmrx%c\t%12-15r, fpsid"},
-  {FPU_VFP_EXT_V1xD, 0x0ef10a10, 0x0fff0fff, "fmrx%c\t%12-15r, fpscr"},
-  {FPU_VFP_EXT_V1xD, 0x0ef60a10, 0x0fff0fff, "fmrx%c\t%12-15r, mvfr1"},
-  {FPU_VFP_EXT_V1xD, 0x0ef70a10, 0x0fff0fff, "fmrx%c\t%12-15r, mvfr0"},
-  {FPU_VFP_EXT_V1xD, 0x0ef80a10, 0x0fff0fff, "fmrx%c\t%12-15r, fpexc"},
-  {FPU_VFP_EXT_V1xD, 0x0ef90a10, 0x0fff0fff, "fmrx%c\t%12-15r, fpinst\t@ Impl def"},
-  {FPU_VFP_EXT_V1xD, 0x0efa0a10, 0x0fff0fff, "fmrx%c\t%12-15r, fpinst2\t@ Impl def"},
-  {FPU_VFP_EXT_V1, 0x0e000b10, 0x0ff00fff, "fmdlr%c\t%z2, %12-15r"},
-  {FPU_VFP_EXT_V1, 0x0e100b10, 0x0ff00fff, "fmrdl%c\t%12-15r, %z2"},
-  {FPU_VFP_EXT_V1, 0x0e200b10, 0x0ff00fff, "fmdhr%c\t%z2, %12-15r"},
-  {FPU_VFP_EXT_V1, 0x0e300b10, 0x0ff00fff, "fmrdh%c\t%12-15r, %z2"},
-  {FPU_VFP_EXT_V1xD, 0x0ee00a10, 0x0ff00fff, "fmxr%c\t<impl def %16-19x>, %12-15r"},
-  {FPU_VFP_EXT_V1xD, 0x0ef00a10, 0x0ff00fff, "fmrx%c\t%12-15r, <impl def %16-19x>"},
-  {FPU_VFP_EXT_V1xD, 0x0e000a10, 0x0ff00f7f, "fmsr%c\t%y2, %12-15r"},
-  {FPU_VFP_EXT_V1xD, 0x0e100a10, 0x0ff00f7f, "fmrs%c\t%12-15r, %y2"},
-  {FPU_VFP_EXT_V1xD, 0x0eb50a40, 0x0fbf0f70, "fcmp%7'ezs%c\t%y1"},
-  {FPU_VFP_EXT_V1, 0x0eb50b40, 0x0fbf0f70, "fcmp%7'ezd%c\t%z1"},
-  {FPU_VFP_EXT_V1xD, 0x0eb00a40, 0x0fbf0fd0, "fcpys%c\t%y1, %y0"},
-  {FPU_VFP_EXT_V1xD, 0x0eb00ac0, 0x0fbf0fd0, "fabss%c\t%y1, %y0"},
-  {FPU_VFP_EXT_V1, 0x0eb00b40, 0x0fbf0fd0, "fcpyd%c\t%z1, %z0"},
-  {FPU_VFP_EXT_V1, 0x0eb00bc0, 0x0fbf0fd0, "fabsd%c\t%z1, %z0"},
-  {FPU_VFP_EXT_V1xD, 0x0eb10a40, 0x0fbf0fd0, "fnegs%c\t%y1, %y0"},
-  {FPU_VFP_EXT_V1xD, 0x0eb10ac0, 0x0fbf0fd0, "fsqrts%c\t%y1, %y0"},
-  {FPU_VFP_EXT_V1, 0x0eb10b40, 0x0fbf0fd0, "fnegd%c\t%z1, %z0"},
-  {FPU_VFP_EXT_V1, 0x0eb10bc0, 0x0fbf0fd0, "fsqrtd%c\t%z1, %z0"},
-  {FPU_VFP_EXT_V1, 0x0eb70ac0, 0x0fbf0fd0, "fcvtds%c\t%z1, %y0"},
-  {FPU_VFP_EXT_V1, 0x0eb70bc0, 0x0fbf0fd0, "fcvtsd%c\t%y1, %z0"},
-  {FPU_VFP_EXT_V1xD, 0x0eb80a40, 0x0fbf0fd0, "fuitos%c\t%y1, %y0"},
-  {FPU_VFP_EXT_V1xD, 0x0eb80ac0, 0x0fbf0fd0, "fsitos%c\t%y1, %y0"},
-  {FPU_VFP_EXT_V1, 0x0eb80b40, 0x0fbf0fd0, "fuitod%c\t%z1, %y0"},
-  {FPU_VFP_EXT_V1, 0x0eb80bc0, 0x0fbf0fd0, "fsitod%c\t%z1, %y0"},
-  {FPU_VFP_EXT_V1xD, 0x0eb40a40, 0x0fbf0f50, "fcmp%7'es%c\t%y1, %y0"},
-  {FPU_VFP_EXT_V1, 0x0eb40b40, 0x0fbf0f50, "fcmp%7'ed%c\t%z1, %z0"},
-  {FPU_VFP_EXT_V3, 0x0eba0a40, 0x0fbe0f50, "f%16?us%7?lhtos%c\t%y1, #%5,0-3k"},
-  {FPU_VFP_EXT_V3, 0x0eba0b40, 0x0fbe0f50, "f%16?us%7?lhtod%c\t%z1, #%5,0-3k"},
-  {FPU_VFP_EXT_V1xD, 0x0ebc0a40, 0x0fbe0f50, "fto%16?sui%7'zs%c\t%y1, %y0"},
-  {FPU_VFP_EXT_V1, 0x0ebc0b40, 0x0fbe0f50, "fto%16?sui%7'zd%c\t%y1, %z0"},
-  {FPU_VFP_EXT_V3, 0x0ebe0a40, 0x0fbe0f50, "fto%16?us%7?lhs%c\t%y1, #%5,0-3k"},
-  {FPU_VFP_EXT_V3, 0x0ebe0b40, 0x0fbe0f50, "fto%16?us%7?lhd%c\t%z1, #%5,0-3k"},
-  {FPU_VFP_EXT_V1, 0x0c500b10, 0x0fb00ff0, "fmrrd%c\t%12-15r, %16-19r, %z0"},
-  {FPU_VFP_EXT_V3, 0x0eb00a00, 0x0fb00ff0, "fconsts%c\t%y1, #%0-3,16-19d"},
-  {FPU_VFP_EXT_V3, 0x0eb00b00, 0x0fb00ff0, "fconstd%c\t%z1, #%0-3,16-19d"},
-  {FPU_VFP_EXT_V2, 0x0c400a10, 0x0ff00fd0, "fmsrr%c\t%y4, %12-15r, %16-19r"},
-  {FPU_VFP_EXT_V2, 0x0c400b10, 0x0ff00fd0, "fmdrr%c\t%z0, %12-15r, %16-19r"},
-  {FPU_VFP_EXT_V2, 0x0c500a10, 0x0ff00fd0, "fmrrs%c\t%12-15r, %16-19r, %y4"},
-  {FPU_VFP_EXT_V1xD, 0x0e000a00, 0x0fb00f50, "fmacs%c\t%y1, %y2, %y0"},
-  {FPU_VFP_EXT_V1xD, 0x0e000a40, 0x0fb00f50, "fnmacs%c\t%y1, %y2, %y0"},
-  {FPU_VFP_EXT_V1, 0x0e000b00, 0x0fb00f50, "fmacd%c\t%z1, %z2, %z0"},
-  {FPU_VFP_EXT_V1, 0x0e000b40, 0x0fb00f50, "fnmacd%c\t%z1, %z2, %z0"},
-  {FPU_VFP_EXT_V1xD, 0x0e100a00, 0x0fb00f50, "fmscs%c\t%y1, %y2, %y0"},
-  {FPU_VFP_EXT_V1xD, 0x0e100a40, 0x0fb00f50, "fnmscs%c\t%y1, %y2, %y0"},
-  {FPU_VFP_EXT_V1, 0x0e100b00, 0x0fb00f50, "fmscd%c\t%z1, %z2, %z0"},
-  {FPU_VFP_EXT_V1, 0x0e100b40, 0x0fb00f50, "fnmscd%c\t%z1, %z2, %z0"},
-  {FPU_VFP_EXT_V1xD, 0x0e200a00, 0x0fb00f50, "fmuls%c\t%y1, %y2, %y0"},
-  {FPU_VFP_EXT_V1xD, 0x0e200a40, 0x0fb00f50, "fnmuls%c\t%y1, %y2, %y0"},
-  {FPU_VFP_EXT_V1, 0x0e200b00, 0x0fb00f50, "fmuld%c\t%z1, %z2, %z0"},
-  {FPU_VFP_EXT_V1, 0x0e200b40, 0x0fb00f50, "fnmuld%c\t%z1, %z2, %z0"},
-  {FPU_VFP_EXT_V1xD, 0x0e300a00, 0x0fb00f50, "fadds%c\t%y1, %y2, %y0"},
-  {FPU_VFP_EXT_V1xD, 0x0e300a40, 0x0fb00f50, "fsubs%c\t%y1, %y2, %y0"},
-  {FPU_VFP_EXT_V1, 0x0e300b00, 0x0fb00f50, "faddd%c\t%z1, %z2, %z0"},
-  {FPU_VFP_EXT_V1, 0x0e300b40, 0x0fb00f50, "fsubd%c\t%z1, %z2, %z0"},
-  {FPU_VFP_EXT_V1xD, 0x0e800a00, 0x0fb00f50, "fdivs%c\t%y1, %y2, %y0"},
-  {FPU_VFP_EXT_V1, 0x0e800b00, 0x0fb00f50, "fdivd%c\t%z1, %z2, %z0"},
-  {FPU_VFP_EXT_V1xD, 0x0d200a00, 0x0fb00f00, "fstmdbs%c\t%16-19r!, %y3"},
-  {FPU_VFP_EXT_V1xD, 0x0d200b00, 0x0fb00f00, "fstmdb%0?xd%c\t%16-19r!, %z3"},
-  {FPU_VFP_EXT_V1xD, 0x0d300a00, 0x0fb00f00, "fldmdbs%c\t%16-19r!, %y3"},
-  {FPU_VFP_EXT_V1xD, 0x0d300b00, 0x0fb00f00, "fldmdb%0?xd%c\t%16-19r!, %z3"},
-  {FPU_VFP_EXT_V1xD, 0x0d000a00, 0x0f300f00, "fsts%c\t%y1, %A"},
-  {FPU_VFP_EXT_V1, 0x0d000b00, 0x0f300f00, "fstd%c\t%z1, %A"},
-  {FPU_VFP_EXT_V1xD, 0x0d100a00, 0x0f300f00, "flds%c\t%y1, %A"},
-  {FPU_VFP_EXT_V1, 0x0d100b00, 0x0f300f00, "fldd%c\t%z1, %A"},
-  {FPU_VFP_EXT_V1xD, 0x0c800a00, 0x0f900f00, "fstmias%c\t%16-19r%21'!, %y3"},
-  {FPU_VFP_EXT_V1xD, 0x0c800b00, 0x0f900f00, "fstmia%0?xd%c\t%16-19r%21'!, %z3"},
-  {FPU_VFP_EXT_V1xD, 0x0c900a00, 0x0f900f00, "fldmias%c\t%16-19r%21'!, %y3"},
-  {FPU_VFP_EXT_V1xD, 0x0c900b00, 0x0f900f00, "fldmia%0?xd%c\t%16-19r%21'!, %z3"},
+  {FPU_VFP_EXT_V1xD, 0x0ee00a10, 0x0fff0fff, "vmsr%c\tfpsid, %12-15r"},
+  {FPU_VFP_EXT_V1xD, 0x0ee10a10, 0x0fff0fff, "vmsr%c\tfpscr, %12-15r"},
+  {FPU_VFP_EXT_V1xD, 0x0ee60a10, 0x0fff0fff, "vmsr%c\tmvfr1, %12-15r"},
+  {FPU_VFP_EXT_V1xD, 0x0ee70a10, 0x0fff0fff, "vmsr%c\tmvfr0, %12-15r"},
+  {FPU_VFP_EXT_V1xD, 0x0ee80a10, 0x0fff0fff, "vmsr%c\tfpexc, %12-15r"},
+  {FPU_VFP_EXT_V1xD, 0x0ee90a10, 0x0fff0fff, "vmsr%c\tfpinst, %12-15r\t@ Impl def"},
+  {FPU_VFP_EXT_V1xD, 0x0eea0a10, 0x0fff0fff, "vmsr%c\tfpinst2, %12-15r\t@ Impl def"},
+  {FPU_VFP_EXT_V1xD, 0x0ef00a10, 0x0fff0fff, "vmrs%c\t%12-15r, fpsid"},
+  {FPU_VFP_EXT_V1xD, 0x0ef1fa10, 0x0fffffff, "vmrs%c\tAPSR_nzcv, fpscr"},
+  {FPU_VFP_EXT_V1xD, 0x0ef10a10, 0x0fff0fff, "vmrs%c\t%12-15r, fpscr"},
+  {FPU_VFP_EXT_V1xD, 0x0ef60a10, 0x0fff0fff, "vmrs%c\t%12-15r, mvfr1"},
+  {FPU_VFP_EXT_V1xD, 0x0ef70a10, 0x0fff0fff, "vmrs%c\t%12-15r, mvfr0"},
+  {FPU_VFP_EXT_V1xD, 0x0ef80a10, 0x0fff0fff, "vmrs%c\t%12-15r, fpexc"},
+  {FPU_VFP_EXT_V1xD, 0x0ef90a10, 0x0fff0fff, "vmrs%c\t%12-15r, fpinst\t@ Impl def"},
+  {FPU_VFP_EXT_V1xD, 0x0efa0a10, 0x0fff0fff, "vmrs%c\t%12-15r, fpinst2\t@ Impl def"},
+  {FPU_VFP_EXT_V1, 0x0e000b10, 0x0fd00fff, "vmov%c.32\t%z2[%21d], %12-15r"},
+  {FPU_VFP_EXT_V1, 0x0e100b10, 0x0fd00fff, "vmov%c.32\t%12-15r, %z2[%21d]"},
+  {FPU_VFP_EXT_V1xD, 0x0ee00a10, 0x0ff00fff, "vmsr%c\t<impl def %16-19x>, %12-15r"},
+  {FPU_VFP_EXT_V1xD, 0x0ef00a10, 0x0ff00fff, "vmrs%c\t%12-15r, <impl def %16-19x>"},
+  {FPU_VFP_EXT_V1xD, 0x0e000a10, 0x0ff00f7f, "vmov%c\t%y2, %12-15r"},
+  {FPU_VFP_EXT_V1xD, 0x0e100a10, 0x0ff00f7f, "vmov%c\t%12-15r, %y2"},
+  {FPU_VFP_EXT_V1xD, 0x0eb50a40, 0x0fbf0f70, "vcmp%7'e%c.f32\t%y1, #0.0"},
+  {FPU_VFP_EXT_V1, 0x0eb50b40, 0x0fbf0f70, "vcmp%7'e%c.f64\t%z1, #0.0"},
+  {FPU_VFP_EXT_V1xD, 0x0eb00a40, 0x0fbf0fd0, "vmov%c.f32\t%y1, %y0"},
+  {FPU_VFP_EXT_V1xD, 0x0eb00ac0, 0x0fbf0fd0, "vabs%c.f32\t%y1, %y0"},
+  {FPU_VFP_EXT_V1, 0x0eb00b40, 0x0fbf0fd0, "vmov%c.f64\t%z1, %z0"},
+  {FPU_VFP_EXT_V1, 0x0eb00bc0, 0x0fbf0fd0, "vabs%c.f64\t%z1, %z0"},
+  {FPU_VFP_EXT_V1xD, 0x0eb10a40, 0x0fbf0fd0, "vneg%c.f32\t%y1, %y0"},
+  {FPU_VFP_EXT_V1xD, 0x0eb10ac0, 0x0fbf0fd0, "vsqrt%c.f32\t%y1, %y0"},
+  {FPU_VFP_EXT_V1, 0x0eb10b40, 0x0fbf0fd0, "vneg%c.f64\t%z1, %z0"},
+  {FPU_VFP_EXT_V1, 0x0eb10bc0, 0x0fbf0fd0, "vsqrt%c.f64\t%z1, %z0"},
+  {FPU_VFP_EXT_V1, 0x0eb70ac0, 0x0fbf0fd0, "vcvt%c.f64.f32\t%z1, %y0"},
+  {FPU_VFP_EXT_V1, 0x0eb70bc0, 0x0fbf0fd0, "vcvt%c.f32.f64\t%y1, %z0"},
+  {FPU_VFP_EXT_V1xD, 0x0eb80a40, 0x0fbf0f50, "vcvt%c.f32.%7?su32\t%y1, %y0"},
+  {FPU_VFP_EXT_V1, 0x0eb80b40, 0x0fbf0f50, "vcvt%c.f64.%7?su32\t%z1, %y0"},
+  {FPU_VFP_EXT_V1xD, 0x0eb40a40, 0x0fbf0f50, "vcmp%7'e%c.f32\t%y1, %y0"},
+  {FPU_VFP_EXT_V1, 0x0eb40b40, 0x0fbf0f50, "vcmp%7'e%c.f64\t%z1, %z0"},
+  {FPU_VFP_EXT_V3, 0x0eba0a40, 0x0fbe0f50, "vcvt%c.f32.%16?us%7?31%7?26\t%y1, %y1, #%5,0-3k"},
+  {FPU_VFP_EXT_V3, 0x0eba0b40, 0x0fbe0f50, "vcvt%c.f64.%16?us%7?31%7?26\t%z1, %z1, #%5,0-3k"},
+  {FPU_VFP_EXT_V1xD, 0x0ebc0a40, 0x0fbe0f50, "vcvt%7`r%c.%16?su32.f32\t%y1, %y0"},
+  {FPU_VFP_EXT_V1, 0x0ebc0b40, 0x0fbe0f50, "vcvt%7`r%c.%16?su32.f64\t%y1, %z0"},
+  {FPU_VFP_EXT_V3, 0x0ebe0a40, 0x0fbe0f50, "vcvt%c.%16?us%7?31%7?26.f32\t%y1, %y1, #%5,0-3k"},
+  {FPU_VFP_EXT_V3, 0x0ebe0b40, 0x0fbe0f50, "vcvt%c.%16?us%7?31%7?26.f64\t%z1, %z1, #%5,0-3k"},
+  {FPU_VFP_EXT_V1, 0x0c500b10, 0x0fb00ff0, "vmov%c\t%12-15r, %16-19r, %z0"},
+  {FPU_VFP_EXT_V3, 0x0eb00a00, 0x0fb00ff0, "vmov%c.f32\t%y1, #%0-3,16-19d"},
+  {FPU_VFP_EXT_V3, 0x0eb00b00, 0x0fb00ff0, "vmov%c.f64\t%z1, #%0-3,16-19d"},
+  {FPU_VFP_EXT_V2, 0x0c400a10, 0x0ff00fd0, "vmov%c\t%y4, %12-15r, %16-19r"},
+  {FPU_VFP_EXT_V2, 0x0c400b10, 0x0ff00fd0, "vmov%c\t%z0, %12-15r, %16-19r"},
+  {FPU_VFP_EXT_V2, 0x0c500a10, 0x0ff00fd0, "vmov%c\t%12-15r, %16-19r, %y4"},
+  {FPU_VFP_EXT_V1xD, 0x0e000a00, 0x0fb00f50, "vmla%c.f32\t%y1, %y2, %y0"},
+  {FPU_VFP_EXT_V1xD, 0x0e000a40, 0x0fb00f50, "vmls%c.f32\t%y1, %y2, %y0"},
+  {FPU_VFP_EXT_V1, 0x0e000b00, 0x0fb00f50, "vmla%c.f64\t%z1, %z2, %z0"},
+  {FPU_VFP_EXT_V1, 0x0e000b40, 0x0fb00f50, "vmls%c.f64\t%z1, %z2, %z0"},
+  {FPU_VFP_EXT_V1xD, 0x0e100a00, 0x0fb00f50, "vnmls%c.f32\t%y1, %y2, %y0"},
+  {FPU_VFP_EXT_V1xD, 0x0e100a40, 0x0fb00f50, "vnmla%c.f32\t%y1, %y2, %y0"},
+  {FPU_VFP_EXT_V1, 0x0e100b00, 0x0fb00f50, "vnmls%c.f64\t%z1, %z2, %z0"},
+  {FPU_VFP_EXT_V1, 0x0e100b40, 0x0fb00f50, "vnmla%c.f64\t%z1, %z2, %z0"},
+  {FPU_VFP_EXT_V1xD, 0x0e200a00, 0x0fb00f50, "vmul%c.f32\t%y1, %y2, %y0"},
+  {FPU_VFP_EXT_V1xD, 0x0e200a40, 0x0fb00f50, "vnmul%c.f32\t%y1, %y2, %y0"},
+  {FPU_VFP_EXT_V1, 0x0e200b00, 0x0fb00f50, "vmul%c.f64\t%z1, %z2, %z0"},
+  {FPU_VFP_EXT_V1, 0x0e200b40, 0x0fb00f50, "vnmul%c.f64\t%z1, %z2, %z0"},
+  {FPU_VFP_EXT_V1xD, 0x0e300a00, 0x0fb00f50, "vadd%c.f32\t%y1, %y2, %y0"},
+  {FPU_VFP_EXT_V1xD, 0x0e300a40, 0x0fb00f50, "vsub%c.f32\t%y1, %y2, %y0"},
+  {FPU_VFP_EXT_V1, 0x0e300b00, 0x0fb00f50, "vadd%c.f64\t%z1, %z2, %z0"},
+  {FPU_VFP_EXT_V1, 0x0e300b40, 0x0fb00f50, "vsub%c.f64\t%z1, %z2, %z0"},
+  {FPU_VFP_EXT_V1xD, 0x0e800a00, 0x0fb00f50, "vdiv%c.f32\t%y1, %y2, %y0"},
+  {FPU_VFP_EXT_V1, 0x0e800b00, 0x0fb00f50, "vdiv%c.f64\t%z1, %z2, %z0"},
 
   /* Cirrus coprocessor instructions.  */
   {ARM_CEXT_MAVERICK, 0x0d100400, 0x0f500f00, "cfldrs%c\tmvf%12-15d, %A"},
@@ -504,6 +506,10 @@ static const struct opcode32 neon_opcodes[] =
   {FPU_NEON_EXT_V1, 0xf3b00800, 0xffb00c50, "vtbl%c.8\t%12-15,22D, %F, %0-3,5D"},
   {FPU_NEON_EXT_V1, 0xf3b00840, 0xffb00c50, "vtbx%c.8\t%12-15,22D, %F, %0-3,5D"},
   
+  /* Half-precision conversions.  */
+  {FPU_NEON_FP16,   0xf3b60600, 0xffbf0fd0, "vcvt%c.f16.f32\t%12-15,22D, %0-3,5Q"},
+  {FPU_NEON_FP16,   0xf3b60700, 0xffbf0fd0, "vcvt%c.f32.f16\t%12-15,22Q, %0-3,5D"},
+
   /* Two registers, miscellaneous */
   {FPU_NEON_EXT_V1, 0xf2880a10, 0xfebf0fd0, "vmovl%c.%24?us8\t%12-15,22Q, %0-3,5D"},
   {FPU_NEON_EXT_V1, 0xf2900a10, 0xfebf0fd0, "vmovl%c.%24?us16\t%12-15,22Q, %0-3,5D"},
@@ -1274,10 +1280,10 @@ static const struct opcode32 thumb32_opcodes[] =
   {ARM_EXT_V6T2, 0xfa80f040, 0xfff0f0f0, "uadd8%c\t%8-11r, %16-19r, %0-3r"},
   {ARM_EXT_V6T2, 0xfa80f050, 0xfff0f0f0, "uqadd8%c\t%8-11r, %16-19r, %0-3r"},
   {ARM_EXT_V6T2, 0xfa80f060, 0xfff0f0f0, "uhadd8%c\t%8-11r, %16-19r, %0-3r"},
-  {ARM_EXT_V6T2, 0xfa80f080, 0xfff0f0f0, "qadd%c\t%8-11r, %0-3r, %16-19r"},
-  {ARM_EXT_V6T2, 0xfa80f090, 0xfff0f0f0, "qdadd%c\t%8-11r, %0-3r, %16-19r"},
-  {ARM_EXT_V6T2, 0xfa80f0a0, 0xfff0f0f0, "qsub%c\t%8-11r, %0-3r, %16-19r"},
-  {ARM_EXT_V6T2, 0xfa80f0b0, 0xfff0f0f0, "qdsub%c\t%8-11r, %0-3r, %16-19r"},
+  {ARM_EXT_V6T2, 0xfa80f080, 0xfff0f0f0, "qadd%c\t%8-11r, %16-19r, %0-3r"},
+  {ARM_EXT_V6T2, 0xfa80f090, 0xfff0f0f0, "qdadd%c\t%8-11r, %16-19r, %0-3r"},
+  {ARM_EXT_V6T2, 0xfa80f0a0, 0xfff0f0f0, "qsub%c\t%8-11r, %16-19r, %0-3r"},
+  {ARM_EXT_V6T2, 0xfa80f0b0, 0xfff0f0f0, "qdsub%c\t%8-11r, %16-19r, %0-3r"},
   {ARM_EXT_V6T2, 0xfa90f000, 0xfff0f0f0, "sadd16%c\t%8-11r, %16-19r, %0-3r"},
   {ARM_EXT_V6T2, 0xfa90f010, 0xfff0f0f0, "qadd16%c\t%8-11r, %16-19r, %0-3r"},
   {ARM_EXT_V6T2, 0xfa90f020, 0xfff0f0f0, "shadd16%c\t%8-11r, %16-19r, %0-3r"},
@@ -1928,8 +1934,6 @@ print_insn_coprocessor (bfd_vma pc, struct disassemble_info *info, long given,
 			  switch (*c)
 			    {
 			    case '4': /* Sm pair */
-			      func (stream, "{");
-			      /* Fall through.  */
 			    case '0': /* Sm, Dm */
 			      regno = given & 0x0000000f;
 			      if (single)
@@ -1998,11 +2002,11 @@ print_insn_coprocessor (bfd_vma pc, struct disassemble_info *info, long given,
 			      func (stream, "}");
 			    }
 			  else if (*c == '4')
-			    func (stream, ", %c%d}", single ? 's' : 'd',
+			    func (stream, ", %c%d", single ? 's' : 'd',
 				  regno + 1);
 			}
 			break;
-			    
+
 		      case 'L':
 			switch (given & 0x00400100)
 			  {
@@ -3974,6 +3978,7 @@ print_insn (bfd_vma pc, struct disassemble_info *info, bfd_boolean little)
   int           status;
   int           is_thumb = FALSE;
   int           is_data = FALSE;
+  int           little_code;
   unsigned int	size = 4;
   void	 	(*printer) (bfd_vma, struct disassemble_info *, long);
   bfd_boolean   found = FALSE;
@@ -3985,6 +3990,10 @@ print_insn (bfd_vma pc, struct disassemble_info *info, bfd_boolean little)
       /* To avoid repeated parsing of these options, we remove them here.  */
       info->disassembler_options = NULL;
     }
+
+  /* Decide if our code is going to be little-endian, despite what the
+     function argument might say.  */
+  little_code = ((info->endian_code == BFD_ENDIAN_LITTLE) || little);
 
   /* First check the full symtab for a mapping symbol, even if there
      are no usable non-mapping symbols for this address.  */
@@ -4131,7 +4140,7 @@ print_insn (bfd_vma pc, struct disassemble_info *info, bfd_boolean little)
       size = 4;
 
       status = info->read_memory_func (pc, (bfd_byte *)b, 4, info);
-      if (little)
+      if (little_code)
 	given = (b[0]) | (b[1] << 8) | (b[2] << 16) | (b[3] << 24);
       else
 	given = (b[3]) | (b[2] << 8) | (b[1] << 16) | (b[0] << 24);
@@ -4147,7 +4156,7 @@ print_insn (bfd_vma pc, struct disassemble_info *info, bfd_boolean little)
       size = 2;
 
       status = info->read_memory_func (pc, (bfd_byte *)b, 2, info);
-      if (little)
+      if (little_code)
 	given = (b[0]) | (b[1] << 8);
       else
 	given = (b[1]) | (b[0] << 8);
@@ -4161,7 +4170,7 @@ print_insn (bfd_vma pc, struct disassemble_info *info, bfd_boolean little)
 	      || (given & 0xF800) == 0xE800)
 	    {
 	      status = info->read_memory_func (pc + 2, (bfd_byte *)b, 2, info);
-	      if (little)
+	      if (little_code)
 		given = (b[0]) | (b[1] << 8) | (given << 16);
 	      else
 		given = (b[1]) | (b[0] << 8) | (given << 16);
@@ -4172,7 +4181,7 @@ print_insn (bfd_vma pc, struct disassemble_info *info, bfd_boolean little)
 	}
 
       if (ifthen_address != pc)
-	find_ifthen_state(pc, info, little);
+	find_ifthen_state(pc, info, little_code);
 
       if (ifthen_state)
 	{
@@ -4210,6 +4219,12 @@ print_insn (bfd_vma pc, struct disassemble_info *info, bfd_boolean little)
 int
 print_insn_big_arm (bfd_vma pc, struct disassemble_info *info)
 {
+  /* Detect BE8-ness and record it in the disassembler info.  */
+  if (info->flavour == bfd_target_elf_flavour
+      && info->section != NULL
+      && (elf_elfheader (info->section->owner)->e_flags & EF_ARM_BE8))
+    info->endian_code = BFD_ENDIAN_LITTLE;
+
   return print_insn (pc, info, FALSE);
 }
 

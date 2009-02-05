@@ -141,7 +141,7 @@ Disassembly of section .text:
  1bb:	8d 90 90 90 90 90 [ 	]*lea    -0x6f6f6f70\(%eax\),%edx
  1c1:	8e 90 90 90 90 90 [ 	]*mov    -0x6f6f6f70\(%eax\),%ss
  1c7:	8f 80 90 90 90 90 [ 	]*popl   -0x6f6f6f70\(%eax\)
- 1cd:	90 [ 	]*nop    
+ 1cd:	90 [ 	]*nop
  1ce:	91 [ 	]*xchg   %eax,%ecx
  1cf:	92 [ 	]*xchg   %eax,%edx
  1d0:	93 [ 	]*xchg   %eax,%ebx
@@ -587,4 +587,8 @@ Disassembly of section .text:
  9f5:	85 c3 [ 	]*test   %eax,%ebx
  9f7:	85 d8 [ 	]*test   %ebx,%eax
  9f9:	85 18 [ 	]*test   %ebx,\(%eax\)
+[ 	]*[a-f0-9]+:	0f 4a 90 90 90 90 90 	cmovp  -0x6f6f6f70\(%eax\),%edx
+[ 	]*[a-f0-9]+:	0f 4b 90 90 90 90 90 	cmovnp -0x6f6f6f70\(%eax\),%edx
+[ 	]*[a-f0-9]+:	66 0f 4a 90 90 90 90 90 	cmovp  -0x6f6f6f70\(%eax\),%dx
+[ 	]*[a-f0-9]+:	66 0f 4b 90 90 90 90 90 	cmovnp -0x6f6f6f70\(%eax\),%dx
 #pass

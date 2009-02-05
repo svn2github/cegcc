@@ -52,7 +52,7 @@
 
 /* Like in ":GOT", ":GOTOFF" etc.  Other ports use '@', but that's in
    line_separator_chars for CRIS, so we avoid it.  */
-#define PIC_SUFFIX_CHAR ':'
+#define RELOC_SUFFIX_CHAR ':'
 
 /* This might be CRIS_INSN_NONE if we're assembling a prefix-insn only.
    Note that some prefix-insns might be assembled as CRIS_INSN_NORMAL.  */
@@ -148,11 +148,12 @@ static void s_syntax (int);
 static void s_cris_file (int);
 static void s_cris_loc (int);
 static void s_cris_arch (int);
+static void s_cris_dtpoff (int);
 
 /* Get ":GOT", ":GOTOFF", ":PLT" etc. suffixes.  */
-static void cris_get_pic_suffix (char **, bfd_reloc_code_real_type *,
-				 expressionS *);
-static unsigned int cris_get_pic_reloc_size (bfd_reloc_code_real_type);
+static void cris_get_reloc_suffix (char **, bfd_reloc_code_real_type *,
+				   expressionS *);
+static unsigned int cris_get_specified_reloc_size (bfd_reloc_code_real_type);
 
 /* All the .syntax functions.  */
 static void cris_force_reg_prefix (void);
@@ -183,6 +184,9 @@ static bfd_boolean symbols_have_leading_underscore
 /* Whether or not we allow PIC, and expand to PIC-friendly constructs.  */
 static bfd_boolean pic = FALSE;
 
+/* Whether or not we allow TLS suffixes.  For the moment, we always do.  */
+static const bfd_boolean tls = TRUE;
+
 /* If we're configured for "cris", default to allow all v0..v10
    instructions and register names.  */
 #ifndef DEFAULT_CRIS_ARCH
@@ -195,6 +199,7 @@ static enum cris_archs cris_arch = XCONCAT2 (arch_,DEFAULT_CRIS_ARCH);
 const pseudo_typeS md_pseudo_table[] =
 {
   {"dword", cons, 4},
+  {"dtpoffd", s_cris_dtpoff, 4},
   {"syntax", s_syntax, 0},
   {"file", s_cris_file, 0},
   {"loc", s_cris_loc, 0},
@@ -531,6 +536,7 @@ cris_relax_frag (segT seg ATTRIBUTE_UNUSED, fragS *fragP,
      because of the different reasons that they aren't relaxable.  */
   switch (fragP->fr_subtype)
     {
+    case ENCODE_RELAX (STATE_COND_BRANCH_PIC, STATE_DWORD):
     case ENCODE_RELAX (STATE_COND_BRANCH, STATE_DWORD):
     case ENCODE_RELAX (STATE_COND_BRANCH_V32, STATE_DWORD):
     case ENCODE_RELAX (STATE_COND_BRANCH_COMMON, STATE_DWORD):
@@ -1252,7 +1258,7 @@ md_assemble (char *str)
       /* When the expression is unknown for a BDAP, it can need 0, 2 or 4
 	 extra bytes, so we handle it separately.  */
     case PREFIX_BDAP_IMM:
-      /* We only do it if the relocation is unspecified, i.e. not a PIC
+      /* We only do it if the relocation is unspecified, i.e. not a PIC or TLS
 	 relocation.  */
       if (prefix.reloc == BFD_RELOC_NONE)
 	{
@@ -1269,13 +1275,13 @@ md_assemble (char *str)
       md_number_to_chars (opcodep, (long) prefix.opcode, 2);
 
       /* Having a specified reloc only happens for DIP and for BDAP with
-	 PIC operands, but it is ok to drop through here for the other
+	 PIC or TLS operands, but it is ok to drop through here for the other
 	 prefixes as they can have no relocs specified.  */
       if (prefix.reloc != BFD_RELOC_NONE)
 	{
 	  unsigned int relocsize
 	    = (prefix.kind == PREFIX_DIP
-	       ? 4 : cris_get_pic_reloc_size (prefix.reloc));
+	       ? 4 : cris_get_specified_reloc_size (prefix.reloc));
 
 	  p = frag_more (relocsize);
 	  fix_new_exp (frag_now, (p - frag_now->fr_literal), relocsize,
@@ -1889,7 +1895,7 @@ cris_process_instruction (char *insn_text, struct cris_instruction *out_insnp,
 			 whether or not this is autoincrement mode.  */
 		      out_insnp->opcode |= (mode << 10);
 
-		      /* If there was a PIC reloc specifier, then it was
+		      /* If there was a reloc specifier, then it was
 			 attached to the prefix.  Note that we can't check
 			 that the reloc size matches, since we don't have
 			 all the operands yet in all cases.  */
@@ -1903,8 +1909,8 @@ cris_process_instruction (char *insn_text, struct cris_instruction *out_insnp,
 
 	    case 'N':
 	    case 'Y':
-	      /* Like 's', but immediate operand only.  Also does not
-		 modify insn.  There are no insns where a PIC reloc
+	      /* Like 's', but immediate operand only.  Also do not
+		 modify insn.  There are no insns where an explicit reloc
 		 specifier makes sense.  */
 	      if (cris_get_expression (&s, &out_insnp->expr))
 		{
@@ -1927,9 +1933,10 @@ cris_process_instruction (char *insn_text, struct cris_instruction *out_insnp,
 		     relocation.  */
 		  out_insnp->expr.X_add_number += 6;
 
-		  if (pic && *s == PIC_SUFFIX_CHAR)
-		    cris_get_pic_suffix (&s, &out_insnp->reloc,
-					 &out_insnp->expr);
+		  /* TLS specifiers do not make sense here.  */
+		  if (pic && *s == RELOC_SUFFIX_CHAR)
+		    cris_get_reloc_suffix (&s, &out_insnp->reloc,
+					   &out_insnp->expr);
 
 		  continue;
 		}
@@ -2194,13 +2201,18 @@ cris_process_instruction (char *insn_text, struct cris_instruction *out_insnp,
 		}
 
 	      /* If there was a relocation specified for the immediate
-		 expression (i.e. it had a PIC modifier) check that the
-		 size of the PIC relocation matches the size specified by
+		 expression (i.e. it had a PIC or TLS modifier) check that the
+		 size of the relocation matches the size specified by
 		 the opcode.  */
 	      if (out_insnp->reloc != BFD_RELOC_NONE
-		  && (cris_get_pic_reloc_size (out_insnp->reloc)
+		  && (cris_get_specified_reloc_size (out_insnp->reloc)
 		      != (unsigned int) out_insnp->imm_oprnd_size))
-		as_bad (_("PIC relocation size does not match operand size"));
+		as_bad (out_insnp->reloc == BFD_RELOC_CRIS_32_GD
+			|| out_insnp->reloc == BFD_RELOC_CRIS_32_TPREL
+			|| out_insnp->reloc == BFD_RELOC_CRIS_16_TPREL
+			|| out_insnp->reloc == BFD_RELOC_CRIS_32_IE
+			? _("TLS relocation size does not match operand size")
+			: _("PIC relocation size does not match operand size"));
 	    }
 	  else if (instruction->op == cris_muls_op
 		   || instruction->op == cris_mulu_op)
@@ -2715,8 +2727,8 @@ get_autoinc_prefix_or_indir_op (char **cPP, struct cris_prefix *prefixp,
 
 			  /* We tentatively put an opcode corresponding to
 			     a 32-bit operand here, although it may be
-			     relaxed when there's no PIC specifier for the
-			     operand.  */
+			     relaxed when there's no relocation
+			     specifier for the operand.  */
 			  prefixp->opcode
 			    = (BDAP_INDIR_OPCODE
 			       | (prefixp->base_reg_number << 12)
@@ -2726,18 +2738,18 @@ get_autoinc_prefix_or_indir_op (char **cPP, struct cris_prefix *prefixp,
 
 			  /* This can have a PIC suffix, specifying reloc
 			     type to use.  */
-			  if (pic && **cPP == PIC_SUFFIX_CHAR)
+			  if ((pic || tls) && **cPP == RELOC_SUFFIX_CHAR)
 			    {
 			      unsigned int relocsize;
 
-			      cris_get_pic_suffix (cPP, &prefixp->reloc,
-						   &prefixp->expr);
+			      cris_get_reloc_suffix (cPP, &prefixp->reloc,
+						     &prefixp->expr);
 
 			      /* Tweak the size of the immediate operand
 				 in the prefix opcode if it isn't what we
 				 set.  */
 			      relocsize
-				= cris_get_pic_reloc_size (prefixp->reloc);
+				= cris_get_specified_reloc_size (prefixp->reloc);
 			      if (relocsize != 4)
 				prefixp->opcode
 				  = ((prefixp->opcode & ~(3 << 4))
@@ -2763,8 +2775,9 @@ get_autoinc_prefix_or_indir_op (char **cPP, struct cris_prefix *prefixp,
 			     in the blanks and break out to match the
 			     final ']'.
 
-			     Note that we don't allow a PIC suffix for an
-			     operand with a minus sign.  */
+			     Note that we don't allow a relocation
+			     suffix for an operand with a minus
+			     sign.  */
 			  prefixp->kind = PREFIX_BDAP_IMM;
 			  break;
 			}
@@ -2802,8 +2815,8 @@ get_autoinc_prefix_or_indir_op (char **cPP, struct cris_prefix *prefixp,
 
       /* This can have a PIC suffix, specifying reloc type to use.  The
 	 caller must check that the reloc size matches the operand size.  */
-      if (pic && **cPP == PIC_SUFFIX_CHAR)
-	cris_get_pic_suffix (cPP, &prefixp->reloc, imm_exprP);
+      if ((pic || tls) && **cPP == RELOC_SUFFIX_CHAR)
+	cris_get_reloc_suffix (cPP, &prefixp->reloc, imm_exprP);
 
       return 1;
     }
@@ -2971,15 +2984,15 @@ get_3op_or_dip_prefix_op (char **cPP, struct cris_prefix *prefixp)
 		   | REG_PC /* << 0 */);
 
 	      /* This can have a PIC suffix, specifying reloc type to use.  */
-	      if (pic && **cPP == PIC_SUFFIX_CHAR)
+	      if ((pic || tls) && **cPP == RELOC_SUFFIX_CHAR)
 		{
 		  unsigned int relocsize;
 
-		  cris_get_pic_suffix (cPP, &prefixp->reloc, &prefixp->expr);
+		  cris_get_reloc_suffix (cPP, &prefixp->reloc, &prefixp->expr);
 
 		  /* Tweak the size of the immediate operand in the prefix
 		     opcode if it isn't what we set.  */
-		  relocsize = cris_get_pic_reloc_size (prefixp->reloc);
+		  relocsize = cris_get_specified_reloc_size (prefixp->reloc);
 		  if (relocsize != 4)
 		    prefixp->opcode
 		      = ((prefixp->opcode & ~(3 << 4))
@@ -3035,6 +3048,10 @@ get_3op_or_dip_prefix_op (char **cPP, struct cris_prefix *prefixp)
       prefixp->kind = PREFIX_DIP;
       prefixp->opcode = DIP_OPCODE | (AUTOINCR_BIT << 8) | REG_PC;
       prefixp->reloc = BFD_RELOC_32;
+
+      /* For :GD and :IE, it makes sense to have TLS specifiers here.  */
+      if ((pic || tls) && **cPP == RELOC_SUFFIX_CHAR)
+	cris_get_reloc_suffix (cPP, &prefixp->reloc, &prefixp->expr);
     }
   else
     /* Neither '[' nor register nor expression.  We lose.  */
@@ -3426,13 +3443,19 @@ gen_cond_branch_32 (char *opcodep, char *writep, fragS *fragP,
     md_number_to_chars (writep + 8, MOVE_PC_INCR_OPCODE_SUFFIX, 2);
 }
 
-/* Get the size of an immediate-reloc in bytes.  Only valid for PIC
-   relocs.  */
+/* Get the size of an immediate-reloc in bytes.  Only valid for
+   specified relocs (TLS, PIC).  */
 
 static unsigned int
-cris_get_pic_reloc_size (bfd_reloc_code_real_type reloc)
+cris_get_specified_reloc_size (bfd_reloc_code_real_type reloc)
 {
-  return reloc == BFD_RELOC_CRIS_16_GOTPLT || reloc == BFD_RELOC_CRIS_16_GOT
+  return
+    reloc == BFD_RELOC_CRIS_16_GOTPLT
+    || reloc == BFD_RELOC_CRIS_16_GOT
+    || reloc == BFD_RELOC_CRIS_16_GOT_GD
+    || reloc == BFD_RELOC_CRIS_16_DTPREL
+    || reloc == BFD_RELOC_CRIS_16_GOT_TPREL
+    || reloc == BFD_RELOC_CRIS_16_TPREL
     ? 2 : 4;
 }
 
@@ -3440,8 +3463,8 @@ cris_get_pic_reloc_size (bfd_reloc_code_real_type reloc)
    Adjust *EXPRP with any addend found after the PIC suffix.  */
 
 static void
-cris_get_pic_suffix (char **cPP, bfd_reloc_code_real_type *relocp,
-		     expressionS *exprP)
+cris_get_reloc_suffix (char **cPP, bfd_reloc_code_real_type *relocp,
+		       expressionS *exprP)
 {
   char *s = *cPP;
   unsigned int i;
@@ -3452,10 +3475,14 @@ cris_get_pic_suffix (char **cPP, bfd_reloc_code_real_type *relocp,
     const char *const suffix;
     unsigned int len;
     bfd_reloc_code_real_type reloc;
+    bfd_boolean pic_p;
+    bfd_boolean tls_p;
   } pic_suffixes[] =
     {
 #undef PICMAP
-#define PICMAP(s, r) {s, sizeof (s) - 1, r}
+#define PICMAP(s, r) {s, sizeof (s) - 1, r, TRUE, FALSE}
+#define PICTLSMAP(s, r) {s, sizeof (s) - 1, r, TRUE, TRUE}
+#define TLSMAP(s, r) {s, sizeof (s) - 1, r, FALSE, TRUE}
       /* Keep this in order with longest unambiguous prefix first.  */
       PICMAP ("GOTPLT16", BFD_RELOC_CRIS_16_GOTPLT),
       PICMAP ("GOTPLT", BFD_RELOC_CRIS_32_GOTPLT),
@@ -3463,7 +3490,17 @@ cris_get_pic_suffix (char **cPP, bfd_reloc_code_real_type *relocp,
       PICMAP ("PLT", BFD_RELOC_CRIS_32_PLT_PCREL),
       PICMAP ("GOTOFF", BFD_RELOC_CRIS_32_GOTREL),
       PICMAP ("GOT16", BFD_RELOC_CRIS_16_GOT),
-      PICMAP ("GOT", BFD_RELOC_CRIS_32_GOT)
+      PICMAP ("GOT", BFD_RELOC_CRIS_32_GOT),
+      PICTLSMAP ("GDGOTREL16", BFD_RELOC_CRIS_16_GOT_GD),
+      PICTLSMAP ("GDGOTREL", BFD_RELOC_CRIS_32_GOT_GD),
+      TLSMAP ("GD", BFD_RELOC_CRIS_32_GD),
+      PICTLSMAP ("DTPREL16", BFD_RELOC_CRIS_16_DTPREL),
+      PICTLSMAP ("DTPREL", BFD_RELOC_CRIS_32_DTPREL),
+      TLSMAP ("IE", BFD_RELOC_CRIS_32_IE),
+      PICTLSMAP ("TPOFFGOT16", BFD_RELOC_CRIS_16_GOT_TPREL),
+      PICTLSMAP ("TPOFFGOT", BFD_RELOC_CRIS_32_GOT_TPREL),
+      TLSMAP ("TPOFF16", BFD_RELOC_CRIS_16_TPREL),
+      TLSMAP ("TPOFF", BFD_RELOC_CRIS_32_TPREL)
     };
 
   /* We've already seen the ':', so consume it.  */
@@ -3472,7 +3509,11 @@ cris_get_pic_suffix (char **cPP, bfd_reloc_code_real_type *relocp,
   for (i = 0; i < sizeof (pic_suffixes)/sizeof (pic_suffixes[0]); i++)
     {
       if (strncmp (s, pic_suffixes[i].suffix, pic_suffixes[i].len) == 0
-	  && ! is_part_of_name (s[pic_suffixes[i].len]))
+	  && ! is_part_of_name (s[pic_suffixes[i].len])
+	  /* PIC and non-PIC relocations are exclusive.  */
+	  && (pic != 0) == (pic_suffixes[i].pic_p != 0)
+	  /* But TLS can be active for non-TLS relocations too.  */
+	  && (pic_suffixes[i].tls_p == 0 || tls))
 	{
 	  /* We have a match.  Consume the suffix and set the relocation
 	     type.   */
@@ -3580,10 +3621,12 @@ cris_number_to_imm (char *bufp, long val, int n, fixS *fixP, segT seg)
 	;
       }
 
-  /* Only do this for old-arch binaries.  */
+  /* Only use the computed value for old-arch binaries.  For all
+     others, where we're going to output a relocation, put 0 in the
+     code.  */
   if (cris_arch != arch_cris_any_v0_v10
       && (fixP->fx_addsy != NULL || fixP->fx_pcrel))
-    return;
+    val = 0;
 
   switch (fixP->fx_r_type)
     {
@@ -3591,6 +3634,22 @@ cris_number_to_imm (char *bufp, long val, int n, fixS *fixP, segT seg)
 	 well as the reloc addend.  Keep it that way for now, to simplify
 	 regression tests on the object file contents.	FIXME:	Seems
 	 uninteresting now that we have a test suite.  */
+
+    case BFD_RELOC_CRIS_32_GOT_GD:
+    case BFD_RELOC_CRIS_16_GOT_GD:
+    case BFD_RELOC_CRIS_32_GD:
+    case BFD_RELOC_CRIS_32_IE:
+    case BFD_RELOC_CRIS_32_DTPREL:
+    case BFD_RELOC_CRIS_16_DTPREL:
+    case BFD_RELOC_CRIS_32_GOT_TPREL:
+    case BFD_RELOC_CRIS_16_GOT_TPREL:
+    case BFD_RELOC_CRIS_32_TPREL:
+    case BFD_RELOC_CRIS_16_TPREL:
+#if defined (OBJ_ELF) || defined (OBJ_MAYBE_ELF)
+      if (IS_ELF && fixP->fx_addsy != NULL)
+	S_SET_THREAD_LOCAL (fixP->fx_addsy);
+#endif
+      /* Fall through.  */
 
     case BFD_RELOC_CRIS_16_GOT:
     case BFD_RELOC_CRIS_32_GOT:
@@ -3601,13 +3660,14 @@ cris_number_to_imm (char *bufp, long val, int n, fixS *fixP, segT seg)
     case BFD_RELOC_CRIS_32_PLT_PCREL:
       /* We don't want to put in any kind of non-zero bits in the data
 	 being relocated for these.  */
+      md_number_to_chars (bufp, 0, n);
       break;
 
     case BFD_RELOC_32_PCREL:
-      /* If this one isn't fully resolved, we don't want to put anything
+      /* If this one isn't fully resolved, we don't want to put non-zero
 	 in the object.  */
       if (fixP->fx_addsy != NULL || fixP->fx_pcrel)
-	break;
+	val = 0;
 
       /* Fall through.  */
     case BFD_RELOC_32:
@@ -3629,38 +3689,30 @@ cris_number_to_imm (char *bufp, long val, int n, fixS *fixP, segT seg)
       if (val > 0xffff || val < -32768)
 	as_bad_where (fixP->fx_file, fixP->fx_line,
 		      _("Value not in 16 bit range: %ld"), val);
-      if (! fixP->fx_addsy)
-	{
-	  bufp[1] = (val >> 8) & 0xFF;
-	  bufp[0] = val & 0xFF;
-	}
+      bufp[1] = (val >> 8) & 0xFF;
+      bufp[0] = val & 0xFF;
       break;
 
     case BFD_RELOC_CRIS_SIGNED_16:
       if (val > 32767 || val < -32768)
 	as_bad_where (fixP->fx_file, fixP->fx_line,
 		      _("Value not in 16 bit signed range: %ld"), val);
-      if (! fixP->fx_addsy)
-	{
-	  bufp[1] = (val >> 8) & 0xFF;
-	  bufp[0] = val & 0xFF;
-	}
+      bufp[1] = (val >> 8) & 0xFF;
+      bufp[0] = val & 0xFF;
       break;
 
     case BFD_RELOC_8:
     case BFD_RELOC_8_PCREL:
       if (val > 255 || val < -128)
 	as_bad_where (fixP->fx_file, fixP->fx_line, _("Value not in 8 bit range: %ld"), val);
-      if (! fixP->fx_addsy)
-	bufp[0] = val & 0xFF;
+      bufp[0] = val & 0xFF;
       break;
 
     case BFD_RELOC_CRIS_SIGNED_8:
       if (val > 127 || val < -128)
 	as_bad_where (fixP->fx_file, fixP->fx_line,
 		      _("Value not in 8 bit signed range: %ld"), val);
-      if (! fixP->fx_addsy)
-	bufp[0] = val & 0xFF;
+      bufp[0] = val & 0xFF;
       break;
 
     case BFD_RELOC_CRIS_LAPCQ_OFFSET:
@@ -3670,37 +3722,32 @@ cris_number_to_imm (char *bufp, long val, int n, fixS *fixP, segT seg)
       if (val > 15 || val < 0)
 	as_bad_where (fixP->fx_file, fixP->fx_line,
 		      _("Value not in 4 bit unsigned range: %ld"), val);
-      if (! fixP->fx_addsy)
-	bufp[0] |= val & 0x0F;
+      bufp[0] |= val & 0x0F;
       break;
 
     case BFD_RELOC_CRIS_UNSIGNED_5:
       if (val > 31 || val < 0)
 	as_bad_where (fixP->fx_file, fixP->fx_line,
 		      _("Value not in 5 bit unsigned range: %ld"), val);
-      if (! fixP->fx_addsy)
-	bufp[0] |= val & 0x1F;
+      bufp[0] |= val & 0x1F;
       break;
 
     case BFD_RELOC_CRIS_SIGNED_6:
       if (val > 31 || val < -32)
 	as_bad_where (fixP->fx_file, fixP->fx_line,
 		      _("Value not in 6 bit range: %ld"), val);
-      if (! fixP->fx_addsy)
-	bufp[0] |= val & 0x3F;
+      bufp[0] |= val & 0x3F;
       break;
 
     case BFD_RELOC_CRIS_UNSIGNED_6:
       if (val > 63 || val < 0)
 	as_bad_where (fixP->fx_file, fixP->fx_line,
 		      _("Value not in 6 bit unsigned range: %ld"), val);
-      if (! fixP->fx_addsy)
-	bufp[0] |= val & 0x3F;
+      bufp[0] |= val & 0x3F;
       break;
 
     case BFD_RELOC_CRIS_BDISP8:
-      if (! fixP->fx_addsy)
-	bufp[0] = branch_disp (val);
+      bufp[0] = branch_disp (val);
       break;
 
     case BFD_RELOC_NONE:
@@ -3870,6 +3917,16 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS *fixP)
     case BFD_RELOC_CRIS_UNSIGNED_8:
     case BFD_RELOC_CRIS_UNSIGNED_16:
     case BFD_RELOC_CRIS_LAPCQ_OFFSET:
+    case BFD_RELOC_CRIS_32_GOT_GD:
+    case BFD_RELOC_CRIS_16_GOT_GD:
+    case BFD_RELOC_CRIS_32_GD:
+    case BFD_RELOC_CRIS_32_IE:
+    case BFD_RELOC_CRIS_32_DTPREL:
+    case BFD_RELOC_CRIS_16_DTPREL:
+    case BFD_RELOC_CRIS_32_GOT_TPREL:
+    case BFD_RELOC_CRIS_16_GOT_TPREL:
+    case BFD_RELOC_CRIS_32_TPREL:
+    case BFD_RELOC_CRIS_16_TPREL:
       code = fixP->fx_r_type;
       break;
     default:
@@ -4157,6 +4214,30 @@ s_cris_loc (int dummy)
   else
     dwarf2_directive_loc (dummy);
 }
+
+/* Worker for .dtpoffd: generate a R_CRIS_32_DTPREL reloc, as for
+   expr:DTPREL but for use in debug info.  */
+
+static void
+s_cris_dtpoff (int bytes)
+{
+  expressionS ex;
+  char *p;
+
+  if (bytes != 4)
+    as_fatal (_("internal inconsistency problem: %s called for %d bytes"),
+	      __FUNCTION__, bytes);
+
+  expression (&ex);
+
+  p = frag_more (bytes);
+  md_number_to_chars (p, 0, bytes);
+  fix_new_exp (frag_now, p - frag_now->fr_literal, bytes, &ex, FALSE,
+	       BFD_RELOC_CRIS_32_DTPREL);
+
+  demand_empty_rest_of_line ();
+}
+
 
 /* Translate a <arch> string (as common to --march=<arch> and .arch <arch>)
    into an enum.  If the string *STR is recognized, *STR is updated to point

@@ -1,5 +1,5 @@
 /* prdbg.c -- Print out generic debugging information.
-   Copyright 1995, 1996, 1999, 2002, 2003, 2004, 2006, 2007
+   Copyright 1995, 1996, 1999, 2002, 2003, 2004, 2006, 2007, 2008
    Free Software Foundation, Inc.
    Written by Ian Lance Taylor <ian@cygnus.com>.
    Tags style generation written by Salvador E. Tropea <set@computer.org>.
@@ -499,6 +499,26 @@ print_vma (bfd_vma vma, char *buf, bfd_boolean unsignedp, bfd_boolean hexp)
       else
 	sprintf (buf, "%ld", (long) vma);
     }
+#if BFD_HOST_64BIT_LONG_LONG
+  else if (sizeof (vma) <= sizeof (unsigned long long))
+    {
+#ifndef __MSVCRT__
+      if (hexp)
+	sprintf (buf, "0x%llx", (unsigned long long) vma);
+      else if (unsignedp)
+	sprintf (buf, "%llu", (unsigned long long) vma);
+      else
+	sprintf (buf, "%lld", (long long) vma);
+#else
+      if (hexp)
+	sprintf (buf, "0x%I64x", (unsigned long long) vma);
+      else if (unsignedp)
+	sprintf (buf, "%I64u", (unsigned long long) vma);
+      else
+	sprintf (buf, "%I64d", (long long) vma);
+#endif
+    }
+#endif
   else
     {
       buf[0] = '0';
@@ -1930,8 +1950,6 @@ static bfd_boolean
 tg_start_compilation_unit (void * p, const char *filename ATTRIBUTE_UNUSED)
 {
   struct pr_handle *info = (struct pr_handle *) p;
-
-  fprintf (stderr, "New compilation unit: %s\n", filename);
 
   free (info->filename);
   /* Should it be relative? best way to do it here?.  */

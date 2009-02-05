@@ -1,6 +1,6 @@
 # Support routines for LD testsuite.
 #   Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-#    2004, 2005, 2006, 2007 Free Software Foundation, Inc.
+#    2004, 2005, 2006, 2007, 2009  Free Software Foundation, Inc.
 #
 # This file is part of the GNU Binutils.
 #
@@ -564,6 +564,9 @@ proc simple_diff { file_1 file_2 } {
 #       Link assembled files using FLAGS, in the order of the "source"
 #       directives, when using multiple files.
 #
+#   ld_after_inputfiles: FLAGS
+#       Similar to "ld", but put after all input files.
+#
 #   objcopy_linked_file: FLAGS
 #	Run objcopy on the linked file with the specified flags.
 #	This lets you transform the linked file using objcopy, before the
@@ -598,7 +601,8 @@ proc simple_diff { file_1 file_2 } {
 #
 #   target: TARGET
 #       Only run the test for TARGET.  This may occur more than once; the
-#       target being tested must match at least one.
+#       target being tested must match at least one.  You may provide target
+#       name "cfi" for any target supporting the CFI statements.
 #
 #   notarget: TARGET
 #       Do not run the test for TARGET.  This may occur more than once;
@@ -649,6 +653,7 @@ proc run_dump_test { name } {
     set run_objcopy 0
     set opts(as) {}
     set opts(ld) {}
+    set opts(ld_after_inputfiles) {}
     set opts(xfail) {}
     set opts(target) {}
     set opts(notarget) {}
@@ -841,12 +846,12 @@ proc run_dump_test { name } {
 	# Add -L$srcdir/$subdir so that the linker command can use
 	# linker scripts in the source directory.
 	set cmd "$LD $LDFLAGS -L$srcdir/$subdir \
-		   $opts(ld) -o $objfile $objfiles"
+		   $opts(ld) -o $objfile $objfiles $opts(ld_after_inputfiles)"
 
 	send_log "$cmd\n"
 	set cmdret [remote_exec host [concat sh -c [list "$cmd 2>&1"]] "" "/dev/null" "ld.tmp"]
 	remote_upload host "ld.tmp"
-	set comp_output [prune_warnings [file_contents "ld.tmp"]]
+	set comp_output [file_contents "ld.tmp"]
 	remote_file host delete "ld.tmp"
 	remote_file build delete "ld.tmp"
 	set cmdret [lindex $cmdret 0]
@@ -863,7 +868,7 @@ proc run_dump_test { name } {
 	    send_log "$cmd\n"
 	    set cmdret [remote_exec host [concat sh -c [list "$cmd 2>&1"]] "" "/dev/null" "ld.tmp"]
 	    remote_upload host "ld.tmp"
-	    append comp_output [prune_warnings [file_contents "ld.tmp"]]
+	    append comp_output [file_contents "ld.tmp"]
 	    remote_file host delete "ld.tmp"
 	    remote_file build delete "ld.tmp"
 	    set cmdret [lindex $cmdret 0]
@@ -1088,6 +1093,22 @@ proc file_contents { filename } {
     return $contents
 }
 
+# Create an archive using ar
+#
+proc ar_simple_create { ar target objects } {
+    remote_file host delete $target
+
+    set exec_output [run_host_cmd "$ar" "rc $target $objects"]
+    set exec_output [prune_warnings $exec_output]
+
+    if [string match "" $exec_output] then {
+	send_log "$exec_output\n"
+	return 1
+    } else {
+	return 0
+    }
+}
+
 # List contains test-items with 3 items followed by 2 lists, one item and
 # one optional item:
 # 0:name 1:ld options 2:assembler options
@@ -1103,6 +1124,7 @@ proc run_ld_link_tests { ldtests } {
     global ld
     global as
     global nm
+    global ar
     global objdump
     global READELF
     global srcdir
@@ -1156,10 +1178,21 @@ proc run_ld_link_tests { ldtests } {
 	    continue
 	}
 
-	if ![ld_simple_link $ld $binfile "-L$srcdir/$subdir $ld_options $objfiles"] {
+	if [regexp ".*a$" $binfile] then {
+	    if ![ar_simple_create $ar $binfile "$objfiles"] {
+		fail $testname
+		set failed 1
+	    } else {
+		set failed 0
+	    }
+	} elseif ![ld_simple_link $ld $binfile "-L$srcdir/$subdir $ld_options $objfiles"] {
 	    fail $testname
+	    set failed 1
 	} else {
 	    set failed 0
+	}
+
+	if { $failed == 0 } {
 	    foreach actionlist $actions {
 		set action [lindex $actionlist 0]
 		set progopts [lindex $actionlist 1]
@@ -1424,6 +1457,7 @@ proc run_cc_link_tests { ldtests } {
     global CXX
     global CFLAGS
     global CXXFLAGS
+    global ar
 
     foreach testitem $ldtests {
 	set testname [lindex $testitem 0]
@@ -1461,10 +1495,21 @@ proc run_cc_link_tests { ldtests } {
 	    set cc_cmd $CC
 	}
 
-	if ![ld_simple_link $cc_cmd $binfile "-L$srcdir/$subdir $ldflags $objfiles"] {
+	if [regexp ".*a$" $binfile] then {
+	    if ![ar_simple_create $ar $binfile "$objfiles"] {
+		fail $testname
+		set failed 1
+	    } else {
+		set failed 0
+	    }
+	} elseif ![ld_simple_link $cc_cmd $binfile "-L$srcdir/$subdir $ldflags $objfiles"] {
 	    fail $testname
+	    set failed 1
 	} else {
 	    set failed 0
+	}
+
+	if { $failed == 0 } {
 	    foreach actionlist $actions {
 		set action [lindex $actionlist 0]
 		set progopts [lindex $actionlist 1]
@@ -1546,6 +1591,7 @@ proc check_gc_sections_available { } {
 	# Some targets don't support gc-sections despite whatever's
 	# advertised by ld's options.
 	if { [istarget alpha*-*-*]
+	     || [istarget mep-*-*]
 	     || [istarget ia64-*-*] } {
 	    set gc_sections_available_saved 0
 	    return 0
@@ -1559,14 +1605,6 @@ proc check_gc_sections_available { } {
 	    return 0
 	}
 
-	# VxWorks kernel modules are relocatable objects linked with -r,
-	# while RTP executables are linked with -q (--emit-relocs).
-	# Both of these options are incompatible with --gc-sections.
-	if { [istarget *-*-vxworks*] } {
-	    set gc_sections_available_saved 0
-	    return 0
-	}
-
 	# Check if the ld used by gcc supports --gc-sections.
 	set ld_output [remote_exec host $ld "--help"]
 	if { [ string first "--gc-sections" $ld_output ] >= 0 } {
@@ -1576,4 +1614,40 @@ proc check_gc_sections_available { } {
 	}
     }
     return $gc_sections_available_saved
+}
+
+# Check if the assembler supports CFI statements.
+
+proc check_as_cfi { } {
+    global check_as_cfi_result
+    global as
+    if [info exists check_as_cfi_result] {
+	return $check_as_cfi_result
+    }
+    set as_file "tmpdir/check_as_cfi.s"
+    set as_fh [open $as_file w 0666]
+    puts $as_fh "# Generated file. DO NOT EDIT"
+    puts $as_fh "\t.cfi_startproc"
+    puts $as_fh "\t.cfi_endproc"
+    close $as_fh
+    remote_download host $as_file
+    verbose -log "Checking CFI support:"
+    rename "perror" "check_as_cfi_perror"
+    proc perror { args } { }
+    set success [ld_assemble $as $as_file "/dev/null"]
+    rename "perror" ""
+    rename "check_as_cfi_perror" "perror"
+    #remote_file host delete $as_file
+    set check_as_cfi_result $success
+    return $success
+}
+
+# Provide virtual target "cfi" for targets supporting CFI.
+
+rename "istarget" "istarget_ld"
+proc istarget { target } {
+    if {$target == "cfi"} {
+	return [check_as_cfi]
+    }
+    return [istarget_ld $target]
 }

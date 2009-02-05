@@ -1,5 +1,5 @@
 /* Support for HPPA 64-bit ELF
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
    Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -514,7 +514,7 @@ get_dyn_name (abfd, h, rel, pbuf, plen)
     {
       nlen = sprintf (buf, "%x:%lx",
 		      sec->id & 0xffffffff,
-		      (long) ELF64_R_SYM (rel->r_info));
+		      (unsigned long) ELF64_R_SYM (rel->r_info));
       if (rel->r_addend)
 	{
 	  buf[nlen++] = '+';
@@ -625,7 +625,7 @@ elf64_hppa_check_relocs (abfd, info, sec, relocs)
   asection *dlt, *plt, *stubs;
   char *buf;
   size_t buf_len;
-  int sec_symndx;
+  unsigned int sec_symndx;
 
   if (info->relocatable)
     return TRUE;
@@ -677,7 +677,8 @@ elf64_hppa_check_relocs (abfd, info, sec, relocs)
       isymend = local_syms + symtab_hdr->sh_info;
       for (isym = local_syms; isym < isymend; isym++)
 	{
-	  if (isym->st_shndx > highest_shndx)
+	  if (isym->st_shndx > highest_shndx
+	      && isym->st_shndx < SHN_LORESERVE)
 	    highest_shndx = isym->st_shndx;
 	}
 
@@ -723,10 +724,13 @@ elf64_hppa_check_relocs (abfd, info, sec, relocs)
 
       /* If we did not find a section symbol for this section, then
 	 something went terribly wrong above.  */
-      if (sec_symndx == -1)
+      if (sec_symndx == SHN_BAD)
 	return FALSE;
 
-      sec_symndx = hppa_info->section_syms[sec_symndx];
+      if (sec_symndx < SHN_LORESERVE)
+	sec_symndx = hppa_info->section_syms[sec_symndx];
+      else
+	sec_symndx = 0;
     }
   else
     sec_symndx = 0;
@@ -1171,7 +1175,8 @@ allocate_global_data_opd (dyn_h, data)
 	      && (h == NULL || (h->dynindx == -1)))
 	    {
 	      bfd *owner;
-	      owner = (h ? h->root.u.def.section->owner : dyn_h->owner);
+	      /* PR 6511: Default to using the dynamic symbol table.  */
+	      owner = (dyn_h->owner ? dyn_h->owner: h->root.u.def.section->owner);
 
 	      if (!bfd_elf_link_record_local_dynamic_symbol
 		    (x->info, owner, dyn_h->sym_indx))
@@ -2193,11 +2198,12 @@ elf64_hppa_finalize_opd (dyn_h, data)
 	  strcpy (new_name + 1, h->root.root.string);
 
 	  nh = elf_link_hash_lookup (elf_hash_table (info),
-				     new_name, FALSE, FALSE, FALSE);
-
+				     new_name, TRUE, TRUE, FALSE);
+ 
 	  /* All we really want from the new symbol is its dynamic
 	     symbol index.  */
-	  dynindx = nh->dynindx;
+	  if (nh)
+	    dynindx = nh->dynindx;
 	}
 
       rel.r_addend = 0;

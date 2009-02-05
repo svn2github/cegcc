@@ -18,14 +18,11 @@ foo:
 	brxlg	%r9,%r6,.
 	bxhg	%r9,%r6,4095(%r5)
 	bxleg	%r9,%r6,4095(%r5)
-	cdgbr	%r9,%r6
-	cdgr	%r9,%r6
+	cdgbr	%f9,%r6
+	cdgr	%f9,%r6
 	cdsg	%r9,%r6,4095(%r5)
-	cegbr	%r9,%r6
-	cegr	%r9,%r6
-	cfdr	%r6,9,%f5
-	cfer	%r6,9,%f5
-	cfxr	%r6,9,%f5
+	cegbr	%f9,%r6
+	cegr	%f9,%r6
 	cg	%r9,4095(%r5,%r10)
 	cgdbr	%r6,15,%f5
 	cgdr	%r6,15,%f5
@@ -45,8 +42,8 @@ foo:
 	csg	%r9,%r6,4095(%r5)
 	cvbg	%r9,4095(%r5,%r10)
 	cvdg	%r9,4095(%r5,%r10)
-	cxgbr	%r9,%r6
-	cxgr	%r9,%r6
+	cxgbr	%f9,%r6
+	cxgr	%f9,%r6
 	dlg	%r9,4095(%r5,%r10)
 	dlgr	%r9,%r6
 	dsg	%r9,4095(%r5,%r10)

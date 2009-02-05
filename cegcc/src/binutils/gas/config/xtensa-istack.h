@@ -1,5 +1,5 @@
 /* Declarations for stacks of tokenized Xtensa instructions.
-   Copyright (C) 2003, 2004, 2007 Free Software Foundation, Inc.
+   Copyright (C) 2003, 2004, 2007, 2008 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -24,7 +24,7 @@
 #include "xtensa-isa.h"
 
 #define MAX_ISTACK 12
-#define MAX_INSN_ARGS 10
+#define MAX_INSN_ARGS 64
 
 enum itype_enum
 {
@@ -49,9 +49,19 @@ typedef struct tinsn_struct
   bfd_boolean loc_directive_seen;
   struct dwarf2_line_info debug_line;
 
+  /* This field is used for two types of special pseudo ops:
+     1. TLS-related operations.  Eg:  callx8.tls
+     2. j.l  label, a2
+
+     For the tls-related operations, it will hold a tls-related opcode
+     and info to be used in a fixup.  For j.l it will hold a
+     register to be used during relaxation.  */
+  expressionS extra_arg;
+
   /* Filled out by relaxation_requirements:  */
   enum xtensa_relax_statesE subtype;
   int literal_space;
+
   /* Filled out by vinsn_to_insnbuf:  */
   symbolS *symbol;
   offsetT offset;

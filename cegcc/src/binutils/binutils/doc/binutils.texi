@@ -11,10 +11,10 @@
 @copying
 @c man begin COPYRIGHT
 Copyright @copyright{} 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
+2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009 Free Software Foundation, Inc.
 
 Permission is granted to copy, distribute and/or modify this document
-under the terms of the GNU Free Documentation License, Version 1.2
+under the terms of the GNU Free Documentation License, Version 1.3
 or any later version published by the Free Software Foundation;
 with no Invariant Sections, with no Front-Cover Texts, and with no
 Back-Cover Texts.  A copy of the license is included in the
@@ -133,8 +133,8 @@ Create the files needed to build and use Dynamic Link Libraries
 @end iftex
 
 This document is distributed under the terms of the GNU Free
-Documentation License.  A copy of the license is included in the
-section entitled ``GNU Free Documentation License''.
+Documentation License version 1.3.  A copy of the license is included
+in the section entitled ``GNU Free Documentation License''.
 
 @menu
 * ar::                          Create, modify, and extract from archives
@@ -157,7 +157,7 @@ section entitled ``GNU Free Documentation License''.
 * Selecting the Target System:: How these utilities determine the target
 * Reporting Bugs::              Reporting Bugs
 * GNU Free Documentation License::  GNU Free Documentation License
-* Index::                       Index
+* Binutils Index::              Binutils Index
 @end menu
 
 @node ar
@@ -210,6 +210,18 @@ their placement in the archive.
 You may use @samp{nm -s} or @samp{nm --print-armap} to list this index
 table.  If an archive lacks the table, another form of @command{ar} called
 @command{ranlib} can be used to add just the table.
+
+@cindex thin archives
+@sc{gnu} @command{ar} can optionally create a @emph{thin} archive,
+which contains a symbol index and references to the original copies
+of the member files of the archives.  Such an archive is useful
+for building libraries for use within a local build, where the
+relocatable objects are expected to remain available, and copying the
+contents of each object would only waste time and space.  Thin archives
+are also @emph{flattened}, so that adding one or more archives to a
+thin archive will add the elements of the nested archive individually.
+The paths to the elements of the archive are stored relative to the
+archive itself.
 
 @cindex compatibility, @command{ar}
 @cindex @command{ar} compatibility
@@ -356,6 +368,8 @@ use the @samp{v} modifier with this operation, to request that
 If you do not specify a @var{member}, all files in the archive
 are extracted.
 
+Files cannot be extracted from a thin archive.
+
 @end table
 
 A number of modifiers (@var{mod}) may immediately follow the @var{p}
@@ -433,6 +447,12 @@ large library in several steps.  The resulting archive can not be used
 with the linker.  In order to build a symbol table, you must omit the
 @samp{S} modifier on the last execution of @samp{ar}, or you must run
 @samp{ranlib} on the archive.
+
+@item T
+@cindex creating thin archive
+Make the specified @var{archive} a @emph{thin} archive.  If it already
+exists and is a regular archive, the existing members must be present
+in the same directory as @var{archive}.
 
 @item u
 @cindex updating an archive
@@ -708,10 +728,6 @@ The symbol is in the initialized data section.
 The symbol is in an initialized data section for small objects.  Some
 object file formats permit more efficient access to small data objects,
 such as a global int variable as opposed to a large global array.
-
-@item I
-The symbol is an indirect reference to another symbol.  This is a @sc{gnu}
-extension to the a.out object file format which is rarely used.
 
 @item i
 The symbol is in a section specific to the implementation of DLLs.
@@ -1520,7 +1536,6 @@ Keep the file's section flags and symbols but remove all section data.
 Specifically, the option:
 
 @itemize
-@item sets the virtual and load addresses of every section to zero;
 @item removes the contents of all sections;
 @item sets the size of every section to zero; and
 @item sets the file's start address to zero.
@@ -1572,6 +1587,7 @@ objdump [@option{-a}|@option{--archive-headers}]
         [@option{-z}|@option{--disassemble-zeroes}]
         [@option{-EB}|@option{-EL}|@option{--endian=}@{big | little @}]
         [@option{-f}|@option{--file-headers}]
+        [@option{-F}|@option{--file-offsets}]
         [@option{--file-start-context}]
         [@option{-g}|@option{--debugging}]
         [@option{-e}|@option{--debugging-tags}]
@@ -1598,6 +1614,8 @@ objdump [@option{-a}|@option{--archive-headers}]
         [@option{--[no-]show-raw-insn}]
         [@option{--adjust-vma=}@var{offset}]
         [@option{--special-syms}]
+        [@option{--prefix=}@var{prefix}]
+        [@option{--prefix-strip=}@var{level}]
         [@option{-V}|@option{--version}]
         [@option{-H}|@option{--help}]
         @var{objfile}@dots{}
@@ -1672,11 +1690,11 @@ for more information on demangling.
 
 @item -g
 @itemx --debugging
-Display debugging information.  This attempts to parse debugging
-information stored in the file and print it out using a C like syntax.
-Only certain types of debugging information have been implemented.
-Some other types are supported by @command{readelf -w}.
-@xref{readelf}.
+Display debugging information.  This attempts to parse STABS and IEEE
+debugging format information stored in the file and print it out using
+a C like syntax.  If neither of these formats are found this option
+falls back on the @option{-W} option to print any DWARF information in
+the file.
 
 @item -e
 @itemx --debugging-tags
@@ -1714,6 +1732,16 @@ does not describe endianness information, such as S-records.
 @cindex object file header
 Display summary information from the overall header of
 each of the @var{objfile} files.
+
+@item -F
+@itemx --file-offsets
+@cindex object file offsets
+When disassembling sections, whenever a symbol is displayed, also
+display the file offset of the region of data that is about to be
+dumped.  If zeroes are being skipped, then when disassembly resumes,
+tell the user how many zeroes were skipped and the file offset of the
+location from where the disassembly resumes.  When dumping sections,
+display the file offset of the location from where the dump starts.
 
 @item --file-start-context
 @cindex source code context
@@ -1813,12 +1841,12 @@ option string.  Lastly, @option{suffix}, when in AT&T mode,
 instructs the disassembler to print a mnemonic suffix even when the
 suffix could be inferred by the operands.
 
-For PPC, @option{booke}, @option{booke32} and @option{booke64} select
-disassembly of BookE instructions.  @option{32} and @option{64} select
-PowerPC and PowerPC64 disassembly, respectively.  @option{e300}
-selects disassembly for the e300 family.  @option{440} selects
-disassembly for the PowerPC 440.  @option{ppcps} selects disassembly
-for the paired single instructions of the PPC750CL.
+For PowerPC, @option{booke} controls the disassembly of BookE
+instructions.  @option{32} and @option{64} select PowerPC and
+PowerPC64 disassembly, respectively.  @option{e300} selects
+disassembly for the e300 family.  @option{440} selects disassembly for
+the PowerPC 440.  @option{ppcps} selects disassembly for the paired
+single instructions of the PPC750CL.
 
 For MIPS, this option controls the printing of instruction mnemonic
 names and register names in disassembled instructions.  Multiple
@@ -1892,7 +1920,9 @@ disassembly.
 @cindex dynamic relocation entries, in object file
 Print the dynamic relocation entries of the file.  This is only
 meaningful for dynamic objects, such as certain types of shared
-libraries.
+libraries.  As for @option{-r}, if used with @option{-d} or
+@option{-D}, the relocations are printed interspersed with the
+disassembly.
 
 @item -s
 @itemx --full-contents
@@ -1907,6 +1937,16 @@ non-empty sections are displayed.
 @cindex disassembly, with source
 Display source code intermixed with disassembly, if possible.  Implies
 @option{-d}.
+
+@item --prefix=@var{prefix}
+@cindex Add prefix to absolute paths
+Specify @var{prefix} to add to the absolute paths when used with
+@option{-S}. 
+
+@item --prefix-strip=@var{level}
+@cindex Strip absolute paths
+Indicate how many initial directory names to strip off the hardwired
+absolute paths. It has no effect without @option{--prefix=}@var{prefix}.
 
 @item --show-raw-insn
 When disassembling instructions, print the instruction in hex as well as
@@ -2015,8 +2055,10 @@ symbol's name is a message to be displayed if the symbol following the
 warning symbol is ever referenced.
 
 @item I
-The symbol is an indirect reference to another symbol (I) or a normal
-symbol (a space).
+@item i
+The symbol is an indirect reference to another symbol (I), a function
+to be evaluated during reloc processing (i) or a normal symbol (a
+space).
 
 @item d
 @itemx D
@@ -2087,7 +2129,7 @@ nm(1), readelf(1), and the Info entries for @file{binutils}.
 
 @smallexample
 @c man begin SYNOPSIS ranlib
-ranlib [@option{-vV}] @var{archive}
+ranlib [@option{-vVt}] @var{archive}
 @c man end
 @end smallexample
 
@@ -2116,6 +2158,9 @@ The @sc{gnu} @command{ranlib} program is another form of @sc{gnu} @command{ar}; 
 @itemx -V
 @itemx --version
 Show the version number of @command{ranlib}.
+
+@item -t
+Update the timestamp of the symbol map of an archive.
 @end table
 
 @c man end
@@ -2326,7 +2371,8 @@ Possible values for @var{encoding} are: @samp{s} = single-7-bit-byte
 characters (ASCII, ISO 8859, etc., default), @samp{S} =
 single-8-bit-byte characters, @samp{b} = 16-bit bigendian, @samp{l} =
 16-bit littleendian, @samp{B} = 32-bit bigendian, @samp{L} = 32-bit
-littleendian. Useful for finding wide character strings.
+littleendian.  Useful for finding wide character strings. (@samp{l}
+and @samp{b} apply to, for example, Unicode UTF-16/UCS-2 encodings).
 
 @item -T @var{bfdname}
 @itemx --target=@var{bfdname}
@@ -3337,7 +3383,10 @@ dlltool [@option{-d}|@option{--input-def} @var{def-file-name}]
         [@option{-U}|@option{--add-underscore}] [@option{--add-stdcall-underscore}]
         [@option{-k}|@option{--kill-at}] [@option{-A}|@option{--add-stdcall-alias}]
         [@option{-p}|@option{--ext-prefix-alias} @var{prefix}]
-        [@option{-x}|@option{--no-idata4}] [@option{-c}|@option{--no-idata5}] [@option{-i}|@option{--interwork}]
+        [@option{-x}|@option{--no-idata4}] [@option{-c}|@option{--no-idata5}]
+        [@option{--use-nul-prefixed-import-tables}]
+        [@option{-I}|@option{--identify} @var{library-file-name}] [@option{--identify-strict}]
+        [@option{-i}|@option{--interwork}]
         [@option{-n}|@option{--nodelete}] [@option{-t}|@option{--temp-prefix} @var{prefix}]
         [@option{-v}|@option{--verbose}]
         [@option{-h}|@option{--help}] [@option{-V}|@option{--version}]
@@ -3387,9 +3436,9 @@ binary file and it can be created by giving the @option{-e} option to
 @command{dlltool} when it is creating or reading in a @file{.def} file.
 
 The third file needed for DLL creation is the library file that programs
-will link with in order to access the functions in the DLL.  This file
-can be created by giving the @option{-l} option to dlltool when it
-is creating or reading in a @file{.def} file.
+will link with in order to access the functions in the DLL (an `import
+library').  This file can be created by giving the @option{-l} option to
+dlltool when it is creating or reading in a @file{.def} file.
 
 @command{dlltool} builds the library file by hand, but it builds the
 exports file by creating temporary files containing assembler statements
@@ -3412,6 +3461,11 @@ that uses that DLL:
   gcc program.o dll.lib -o program
 @end smallexample
 
+
+@command{dlltool} may also be used to query an existing import library
+to determine the name of the DLL to which it is associated.  See the 
+description of the @option{-I} or @option{--identify} option.
+ 
 @c man end
 
 @c man begin OPTIONS dlltool
@@ -3545,11 +3599,31 @@ Specifies that when @command{dlltool} is creating the exports and library
 files it should omit the @code{.idata4} section.  This is for compatibility
 with certain operating systems.
 
+@item --use-nul-prefixed-import-tables
+Specifies that when @command{dlltool} is creating the exports and library
+files it should prefix the @code{.idata4} and @code{.idata5} by zero an
+element. This emulates old gnu import library generation of
+@code{dlltool}. By default this option is turned off.
+
 @item -c
 @itemx --no-idata5
 Specifies that when @command{dlltool} is creating the exports and library
 files it should omit the @code{.idata5} section.  This is for compatibility
 with certain operating systems.
+
+@item -I @var{filename}
+@itemx --identify @var{filename}
+Specifies that @command{dlltool} should inspect the import library
+indicated by @var{filename} and report, on @code{stdout}, the name(s)
+of the associated DLL(s).  This can be performed in addition to any
+other operations indicated by the other options and arguments.
+@command{dlltool} fails if the import library does not exist or is not
+actually an import library. See also @option{--identify-strict}.
+
+@item --identify-strict
+Modifies the behavior of the @option{--identify} option, such
+that an error is reported if @var{filename} is associated with
+more than one DLL.
 
 @item -i
 @itemx --interwork
@@ -3671,8 +3745,8 @@ readelf [@option{-a}|@option{--all}]
         [@option{-x} <number or name>|@option{--hex-dump=}<number or name>]
         [@option{-p} <number or name>|@option{--string-dump=}<number or name>]
         [@option{-c}|@option{--archive-index}]
-        [@option{-w[liaprmfFsoR]}|
-         @option{--debug-dump}[=line,=info,=abbrev,=pubnames,=aranges,=macro,=frames,=frames-interp,=str,=loc,=Ranges]]
+        [@option{-w[lLiaprmfFsoR]}|
+         @option{--debug-dump}[=rawline,=decodedline,=info,=abbrev,=pubnames,=aranges,=macro,=frames,=frames-interp,=str,=loc,=Ranges]]
         [@option{-I}|@option{-histogram}]
         [@option{-v}|@option{--version}]
         [@option{-W}|@option{--wide}]
@@ -3809,11 +3883,15 @@ Displays the file symbol index infomation contained in the header part
 of binary archives.  Performs the same function as the @option{t}
 command to @command{ar}, but without using the BFD library.  @xref{ar}.
 
-@item -w[liaprmfFsoR]
-@itemx --debug-dump[=line,=info,=abbrev,=pubnames,=aranges,=macro,=frames,=frames-interp,=str,=loc,=Ranges]
+@item -w[lLiaprmfFsoR]
+@itemx --debug-dump[=rawline,=decodedline,=info,=abbrev,=pubnames,=aranges,=macro,=frames,=frames-interp,=str,=loc,=Ranges]
 Displays the contents of the debug sections in the file, if any are
 present.  If one of the optional letters or words follows the switch
 then only data found in those specific sections will be dumped.
+
+Note: the @option{=decodedline} option will display the interpreted
+contents of a .debug_line section whereas the @option{=rawline} option
+dumps the contents in a raw format.
 
 @item -I
 @itemx --histogram
@@ -4228,8 +4306,8 @@ things without first using the debugger to find the facts.
  
 @include fdl.texi
 
-@node Index
-@unnumbered Index
+@node Binutils Index
+@unnumbered Binutils Index
 
 @printindex cp
 

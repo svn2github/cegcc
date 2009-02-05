@@ -134,9 +134,13 @@ ALL_EMULATIONS = \
 	earmsymbian.o \
 	eavr2.o \
 	eavr1.o \
+	eavr25.o \
 	eavr3.o \
+	eavr31.o \
+	eavr35.o \
 	eavr4.o \
 	eavr5.o \
+	eavr51.o \
 	eavr6.o \
 	ecoff_i860.o \
 	ecoff_sparc.o \
@@ -176,6 +180,8 @@ ALL_EMULATIONS = \
 	eelf32ip2k.o \
 	eelf32iq2000.o \
 	eelf32iq10.o \
+	eelf32lm32.o \
+	eelf32lm32fd.o \
 	eelf32l4300.o \
 	eelf32lmip.o \
 	eelf32lppc.o \
@@ -428,18 +434,18 @@ ALL_EMUL_EXTRA_OFILES = \
 
 CFILES = ldctor.c ldemul.c ldexp.c ldfile.c ldlang.c \
 	ldmain.c ldmisc.c ldver.c ldwrite.c lexsup.c \
-	mri.c ldcref.c pe-dll.c pep-dll.c sha1.c
+	mri.c ldcref.c pe-dll.c pep-dll.c
 
 HFILES = ld.h ldctor.h ldemul.h ldexp.h ldfile.h \
 	ldlang.h ldlex.h ldmain.h ldmisc.h ldver.h \
-	ldwrite.h mri.h deffile.h pe-dll.h pep-dll.h elf-hints-local.h sha1.h
+	ldwrite.h mri.h deffile.h pe-dll.h pep-dll.h elf-hints-local.h
 
 GENERATED_CFILES = ldgram.c ldlex.c deffilep.c
 GENERATED_HFILES = ldgram.h ldemul-list.h deffilep.h
 
 OFILES = ldgram.o ldlex.o lexsup.o ldlang.o mri.o ldctor.o ldmain.o \
 	ldwrite.o ldexp.o  ldemul.o ldver.o ldmisc.o \
-	ldfile.o ldcref.o sha1.o ${EMULATION_OFILES} ${EMUL_EXTRA_OFILES}
+	ldfile.o ldcref.o ${EMULATION_OFILES} ${EMUL_EXTRA_OFILES}
 
 STAGESTUFF = *.o ldscripts/* e*.c
 
@@ -459,15 +465,19 @@ EMULATION_FILES = emultempl/pe.em emultempl/armcoff.em
 POTFILES = $(CFILES) $(HFILES) $(EMULATION_FILES)
 
 po/POTFILES.in: @MAINT@ Makefile
-	for f in $(POTFILES); do echo $$f; done | LC_COLLATE= sort > tmp \
+	for f in $(POTFILES); do echo $$f; done | LC_ALL=C sort > tmp \
 	  && mv tmp $(srcdir)/po/POTFILES.in
 
 ldmain.o: ldmain.c config.status
 	$(COMPILE) -c -DDEFAULT_EMULATION='"$(EMUL)"' \
-	  -DSCRIPTDIR='"$(scriptdir)"' -DBINDIR='"$(bindir)"' \
-	  -DTOOLBINDIR='"$(tooldir)/bin"' \
+	  -DBINDIR='"$(bindir)"' -DTOOLBINDIR='"$(tooldir)/bin"' \
 	  -DTARGET='"@target@"' @TARGET_SYSTEM_ROOT_DEFINE@ \
 	  $(srcdir)/ldmain.c
+
+ldfile.o: ldfile.c config.status
+	$(COMPILE) -c -DSCRIPTDIR='"$(scriptdir)"' \
+	  -DBINDIR='"$(bindir)"' -DTOOLBINDIR='"$(tooldir)/bin"' \
+	  $(srcdir)/ldfile.c
 
 eelf32_spu.o: eelf32_spu.c
 	$(COMPILE) -c -DEMBEDSPU="\"`echo embedspu | sed '$(transform)'`\"" \
@@ -606,10 +616,22 @@ eavr1.c: $(srcdir)/emulparams/avr1.sh $(srcdir)/emultempl/avrelf.em \
   $(ELF_DEPS) $(srcdir)/scripttempl/avr.sc \
   ${GEN_DEPENDS}
 	${GENSCRIPTS} avr1 "$(tdir_avr2)"
+eavr25.c: $(srcdir)/emulparams/avr25.sh $(srcdir)/emultempl/avrelf.em \
+  $(ELF_DEPS) $(srcdir)/scripttempl/avr.sc \
+  ${GEN_DEPENDS}
+	${GENSCRIPTS} avr25 "$(tdir_avr2)"
 eavr3.c: $(srcdir)/emulparams/avr3.sh $(srcdir)/emultempl/avrelf.em \
   $(ELF_DEPS) $(srcdir)/scripttempl/avr.sc \
   ${GEN_DEPENDS}
 	${GENSCRIPTS} avr3 "$(tdir_avr2)"
+eavr31.c: $(srcdir)/emulparams/avr31.sh $(srcdir)/emultempl/avrelf.em \
+  $(ELF_DEPS) $(srcdir)/scripttempl/avr.sc \
+  ${GEN_DEPENDS}
+	${GENSCRIPTS} avr31 "$(tdir_avr2)"
+eavr35.c: $(srcdir)/emulparams/avr35.sh $(srcdir)/emultempl/avrelf.em \
+  $(ELF_DEPS) $(srcdir)/scripttempl/avr.sc \
+  ${GEN_DEPENDS}
+	${GENSCRIPTS} avr35 "$(tdir_avr2)"
 eavr4.c: $(srcdir)/emulparams/avr4.sh $(srcdir)/emultempl/avrelf.em \
   $(ELF_DEPS) $(srcdir)/scripttempl/avr.sc \
   ${GEN_DEPENDS}
@@ -618,6 +640,10 @@ eavr5.c: $(srcdir)/emulparams/avr5.sh $(srcdir)/emultempl/avrelf.em \
   $(ELF_DEPS) $(srcdir)/scripttempl/avr.sc \
   ${GEN_DEPENDS}
 	${GENSCRIPTS} avr5 "$(tdir_avr2)"
+eavr51.c: $(srcdir)/emulparams/avr51.sh $(srcdir)/emultempl/avrelf.em \
+  $(ELF_DEPS) $(srcdir)/scripttempl/avr.sc \
+  ${GEN_DEPENDS}
+	${GENSCRIPTS} avr51 "$(tdir_avr2)"
 eavr6.c: $(srcdir)/emulparams/avr6.sh $(srcdir)/emultempl/avrelf.em \
   $(ELF_DEPS) $(srcdir)/scripttempl/avr.sc \
   ${GEN_DEPENDS}
@@ -727,15 +753,23 @@ eelf32_sparc_vxworks.c: $(srcdir)/emulparams/elf32_sparc_vxworks.sh \
   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32_sparc_vxworks "$(tdir_elf32_sparc_vxworks)"
 eelf32_spu.c: $(srcdir)/emulparams/elf32_spu.sh $(srcdir)/emultempl/spuelf.em \
-  $(srcdir)/emultempl/spu_ovl.o \
+  $(srcdir)/emultempl/spu_ovl.o_c $(srcdir)/emultempl/spu_icache.o_c \
   ldemul-list.h \
   $(ELF_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32_spu "$(tdir_elf32_spu)"
-$(srcdir)/emultempl/spu_ovl.o: @MAINT@ $(srcdir)/emultempl/spu_ovl.S
-	cpp -DOVLY_IRQ_SAVE $(srcdir)/emultempl/spu_ovl.S spu_ovl.s
+$(srcdir)/emultempl/spu_ovl.o_c: @MAINT@ $(srcdir)/emultempl/spu_ovl.S
 	if ../gas/as-new --version \
 		| grep 'target.*spu' >/dev/null 2>/dev/null; then \
-	  ../gas/as-new -o $@ spu_ovl.s; \
+	  cpp -DOVLY_IRQ_SAVE $(srcdir)/emultempl/spu_ovl.S spu_ovl.s; \
+	  ../gas/as-new -o spu_ovl.o spu_ovl.s; \
+	  ../binutils/bin2c <spu_ovl.o >$@; \
+	fi
+$(srcdir)/emultempl/spu_icache.o_c: @MAINT@ $(srcdir)/emultempl/spu_icache.S
+	if ../gas/as-new --version \
+		| grep 'target.*spu' >/dev/null 2>/dev/null; then \
+	  cpp -DOVLY_IRQ_SAVE $(srcdir)/emultempl/spu_icache.S spu_icache.s; \
+	  ../gas/as-new -o spu_icache.o spu_icache.s; \
+	  ../binutils/bin2c <spu_icache.o >$@; \
 	fi
 eelf32_i860.c: $(srcdir)/emulparams/elf32_i860.sh \
   $(ELF_GEN_DEPS) $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
@@ -911,6 +945,13 @@ eelf32iq2000.c: $(srcdir)/emulparams/elf32iq2000.sh \
 eelf32iq10.c: $(srcdir)/emulparams/elf32iq10.sh \
   $(ELF_GEN_DEPS) $(srcdir)/scripttempl/iq2000.sc ${GEN_DEPENDS}
 	${GENSCRIPTS} elf32iq10 "$(tdir_iq10)"
+eelf32lm32.c: $(srcdir)/emulparams/elf32lm32.sh \
+  $(srcdir)/emultempl/elf32.em $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
+	${GENSCRIPTS} elf32lm32 "$(tdir_elf32lm32)"
+eelf32lm32fd.c: $(srcdir)/emulparams/elf32lm32fd.sh \
+  $(srcdir)/emulparams/elf32lm32.sh $(ELF_DEPS) \
+  $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS} 
+	${GENSCRIPTS} elf32lm32fd "$(tdir_elf32lm32fd)" 
 eelf64alpha.c: $(srcdir)/emulparams/elf64alpha.sh \
   $(ELF_DEPS) $(srcdir)/emultempl/alphaelf.em \
   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
@@ -1696,7 +1737,7 @@ ez8002.c: $(srcdir)/emulparams/z8002.sh \
 EXTRA_ld_new_SOURCES = deffilep.y
 
 ld_new_SOURCES = ldgram.y ldlex.l lexsup.c ldlang.c mri.c ldctor.c ldmain.c \
-	ldwrite.c ldexp.c ldemul.c ldver.c ldmisc.c ldfile.c ldcref.c sha1.c
+	ldwrite.c ldexp.c ldemul.c ldver.c ldmisc.c ldfile.c ldcref.c
 ld_new_DEPENDENCIES = $(EMULATION_OFILES) $(EMUL_EXTRA_OFILES) $(BFDLIB) $(LIBIBERTY) $(LIBINTL_DEP)
 ld_new_LDADD = $(EMULATION_OFILES) $(EMUL_EXTRA_OFILES) $(BFDLIB) $(LIBIBERTY) $(LIBINTL)
 
@@ -1810,7 +1851,48 @@ MOSTLYCLEANFILES = $(STAGESTUFF) ld1$(EXEEXT) ld2$(EXEEXT) ld3$(EXEEXT) \
 	ldemul-list.h crtbegin.o crtend.o ld.log ld.sum
 mostlyclean-local:
 	-rm -rf tmpdir
-CLEANFILES = dep.sed DEP DEPA DEP1 DEP2 spu_ovl.s
+CLEANFILES = dep.sed DEP DEPA DEP1 DEP2 spu_ovl.s spu_ovl.o spu_icache.s spu_icache.o
+
+.PHONY: install-pdf install-pdf-am install-pdf-recursive
+
+pdf__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
+
+install-pdf: install-pdf-recursive install-pdf-am
+ 
+install-pdf-am: $(PDFS)
+	@$(NORMAL_INSTALL)
+	test -z "$(pdfdir)" || $(mkinstalldirs) "$(DESTDIR)$(pdfdir)"
+	@list='$(PDFS)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(pdf__strip_dir) \
+	  echo " $(INSTALL_DATA) '$$d$$p' '$(DESTDIR)$(pdfdir)/$$f'"; \
+	  $(INSTALL_DATA) "$$d$$p" "$(DESTDIR)$(pdfdir)/$$f"; \
+	done
+
+install-pdf-recursive:
+	@failcom='exit 1'; \
+	for f in x $$MAKEFLAGS; do \
+	  case $$f in \
+	    *=* | --[!k]*);; \
+	    *k*) failcom='fail=yes';; \
+	  esac; \
+	done; \
+	dot_seen=no; \
+	target=`echo $@ | sed s/-recursive//`; \
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  echo "Making $$target in $$subdir"; \
+	  if test "$$subdir" = "."; then \
+	    dot_seen=yes; \
+	    local_target="$$target-am"; \
+	  else \
+	    local_target="$$target"; \
+	  fi; \
+	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
+	  || eval $$failcom; \
+	done; \
+	if test "$$dot_seen" = "no"; then \
+	  $(MAKE) $(AM_MAKEFLAGS) "$$target-am" || exit 1; \
+	fi; test -z "$$fail"
 
 .PHONY: install-html install-html-am install-html-recursive
 
@@ -1889,7 +1971,8 @@ install-data-local: install-info
 
 # Stuff that should be included in a distribution.  The diststuff
 # target is run by the taz target in ../Makefile.in.
-EXTRA_DIST = ldgram.c ldgram.h ldlex.c emultempl/spu_ovl.o $(man_MANS)
+EXTRA_DIST = ldgram.c ldgram.h ldlex.c emultempl/spu_ovl.o_c \
+	     emultempl/spu_icache.o_c deffilep.c deffilep.h $(man_MANS)
 diststuff: info $(EXTRA_DIST)
 all: info ld.1
 
@@ -1995,8 +2078,8 @@ ldmisc.o: ldmisc.c sysdep.h config.h $(INCDIR)/fopen-same.h \
   $(INCDIR)/bfdlink.h $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h \
   $(INCDIR)/demangle.h $(INCDIR)/libiberty.h ld.h ldmisc.h \
   ldexp.h ldlang.h ldgram.h ldlex.h ldmain.h ldfile.h \
-  $(BFDDIR)/elf-bfd.h $(INCDIR)/elf/common.h $(INCDIR)/elf/internal.h \
-  $(INCDIR)/elf/external.h $(INCDIR)/bfdlink.h
+  $(BFDDIR)/elf-bfd.h $(INCDIR)/elf/common.h $(INCDIR)/elf/external.h \
+  $(INCDIR)/elf/internal.h
 ldver.o: ldver.c sysdep.h config.h $(INCDIR)/fopen-same.h \
   ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
   ../bfd/bfdver.h ld.h ldver.h ldexp.h ldlang.h ldfile.h \
@@ -2026,15 +2109,13 @@ pe-dll.o: pe-dll.c sysdep.h config.h $(INCDIR)/fopen-same.h \
   $(INCDIR)/bfdlink.h $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h \
   $(INCDIR)/safe-ctype.h ld.h ldexp.h ldlang.h ldwrite.h \
   ldmisc.h ldgram.h ldmain.h ldfile.h ldemul.h $(INCDIR)/coff/internal.h \
-  $(BFDDIR)/libcoff.h $(INCDIR)/bfdlink.h deffile.h pe-dll.h
+  $(BFDDIR)/libcoff.h deffile.h pe-dll.h
 pep-dll.o: pep-dll.c pe-dll.c sysdep.h config.h $(INCDIR)/fopen-same.h \
   ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
   $(INCDIR)/bfdlink.h $(INCDIR)/libiberty.h $(INCDIR)/ansidecl.h \
   $(INCDIR)/safe-ctype.h ld.h ldexp.h ldlang.h ldwrite.h \
   ldmisc.h ldgram.h ldmain.h ldfile.h ldemul.h $(INCDIR)/coff/internal.h \
-  $(BFDDIR)/libcoff.h $(INCDIR)/bfdlink.h deffile.h pe-dll.h \
-  pep-dll.h
-sha1.o: sha1.c config.h sha1.h ../bfd/bfd_stdint.h
+  $(BFDDIR)/libcoff.h deffile.h pe-dll.h pep-dll.h
 ldgram.o: ldgram.c sysdep.h config.h $(INCDIR)/fopen-same.h \
   ../bfd/bfd.h $(INCDIR)/ansidecl.h $(INCDIR)/symcat.h \
   $(INCDIR)/bfdlink.h ld.h ldexp.h ldver.h ldlang.h ldfile.h \

@@ -1,5 +1,5 @@
 /* Declarations for Intel 80386 opcode table
-   Copyright 2007, 2008
+   Copyright 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of the GNU opcodes library.
@@ -42,18 +42,14 @@
 #define Cpu586		(Cpu486 + 1)
 /* i686 or better required */
 #define Cpu686		(Cpu586 + 1)
-/* Pentium4 or better required */
-#define CpuP4		(Cpu686 + 1)
-/* AMD K6 or better required*/
-#define CpuK6		(CpuP4 + 1)
-/* AMD K8 or better required */
-#define CpuK8		(CpuK6 + 1)
+/* CLFLUSH Instuction support required */
+#define CpuClflush	(Cpu686 + 1)
+/* SYSCALL Instuctions support required */
+#define CpuSYSCALL	(CpuClflush + 1)
 /* MMX support required */
-#define CpuMMX		(CpuK8 + 1)
-/* extended MMX support (with SSE or 3DNow!Ext) required */
-#define CpuMMX2		(CpuMMX + 1)
+#define CpuMMX		(CpuSYSCALL + 1)
 /* SSE support required */
-#define CpuSSE		(CpuMMX2 + 1)
+#define CpuSSE		(CpuMMX + 1)
 /* SSE2 support required */
 #define CpuSSE2		(CpuSSE + 1)
 /* 3dnow! support required */
@@ -82,8 +78,24 @@
 #define CpuSSE4_2	(CpuSSE4_1 + 1)
 /* SSE5 support required */
 #define CpuSSE5		(CpuSSE4_2 + 1)
+/* AVX support required */
+#define CpuAVX		(CpuSSE5 + 1)
+/* Xsave/xrstor New Instuctions support required */
+#define CpuXsave	(CpuAVX + 1)
+/* AES support required */
+#define CpuAES		(CpuXsave + 1)
+/* PCLMUL support required */
+#define CpuPCLMUL	(CpuAES + 1)
+/* FMA support required */
+#define CpuFMA		(CpuPCLMUL + 1)
+/* MOVBE Instuction support required */
+#define CpuMovbe	(CpuFMA + 1)
+/* EPT Instructions required */
+#define CpuEPT		(CpuMovbe + 1)
+/* RDTSCP Instuction support required */
+#define CpuRdtscp	(CpuEPT + 1)
 /* 64bit support available, used by -march= in assembler.  */
-#define CpuLM		(CpuSSE5 + 1)
+#define CpuLM		(CpuRdtscp + 1)
 /* 64bit support required  */
 #define Cpu64		(CpuLM + 1)
 /* Not supported in the 64bit mode  */
@@ -112,11 +124,9 @@ typedef union i386_cpu_flags
       unsigned int cpui486:1;
       unsigned int cpui586:1;
       unsigned int cpui686:1;
-      unsigned int cpup4:1;
-      unsigned int cpuk6:1;
-      unsigned int cpuk8:1;
+      unsigned int cpuclflush:1;
+      unsigned int cpusyscall:1;
       unsigned int cpummx:1;
-      unsigned int cpummx2:1;
       unsigned int cpusse:1;
       unsigned int cpusse2:1;
       unsigned int cpua3dnow:1;
@@ -132,6 +142,14 @@ typedef union i386_cpu_flags
       unsigned int cpusse4_1:1;
       unsigned int cpusse4_2:1;
       unsigned int cpusse5:1;
+      unsigned int cpuavx:1;
+      unsigned int cpuxsave:1;
+      unsigned int cpuaes:1;
+      unsigned int cpupclmul:1;
+      unsigned int cpufma:1;
+      unsigned int cpumovbe:1;
+      unsigned int cpuept:1;
+      unsigned int cpurdtscp:1;
       unsigned int cpulm:1;
       unsigned int cpu64:1;
       unsigned int cpuno64:1;
@@ -148,8 +166,11 @@ typedef union i386_cpu_flags
 #define D			0
 /* set if operands can be words or dwords encoded the canonical way */
 #define W			(D + 1)
+/* Skip the current insn and use the next insn in i386-opc.tbl to swap
+   operand in encoding.  */
+#define S			(W + 1)
 /* insn has a modrm byte. */
-#define Modrm			(W + 1)
+#define Modrm			(S + 1)
 /* register is in low 3 bits of opcode */
 #define ShortForm		(Modrm + 1)
 /* special case for jump insns.  */
@@ -189,20 +210,8 @@ typedef union i386_cpu_flags
 #define No_qSuf			(No_sSuf + 1)
 /* long double suffix on instruction illegal */
 #define No_ldSuf		(No_qSuf + 1)
-/* check memory size on instruction in Intel mode if it is specified.  */
-#define CheckSize		(No_ldSuf + 1)
-/* BYTE memory on instruction */
-#define Byte			(CheckSize + 1)
-/* WORD memory on instruction */
-#define Word			(Byte + 1)
-/* DWORD memory on instruction */
-#define Dword			(Word + 1)
-/* QWORD memory on instruction */
-#define Qword			(Dword + 1)
-/* XMMWORD memory on instruction */
-#define Xmmword			(Qword + 1)
 /* instruction needs FWAIT */
-#define FWait			(Xmmword + 1)
+#define FWait			(No_ldSuf + 1)
 /* quick test for string instructions */
 #define IsString		(FWait + 1)
 /* fake an extra reg operand for clr, imul and special register
@@ -210,8 +219,10 @@ typedef union i386_cpu_flags
 #define RegKludge		(IsString + 1)
 /* The first operand must be xmm0 */
 #define FirstXmm0		(RegKludge + 1)
+/* An implicit xmm0 as the first operand */
+#define Implicit1stXmm0		(FirstXmm0 + 1)
 /* BYTE is OK in Intel syntax. */
-#define ByteOkIntel		(FirstXmm0 + 1)
+#define ByteOkIntel		(Implicit1stXmm0 + 1)
 /* Convert to DWORD */
 #define ToDword			(ByteOkIntel + 1)
 /* Convert to QWORD */
@@ -233,19 +244,51 @@ typedef union i386_cpu_flags
 #define Drexv			(Drex + 1)
 /* special DREX for comparisons */
 #define Drexc			(Drexv + 1)
+/* insn has VEX prefix. */
+#define Vex			(Drexc + 1)
+/* insn has 256bit VEX prefix. */
+#define Vex256			(Vex + 1)
+/* insn has VEX NDS. Register-only source is encoded in Vex prefix.
+   We use VexNDS on insns with VEX DDS since the register-only source
+   is the second source register.  */
+#define VexNDS			(Vex256 + 1)
+/* insn has VEX NDD. Register destination is encoded in Vex
+   prefix. */
+#define VexNDD			(VexNDS + 1)
+/* insn has VEX W0. */
+#define VexW0			(VexNDD + 1)
+/* insn has VEX W1. */
+#define VexW1			(VexW0 + 1)
+/* insn has VEX 0x0F opcode prefix. */
+#define Vex0F			(VexW1 + 1)
+/* insn has VEX 0x0F38 opcode prefix. */
+#define Vex0F38			(Vex0F + 1)
+/* insn has VEX 0x0F3A opcode prefix. */
+#define Vex0F3A			(Vex0F38 + 1)
+/* insn has VEX prefix with 3 soures. */
+#define Vex3Sources		(Vex0F3A + 1)
+/* instruction has VEX 8 bit imm */
+#define VexImmExt		(Vex3Sources + 1)
+/* SSE to AVX support required */
+#define SSE2AVX			(VexImmExt + 1)
+/* No AVX equivalent */
+#define NoAVX			(SSE2AVX + 1)
 /* Compatible with old (<= 2.8.1) versions of gcc  */
-#define OldGcc			(Drexc + 1)
+#define OldGcc			(NoAVX + 1)
 /* AT&T mnemonic.  */
 #define ATTMnemonic		(OldGcc + 1)
 /* AT&T syntax.  */
 #define ATTSyntax		(ATTMnemonic + 1)
+/* Intel syntax.  */
+#define IntelSyntax		(ATTSyntax + 1)
 /* The last bitfield in i386_opcode_modifier.  */
-#define Opcode_Modifier_Max	ATTSyntax
+#define Opcode_Modifier_Max	IntelSyntax
 
 typedef struct i386_opcode_modifier
 {
   unsigned int d:1;
   unsigned int w:1;
+  unsigned int s:1;
   unsigned int modrm:1;
   unsigned int shortform:1;
   unsigned int jump:1;
@@ -266,16 +309,11 @@ typedef struct i386_opcode_modifier
   unsigned int no_ssuf:1;
   unsigned int no_qsuf:1;
   unsigned int no_ldsuf:1;
-  unsigned int checksize:1;
-  unsigned int byte:1;
-  unsigned int word:1;
-  unsigned int dword:1;
-  unsigned int qword:1;
-  unsigned int xmmword:1;
   unsigned int fwait:1;
   unsigned int isstring:1;
   unsigned int regkludge:1;
   unsigned int firstxmm0:1;
+  unsigned int implicit1stxmm0:1;
   unsigned int byteokintel:1;
   unsigned int todword:1;
   unsigned int toqword:1;
@@ -288,28 +326,57 @@ typedef struct i386_opcode_modifier
   unsigned int drex:1;
   unsigned int drexv:1;
   unsigned int drexc:1;
+  unsigned int vex:1;
+  unsigned int vex256:1;
+  unsigned int vexnds:1;
+  unsigned int vexndd:1;
+  unsigned int vexw0:1;
+  unsigned int vexw1:1;
+  unsigned int vex0f:1;
+  unsigned int vex0f38:1;
+  unsigned int vex0f3a:1;
+  unsigned int vex3sources:1;
+  unsigned int veximmext:1;
+  unsigned int sse2avx:1;
+  unsigned int noavx:1;
   unsigned int oldgcc:1;
   unsigned int attmnemonic:1;
   unsigned int attsyntax:1;
+  unsigned int intelsyntax:1;
 } i386_opcode_modifier;
 
 /* Position of operand_type bits.  */
 
-/* Registers  */
-
-/* 8 bit reg */
+/* 8bit register */
 #define Reg8			0
-/* 16 bit reg */
+/* 16bit register */
 #define Reg16			(Reg8 + 1)
-/* 32 bit reg */
+/* 32bit register */
 #define Reg32			(Reg16 + 1)
-/* 64 bit reg */
+/* 64bit register */
 #define Reg64			(Reg32 + 1)
-
-/* immediate */
-
+/* Floating pointer stack register */
+#define FloatReg		(Reg64 + 1)
+/* MMX register */
+#define RegMMX			(FloatReg + 1)
+/* SSE register */
+#define RegXMM			(RegMMX + 1)
+/* AVX registers */
+#define RegYMM			(RegXMM + 1)
+/* Control register */
+#define Control			(RegYMM + 1)
+/* Debug register */
+#define Debug			(Control + 1)
+/* Test register */
+#define Test			(Debug + 1)
+/* 2 bit segment register */
+#define SReg2			(Test + 1)
+/* 3 bit segment register */
+#define SReg3			(SReg2 + 1)
+/* 1 bit immediate */
+#define Imm1			(SReg3 + 1)
 /* 8 bit immediate */
-#define Imm8			(Reg64 + 1)
+#define Imm8			(Imm1 + 1)
 /* 8 bit immediate sign extended */
 #define Imm8S			(Imm8 + 1)
 /* 16 bit immediate */
@@ -320,20 +387,15 @@ typedef struct i386_opcode_modifier
 #define Imm32S			(Imm32 + 1)
 /* 64 bit immediate */
 #define Imm64			(Imm32S + 1)
-/* 1 bit immediate */
-#define Imm1			(Imm64 + 1)
-
-/* memory */
-
-#define BaseIndex		(Imm1 + 1)
-/* Disp8,16,32 are used in different ways, depending on the
-   instruction.  For jumps, they specify the size of the PC relative
-   displacement, for baseindex type instructions, they specify the
-   size of the offset relative to the base register, and for memory
-   offset instructions such as `mov 1234,%al' they specify the size of
-   the offset relative to the segment base.  */
+/* 8bit/16bit/32bit displacements are used in different ways,
+   depending on the instruction.  For jumps, they specify the
+   size of the PC relative displacement, for instructions with
+   memory operand, they specify the size of the offset relative
+   to the base register, and for instructions with memory offset
+   such as `mov 1234,%al' they specify the size of the offset
+   relative to the segment base.  */
 /* 8 bit displacement */
-#define Disp8			(BaseIndex + 1)
+#define Disp8			(Imm64 + 1)
 /* 16 bit displacement */
 #define Disp16			(Disp8 + 1)
 /* 32 bit displacement */
@@ -342,46 +404,54 @@ typedef struct i386_opcode_modifier
 #define Disp32S			(Disp32 + 1)
 /* 64 bit displacement */
 #define Disp64			(Disp32S + 1)
-
-/* specials */
-
-/* register to hold in/out port addr = dx */
-#define InOutPortReg		(Disp64 + 1)
-/* register to hold shift count = cl */
+/* Accumulator %al/%ax/%eax/%rax */
+#define Acc			(Disp64 + 1)
+/* Floating pointer top stack register %st(0) */
+#define FloatAcc		(Acc + 1)
+/* Register which can be used for base or index in memory operand.  */
+#define BaseIndex		(FloatAcc + 1)
+/* Register to hold in/out port addr = dx */
+#define InOutPortReg		(BaseIndex + 1)
+/* Register to hold shift count = cl */
 #define ShiftCount		(InOutPortReg + 1)
-/* Control register */
-#define Control			(ShiftCount + 1)
-/* Debug register */
-#define Debug			(Control + 1)
-/* Test register */
-#define Test			(Debug + 1)
-/* Float register */
-#define FloatReg		(Test + 1)
-/* Float stack top %st(0) */
-#define FloatAcc		(FloatReg + 1)
-/* 2 bit segment register */
-#define SReg2			(FloatAcc + 1)
-/* 3 bit segment register */
-#define SReg3			(SReg2 + 1)
-/* Accumulator %al or %ax or %eax */
-#define Acc			(SReg3 + 1)
-#define JumpAbsolute		(Acc + 1)
-/* MMX register */
-#define RegMMX			(JumpAbsolute + 1)
-/* XMM registers in PIII */
-#define RegXMM			(RegMMX + 1)
+/* Absolute address for jump.  */
+#define JumpAbsolute		(ShiftCount + 1)
 /* String insn operand with fixed es segment */
-#define EsSeg			(RegXMM + 1)
-
+#define EsSeg			(JumpAbsolute + 1)
 /* RegMem is for instructions with a modrm byte where the register
    destination operand should be encoded in the mod and regmem fields.
    Normally, it will be encoded in the reg field. We add a RegMem
    flag to the destination register operand to indicate that it should
    be encoded in the regmem field.  */
 #define RegMem			(EsSeg + 1)
+/* Memory.  */
+#define Mem			(RegMem + 1)
+/* BYTE memory. */
+#define Byte			(Mem + 1)
+/* WORD memory. 2 byte */
+#define Word			(Byte + 1)
+/* DWORD memory. 4 byte */
+#define Dword			(Word + 1)
+/* FWORD memory. 6 byte */
+#define Fword			(Dword + 1)
+/* QWORD memory. 8 byte */
+#define Qword			(Fword + 1)
+/* TBYTE memory. 10 byte */
+#define Tbyte			(Qword + 1)
+/* XMMWORD memory. */
+#define Xmmword			(Tbyte + 1)
+/* YMMWORD memory. */
+#define Ymmword			(Xmmword + 1)
+/* Unspecified memory size.  */
+#define Unspecified		(Ymmword + 1)
+/* Any memory size.  */
+#define Anysize			(Unspecified  + 1)
+
+/* VEX 4 bit immediate */
+#define Vex_Imm4		(Anysize + 1)
 
 /* The last bitfield in i386_operand_type.  */
-#define OTMax			RegMem
+#define OTMax			Vex_Imm4
 
 #define OTNumOfUints \
   (OTMax / sizeof (unsigned int) / CHAR_BIT + 1)
@@ -390,9 +460,7 @@ typedef struct i386_opcode_modifier
 
 /* If you get a compiler error for zero width of the unused field,
    comment it out.  */
-#if 0
 #define OTUnused		(OTMax + 1)
-#endif
 
 typedef union i386_operand_type
 {
@@ -402,34 +470,47 @@ typedef union i386_operand_type
       unsigned int reg16:1;
       unsigned int reg32:1;
       unsigned int reg64:1;
+      unsigned int floatreg:1;
+      unsigned int regmmx:1;
+      unsigned int regxmm:1;
+      unsigned int regymm:1;
+      unsigned int control:1;
+      unsigned int debug:1;
+      unsigned int test:1;
+      unsigned int sreg2:1;
+      unsigned int sreg3:1;
+      unsigned int imm1:1;
       unsigned int imm8:1;
       unsigned int imm8s:1;
       unsigned int imm16:1;
       unsigned int imm32:1;
       unsigned int imm32s:1;
       unsigned int imm64:1;
-      unsigned int imm1:1;
-      unsigned int baseindex:1;
       unsigned int disp8:1;
       unsigned int disp16:1;
       unsigned int disp32:1;
       unsigned int disp32s:1;
       unsigned int disp64:1;
+      unsigned int acc:1;
+      unsigned int floatacc:1;
+      unsigned int baseindex:1;
       unsigned int inoutportreg:1;
       unsigned int shiftcount:1;
-      unsigned int control:1;
-      unsigned int debug:1;
-      unsigned int test:1;
-      unsigned int floatreg:1;
-      unsigned int floatacc:1;
-      unsigned int sreg2:1;
-      unsigned int sreg3:1;
-      unsigned int acc:1;
       unsigned int jumpabsolute:1;
-      unsigned int regmmx:1;
-      unsigned int regxmm:1;
       unsigned int esseg:1;
       unsigned int regmem:1;
+      unsigned int mem:1;
+      unsigned int byte:1;
+      unsigned int word:1;
+      unsigned int dword:1;
+      unsigned int fword:1;
+      unsigned int qword:1;
+      unsigned int tbyte:1;
+      unsigned int xmmword:1;
+      unsigned int ymmword:1;
+      unsigned int unspecified:1;
+      unsigned int anysize:1;
+      unsigned int vex_imm4:1;
 #ifdef OTUnused
       unsigned int unused:(OTNumOfBits - OTUnused);
 #endif
@@ -488,15 +569,19 @@ typedef struct
 {
   char *reg_name;
   i386_operand_type reg_type;
-  unsigned int reg_flags;
+  unsigned char reg_flags;
 #define RegRex	    0x1  /* Extended register.  */
 #define RegRex64    0x2  /* Extended 8 bit register.  */
-  unsigned int reg_num;
-#define RegRip	((unsigned int ) ~0)
+  unsigned char reg_num;
+#define RegRip	((unsigned char ) ~0)
 #define RegEip	(RegRip - 1)
 /* EIZ and RIZ are fake index registers.  */
 #define RegEiz	(RegEip - 1)
 #define RegRiz	(RegEiz - 1)
+/* FLAT is a fake segment register (Intel mode).  */
+#define RegFlat     ((unsigned char) ~0)
+  signed char dw2_regnum[2];
+#define Dw2Inval (-1)
 }
 reg_entry;
 

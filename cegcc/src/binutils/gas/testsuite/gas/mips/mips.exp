@@ -361,6 +361,11 @@ mips_arch_create vr5400	64	mips4	{ ror } \
 mips_arch_create sb1 	64	mips64	{ mips3d } \
 			{ -march=sb1 -mtune=sb1 } { -mmips:sb1 } \
 			{ mipsisa64sb1-*-* mipsisa64sb1el-*-* }
+mips_arch_create octeon 64	mips64r2 {} \
+			{ -march=octeon -mtune=octeon } { -mmips:octeon } \
+			{ mips64octeon*-*-* }
+mips_arch_create xlr 	64	mips64	{} \
+			{ -march=xlr -mtune=xlr } { -mmips:xlr }
 
 #
 # And now begin the actual tests!  VxWorks uses RELA rather than REL
@@ -376,9 +381,8 @@ if { [istarget mips*-*-vxworks*] } {
     set elf [expr [istarget *-*-elf*] || [istarget *-*-irix5*] || [istarget *-*-irix6* ] || [istarget *-*-linux*] || [istarget *-*-netbsd*] ]
     set ecoff [expr [istarget *-*-ecoff*] || [istarget *-*-ultrix*] || [istarget *-*-irix\[1-4\]*] ]
     set aout [expr [istarget *-*-bsd*] || [istarget *-*-openbsd*] ]
-    set ilocks [istarget mipstx39*-*-*]
     set gpr_ilocks [expr [istarget mipstx39*-*-*]]
-    set addr32 [expr [istarget mipstx39*-*-*] || [istarget mips-*-linux*] || [istarget mipsel-*-linux*]]
+    set addr32 [expr [istarget mipstx39*-*-*] || [istarget mips-*-linux*] || [istarget mipsel-*-linux*] || [istarget mips*-*-ecoff]]
     set has_newabi [expr [istarget *-*-irix6*] || [istarget mips64*-*-linux*]]
 
     if { [istarget "mips*-*-*linux*"] || [istarget "mips*-sde-elf*"] } then {
@@ -391,10 +395,16 @@ if { [istarget mips*-*-vxworks*] } {
     } {
 	set el ""
     }
-
+    if { $ecoff } {
+	set no_mips16 1
+    }
+    
     run_dump_test_arches "abs"		[mips_arch_list_matching mips1]
     run_dump_test_arches "add"		[mips_arch_list_matching mips1]
     run_dump_test_arches "and"		[mips_arch_list_matching mips1]
+    run_dump_test_arches "mips1-fp"	[mips_arch_list_matching mips1]
+    run_list_test_arches "mips1-fp" "-32 -msoft-float" \
+					[mips_arch_list_matching mips1]
     run_dump_test "break20"
     run_dump_test "trap20"
 
@@ -416,12 +426,8 @@ if { [istarget mips*-*-vxworks*] } {
     run_dump_test_arches "branch-misc-2pic-64" [mips_arch_list_matching mips3]
     run_dump_test "branch-misc-3"
     run_dump_test "branch-swap"
+    run_dump_test "div"
 
-    if $ilocks {
-	run_dump_test "div-ilocks"
-    } else {
-	run_dump_test "div"
-    }
     if { !$addr32 } {
 	run_dump_test_arches "dli"		[mips_arch_list_matching mips3]
     }
@@ -472,12 +478,11 @@ if { [istarget mips*-*-vxworks*] } {
     if $elf { run_dump_test "lif-svr4pic" }
     if $elf { run_dump_test "lif-xgot" }
     run_dump_test_arches "mips4"	[mips_arch_list_matching mips4]
+    run_dump_test_arches "mips4-fp"	[mips_arch_list_matching mips4]
+    run_list_test_arches "mips4-fp" "-32 -msoft-float" \
+					[mips_arch_list_matching mips4]
     run_dump_test_arches "mips5"	[mips_arch_list_matching mips5]
-    if $ilocks {
-	run_dump_test "mul-ilocks"
-    } else {
-	run_dump_test "mul"
-    }
+    run_dump_test "mul"
 
     run_dump_test_arches "rol"		[mips_arch_list_matching !ror]
     run_dump_test_arches "rol-hw" 	[mips_arch_list_matching ror]
@@ -522,6 +527,7 @@ if { [istarget mips*-*-vxworks*] } {
 	if $has_newabi {
 	    run_dump_test "mips16-hilo-n32"
 	}
+	run_dump_test "mips16-hilo-match"
     }
     run_list_test "mips-no-jalx" "-32"
     run_dump_test "delay"
@@ -543,14 +549,28 @@ if { [istarget mips*-*-vxworks*] } {
     run_dump_test_arches "mips32"	[mips_arch_list_matching mips32]
 
     run_dump_test_arches "mips32-sf32"	[mips_arch_list_matching mips32]
+    run_list_test_arches "mips32-sf32" "-32 -msoft-float" \
+					[mips_arch_list_matching mips32]
+    run_dump_test_arches "mips32-cp2"	[mips_arch_list_matching mips32 \
+					    !octeon]
 
     run_dump_test_arches "mips32r2"	[mips_arch_list_matching mips32r2]
+    run_dump_test_arches "mips32r2-cp2"	[mips_arch_list_matching mips32r2 \
+					    !octeon]
+    run_dump_test_arches "mips32r2-fp32" \
+					[mips_arch_list_matching mips32r2]
+    run_list_test_arches "mips32r2-fp32" "-32 -msoft-float" \
+					[mips_arch_list_matching mips32r2]
     run_list_test_arches "mips32r2-ill" "-32" \
-			 [mips_arch_list_matching mips32r2 gpr32]
+			[mips_arch_list_matching mips32r2 gpr32]
     run_list_test_arches "mips32r2-ill-fp64" "-mabi=o64" \
-			 [mips_arch_list_matching mips32r2 gpr64]
+			[mips_arch_list_matching mips32r2 gpr64]
+    run_list_test_arches "mips32r2-ill-nofp" "-32 -msoft-float" \
+			[mips_arch_list_matching mips32r2]
 
     run_dump_test_arches "mips64"	[mips_arch_list_matching mips64]
+    run_dump_test_arches "mips64-cp2"	[mips_arch_list_matching mips64 \
+					    !octeon]
 
     run_dump_test_arches "mips64r2"	[mips_arch_list_matching mips64r2]
     run_list_test_arches "mips64r2-ill" "" [mips_arch_list_matching mips64r2]
@@ -564,6 +584,7 @@ if { [istarget mips*-*-vxworks*] } {
 	run_dump_test "mips64-mdmx"
 	run_dump_test "sb1-ext-mdmx"
 	run_dump_test "sb1-ext-ps"
+	run_dump_test "xlr-ext"
     }
 
     run_dump_test "relax"
@@ -632,13 +653,16 @@ if { [istarget mips*-*-vxworks*] } {
 	}
 	run_dump_test "elf-rel7"
 	run_dump_test "elf-rel8"
+	run_dump_test "elf-rel8-mips16"
 	run_dump_test "elf-rel9"
+	run_dump_test "elf-rel9-mips16"
 	if $has_newabi {
 	    run_dump_test "elf-rel10"
 	    run_dump_test "elf-rel11"
 	}
 	run_dump_test "elf-rel12"
 	run_dump_test "elf-rel13"
+	run_dump_test "elf-rel13-mips16"
 	run_dump_test "elf-rel14"
 
 	if $has_newabi {
@@ -761,11 +785,15 @@ if { [istarget mips*-*-vxworks*] } {
     run_dump_test "loongson-2e"
     run_dump_test "loongson-2f"
 
-    run_dump_test_arches "smartmips"	[mips_arch_list_matching mips32 !gpr64]
-    run_dump_test_arches "mips32-dsp"	[mips_arch_list_matching mips32r2]
-    run_dump_test_arches "mips32-dspr2"	[mips_arch_list_matching mips32r2]
-    run_dump_test_arches "mips64-dsp"	[mips_arch_list_matching mips64r2]
-    run_dump_test_arches "mips32-mt"	[mips_arch_list_matching mips32r2 !gpr64]
+    run_dump_test_arches "octeon"	[mips_arch_list_matching octeon]
+    run_list_test_arches "octeon-ill" "" \
+					[mips_arch_list_matching octeon]
+
+    run_dump_test "smartmips"
+    run_dump_test "mips32-dsp"
+    run_dump_test "mips32-dspr2"
+    run_dump_test "mips64-dsp"
+    run_dump_test "mips32-mt"
 
     if { $elf && !$no_mips16 } {
 	run_dump_test "mips16-dwarf2"
@@ -790,4 +818,22 @@ if { [istarget mips*-*-vxworks*] } {
     run_dump_test "align2"
     run_dump_test "align2-el"
     run_dump_test "odd-float"
+
+    run_list_test_arches "mips-macro-ill-sfp" "-32 -msingle-float" \
+					[mips_arch_list_matching mips2]
+    run_list_test_arches "mips-macro-ill-nofp" "-32 -msoft-float" \
+					[mips_arch_list_matching mips2]
+
+    run_list_test_arches "mips-hard-float-flag" \
+	"-32 -msoft-float -mhard-float" \
+					[mips_arch_list_matching mips1]
+    run_list_test_arches "mips-double-float-flag" \
+	"-32 -msingle-float -mdouble-float" \
+					[mips_arch_list_matching mips1]
+
+    run_dump_test "mips16-vis-1"
+    run_dump_test "call-nonpic-1"
+    run_dump_test "mips32-sync"
+
+    if $has_newabi { run_dump_test "cfi-n64-1" }
 }

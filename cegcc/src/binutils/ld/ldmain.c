@@ -1,6 +1,6 @@
 /* Main program of GNU linker.
    Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-   2002, 2003, 2004, 2005, 2006, 2007
+   2002, 2003, 2004, 2005, 2006, 2007, 2008
    Free Software Foundation, Inc.
    Written by Steve Chamberlain steve@cygnus.com
 
@@ -60,6 +60,10 @@ extern void *sbrk ();
 
 /* EXPORTS */
 
+FILE *saved_script_handle = NULL;
+FILE *previous_script_handle = NULL;
+bfd_boolean force_make_executable = FALSE;
+
 char *default_target;
 const char *output_filename = "a.out";
 
@@ -72,9 +76,6 @@ const char *ld_sysroot;
 /* The canonical representation of ld_sysroot.  */
 char * ld_canon_sysroot;
 int ld_canon_sysroot_len;
-
-/* The file that we're creating.  */
-bfd *output_bfd = 0;
 
 /* Set by -G argument, for MIPS ECOFF target.  */
 int g_switch_value = 8;
@@ -113,8 +114,6 @@ static const char *get_sysroot
   (int, char **);
 static char *get_emulation
   (int, char **);
-static void set_scripts_dir
-  (void);
 static bfd_boolean add_archive_element
   (struct bfd_link_info *, bfd *, const char *);
 static bfd_boolean multiple_definition
@@ -173,8 +172,8 @@ remove_output (void)
 {
   if (output_filename)
     {
-      if (output_bfd)
-	bfd_cache_close (output_bfd);
+      if (link_info.output_bfd)
+	bfd_cache_close (link_info.output_bfd);
       if (delete_output_file_on_failure)
 	unlink_if_ordinary (output_filename);
     }
@@ -252,7 +251,7 @@ main (int argc, char **argv)
 
   command_line.warn_mismatch = TRUE;
   command_line.warn_search_mismatch = TRUE;
-  command_line.check_section_addresses = TRUE;
+  command_line.check_section_addresses = -1;
 
   /* We initialize DEMANGLING based on the environment variable
      COLLECT_NO_DEMANGLE.  The gcc collect2 program will demangle the
@@ -275,6 +274,7 @@ main (int argc, char **argv)
   link_info.relax_pass = 1;
   link_info.pei386_auto_import = -1;
   link_info.spare_dynamic_tags = 5;
+  link_info.path_separator = ':';
 
   ldfile_add_arch ("");
   emulation = get_emulation (argc, argv);
@@ -292,9 +292,9 @@ main (int argc, char **argv)
 
   if (link_info.relocatable)
     {
-      if (link_info.gc_sections)
-	einfo ("%P%F: --gc-sections and -r may not be used together\n");
-      else if (command_line.relax)
+      if (command_line.check_section_addresses < 0)
+	command_line.check_section_addresses = 0;
+      if (command_line.relax)
 	einfo (_("%P%F: --relax and -r may not be used together\n"));
       if (link_info.shared)
 	einfo (_("%P%F: -r and -shared may not be used together\n"));
@@ -357,10 +357,6 @@ main (int argc, char **argv)
       if (link_info.discard == discard_sec_merge)
 	link_info.discard = discard_all;
     }
-
-  /* This essentially adds another -L directory so this must be done after
-     the -L's in argv have been processed.  */
-  set_scripts_dir ();
 
   /* If we have not already opened and parsed a linker script,
      try the default script from command line first.  */
@@ -461,9 +457,9 @@ main (int argc, char **argv)
   /* Print error messages for any missing symbols, for any warning
      symbols, and possibly multiple definitions.  */
   if (link_info.relocatable)
-    output_bfd->flags &= ~EXEC_P;
+    link_info.output_bfd->flags &= ~EXEC_P;
   else
-    output_bfd->flags |= EXEC_P;
+    link_info.output_bfd->flags |= EXEC_P;
 
   ldwrite ();
 
@@ -490,8 +486,8 @@ main (int argc, char **argv)
     }
   else
     {
-      if (! bfd_close (output_bfd))
-	einfo (_("%F%B: final close failed: %E\n"), output_bfd);
+      if (! bfd_close (link_info.output_bfd))
+	einfo (_("%F%B: final close failed: %E\n"), link_info.output_bfd);
 
       /* If the --force-exe-suffix is enabled, and we're making an
 	 executable file and it doesn't end in .exe, copy it to one
@@ -671,106 +667,6 @@ get_emulation (int argc, char **argv)
   return emulation;
 }
 
-/* If directory DIR contains an "ldscripts" subdirectory,
-   add DIR to the library search path and return TRUE,
-   else return FALSE.  */
-
-static bfd_boolean
-check_for_scripts_dir (char *dir)
-{
-  size_t dirlen;
-  char *buf;
-  struct stat s;
-  bfd_boolean res;
-
-  dirlen = strlen (dir);
-  /* sizeof counts the terminating NUL.  */
-  buf = xmalloc (dirlen + sizeof ("/ldscripts"));
-  sprintf (buf, "%s/ldscripts", dir);
-
-  res = stat (buf, &s) == 0 && S_ISDIR (s.st_mode);
-  free (buf);
-  if (res)
-    ldfile_add_library_path (dir, FALSE);
-  return res;
-}
-
-/* Set the default directory for finding script files.
-   Libraries will be searched for here too, but that's ok.
-   We look for the "ldscripts" directory in:
-
-   SCRIPTDIR (passed from Makefile)
-	     (adjusted according to the current location of the binary)
-   SCRIPTDIR (passed from Makefile)
-   the dir where this program is (for using it from the build tree)
-   the dir where this program is/../lib
-	     (for installing the tool suite elsewhere).  */
-
-static void
-set_scripts_dir (void)
-{
-  char *end, *dir;
-  size_t dirlen;
-  bfd_boolean found;
-
-  dir = make_relative_prefix (program_name, BINDIR, SCRIPTDIR);
-  if (dir)
-    {
-      found = check_for_scripts_dir (dir);
-      free (dir);
-      if (found)
-	return;
-    }
-
-  dir = make_relative_prefix (program_name, TOOLBINDIR, SCRIPTDIR);
-  if (dir)
-    {
-      found = check_for_scripts_dir (dir);
-      free (dir);
-      if (found)
-	return;
-    }
-
-  if (check_for_scripts_dir (SCRIPTDIR))
-    /* We've been installed normally.  */
-    return;
-
-  /* Look for "ldscripts" in the dir where our binary is.  */
-  end = strrchr (program_name, '/');
-#ifdef HAVE_DOS_BASED_FILE_SYSTEM
-  {
-    /* We could have \foo\bar, or /foo\bar.  */
-    char *bslash = strrchr (program_name, '\\');
-
-    if (end == NULL || (bslash != NULL && bslash > end))
-      end = bslash;
-  }
-#endif
-
-  if (end == NULL)
-    /* Don't look for ldscripts in the current directory.  There is
-       too much potential for confusion.  */
-    return;
-
-  dirlen = end - program_name;
-  /* Make a copy of program_name in dir.
-     Leave room for later "/../lib".  */
-  dir = xmalloc (dirlen + 8);
-  strncpy (dir, program_name, dirlen);
-  dir[dirlen] = '\0';
-
-  if (check_for_scripts_dir (dir))
-    {
-      free (dir);
-      return;
-    }
-
-  /* Look for "ldscripts" in <the dir where our binary is>/../lib.  */
-  strcpy (dir + dirlen, "/../lib");
-  check_for_scripts_dir (dir);
-  free (dir);
-}
-
 void
 add_ysym (const char *name)
 {
@@ -884,21 +780,10 @@ add_archive_element (struct bfd_link_info *info,
 {
   lang_input_statement_type *input;
 
-  input = xmalloc (sizeof (lang_input_statement_type));
+  input = xcalloc (1, sizeof (lang_input_statement_type));
   input->filename = abfd->filename;
   input->local_sym_name = abfd->filename;
   input->the_bfd = abfd;
-  input->asymbols = NULL;
-  input->next = NULL;
-  input->just_syms_flag = FALSE;
-  input->loaded = FALSE;
-  input->search_dirs_flag = FALSE;
-
-  /* FIXME: The following fields are not set: header.next,
-     header.type, closed, passive_position, symbol_count,
-     next_real_file, is_archive, target, real.  This bit of code is
-     from the old decode_library_subfile function.  I don't know
-     whether any of those fields matters.  */
 
   ldlang_add_file (input);
 
@@ -1149,7 +1034,7 @@ constructor_callback (struct bfd_link_info *info,
 
   /* Ensure that BFD_RELOC_CTOR exists now, so that we can give a
      useful error message.  */
-  if (bfd_reloc_type_lookup (output_bfd, BFD_RELOC_CTOR) == NULL
+  if (bfd_reloc_type_lookup (link_info.output_bfd, BFD_RELOC_CTOR) == NULL
       && (info->relocatable
 	  || bfd_reloc_type_lookup (abfd, BFD_RELOC_CTOR) == NULL))
     einfo (_("%P%F: BFD backend error: BFD_RELOC_CTOR unsupported\n"));
@@ -1213,45 +1098,22 @@ warning_callback (struct bfd_link_info *info ATTRIBUTE_UNUSED,
     einfo ("%B: %s%s\n", abfd, _("warning: "), warning);
   else
     {
-      lang_input_statement_type *entry;
-      asymbol **asymbols;
       struct warning_callback_info info;
 
       /* Look through the relocs to see if we can find a plausible
 	 address.  */
-      entry = (lang_input_statement_type *) abfd->usrdata;
-      if (entry != NULL && entry->asymbols != NULL)
-	asymbols = entry->asymbols;
-      else
-	{
-	  long symsize;
-	  long symbol_count;
 
-	  symsize = bfd_get_symtab_upper_bound (abfd);
-	  if (symsize < 0)
-	    einfo (_("%B%F: could not read symbols: %E\n"), abfd);
-	  asymbols = xmalloc (symsize);
-	  symbol_count = bfd_canonicalize_symtab (abfd, asymbols);
-	  if (symbol_count < 0)
-	    einfo (_("%B%F: could not read symbols: %E\n"), abfd);
-	  if (entry != NULL)
-	    {
-	      entry->asymbols = asymbols;
-	      entry->symbol_count = symbol_count;
-	    }
-	}
+      if (!bfd_generic_link_read_symbols (abfd))
+	einfo (_("%B%F: could not read symbols: %E\n"), abfd);
 
       info.found = FALSE;
       info.warning = warning;
       info.symbol = symbol;
-      info.asymbols = asymbols;
+      info.asymbols = bfd_get_outsymbols (abfd);
       bfd_map_over_sections (abfd, warning_find_reloc, &info);
 
       if (! info.found)
 	einfo ("%B: %s%s\n", abfd, _("warning: "), warning);
-
-      if (entry == NULL)
-	free (asymbols);
     }
 
   return TRUE;
@@ -1455,7 +1317,7 @@ reloc_overflow (struct bfd_link_info *info ATTRIBUTE_UNUSED,
 		 reloc_name, entry->root.string,
 		 entry->u.def.section,
 		 entry->u.def.section == bfd_abs_section_ptr
-		 ? output_bfd : entry->u.def.section->owner);
+		 ? link_info.output_bfd : entry->u.def.section->owner);
 	  break;
 	default:
 	  abort ();

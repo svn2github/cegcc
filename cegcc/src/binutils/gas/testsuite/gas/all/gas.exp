@@ -65,46 +65,56 @@ gas_test_error "assign-bad.s" "" "== assignment for symbol already set"
 # .equ works differently on some targets.
 # linkrelax-ing prevents most forward references from working.
 case $target_triplet in {
+    { *c54x*-*-* } { }
     { cr16*-*-* } { }
     { crx*-*-* } { }
     { h8300*-*-* } { }
     { hppa*-*-* } { }
+    { mep-*-* } { }
     { mn10\[23\]00*-*-* } { }
-    { *c54x*-*-* } { }
     default {
 	# Some targets don't manage to resolve BFD_RELOC_8 for constants.
 	setup_xfail "alpha*-*-*" "avr-*-*" "*c30*-*-*" "*c4x*-*-*" \
 	    "d\[13\]0v*-*-*" "i860-*-*" "mips*-*-*" "msp430-*-*" \
-	    "pdp11-*-*" "sparc*-*-*" "xtensa-*-*"
+	    "pdp11-*-*" "sparc*-*-*" "xtensa*-*-*"
 	run_dump_test forward
     }
 }
 
 # .set works differently on some targets.
+# most of the tests won't work on targets that set linkrelax.
+# 4 octet bytes confuse address matching on ti targets.
+# pdp11 gets unexpected reloc types.
 case $target_triplet in {
     { alpha*-*-* } { }
+    { cr16*-*-* } { }
+    { crx*-*-* } { }
+    { h8300-*-* } { }
     { mips*-*-* } { }
-    { *c54x*-*-* } { }
+    { mn10200-*-* } { }
+    { mn10300-*-* } { }
+    { pdp11-*-* } { }
+    { tic30*-*-* } { }
+    { tic4x*-*-* } { }
+    { tic54x*-*-* } { }
+    { xtensa*-*-* } { }
     { z80-*-* } { }
     default {
-	setup_xfail "*c30*-*-*" "*c4x*-*-*" "pdp11-*-*"
 	run_dump_test redef
 	# The next two tests can fail if the target does not convert fixups
 	# against ordinary symbols into relocations against section symbols.
 	# This is usually revealed by the error message:
 	#  symbol `sym' required but not present
-	setup_xfail "*c30*-*-*" "*c4x*-*-*" "*arm*-*-*aout*" "*arm*-*-*coff" \
-	    "*arm*-*-pe" "crx*-*-*" "h8300*-*-*" "m68hc*-*-*" "maxq-*-*" \
-	    "mn10300-*-*" "pdp11-*-*" "vax*-*-*" "z8k-*-*" "cr16-*-*"
+	setup_xfail "*arm*-*-*aout*" "*arm*-*-*coff" \
+	    "*arm*-*-pe" "m68hc*-*-*" "maxq-*-*" \
+	    "vax*-*-*" "z8k-*-*"
 	run_dump_test redef2
 	setup_xfail "*-*-aix*" "*-*-coff" "*-*-cygwin" "*-*-mingw*" "*-*-pe*" \
-	    "bfin-*-*" "*c4x*-*-*" "crx*-*-*" "h8300*-*-*" "hppa*-*-hpux*" \
-	    "m68hc*-*-*" "maxq-*-*" "mn10300-*-*" "or32-*-*" "pdp11-*-*" \
-	    "vax*-*-*" "z8k-*-*" "cr16-*-*"
+	    "bfin-*-*" "hppa*-*-hpux*" \
+	    "m68hc*-*-*" "maxq-*-*" "or32-*-*" \
+	    "vax*-*-*" "z8k-*-*"
 	run_dump_test redef3
-	setup_xfail "*c4x*-*-*"
 	gas_test_error "redef4.s" "" ".set for symbol already used as label"
-	setup_xfail "*c4x*-*-*"
 	gas_test_error "redef5.s" "" ".set for symbol already defined through .comm"
     }
 }
@@ -133,6 +143,31 @@ proc do_comment {} {
 }
 
 do_comment
+
+# This test checks the output of the -ag switch. It must detect at least
+# the name of the input file, output file, and options passed.
+proc general_info_section {} {
+    set testname "general info section in listings"
+    set x1 0
+    set x2 0
+    set x3 0
+    set white {[ \t]*}
+    gas_start "comment.s" "-agn"
+    while 1 {
+	expect {
+	    -re "^ \[^\n\]*\t: \-agn\[^\n\]*\n"                { set x1 1 }
+	    -re "^ \[^\n\]*\t: \[^\n\]*comment\.s\[^\n\]*\n"   { set x2 1 }
+	    -re "^ \[^\n\]*\t: a\.out\[^\n\]*\n"               { set x3 1 }
+	    -re "\[^\n\]*\n"     { }
+	    timeout              { perror "timeout\n"; break }
+	    eof                  { break }
+	}
+    }
+    gas_finish
+    if [all_ones $x1 $x2 $x3] then { pass $testname } else { fail $testname }
+}
+
+general_info_section
 
 #
 # Test x930509a -- correct assembly of differences involving forward
@@ -275,7 +310,8 @@ run_dump_test sleb128
 
 # .byte is 32 bits on tic4x, and .p2align isn't supported on tic54x
 # .space is different on hppa*-hpux.
-if { ![istarget "tic4x*-*-*"] && ![istarget "tic54x*-*-*"] && ![istarget "hppa*-*-hpux*"] } {
+# MeP put bytes into packets.
+if { ![istarget "tic4x*-*-*"] && ![istarget "tic54x*-*-*"] && ![istarget "hppa*-*-hpux*"] && ![istarget "mep*-*-*"] } {
     run_dump_test relax
 }
 

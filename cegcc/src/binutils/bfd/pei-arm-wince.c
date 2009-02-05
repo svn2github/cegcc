@@ -28,11 +28,4 @@
 
 #define LOCAL_LABEL_PREFIX "."
 
-#include "sysdep.h"
-#include "bfd.h"
-
-#undef bfd_pe_print_pdata
-#define	bfd_pe_print_pdata pe_print_compressed_pdata
-extern bfd_boolean pe_print_compressed_pdata (bfd * abfd, void * vfile);
-
 #include "pei-arm.c"

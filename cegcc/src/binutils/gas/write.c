@@ -1,6 +1,6 @@
 /* write.c - emit .o file
    Copyright 1986, 1987, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997,
-   1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
+   1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
@@ -54,26 +54,34 @@
   (! SEG_NORMAL (SEG))
 #endif
 
+#ifndef md_register_arithmetic
+# define md_register_arithmetic 1
+#endif
+
 #ifndef TC_FORCE_RELOCATION_SUB_ABS
-#define TC_FORCE_RELOCATION_SUB_ABS(FIX)	0
+#define TC_FORCE_RELOCATION_SUB_ABS(FIX, SEG)	\
+  (!md_register_arithmetic && (SEG) == reg_section)
 #endif
 
 #ifndef TC_FORCE_RELOCATION_SUB_LOCAL
 #ifdef DIFF_EXPR_OK
-#define TC_FORCE_RELOCATION_SUB_LOCAL(FIX)	0
+#define TC_FORCE_RELOCATION_SUB_LOCAL(FIX, SEG)	\
+  (!md_register_arithmetic && (SEG) == reg_section)
 #else
-#define TC_FORCE_RELOCATION_SUB_LOCAL(FIX)	1
+#define TC_FORCE_RELOCATION_SUB_LOCAL(FIX, SEG)	1
 #endif
 #endif
 
 #ifndef TC_VALIDATE_FIX_SUB
 #ifdef UNDEFINED_DIFFERENCE_OK
 /* The PA needs this for PIC code generation.  */
-#define TC_VALIDATE_FIX_SUB(FIX) 1
+#define TC_VALIDATE_FIX_SUB(FIX, SEG)			\
+  (md_register_arithmetic || (SEG) != reg_section)
 #else
-#define TC_VALIDATE_FIX_SUB(FIX)		\
-  ((FIX)->fx_r_type == BFD_RELOC_GPREL32	\
-   || (FIX)->fx_r_type == BFD_RELOC_GPREL16)
+#define TC_VALIDATE_FIX_SUB(FIX, SEG)			\
+  ((md_register_arithmetic || (SEG) != reg_section)	\
+   && ((FIX)->fx_r_type == BFD_RELOC_GPREL32		\
+       || (FIX)->fx_r_type == BFD_RELOC_GPREL16))
 #endif
 #endif
 
@@ -924,14 +932,14 @@ fixup_segment (fixS *fixP, segT this_segment)
 #endif
 	    }
 	  else if (sub_symbol_segment == absolute_section
-		   && !TC_FORCE_RELOCATION_SUB_ABS (fixP))
+		   && !TC_FORCE_RELOCATION_SUB_ABS (fixP, add_symbol_segment))
 	    {
 	      add_number -= S_GET_VALUE (fixP->fx_subsy);
 	      fixP->fx_offset = add_number;
 	      fixP->fx_subsy = NULL;
 	    }
 	  else if (sub_symbol_segment == this_segment
-		   && !TC_FORCE_RELOCATION_SUB_LOCAL (fixP))
+		   && !TC_FORCE_RELOCATION_SUB_LOCAL (fixP, add_symbol_segment))
 	    {
 	      add_number -= S_GET_VALUE (fixP->fx_subsy);
 	      fixP->fx_offset = (add_number + fixP->fx_dot_value
@@ -953,14 +961,20 @@ fixup_segment (fixS *fixP, segT this_segment)
 	      fixP->fx_subsy = NULL;
 	      fixP->fx_pcrel = 1;
 	    }
-	  else if (!TC_VALIDATE_FIX_SUB (fixP))
+	  else if (!TC_VALIDATE_FIX_SUB (fixP, add_symbol_segment))
 	    {
-	      as_bad_where (fixP->fx_file, fixP->fx_line,
-			    _("can't resolve `%s' {%s section} - `%s' {%s section}"),
-			    fixP->fx_addsy ? S_GET_NAME (fixP->fx_addsy) : "0",
-			    segment_name (add_symbol_segment),
-			    S_GET_NAME (fixP->fx_subsy),
-			    segment_name (sub_symbol_segment));
+	      if (!md_register_arithmetic
+		  && (add_symbol_segment == reg_section
+		      || sub_symbol_segment == reg_section))
+		as_bad_where (fixP->fx_file, fixP->fx_line,
+			      _("register value used as expression"));
+	      else
+		as_bad_where (fixP->fx_file, fixP->fx_line,
+			      _("can't resolve `%s' {%s section} - `%s' {%s section}"),
+			      fixP->fx_addsy ? S_GET_NAME (fixP->fx_addsy) : "0",
+			      segment_name (add_symbol_segment),
+			      S_GET_NAME (fixP->fx_subsy),
+			      segment_name (sub_symbol_segment));
 	    }
 	}
 
@@ -1084,6 +1098,15 @@ install_reloc (asection *sec, arelent *reloc, fragS *fragp,
 {
   char *err;
   bfd_reloc_status_type s;
+  asymbol *sym;
+
+  if (reloc->sym_ptr_ptr != NULL
+      && (sym = *reloc->sym_ptr_ptr) != NULL
+      && (sym->flags & BSF_KEEP) == 0
+      && ((sym->flags & BSF_SECTION_SYM) == 0
+	  || (EMIT_SECTION_SYMBOLS
+	      && !bfd_is_abs_section (sym->section))))
+    as_bad_where (file, line, _("redefined symbol cannot be used on reloc"));
 
   s = bfd_install_relocation (stdoutput, reloc,
 			      fragp->fr_literal, fragp->fr_address,
@@ -1377,6 +1400,10 @@ set_symtab (void)
       for (i = 0; i < nsyms; i++, symp = symbol_next (symp))
 	{
 	  asympp[i] = symbol_get_bfdsym (symp);
+	  if (asympp[i]->flags != BSF_SECTION_SYM
+	      || !(bfd_is_const_section (asympp[i]->section)
+		   && asympp[i]->section->symbol == asympp[i]))
+	    asympp[i]->flags |= BSF_KEEP;
 	  symbol_mark_written (symp);
 	}
     }
@@ -1763,6 +1790,13 @@ write_object_file (void)
 		  as_bad (_("Local symbol `%s' can't be equated to common symbol `%s'"),
 			  name, S_GET_NAME (e->X_add_symbol));
 		}
+	      if (S_GET_SEGMENT (symp) == reg_section)
+		{
+		  /* Report error only if we know the symbol name.  */
+		  if (S_GET_NAME (symp) != reg_section->name)
+		    as_bad (_("can't make global register symbol `%s'"),
+			    name);
+		}
 	      symbol_remove (symp, &symbol_rootP, &symbol_lastP);
 	      continue;
 	    }
@@ -1829,6 +1863,10 @@ write_object_file (void)
 #ifdef obj_adjust_symtab
   obj_adjust_symtab ();
 #endif
+
+  /* Stop if there is an error.  */
+  if (had_errors ())
+    return;
 
   /* Now that all the sizes are known, and contents correct, we can
      start writing to the file.  */
@@ -2294,7 +2332,7 @@ relax_segment (struct frag *segment_frag_root, segT segment, int pass)
 		    }
 
 		  know (fragP->fr_next);
-		  after = fragP->fr_next->fr_address;
+		  after = fragP->fr_next->fr_address + stretch;
 		  growth = target - after;
 		  if (growth < 0)
 		    {
@@ -2329,14 +2367,10 @@ relax_segment (struct frag *segment_frag_root, segT segment, int pass)
 		      fragP->fr_type = rs_align;
 		      fragP->fr_subtype = 0;
 		      fragP->fr_offset = 0;
-		      fragP->fr_fix = after - was_address;
-		      break;
+		      fragP->fr_fix = after - address;
 		    }
-
-		  /* This is an absolute growth factor  */
-		  growth -= stretch;
-		  break;
 		}
+		break;
 
 	      case rs_space:
 		growth = 0;
@@ -2509,7 +2543,8 @@ print_fixup (fixS *fixp)
   fprintf_vma (stderr, (bfd_vma) ((bfd_hostptr_t) fixp->fx_frag));
   fprintf (stderr, " where=%ld offset=%lx addnumber=%lx",
 	   (long) fixp->fx_where,
-	   (long) fixp->fx_offset, (long) fixp->fx_addnumber);
+	   (unsigned long) fixp->fx_offset,
+	   (unsigned long) fixp->fx_addnumber);
   fprintf (stderr, "\n    %s (%d)", bfd_get_reloc_code_name (fixp->fx_r_type),
 	   fixp->fx_r_type);
   if (fixp->fx_addsy)

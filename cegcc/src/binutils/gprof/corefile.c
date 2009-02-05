@@ -1,6 +1,6 @@
 /* corefile.c
 
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007, 2008
    Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
@@ -20,8 +20,8 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA
    02110-1301, USA.  */
 
-#include "libiberty.h"
 #include "gprof.h"
+#include "libiberty.h"
 #include "search_list.h"
 #include "source.h"
 #include "symtab.h"
@@ -427,7 +427,8 @@ get_src_info (bfd_vma addr, const char **filename, const char **name, int *line_
   else
     {
       DBG (AOUTDEBUG, printf ("[get_src_info] no info for 0x%lx (%s:%d,%s)\n",
-			      (long) addr, fname ? fname : "<unknown>", l,
+			      (unsigned long) addr,
+			      fname ? fname : "<unknown>", l,
 			      func_name ? func_name : "<unknown>"));
       return FALSE;
     }

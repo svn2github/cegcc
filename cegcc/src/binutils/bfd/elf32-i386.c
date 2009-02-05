@@ -1,6 +1,6 @@
 /* Intel 80386/80486-specific support for 32-bit ELF
    Copyright 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
+   2003, 2004, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -642,17 +642,16 @@ struct elf_i386_obj_tdata
 #define elf_i386_local_tlsdesc_gotent(abfd) \
   (elf_i386_tdata (abfd)->local_tlsdesc_gotent)
 
+#define is_i386_elf(bfd)				\
+  (bfd_get_flavour (bfd) == bfd_target_elf_flavour	\
+   && elf_tdata (bfd) != NULL				\
+   && elf_object_id (bfd) == I386_ELF_TDATA)
+
 static bfd_boolean
 elf_i386_mkobject (bfd *abfd)
 {
-  if (abfd->tdata.any == NULL)
-    {
-      bfd_size_type amt = sizeof (struct elf_i386_obj_tdata);
-      abfd->tdata.any = bfd_zalloc (abfd, amt);
-      if (abfd->tdata.any == NULL)
-	return FALSE;
-    }
-  return bfd_elf_mkobject (abfd);
+  return bfd_elf_allocate_object (abfd, sizeof (struct elf_i386_obj_tdata),
+				  I386_ELF_TDATA);
 }
 
 /* i386 ELF linker hash table.  */
@@ -693,6 +692,9 @@ struct elf_i386_link_hash_table
 
   /* Small local sym to section mapping cache.  */
   struct sym_sec_cache sym_sec;
+
+  /* _TLS_MODULE_BASE_ symbol.  */
+  struct bfd_link_hash_entry *tls_module_base;
 };
 
 /* Get the i386 ELF linker hash table from a link_info structure.  */
@@ -768,6 +770,7 @@ elf_i386_link_hash_table_create (bfd *abfd)
   ret->is_vxworks = 0;
   ret->srelplt2 = NULL;
   ret->plt0_pad_byte = 0;
+  ret->tls_module_base = NULL;
 
   return &ret->elf.root;
 }
@@ -1210,8 +1213,10 @@ elf_i386_check_relocs (bfd *abfd,
   if (info->relocatable)
     return TRUE;
 
+  BFD_ASSERT (is_i386_elf (abfd));
+
   htab = elf_i386_hash_table (info);
-  symtab_hdr = &elf_tdata (abfd)->symtab_hdr;
+  symtab_hdr = &elf_symtab_hdr (abfd);
   sym_hashes = elf_sym_hashes (abfd);
 
   sreloc = NULL;
@@ -1457,45 +1462,14 @@ elf_i386_check_relocs (bfd *abfd,
 		 this reloc.  */
 	      if (sreloc == NULL)
 		{
-		  const char *name;
-		  bfd *dynobj;
-		  unsigned int strndx = elf_elfheader (abfd)->e_shstrndx;
-		  unsigned int shnam = elf_section_data (sec)->rel_hdr.sh_name;
-
-		  name = bfd_elf_string_from_elf_section (abfd, strndx, shnam);
-		  if (name == NULL)
-		    return FALSE;
-
-		  if (! CONST_STRNEQ (name, ".rel")
-		      || strcmp (bfd_get_section_name (abfd, sec),
-				 name + 4) != 0)
-		    {
-		      (*_bfd_error_handler)
-			(_("%B: bad relocation section name `%s\'"),
-			 abfd, name);
-		    }
-
 		  if (htab->elf.dynobj == NULL)
 		    htab->elf.dynobj = abfd;
 
-		  dynobj = htab->elf.dynobj;
-		  sreloc = bfd_get_section_by_name (dynobj, name);
-		  if (sreloc == NULL)
-		    {
-		      flagword flags;
+		  sreloc = _bfd_elf_make_dynamic_reloc_section
+		    (sec, htab->elf.dynobj, 2, abfd, /*rela?*/ FALSE);
 
-		      flags = (SEC_HAS_CONTENTS | SEC_READONLY
-			       | SEC_IN_MEMORY | SEC_LINKER_CREATED);
-		      if ((sec->flags & SEC_ALLOC) != 0)
-			flags |= SEC_ALLOC | SEC_LOAD;
-		      sreloc = bfd_make_section_with_flags (dynobj,
-							    name,
-							    flags);
-		      if (sreloc == NULL
-			  || ! bfd_set_section_alignment (dynobj, sreloc, 2))
-			return FALSE;
-		    }
-		  elf_section_data (sec)->sreloc = sreloc;
+		  if (sreloc == NULL)
+		    return FALSE;
 		}
 
 	      /* If this is a global symbol, we count the number of
@@ -1599,9 +1573,12 @@ elf_i386_gc_sweep_hook (bfd *abfd,
   bfd_signed_vma *local_got_refcounts;
   const Elf_Internal_Rela *rel, *relend;
 
+  if (info->relocatable)
+    return TRUE;
+
   elf_section_data (sec)->local_dynrel = NULL;
 
-  symtab_hdr = &elf_tdata (abfd)->symtab_hdr;
+  symtab_hdr = &elf_symtab_hdr (abfd);
   sym_hashes = elf_sym_hashes (abfd);
   local_got_refcounts = elf_local_got_refcounts (abfd);
 
@@ -2026,8 +2003,20 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 	    }
 	}
 
+      if (htab->is_vxworks)
+	{
+	  struct elf_i386_dyn_relocs **pp;
+	  for (pp = &eh->dyn_relocs; (p = *pp) != NULL; )
+	    {
+	      if (strcmp (p->sec->output_section->name, ".tls_vars") == 0)
+		*pp = p->next;
+	      else
+		pp = &p->next;
+	    }
+	}
+
       /* Also discard relocs on undefined weak syms with non-default
-	 visibility.  */
+    	 visibility.  */
       if (eh->dyn_relocs != NULL
 	  && h->root.type == bfd_link_hash_undefweak)
 	{
@@ -2080,7 +2069,11 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
   /* Finally, allocate space.  */
   for (p = eh->dyn_relocs; p != NULL; p = p->next)
     {
-      asection *sreloc = elf_section_data (p->sec)->sreloc;
+      asection *sreloc;
+
+      sreloc = elf_section_data (p->sec)->sreloc;
+
+      BFD_ASSERT (sreloc != NULL);
       sreloc->size += p->count * sizeof (Elf32_External_Rel);
     }
 
@@ -2158,7 +2151,7 @@ elf_i386_size_dynamic_sections (bfd *output_bfd ATTRIBUTE_UNUSED,
       Elf_Internal_Shdr *symtab_hdr;
       asection *srel;
 
-      if (bfd_get_flavour (ibfd) != bfd_target_elf_flavour)
+      if (! is_i386_elf (ibfd))
 	continue;
 
       for (s = ibfd->sections; s != NULL; s = s->next)
@@ -2178,6 +2171,13 @@ elf_i386_size_dynamic_sections (bfd *output_bfd ATTRIBUTE_UNUSED,
 		     linker script /DISCARD/, so we'll be discarding
 		     the relocs too.  */
 		}
+	      else if (htab->is_vxworks
+		       && strcmp (p->sec->output_section->name,
+				  ".tls_vars") == 0)
+		{
+		  /* Relocations in vxworks .tls_vars sections are
+		     handled specially by the loader.  */
+		}
 	      else if (p->count != 0)
 		{
 		  srel = elf_section_data (p->sec)->sreloc;
@@ -2192,7 +2192,7 @@ elf_i386_size_dynamic_sections (bfd *output_bfd ATTRIBUTE_UNUSED,
       if (!local_got)
 	continue;
 
-      symtab_hdr = &elf_tdata (ibfd)->symtab_hdr;
+      symtab_hdr = &elf_symtab_hdr (ibfd);
       locsymcount = symtab_hdr->sh_info;
       end_local_got = local_got + locsymcount;
       local_tls_type = elf_i386_local_got_tls_type (ibfd);
@@ -2252,7 +2252,7 @@ elf_i386_size_dynamic_sections (bfd *output_bfd ATTRIBUTE_UNUSED,
 
   /* Allocate global sym .plt and .got entries, and space for global
      sym dynamic relocs.  */
-  elf_link_hash_traverse (&htab->elf, allocate_dynrelocs, (PTR) info);
+  elf_link_hash_traverse (&htab->elf, allocate_dynrelocs, info);
 
   /* For every jump slot reserved in the sgotplt, reloc_count is
      incremented.  However, when we reserve space for TLS descriptors,
@@ -2365,8 +2365,7 @@ elf_i386_size_dynamic_sections (bfd *output_bfd ATTRIBUTE_UNUSED,
 	  /* If any dynamic relocs apply to a read-only section,
 	     then we need a DT_TEXTREL entry.  */
 	  if ((info->flags & DF_TEXTREL) == 0)
-	    elf_link_hash_traverse (&htab->elf, readonly_dynrelocs,
-				    (PTR) info);
+	    elf_link_hash_traverse (&htab->elf, readonly_dynrelocs, info);
 
 	  if ((info->flags & DF_TEXTREL) != 0)
 	    {
@@ -2408,6 +2407,9 @@ elf_i386_always_size_sections (bfd *output_bfd,
 		 tls_sec, 0, NULL, FALSE,
 		 bed->collect, &bh)))
 	    return FALSE;
+
+	  elf_i386_hash_table (info)->tls_module_base = bh;
+
 	  tlsbase = (struct elf_link_hash_entry *)bh;
 	  tlsbase->def_regular = 1;
 	  tlsbase->other = STV_HIDDEN;
@@ -2450,6 +2452,27 @@ elf_i386_fake_sections (bfd *abfd ATTRIBUTE_UNUSED,
     hdr->sh_type = SHT_PROGBITS;
 
   return TRUE;
+}
+
+/* _TLS_MODULE_BASE_ needs to be treated especially when linking
+   executables.  Rather than setting it to the beginning of the TLS
+   section, we have to set it to the end.    This function may be called
+   multiple times, it is idempotent.  */
+
+static void
+set_tls_module_base (struct bfd_link_info *info)
+{
+  struct bfd_link_hash_entry *base;
+
+  if (!info->executable)
+    return;
+
+  base = elf_i386_hash_table (info)->tls_module_base;
+
+  if (!base)
+    return;
+
+  base->u.def.value = elf_hash_table (info)->tls_size;
 }
 
 /* Return the base VMA address which should be subtracted from real addresses
@@ -2498,12 +2521,22 @@ elf_i386_relocate_section (bfd *output_bfd,
   bfd_vma *local_tlsdesc_gotents;
   Elf_Internal_Rela *rel;
   Elf_Internal_Rela *relend;
+  bfd_boolean is_vxworks_tls;
 
+  BFD_ASSERT (is_i386_elf (input_bfd));
+  
   htab = elf_i386_hash_table (info);
-  symtab_hdr = &elf_tdata (input_bfd)->symtab_hdr;
+  symtab_hdr = &elf_symtab_hdr (input_bfd);
   sym_hashes = elf_sym_hashes (input_bfd);
   local_got_offsets = elf_local_got_offsets (input_bfd);
   local_tlsdesc_gotents = elf_i386_local_tlsdesc_gotent (input_bfd);
+  /* We have to handle relocations in vxworks .tls_vars sections
+     specially, because the dynamic loader is 'weird'.  */
+  is_vxworks_tls = (htab->is_vxworks && info->shared
+		    && !strcmp (input_section->output_section->name,
+				".tls_vars"));
+
+  set_tls_module_base (info);
 
   rel = relocs;
   relend = relocs + input_section->reloc_count;
@@ -2747,19 +2780,46 @@ elf_i386_relocate_section (bfd *output_bfd,
 
 	  /* Check to make sure it isn't a protected function symbol
 	     for shared library since it may not be local when used
-	     as function address.  */
-	  if (info->shared
-	      && !info->executable
-	      && h
-	      && h->def_regular
-	      && h->type == STT_FUNC
-	      && ELF_ST_VISIBILITY (h->other) == STV_PROTECTED)
+	     as function address.  We also need to make sure that a
+	     symbol is defined locally.  */
+	  if (info->shared && h)
 	    {
-	      (*_bfd_error_handler)
-		(_("%B: relocation R_386_GOTOFF against protected function `%s' can not be used when making a shared object"),
-		 input_bfd, h->root.root.string);
-	      bfd_set_error (bfd_error_bad_value);
-	      return FALSE;
+	      if (!h->def_regular)
+		{
+		  const char *v;
+
+		  switch (ELF_ST_VISIBILITY (h->other))
+		    {
+		    case STV_HIDDEN:
+		      v = _("hidden symbol");
+		      break;
+		    case STV_INTERNAL:
+		      v = _("internal symbol");
+		      break;
+		    case STV_PROTECTED:
+		      v = _("protected symbol");
+		      break;
+		    default:
+		      v = _("symbol");
+		      break;
+		    }
+
+		  (*_bfd_error_handler)
+		    (_("%B: relocation R_386_GOTOFF against undefined %s `%s' can not be used when making a shared object"),
+		     input_bfd, v, h->root.root.string);
+		  bfd_set_error (bfd_error_bad_value);
+		  return FALSE;
+		}
+	      else if (!info->executable
+		       && h->type == STT_FUNC
+		       && ELF_ST_VISIBILITY (h->other) == STV_PROTECTED)
+		{
+		  (*_bfd_error_handler)
+		    (_("%B: relocation R_386_GOTOFF against protected function `%s' can not be used when making a shared object"),
+		     input_bfd, h->root.root.string);
+		  bfd_set_error (bfd_error_bad_value);
+		  return FALSE;
+		}
 	    }
 
 	  /* Note that sgot is not involved in this
@@ -2804,7 +2864,8 @@ elf_i386_relocate_section (bfd *output_bfd,
 
 	case R_386_32:
 	case R_386_PC32:
-	  if ((input_section->flags & SEC_ALLOC) == 0)
+	  if ((input_section->flags & SEC_ALLOC) == 0
+	      || is_vxworks_tls)
 	    break;
 
 	  if ((info->shared
@@ -2862,11 +2923,12 @@ elf_i386_relocate_section (bfd *output_bfd,
 		}
 
 	      sreloc = elf_section_data (input_section)->sreloc;
-	      if (sreloc == NULL)
-		abort ();
+
+	      BFD_ASSERT (sreloc != NULL && sreloc->contents != NULL);
 
 	      loc = sreloc->contents;
 	      loc += sreloc->reloc_count++ * sizeof (Elf32_External_Rel);
+
 	      bfd_elf32_swap_reloc_out (output_bfd, &outrel, loc);
 
 	      /* If this reloc is against an external symbol, we do

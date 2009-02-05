@@ -1,5 +1,5 @@
 /* Motorola 68HC11/HC12-specific support for 32-bit ELF
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
    Free Software Foundation, Inc.
    Contributed by Stephane Carrez (stcarrez@nerim.fr)
 
@@ -232,7 +232,7 @@ elf32_m68hc11_setup_section_lists (bfd *output_bfd, struct bfd_link_info *info)
 
   htab = m68hc11_elf_hash_table (info);
 
-  if (htab->root.root.creator->flavour != bfd_target_elf_flavour)
+  if (bfd_get_flavour (info->output_bfd) != bfd_target_elf_flavour)
     return 0;
 
   /* Count the number of input BFDs and find the top input section id.
@@ -450,8 +450,13 @@ elf32_m68hc11_size_stubs (bfd *output_bfd, bfd *stub_bfd,
                   if (!is_far)
                     continue;
 
-                  hdr = elf_elfsections (input_bfd)[sym->st_shndx];
-                  sym_sec = hdr->bfd_section;
+		  if (sym->st_shndx >= elf_numsections (input_bfd))
+		    sym_sec = NULL;
+		  else
+		    {
+		      hdr = elf_elfsections (input_bfd)[sym->st_shndx];
+		      sym_sec = hdr->bfd_section;
+		    }
                   stub_name = (bfd_elf_string_from_elf_section
                                (input_bfd, symtab_hdr->sh_link,
                                 sym->st_name));

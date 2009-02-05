@@ -22,6 +22,8 @@ Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, US
 #ifndef PPC_H
 #define PPC_H
 
+typedef unsigned long ppc_cpu_t;
+
 /* The opcode table is an array of struct powerpc_opcode.  */
 
 struct powerpc_opcode
@@ -42,7 +44,12 @@ struct powerpc_opcode
   /* One bit flags for the opcode.  These are used to indicate which
      specific processors support the instructions.  The defined values
      are listed below.  */
-  unsigned long flags;
+  ppc_cpu_t flags;
+
+  /* One bit flags for the opcode.  These are used to indicate which
+     specific processors no longer support the instructions.  The defined
+     values are listed below.  */
+  ppc_cpu_t deprecated;
 
   /* An array of operand codes.  Each code is an index into the
      operand table.  They appear in the order which the operands must
@@ -107,9 +114,6 @@ extern const int powerpc_num_opcodes;
 /* Opcode is only supported by Power4 architecture.  */
 #define PPC_OPCODE_POWER4	    0x4000
 
-/* Opcode isn't supported by Power4 architecture.  */
-#define PPC_OPCODE_NOPOWER4	    0x8000
-
 /* Opcode is only supported by POWERPC Classic architecture.  */
 #define PPC_OPCODE_CLASSIC	   0x10000
 
@@ -149,6 +153,15 @@ extern const int powerpc_num_opcodes;
 /* Opcode is supported by CPUs with paired singles support.  */
 #define PPC_OPCODE_PPCPS	 0x10000000
 
+/* Opcode is supported by Power E500MC */
+#define PPC_OPCODE_E500MC        0x20000000
+
+/* Opcode is supported by PowerPC 405 processor.  */
+#define PPC_OPCODE_405		 0x40000000
+
+/* Opcode is supported by Vector-Scalar (VSX) Unit */
+#define PPC_OPCODE_VSX		 0x80000000
+
 /* A macro to extract the major opcode from an instruction.  */
 #define PPC_OP(i) (((i) >> 26) & 0x3f)
 
@@ -180,7 +193,7 @@ struct powerpc_operand
      operand value is legal, *ERRMSG will be unchanged (most operands
      can accept any value).  */
   unsigned long (*insert)
-    (unsigned long instruction, long op, int dialect, const char **errmsg);
+    (unsigned long instruction, long op, ppc_cpu_t dialect, const char **errmsg);
 
   /* Extraction function.  This is used by the disassembler.  To
      extract this operand type from an instruction, check this field.
@@ -198,7 +211,7 @@ struct powerpc_operand
      non-zero if this operand type can not actually be extracted from
      this operand (i.e., the instruction does not match).  If the
      operand is valid, *INVALID will not be changed.  */
-  long (*extract) (unsigned long instruction, int dialect, int *invalid);
+  long (*extract) (unsigned long instruction, ppc_cpu_t dialect, int *invalid);
 
   /* One bit syntax flags.  */
   unsigned long flags;
@@ -299,6 +312,15 @@ extern const unsigned int num_powerpc_operands;
 
 /* Valid range of operand is 0..n rather than 0..n-1.  */
 #define PPC_OPERAND_PLUS1 (0x10000)
+
+/* Xilinx APU and FSL related operands */
+#define PPC_OPERAND_FSL (0x20000)
+#define PPC_OPERAND_FCR (0x40000)
+#define PPC_OPERAND_UDI (0x80000)
+
+/* This operand names a vector-scalar unit register.  The disassembler
+   prints these with a leading 'vs'.  */
+#define PPC_OPERAND_VSR (0x100000)
 
 /* The POWER and PowerPC assemblers use a few macros.  We keep them
    with the operands table for simplicity.  The macro table is an
@@ -315,7 +337,7 @@ struct powerpc_macro
   /* One bit flags for the opcode.  These are used to indicate which
      specific processors support the instructions.  The values are the
      same as those for the struct powerpc_opcode flags field.  */
-  unsigned long flags;
+  ppc_cpu_t flags;
 
   /* A format string to turn the macro into a normal instruction.
      Each %N in the string is replaced with operand number N (zero

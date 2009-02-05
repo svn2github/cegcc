@@ -49,11 +49,6 @@
 static enum section_type sectype;
 static lang_memory_region_type *region;
 
-FILE *saved_script_handle = NULL;
-bfd_boolean force_make_executable = FALSE;
-
-bfd_boolean ldgram_in_script = FALSE;
-bfd_boolean ldgram_had_equals = FALSE;
 bfd_boolean ldgram_had_keep = FALSE;
 char *ldgram_vers_current_lang = NULL;
 
@@ -127,7 +122,8 @@ static int error_index;
 %token END
 %left <token> '('
 %token <token> ALIGN_K BLOCK BIND QUAD SQUAD LONG SHORT BYTE
-%token SECTIONS PHDRS DATA_SEGMENT_ALIGN DATA_SEGMENT_RELRO_END DATA_SEGMENT_END
+%token SECTIONS PHDRS INSERT_K AFTER BEFORE
+%token DATA_SEGMENT_ALIGN DATA_SEGMENT_RELRO_END DATA_SEGMENT_END
 %token SORT_BY_NAME SORT_BY_ALIGNMENT
 %token '{' '}'
 %token SIZEOF_HEADERS OUTPUT_FORMAT FORCE_COMMON_ALLOCATION OUTPUT_ARCH
@@ -352,6 +348,10 @@ ifile_p1:
 		  lang_add_nocrossref ($3);
 		}
 	|	EXTERN '(' extern_name_list ')'
+	|	INSERT_K AFTER NAME
+		{ lang_add_insert ($3, 0); }
+	|	INSERT_K BEFORE NAME
+		{ lang_add_insert ($3, 1); }
 	;
 
 input_list:
@@ -577,6 +577,10 @@ statement:
 	| ASSERT_K  {ldlex_expression ();} '(' exp ',' NAME ')' end
 			{ ldlex_popstate ();
 			  lang_add_assignment (exp_assert ($4, $6)); }
+	| INCLUDE filename
+		{ ldlex_script (); ldfile_open_command_file($2); }
+		statement_list_opt END
+		{ ldlex_popstate (); }
 	;
 
 statement_list:
@@ -668,13 +672,14 @@ opt_comma:
 
 
 memory:
-		MEMORY '{' memory_spec memory_spec_list '}'
+		MEMORY '{' memory_spec_list_opt '}'
 	;
 
+memory_spec_list_opt: memory_spec_list | ;
+
 memory_spec_list:
-		memory_spec_list memory_spec
-	|	memory_spec_list ',' memory_spec
-	|
+		memory_spec_list opt_comma memory_spec
+	|	memory_spec
 	;
 
 
@@ -683,6 +688,10 @@ memory_spec: 	NAME
 		attributes_opt ':'
 		origin_spec opt_comma length_spec
 		{}
+	|	INCLUDE filename
+		{ ldlex_script (); ldfile_open_command_file($2); }
+		memory_spec_list_opt END
+		{ ldlex_popstate (); }
 	;
 
 origin_spec:
@@ -966,6 +975,10 @@ section:	NAME 		{ ldlex_expression(); }
 		  lang_add_assignment (exp_assop ('=', ".", $3));
 		}
 		'{' sec_or_group_p1 '}'
+	|	INCLUDE filename
+		{ ldlex_script (); ldfile_open_command_file($2); }
+		sec_or_group_p1 END
+		{ ldlex_popstate (); }
 	;
 
 type:

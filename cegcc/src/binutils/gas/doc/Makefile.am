@@ -44,6 +44,7 @@ CPU_DOCS = \
 	c-i860.texi \
 	c-i960.texi \
 	c-ip2k.texi \
+	c-lm32.texi \
 	c-m32c.texi \
 	c-m32r.texi \
 	c-m68hc11.texi \
@@ -69,6 +70,20 @@ CPU_DOCS = \
 # We want install to imply install-info as per GNU standards, despite the
 # cygnus option.
 install-data-local: install-info
+
+pdf__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
+
+install-pdf: install-pdf-am
+ 
+install-pdf-am: $(PDFS)
+	@$(NORMAL_INSTALL)
+	test -z "$(pdfdir)" || $(mkinstalldirs) "$(DESTDIR)$(pdfdir)"
+	@list='$(PDFS)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(pdf__strip_dir) \
+	  echo " $(INSTALL_DATA) '$$d$$p' '$(DESTDIR)$(pdfdir)/$$f'"; \
+	  $(INSTALL_DATA) "$$d$$p" "$(DESTDIR)$(pdfdir)/$$f"; \
+	done
 
 html__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 

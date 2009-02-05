@@ -13,7 +13,7 @@ fragment <<EOF
 
 /* ${ELFSIZE} bit ELF emulation code for ${EMULATION_NAME}
    Copyright 1991, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-   2002, 2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
+   2002, 2003, 2004, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
    Written by Steve Chamberlain <sac@cygnus.com>
    ELF support by Ian Lance Taylor <ian@cygnus.com>
 
@@ -62,7 +62,8 @@ fragment <<EOF
 static void gld${EMULATION_NAME}_before_parse (void);
 static void gld${EMULATION_NAME}_after_open (void);
 static void gld${EMULATION_NAME}_before_allocation (void);
-static bfd_boolean gld${EMULATION_NAME}_place_orphan (asection *s);
+static lang_output_section_statement_type *gld${EMULATION_NAME}_place_orphan
+  (asection *, const char *, int);
 static void gld${EMULATION_NAME}_finish (void);
 
 EOF
@@ -307,7 +308,7 @@ gld${EMULATION_NAME}_try_needed (struct dt_needed *needed,
   const char *soname;
   int class;
 
-  abfd = bfd_openr (name, bfd_get_target (output_bfd));
+  abfd = bfd_openr (name, bfd_get_target (link_info.output_bfd));
   if (abfd == NULL)
     return FALSE;
   if (! bfd_check_format (abfd, bfd_object))
@@ -322,7 +323,7 @@ gld${EMULATION_NAME}_try_needed (struct dt_needed *needed,
     }
 
   /* For DT_NEEDED, they have to match.  */
-  if (abfd->xvec != output_bfd->xvec)
+  if (abfd->xvec != link_info.output_bfd->xvec)
     {
       bfd_close (abfd);
       return FALSE;
@@ -556,7 +557,7 @@ gld${EMULATION_NAME}_check_ld_elf_hints (const char *name, int force)
       FILE *f;
       char *tmppath;
 
-      tmppath = concat (ld_sysroot, _PATH_ELF_HINTS, NULL);
+      tmppath = concat (ld_sysroot, _PATH_ELF_HINTS, (const char *) NULL);
       f = fopen (tmppath, FOPEN_RB);
       free (tmppath);
       if (f != NULL)
@@ -776,11 +777,13 @@ gld${EMULATION_NAME}_check_ld_so_conf (const char *name, int force)
 
       info.path = NULL;
       info.len = info.alloc = 0;
-      tmppath = concat (ld_sysroot, "${prefix}/etc/ld.so.conf", NULL);
+      tmppath = concat (ld_sysroot, "${prefix}/etc/ld.so.conf",
+			(const char *) NULL);
       if (!gld${EMULATION_NAME}_parse_ld_so_conf (&info, tmppath))
 	{
 	  free (tmppath);
-	  tmppath = concat (ld_sysroot, "/etc/ld.so.conf", NULL);
+	  tmppath = concat (ld_sysroot, "/etc/ld.so.conf",
+			    (const char *) NULL);
 	  gld${EMULATION_NAME}_parse_ld_so_conf (&info, tmppath);
 	}
       free (tmppath);
@@ -1062,7 +1065,7 @@ gld${EMULATION_NAME}_after_open (void)
 					   | SEC_READONLY | SEC_DATA);
 	  if (s != NULL && bfd_set_section_alignment (abfd, s, 2))
 	    {
-	      struct elf_obj_tdata *t = elf_tdata (output_bfd);
+	      struct elf_obj_tdata *t = elf_tdata (link_info.output_bfd);
 	      struct build_id_info *b = xmalloc (sizeof *b);
 	      b->style = link_info.emit_note_gnu_build_id;
 	      b->sec = s;
@@ -1125,7 +1128,7 @@ gld${EMULATION_NAME}_after_open (void)
      loop.  */
   if (!link_info.executable)
     return;
-  needed = bfd_elf_get_needed_list (output_bfd, &link_info);
+  needed = bfd_elf_get_needed_list (link_info.output_bfd, &link_info);
   for (l = needed; l != NULL; l = l->next)
     {
       struct bfd_link_needed_list *ll;
@@ -1229,7 +1232,7 @@ fi
 if [ "x${USE_LIBPATH}" = xyes ] ; then
 fragment <<EOF
 	  found = 0;
-	  rp = bfd_elf_get_runpath_list (output_bfd, &link_info);
+	  rp = bfd_elf_get_runpath_list (link_info.output_bfd, &link_info);
 	  for (; !found && rp != NULL; rp = rp->next)
 	    {
 	      char *tmpname = gld${EMULATION_NAME}_add_sysroot (rp->name);
@@ -1320,7 +1323,8 @@ gld${EMULATION_NAME}_find_exp_assignment (etree_type *exp)
 	 will do no harm.  */
       if (strcmp (exp->assign.dst, ".") != 0)
 	{
-	  if (!bfd_elf_record_link_assignment (output_bfd, &link_info,
+	  if (!bfd_elf_record_link_assignment (link_info.output_bfd,
+					       &link_info,
 					       exp->assign.dst, provide,
 					       exp->assign.hidden))
 	    einfo ("%P%F: failed to record assignment to %s: %E\n",
@@ -1389,7 +1393,7 @@ gld${EMULATION_NAME}_before_allocation (void)
   asection *sinterp;
 
   if (link_info.hash->type == bfd_link_elf_hash_table)
-    _bfd_elf_tls_setup (output_bfd, &link_info);
+    _bfd_elf_tls_setup (link_info.output_bfd, &link_info);
 
   /* If we are going to make any variable assignments, we need to let
      the ELF backend know about them in case the variables are
@@ -1402,7 +1406,7 @@ gld${EMULATION_NAME}_before_allocation (void)
   if (rpath == NULL)
     rpath = (const char *) getenv ("LD_RUN_PATH");
   if (! (bfd_elf_size_dynamic_sections
-	 (output_bfd, command_line.soname, rpath,
+	 (link_info.output_bfd, command_line.soname, rpath,
 	  command_line.filter_shlib,
 	  (const char * const *) command_line.auxiliary_filters,
 	  &link_info, &sinterp, lang_elf_version_info)))
@@ -1470,7 +1474,7 @@ ${ELF_INTERPRETER_SET_DEFAULT}
 
   before_allocation_default ();
 
-  if (!bfd_elf_size_dynsym_hash_dynstr (output_bfd, &link_info))
+  if (!bfd_elf_size_dynsym_hash_dynstr (link_info.output_bfd, &link_info))
     einfo ("%P%F: failed to set dynamic section sizes: %E\n");
 }
 
@@ -1513,8 +1517,9 @@ gld${EMULATION_NAME}_open_dynamic_archive
   /* Try the .so extension first.  If that fails build a new filename
      using EXTRA_SHLIB_EXTENSION.  */
   if (! ldfile_try_open_bfd (string, entry))
-    sprintf (string, "%s/lib%s%s%s", search->name,
-	     filename, arch, EXTRA_SHLIB_EXTENSION);
+    {
+      sprintf (string, "%s/lib%s%s%s", search->name,
+	       filename, arch, EXTRA_SHLIB_EXTENSION);
 #endif
 
   if (! ldfile_try_open_bfd (string, entry))
@@ -1522,6 +1527,9 @@ gld${EMULATION_NAME}_open_dynamic_archive
       free (string);
       return FALSE;
     }
+#ifdef EXTRA_SHLIB_EXTENSION
+    }
+#endif
 
   entry->filename = string;
 
@@ -1576,7 +1584,7 @@ output_rel_find (asection *sec, int isdyn)
        lookup != NULL;
        lookup = lookup->next)
     {
-      if (lookup->constraint != -1
+      if (lookup->constraint >= 0
 	  && CONST_STRNEQ (lookup->name, ".rel"))
 	{
 	  int lookrela = lookup->name[4] == 'a';
@@ -1627,8 +1635,10 @@ output_rel_find (asection *sec, int isdyn)
 /* Place an orphan section.  We use this to put random SHF_ALLOC
    sections in the right segment.  */
 
-static bfd_boolean
-gld${EMULATION_NAME}_place_orphan (asection *s)
+static lang_output_section_statement_type *
+gld${EMULATION_NAME}_place_orphan (asection *s,
+				   const char *secname,
+				   int constraint)
 {
   static struct orphan_save hold[] =
     {
@@ -1652,7 +1662,10 @@ gld${EMULATION_NAME}_place_orphan (asection *s)
 	0, 0, 0, 0 },
       { ".sdata",
 	SEC_HAS_CONTENTS | SEC_ALLOC | SEC_LOAD | SEC_DATA | SEC_SMALL_DATA,
-	0, 0, 0, 0 }
+	0, 0, 0, 0 },
+      { 0,
+	SEC_HAS_CONTENTS,
+	0, 0, 0, 0 },
     };
   enum orphan_save_index
     {
@@ -1662,18 +1675,16 @@ gld${EMULATION_NAME}_place_orphan (asection *s)
       orphan_bss,
       orphan_rel,
       orphan_interp,
-      orphan_sdata
+      orphan_sdata,
+      orphan_nonalloc
     };
   static int orphan_init_done = 0;
   struct orphan_save *place;
-  const char *secname;
   lang_output_section_statement_type *after;
   lang_output_section_statement_type *os;
   int isdyn = 0;
   int iself = s->owner->xvec->flavour == bfd_target_elf_flavour;
   unsigned int sh_type = iself ? elf_section_type (s) : SHT_NULL;
-
-  secname = bfd_get_section_name (s->owner, s);
 
   if (! link_info.relocatable
       && link_info.combreloc
@@ -1700,33 +1711,30 @@ gld${EMULATION_NAME}_place_orphan (asection *s)
 	}
     }
 
-  if (isdyn || (!config.unique_orphan_sections && !unique_section_p (s)))
+  /* Look through the script to see where to place this section.  */
+  if (constraint == 0
+      && (os = lang_output_section_find (secname)) != NULL
+      && os->bfd_section != NULL
+      && (os->bfd_section->flags == 0
+	  || (_bfd_elf_match_sections_by_type (link_info.output_bfd,
+					       os->bfd_section, s->owner, s)
+	      && ((s->flags ^ os->bfd_section->flags)
+		  & (SEC_LOAD | SEC_ALLOC)) == 0)))
     {
-      /* Look through the script to see where to place this section.  */
-      os = lang_output_section_find (secname);
-
-      if (os != NULL
-	  && (os->bfd_section == NULL
-	      || os->bfd_section->flags == 0
-	      || (_bfd_elf_match_sections_by_type (output_bfd,
-						   os->bfd_section,
-						   s->owner, s)
-		  && ((s->flags ^ os->bfd_section->flags)
-		      & (SEC_LOAD | SEC_ALLOC)) == 0)))
-	{
-	  /* We already have an output section statement with this
-	     name, and its bfd section, if any, has compatible flags.
-	     If the section already exists but does not have any flags
-	     set, then it has been created by the linker, probably as a
-	     result of a --section-start command line switch.  */
-	  lang_add_section (&os->children, s, os);
-	  return TRUE;
-	}
+      /* We already have an output section statement with this
+	 name, and its bfd section has compatible flags.
+	 If the section already exists but does not have any flags
+	 set, then it has been created by the linker, probably as a
+	 result of a --section-start command line switch.  */
+      lang_add_section (&os->children, s, os);
+      return os;
     }
 
   if (!orphan_init_done)
     {
+      lang_output_section_statement_type *lookup;
       struct orphan_save *ho;
+
       for (ho = hold; ho < hold + sizeof (hold) / sizeof (hold[0]); ++ho)
 	if (ho->name != NULL)
 	  {
@@ -1734,6 +1742,16 @@ gld${EMULATION_NAME}_place_orphan (asection *s)
 	    if (ho->os != NULL && ho->os->flags == 0)
 	      ho->os->flags = ho->flags;
 	  }
+      lookup = hold[orphan_bss].os;
+      if (lookup == NULL)
+	lookup = &lang_output_section_statement.head->output_section_statement;
+      for (; lookup != NULL; lookup = lookup->next)
+	if ((lookup->bfd_section != NULL
+	     && (lookup->bfd_section->flags & SEC_DEBUGGING) != 0)
+	    || strcmp (lookup->name, ".comment") == 0)
+	  break;
+      hold[orphan_nonalloc].os = lookup ? lookup->prev : NULL;
+      hold[orphan_nonalloc].name = ".comment";
       orphan_init_done = 1;
     }
 
@@ -1741,12 +1759,12 @@ gld${EMULATION_NAME}_place_orphan (asection *s)
      sections into the .text section to get them out of the way.  */
   if (link_info.executable
       && ! link_info.relocatable
-      && CONST_STRNEQ (secname, ".gnu.warning.")
+      && CONST_STRNEQ (s->name, ".gnu.warning.")
       && hold[orphan_text].os != NULL)
     {
-      lang_add_section (&hold[orphan_text].os->children, s,
-			hold[orphan_text].os);
-      return TRUE;
+      os = hold[orphan_text].os;
+      lang_add_section (&os->children, s, os);
+      return os;
     }
 
   /* Decide which segment the section should go in based on the
@@ -1756,7 +1774,9 @@ gld${EMULATION_NAME}_place_orphan (asection *s)
      in the first page.  */
 
   place = NULL;
-  if ((s->flags & SEC_ALLOC) == 0)
+  if ((s->flags & (SEC_ALLOC | SEC_DEBUGGING)) == 0)
+    place = &hold[orphan_nonalloc];
+  else if ((s->flags & SEC_ALLOC) == 0)
     ;
   else if ((s->flags & SEC_LOAD) != 0
 	   && ((iself && sh_type == SHT_NOTE)
@@ -1796,20 +1816,7 @@ gld${EMULATION_NAME}_place_orphan (asection *s)
 	after = &lang_output_section_statement.head->output_section_statement;
     }
 
-  /* Choose a unique name for the section.  This will be needed if the
-     same section name appears in the input file with different
-     loadable or allocatable characteristics.  */
-  if (bfd_get_section_by_name (output_bfd, secname) != NULL)
-    {
-      static int count = 1;
-      secname = bfd_get_unique_section_name (output_bfd, secname, &count);
-      if (secname == NULL)
-	einfo ("%F%P: place_orphan failed: %E\n");
-    }
-
-  lang_insert_orphan (s, secname, after, place, NULL, NULL);
-
-  return TRUE;
+  return lang_insert_orphan (s, secname, constraint, after, place, NULL, NULL);
 }
 EOF
 fi
@@ -1820,7 +1827,8 @@ fragment <<EOF
 static void
 gld${EMULATION_NAME}_finish (void)
 {
-  bfd_boolean need_layout = bfd_elf_discard_info (output_bfd, &link_info);
+  bfd_boolean need_layout = bfd_elf_discard_info (link_info.output_bfd,
+						  &link_info);
 
   gld${EMULATION_NAME}_map_segments (need_layout);
   finish_default ();

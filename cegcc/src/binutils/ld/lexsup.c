@@ -103,6 +103,7 @@ enum option_values
   OPTION_TBSS,
   OPTION_TDATA,
   OPTION_TTEXT,
+  OPTION_TTEXT_SEGMENT,
   OPTION_TRADITIONAL_FORMAT,
   OPTION_UR,
   OPTION_VERBOSE,
@@ -116,6 +117,7 @@ enum option_values
   OPTION_WARN_COMMON,
   OPTION_WARN_CONSTRUCTORS,
   OPTION_WARN_FATAL,
+  OPTION_NO_WARN_FATAL,
   OPTION_WARN_MULTIPLE_GP,
   OPTION_WARN_ONCE,
   OPTION_WARN_SECTION_ALIGN,
@@ -377,6 +379,9 @@ static const struct ld_option ld_options[] =
   { {"fatal-warnings", no_argument, NULL, OPTION_WARN_FATAL},
     '\0', NULL, N_("Treat warnings as errors"),
     TWO_DASHES },
+  { {"no-fatal-warnings", no_argument, NULL, OPTION_NO_WARN_FATAL},
+    '\0', NULL, N_("Do not treat warnings as errors (default)"),
+    TWO_DASHES },
   { {"fini", required_argument, NULL, OPTION_FINI},
     '\0', N_("SYMBOL"), N_("Call SYMBOL at unload-time"), ONE_DASH },
   { {"force-exe-suffix", no_argument, NULL, OPTION_FORCE_EXE_SUFFIX},
@@ -473,8 +478,10 @@ static const struct ld_option ld_options[] =
     '\0', NULL, N_("Create a position independent executable"), ONE_DASH },
   { {"pic-executable", no_argument, NULL, OPTION_PIE},
     '\0', NULL, NULL, TWO_DASHES },
-  { {"sort-common", no_argument, NULL, OPTION_SORT_COMMON},
-    '\0', NULL, N_("Sort common symbols by size"), TWO_DASHES },
+  { {"sort-common", optional_argument, NULL, OPTION_SORT_COMMON},
+    '\0', N_("[=ascending|descending]"), 
+    N_("Sort common symbols by alignment [in specified order]"), 
+    TWO_DASHES },
   { {"sort_common", no_argument, NULL, OPTION_SORT_COMMON},
     '\0', NULL, NULL, NO_HELP },
   { {"sort-section", required_argument, NULL, OPTION_SORT_SECTION},
@@ -506,6 +513,8 @@ static const struct ld_option ld_options[] =
     '\0', N_("ADDRESS"), N_("Set address of .data section"), ONE_DASH },
   { {"Ttext", required_argument, NULL, OPTION_TTEXT},
     '\0', N_("ADDRESS"), N_("Set address of .text section"), ONE_DASH },
+  { {"Ttext-segment", required_argument, NULL, OPTION_TTEXT_SEGMENT},
+    '\0', N_("ADDRESS"), N_("Set address of text segment"), ONE_DASH },
   { {"unresolved-symbols=<method>", required_argument, NULL,
      OPTION_UNRESOLVED_SYMBOLS},
     '\0', NULL, N_("How to handle unresolved symbols.  <method> is:\n"
@@ -1142,7 +1151,14 @@ parse_args (unsigned argc, char **argv)
 	  command_line.soname = optarg;
 	  break;
 	case OPTION_SORT_COMMON:
-	  config.sort_common = TRUE;
+	  if (optarg == NULL
+	      || strcmp (optarg, N_("descending")) == 0)
+            config.sort_common = sort_descending;
+          else if (strcmp (optarg, N_("ascending")) == 0)
+	    config.sort_common = sort_ascending;
+	  else
+	    einfo (_("%P%F: invalid common section sorting option: %s\n"),
+		   optarg);
 	  break;
 	case OPTION_SORT_SECTION:
 	  if (strcmp (optarg, N_("name")) == 0)
@@ -1166,9 +1182,11 @@ parse_args (unsigned argc, char **argv)
 	  trace_files = TRUE;
 	  break;
 	case 'T':
+	  previous_script_handle = saved_script_handle;
 	  ldfile_open_command_file (optarg);
 	  parser_input = input_script;
 	  yyparse ();
+	  previous_script_handle = NULL;
 	  break;
 	case OPTION_DEFAULT_SCRIPT:
 	  command_line.default_script = optarg;
@@ -1215,6 +1233,9 @@ parse_args (unsigned argc, char **argv)
 	  break;
 	case OPTION_TTEXT:
 	  set_segment_start (".text", optarg);
+	  break;
+	case OPTION_TTEXT_SEGMENT:
+	  set_segment_start (".text-segment", optarg);
 	  break;
 	case OPTION_TRADITIONAL_FORMAT:
 	  link_info.traditional_format = TRUE;
@@ -1322,6 +1343,9 @@ parse_args (unsigned argc, char **argv)
 	case OPTION_WARN_FATAL:
 	  config.fatal_warnings = TRUE;
 	  break;
+	case OPTION_NO_WARN_FATAL:
+	  config.fatal_warnings = FALSE;
+	  break;
 	case OPTION_WARN_MULTIPLE_GP:
 	  config.warn_multiple_gp = TRUE;
 	  break;
@@ -1387,10 +1411,10 @@ parse_args (unsigned argc, char **argv)
 	    config.split_by_file = 1;
 	  break;
 	case OPTION_CHECK_SECTIONS:
-	  command_line.check_section_addresses = TRUE;
+	  command_line.check_section_addresses = 1;
 	  break;
 	case OPTION_NO_CHECK_SECTIONS:
-	  command_line.check_section_addresses = FALSE;
+	  command_line.check_section_addresses = 0;
 	  break;
 	case OPTION_ACCEPT_UNKNOWN_INPUT_ARCH:
 	  command_line.accept_unknown_input_arch = TRUE;

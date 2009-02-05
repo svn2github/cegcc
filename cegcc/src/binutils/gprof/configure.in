@@ -19,13 +19,15 @@ AC_CONFIG_HEADERS([gconfig.h:gconfig.in])
 
 AC_PROG_CC
 AC_GNU_SOURCE
+AC_USE_SYSTEM_EXTENSIONS
+AC_SYS_LARGEFILE
 AC_PROG_INSTALL
 
-AM_PROG_LIBTOOL
+LT_INIT
 
 AC_CHECK_FUNCS(setmode)
 
-ALL_LINGUAS="fr tr sv es id da pt_BR de vi rw ga ms fi"
+ALL_LINGUAS="fr tr sv es id da pt_BR de vi rw ga ms fi nl"
 ZW_GNU_GETTEXT_SISTER_DIR
 AM_PO_SUBDIRS
 
@@ -37,7 +39,7 @@ AC_CHECK_HEADERS(sys/gmon_out.h)
 
 AC_MSG_CHECKING(for a known getopt prototype in unistd.h)
 AC_CACHE_VAL(gprof_cv_decl_getopt_unistd_h,
-[AC_TRY_COMPILE([#include <unistd.h>], [extern int getopt (int, char *const*, const char *);],
+[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([#include <unistd.h>], [extern int getopt (int, char *const*, const char *);])],
 gprof_cv_decl_getopt_unistd_h=yes, gprof_cv_decl_getopt_unistd_h=no)])
 AC_MSG_RESULT($gprof_cv_decl_getopt_unistd_h)
 if test $gprof_cv_decl_getopt_unistd_h = yes; then
@@ -50,10 +52,11 @@ AC_SEARCH_LIBS(fabs, m)
 
 AM_BINUTILS_WARNINGS
 
-dnl Required by html and install-html
+dnl Required by html, pdf, install-pdf and install-html
 AC_SUBST(datarootdir)
 AC_SUBST(docdir)
 AC_SUBST(htmldir)
+AC_SUBST(pdfdir)
 
 AC_CONFIG_FILES([Makefile po/Makefile.in:po/Make-in])
 AC_OUTPUT

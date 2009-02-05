@@ -63,8 +63,4 @@
 { COFF_SECTION_NAME_PARTIAL_MATCH (".gnu.linkonce.wi."), \
   COFF_ALIGNMENT_FIELD_EMPTY, COFF_ALIGNMENT_FIELD_EMPTY, 0 }
 
-#undef bfd_pe_print_pdata
-#define	bfd_pe_print_pdata pe_print_compressed_pdata
-extern bfd_boolean pe_print_compressed_pdata (bfd * abfd, void * vfile);
-
 #include "coff-arm.c"

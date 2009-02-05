@@ -1,7 +1,7 @@
 /* vms-misc.c -- Miscellaneous functions for VAX (openVMS/VAX) and
    EVAX (openVMS/Alpha) files.
    Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-   2007 Free Software Foundation, Inc.
+   2007, 2008  Free Software Foundation, Inc.
 
    Written by Klaus K"ampf (kkaempf@rmi.de)
 
@@ -349,7 +349,7 @@ _bfd_vms_get_record (bfd * abfd)
 
       if (PRIV (rec_length) > PRIV (buf_size))
 	{
-	  PRIV (vms_buf) = bfd_realloc (vms_buf,
+	  PRIV (vms_buf) = bfd_realloc_or_free (vms_buf,
 					(bfd_size_type) PRIV (rec_length));
 	  vms_buf = PRIV (vms_buf);
 	  if (vms_buf == 0)
@@ -875,7 +875,7 @@ hash_string (const char *ptr)
 char *
 _bfd_vms_length_hash_symbol (bfd * abfd, const char *in, int maxlen)
 {
-  long int result;
+  unsigned long result;
   int in_len;
   char *new_name;
   const char *old_name;

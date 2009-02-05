@@ -131,9 +131,9 @@ foo:
  mov    0x90909090[eax], edx
  mov    dl, 0x90909090[eax]
  mov    edx, 0x90909090[eax]
- mov    dword ptr 0x90909090[eax], ss
+ mov    word ptr 0x90909090[eax], ss
  lea    edx, 0x90909090[eax]
- mov    ss, dword ptr 0x90909090[eax]
+ mov    ss, word ptr 0x90909090[eax]
  pop    dword ptr 0x90909090[eax]
  xchg   eax, eax
  xchg   ecx, eax
@@ -193,6 +193,8 @@ foo:
  mov    dword ptr 0x90909090[eax], 0x90909090
  enter  0x9090, 0x90
  leave
+ retf   0x9090
+ retf
  lret   0x9090
  lret
  int3
@@ -513,6 +515,8 @@ foo:
  mov    word ptr 0x90909090[eax], 0x9090
  enterw 0x9090, 0x90
  leavew
+ retfw  0x9090
+ retfw
  lretw  0x9090
  lretw
  iretw
@@ -686,3 +690,11 @@ fsubrp
 fsubrp st(3)
 fsubrp st(3),st
 fsubrp st,st(3)
+
+fidivr  word ptr [ebx]
+fidivr  dword ptr [ebx]
+
+ cmovpe  edx, 0x90909090[eax]
+ cmovpo edx, 0x90909090[eax]
+ cmovpe  dx, 0x90909090[eax]
+ cmovpo dx, 0x90909090[eax]

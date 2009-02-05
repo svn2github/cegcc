@@ -1,6 +1,6 @@
 /* Support for the generic parts of PE/PEI; the common executable parts.
    Copyright 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
-   2005, 2006, 2007 Free Software Foundation, Inc.
+   2005, 2006, 2007, 2008  Free Software Foundation, Inc.
    Written by Cygnus Solutions.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -1310,7 +1310,7 @@ pe_print_idata (bfd * abfd, void * vfile)
 		  && first_thunk != 0
 		  && first_thunk != hint_addr)
 		fprintf (file, "\t%04lx",
-			 (long) bfd_get_32 (abfd, ft_data + ft_idx + j));
+			 (unsigned long) bfd_get_32 (abfd, ft_data + ft_idx + j));
 	      fprintf (file, "\n");
 	    }
 #else
@@ -1342,7 +1342,7 @@ pe_print_idata (bfd * abfd, void * vfile)
 		  && first_thunk != 0
 		  && first_thunk != hint_addr)
 		fprintf (file, "\t%04lx",
-			 (long) bfd_get_32 (abfd, ft_data + ft_idx + j));
+			 (unsigned long) bfd_get_32 (abfd, ft_data + ft_idx + j));
 
 	      fprintf (file, "\n");
 	    }
@@ -1588,9 +1588,7 @@ pe_print_edata (bfd * abfd, void * vfile)
    _IMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY.
    See http://msdn2.microsoft.com/en-us/library/ms253988(VS.80).aspx .
 
-   The version of this function to deal with compressed pdata is moved to
-   pe-arm-wince.c .
-   */
+   This is the version for uncompressed data.  */
 
 static bfd_boolean
 pe_print_pdata (bfd * abfd, void * vfile)
@@ -1717,6 +1715,186 @@ pe_print_pdata (bfd * abfd, void * vfile)
 #undef PDATA_ROW_SIZE
 }
 
+typedef struct sym_cache
+{
+  int        symcount;
+  asymbol ** syms;
+} sym_cache;
+
+static asymbol **
+slurp_symtab (bfd *abfd, sym_cache *psc)
+{
+  asymbol ** sy = NULL;
+  long storage;
+
+  if (!(bfd_get_file_flags (abfd) & HAS_SYMS))
+    {
+      psc->symcount = 0;
+      return NULL;
+    }
+
+  storage = bfd_get_symtab_upper_bound (abfd);
+  if (storage < 0)
+    return NULL;
+  if (storage)
+    sy = bfd_malloc (storage);
+
+  psc->symcount = bfd_canonicalize_symtab (abfd, sy);
+  if (psc->symcount < 0)
+    return NULL;
+  return sy;
+}
+
+static const char *
+my_symbol_for_address (bfd *abfd, bfd_vma func, sym_cache *psc)
+{
+  int i;
+
+  if (psc->syms == 0)
+    psc->syms = slurp_symtab (abfd, psc);
+
+  for (i = 0; i < psc->symcount; i++)
+    {
+      if (psc->syms[i]->section->vma + psc->syms[i]->value == func)
+	return psc->syms[i]->name;
+    }
+
+  return NULL;
+}
+
+static void
+cleanup_syms (sym_cache *psc)
+{
+  psc->symcount = 0;
+  free (psc->syms);
+  psc->syms = NULL;
+}
+
+/* This is the version for "compressed" pdata.  */
+
+bfd_boolean
+_bfd_XX_print_ce_compressed_pdata (bfd * abfd, void * vfile)
+{
+# define PDATA_ROW_SIZE	(2 * 4)
+  FILE *file = (FILE *) vfile;
+  bfd_byte *data = NULL;
+  asection *section = bfd_get_section_by_name (abfd, ".pdata");
+  bfd_size_type datasize = 0;
+  bfd_size_type i;
+  bfd_size_type start, stop;
+  int onaline = PDATA_ROW_SIZE;
+  struct sym_cache sym_cache = {0, 0} ;
+
+  if (section == NULL
+      || coff_section_data (abfd, section) == NULL
+      || pei_section_data (abfd, section) == NULL)
+    return TRUE;
+
+  stop = pei_section_data (abfd, section)->virt_size;
+  if ((stop % onaline) != 0)
+    fprintf (file,
+	     _("Warning, .pdata section size (%ld) is not a multiple of %d\n"),
+	     (long) stop, onaline);
+
+  fprintf (file,
+	   _("\nThe Function Table (interpreted .pdata section contents)\n"));
+
+  fprintf (file, _("\
+ vma:\t\tBegin    Prolog   Function Flags    Exception EH\n\
+     \t\tAddress  Length   Length   32b exc  Handler   Data\n"));
+
+  datasize = section->size;
+  if (datasize == 0)
+    return TRUE;
+
+  if (! bfd_malloc_and_get_section (abfd, section, &data))
+    {
+      if (data != NULL)
+	free (data);
+      return FALSE;
+    }
+
+  start = 0;
+
+  for (i = start; i < stop; i += onaline)
+    {
+      bfd_vma begin_addr;
+      bfd_vma other_data;
+      bfd_vma prolog_length, function_length;
+      int flag32bit, exception_flag;
+      bfd_byte *tdata = 0;
+      asection *tsection;
+
+      if (i + PDATA_ROW_SIZE > stop)
+	break;
+
+      begin_addr = GET_PDATA_ENTRY (abfd, data + i     );
+      other_data = GET_PDATA_ENTRY (abfd, data + i +  4);
+
+      if (begin_addr == 0 && other_data == 0)
+	/* We are probably into the padding of the section now.  */
+	break;
+
+      prolog_length = (other_data & 0x000000FF);
+      function_length = (other_data & 0x3FFFFF00) >> 8;
+      flag32bit = (int)((other_data & 0x40000000) >> 30);
+      exception_flag = (int)((other_data & 0x80000000) >> 31);
+
+      fputc (' ', file);
+      fprintf_vma (file, i + section->vma); fputc ('\t', file);
+      fprintf_vma (file, begin_addr); fputc (' ', file);
+      fprintf_vma (file, prolog_length); fputc (' ', file);
+      fprintf_vma (file, function_length); fputc (' ', file);
+      fprintf (file, "%2d  %2d   ", flag32bit, exception_flag);
+
+      /* Get the exception handler's address and the data passed from the
+         .text section. This is really the data that belongs with the .pdata
+         but got "compressed" out for the ARM and SH4 architectures.  */
+      tsection = bfd_get_section_by_name (abfd, ".text");
+      if (tsection && coff_section_data (abfd, tsection)
+	  && pei_section_data (abfd, tsection))
+	{
+	  if (bfd_malloc_and_get_section (abfd, tsection, & tdata))
+	    {
+	      int xx = (begin_addr - 8) - tsection->vma;
+
+	      tdata = bfd_malloc (8);
+	      if (bfd_get_section_contents (abfd, tsection, tdata, (bfd_vma) xx, 8))
+		{
+		  bfd_vma eh, eh_data;
+
+		  eh = bfd_get_32 (abfd, tdata);
+		  eh_data = bfd_get_32 (abfd, tdata + 4);
+		  fprintf (file, "%08x  ", (unsigned int) eh);
+		  fprintf (file, "%08x", (unsigned int) eh_data);
+		  if (eh != 0)
+		    {
+		      const char *s = my_symbol_for_address (abfd, eh, &sym_cache);
+
+		      if (s)
+			fprintf (file, " (%s) ", s);
+		    }
+		}
+	      free (tdata);
+	    }
+	  else
+	    {
+	      if (tdata)
+		free (tdata);
+	    }
+	}
+
+      fprintf (file, "\n");
+    }
+
+  free (data);
+
+  cleanup_syms (& sym_cache);
+
+  return TRUE;
+#undef PDATA_ROW_SIZE
+}
+
 #define IMAGE_REL_BASED_HIGHADJ 4
 static const char * const tbl[] =
 {
@@ -1783,7 +1961,7 @@ pe_print_reloc (bfd * abfd, void * vfile)
 
       fprintf (file,
 	       _("\nVirtual Address: %08lx Chunk size %ld (0x%lx) Number of fixups %ld\n"),
-	       (unsigned long) virtual_address, size, size, number);
+	       (unsigned long) virtual_address, size, (unsigned long) size, number);
 
       for (j = 0; j < number; ++j)
 	{
@@ -1796,7 +1974,7 @@ pe_print_reloc (bfd * abfd, void * vfile)
 
 	  fprintf (file,
 		   _("\treloc %4d offset %4x [%4lx] %s"),
-		   j, off, (long) (off + virtual_address), tbl[t]);
+		   j, off, (unsigned long) (off + virtual_address), tbl[t]);
 
 	  /* HIGHADJ takes an argument, - the next record *is* the
 	     low 16 bits of addend.  */
@@ -1886,11 +2064,11 @@ _bfd_XX_print_private_bfd_data_common (bfd * abfd, void * vfile)
     fprintf (file, "\t(%s)",name);
   fprintf (file, "\nMajorLinkerVersion\t%d\n", i->MajorLinkerVersion);
   fprintf (file, "MinorLinkerVersion\t%d\n", i->MinorLinkerVersion);
-  fprintf (file, "SizeOfCode\t\t%08lx\n", i->SizeOfCode);
+  fprintf (file, "SizeOfCode\t\t%08lx\n", (unsigned long) i->SizeOfCode);
   fprintf (file, "SizeOfInitializedData\t%08lx\n",
-	   i->SizeOfInitializedData);
+	   (unsigned long) i->SizeOfInitializedData);
   fprintf (file, "SizeOfUninitializedData\t%08lx\n",
-	   i->SizeOfUninitializedData);
+	   (unsigned long) i->SizeOfUninitializedData);
   fprintf (file, "AddressOfEntryPoint\t");
   fprintf_vma (file, i->AddressOfEntryPoint);
   fprintf (file, "\nBaseOfCode\t\t");
@@ -1913,10 +2091,10 @@ _bfd_XX_print_private_bfd_data_common (bfd * abfd, void * vfile)
   fprintf (file, "MinorImageVersion\t%d\n", i->MinorImageVersion);
   fprintf (file, "MajorSubsystemVersion\t%d\n", i->MajorSubsystemVersion);
   fprintf (file, "MinorSubsystemVersion\t%d\n", i->MinorSubsystemVersion);
-  fprintf (file, "Win32Version\t\t%08lx\n", i->Reserved1);
-  fprintf (file, "SizeOfImage\t\t%08lx\n", i->SizeOfImage);
-  fprintf (file, "SizeOfHeaders\t\t%08lx\n", i->SizeOfHeaders);
-  fprintf (file, "CheckSum\t\t%08lx\n", i->CheckSum);
+  fprintf (file, "Win32Version\t\t%08lx\n", (unsigned long) i->Reserved1);
+  fprintf (file, "SizeOfImage\t\t%08lx\n", (unsigned long) i->SizeOfImage);
+  fprintf (file, "SizeOfHeaders\t\t%08lx\n", (unsigned long) i->SizeOfHeaders);
+  fprintf (file, "CheckSum\t\t%08lx\n", (unsigned long) i->CheckSum);
 
   switch (i->Subsystem)
     {
@@ -1971,24 +2149,25 @@ _bfd_XX_print_private_bfd_data_common (bfd * abfd, void * vfile)
   fprintf_vma (file, i->SizeOfHeapReserve);
   fprintf (file, "\nSizeOfHeapCommit\t");
   fprintf_vma (file, i->SizeOfHeapCommit);
-  fprintf (file, "\nLoaderFlags\t\t%08lx\n", i->LoaderFlags);
-  fprintf (file, "NumberOfRvaAndSizes\t%08lx\n", i->NumberOfRvaAndSizes);
+  fprintf (file, "\nLoaderFlags\t\t%08lx\n", (unsigned long) i->LoaderFlags);
+  fprintf (file, "NumberOfRvaAndSizes\t%08lx\n",
+	   (unsigned long) i->NumberOfRvaAndSizes);
 
   fprintf (file, "\nThe Data Directory\n");
   for (j = 0; j < IMAGE_NUMBEROF_DIRECTORY_ENTRIES; j++)
     {
       fprintf (file, "Entry %1x ", j);
       fprintf_vma (file, i->DataDirectory[j].VirtualAddress);
-      fprintf (file, " %08lx ", i->DataDirectory[j].Size);
+      fprintf (file, " %08lx ", (unsigned long) i->DataDirectory[j].Size);
       fprintf (file, "%s\n", dir_names[j]);
     }
 
   pe_print_idata (abfd, vfile);
   pe_print_edata (abfd, vfile);
   if (bfd_coff_have_print_pdata (abfd))
-	  bfd_coff_print_pdata (abfd, vfile);
+    bfd_coff_print_pdata (abfd, vfile);
   else
-	  pe_print_pdata (abfd, vfile);
+    pe_print_pdata (abfd, vfile);
   pe_print_reloc (abfd, vfile);
 
   return TRUE;

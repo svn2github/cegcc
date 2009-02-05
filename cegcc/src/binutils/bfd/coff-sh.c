@@ -1,6 +1,6 @@
 /* BFD back-end for Renesas Super-H COFF binaries.
    Copyright 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005, 2007 Free Software Foundation, Inc.
+   2003, 2004, 2005, 2007, 2008  Free Software Foundation, Inc.
    Contributed by Cygnus Support.
    Written by Steve Chamberlain, <sac@cygnus.com>.
    Relaxing code written by Ian Lance Taylor, <ian@cygnus.com>.
@@ -30,6 +30,8 @@
 #include "coff/sh.h"
 #include "coff/internal.h"
 
+#undef  bfd_pe_print_pdata
+
 #ifdef COFF_WITH_PE
 #include "coff/pe.h"
 
@@ -41,7 +43,14 @@ static bfd_boolean sh_align_load_span
 
 #define _bfd_sh_align_load_span sh_align_load_span
 #endif
-#endif
+
+#define	bfd_pe_print_pdata   _bfd_pe_print_ce_compressed_pdata
+
+#else
+
+#define	bfd_pe_print_pdata   NULL
+
+#endif /* COFF_WITH_PE.  */
 
 #include "libcoff.h"
 

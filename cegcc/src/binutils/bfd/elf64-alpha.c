@@ -1,6 +1,6 @@
 /* Alpha specific support for 64-bit ELF
    Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-   2006, 2007 Free Software Foundation, Inc.
+   2006, 2007, 2008 Free Software Foundation, Inc.
    Contributed by Richard Henderson <rth@tamu.edu>.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -324,17 +324,16 @@ struct alpha_elf_obj_tdata
 #define alpha_elf_tdata(abfd) \
   ((struct alpha_elf_obj_tdata *) (abfd)->tdata.any)
 
+#define is_alpha_elf(bfd) \
+  (bfd_get_flavour (bfd) == bfd_target_elf_flavour \
+   && elf_tdata (bfd) != NULL \
+   && elf_object_id (bfd) == ALPHA_ELF_TDATA)
+
 static bfd_boolean
 elf64_alpha_mkobject (bfd *abfd)
 {
-  if (abfd->tdata.any == NULL)
-    {
-      bfd_size_type amt = sizeof (struct alpha_elf_obj_tdata);
-      abfd->tdata.any = bfd_zalloc (abfd, amt);
-      if (abfd->tdata.any == NULL)
-	return FALSE;
-    }
-  return bfd_elf_mkobject (abfd);
+  return bfd_elf_allocate_object (abfd, sizeof (struct alpha_elf_obj_tdata),
+				  ALPHA_ELF_TDATA);
 }
 
 static bfd_boolean
@@ -1234,6 +1233,9 @@ elf64_alpha_create_got_section (bfd *abfd,
   flagword flags;
   asection *s;
 
+  if (! is_alpha_elf (abfd))
+    return FALSE;
+
   flags = (SEC_ALLOC | SEC_LOAD | SEC_HAS_CONTENTS | SEC_IN_MEMORY
 	   | SEC_LINKER_CREATED);
   s = bfd_make_section_anyway_with_flags (abfd, ".got", flags);
@@ -1259,6 +1261,9 @@ elf64_alpha_create_dynamic_sections (bfd *abfd, struct bfd_link_info *info)
   asection *s;
   flagword flags;
   struct elf_link_hash_entry *h;
+
+  if (! is_alpha_elf (abfd))
+    return FALSE;
 
   /* We need to create .plt, .rela.plt, .got, and .rela.got sections.  */
 
@@ -1743,7 +1748,6 @@ elf64_alpha_check_relocs (bfd *abfd, struct bfd_link_info *info,
 {
   bfd *dynobj;
   asection *sreloc;
-  const char *rel_sec_name;
   Elf_Internal_Shdr *symtab_hdr;
   struct alpha_elf_link_hash_entry **sym_hashes;
   const Elf_Internal_Rela *rel, *relend;
@@ -1761,14 +1765,15 @@ elf64_alpha_check_relocs (bfd *abfd, struct bfd_link_info *info,
   if ((sec->flags & SEC_ALLOC) == 0)
     return TRUE;
 
-  dynobj = elf_hash_table(info)->dynobj;
+  BFD_ASSERT (is_alpha_elf (abfd));
+
+  dynobj = elf_hash_table (info)->dynobj;
   if (dynobj == NULL)
-    elf_hash_table(info)->dynobj = dynobj = abfd;
+    elf_hash_table (info)->dynobj = dynobj = abfd;
 
   sreloc = NULL;
-  rel_sec_name = NULL;
-  symtab_hdr = &elf_tdata(abfd)->symtab_hdr;
-  sym_hashes = alpha_elf_sym_hashes(abfd);
+  symtab_hdr = &elf_symtab_hdr (abfd);
+  sym_hashes = alpha_elf_sym_hashes (abfd);
 
   relend = relocs + sec->reloc_count;
   for (rel = relocs; rel < relend; ++rel)
@@ -1916,41 +1921,16 @@ elf64_alpha_check_relocs (bfd *abfd, struct bfd_link_info *info,
 
       if (need & NEED_DYNREL)
 	{
-	  if (rel_sec_name == NULL)
-	    {
-	      rel_sec_name = (bfd_elf_string_from_elf_section
-			      (abfd, elf_elfheader(abfd)->e_shstrndx,
-			       elf_section_data(sec)->rel_hdr.sh_name));
-	      if (rel_sec_name == NULL)
-		return FALSE;
-
-	      BFD_ASSERT (CONST_STRNEQ (rel_sec_name, ".rela")
-			  && strcmp (bfd_get_section_name (abfd, sec),
-				     rel_sec_name+5) == 0);
-	    }
-
 	  /* We need to create the section here now whether we eventually
 	     use it or not so that it gets mapped to an output section by
-	     the linker.  If not used, we'll kill it in
-	     size_dynamic_sections.  */
+	     the linker.  If not used, we'll kill it in size_dynamic_sections.  */
 	  if (sreloc == NULL)
 	    {
-	      sreloc = bfd_get_section_by_name (dynobj, rel_sec_name);
-	      if (sreloc == NULL)
-		{
-		  flagword flags;
+	      sreloc = _bfd_elf_make_dynamic_reloc_section
+		(sec, dynobj, 3, abfd, /*rela?*/ TRUE);
 
-		  flags = (SEC_HAS_CONTENTS | SEC_IN_MEMORY
-			   | SEC_LINKER_CREATED | SEC_READONLY);
-		  if (sec->flags & SEC_ALLOC)
-		    flags |= SEC_ALLOC | SEC_LOAD;
-		  sreloc = bfd_make_section_with_flags (dynobj,
-							rel_sec_name,
-							flags);
-		  if (sreloc == NULL
-		      || !bfd_set_section_alignment (dynobj, sreloc, 3))
-		    return FALSE;
-		}
+	      if (sreloc == NULL)
+		return FALSE;
 	    }
 
 	  if (h)
@@ -2390,7 +2370,12 @@ elf64_alpha_size_got_sections (struct bfd_link_info *info)
     {
       for (i = info->input_bfds; i ; i = i->link_next)
 	{
-	  bfd *this_got = alpha_elf_tdata (i)->gotobj;
+	  bfd *this_got;
+
+	  if (! is_alpha_elf (i))
+	    continue;
+
+	  this_got = alpha_elf_tdata (i)->gotobj;
 	  if (this_got == NULL)
 	    continue;
 
@@ -2421,6 +2406,9 @@ elf64_alpha_size_got_sections (struct bfd_link_info *info)
     }
 
   cur_got_obj = got_list;
+  if (cur_got_obj == NULL)
+    return FALSE;
+
   i = alpha_elf_tdata(cur_got_obj)->got_link_next;
   while (i != NULL)
     {
@@ -3089,7 +3077,7 @@ elf64_alpha_relax_opt_call (struct alpha_relax_info *info, bfd_vma symval)
 
   /* We've now determined that we can skip an initial gp load.  Verify
      that the call and the target use the same gp.   */
-  if (info->link_info->hash->creator != info->tsec->owner->xvec
+  if (info->link_info->output_bfd->xvec != info->tsec->owner->xvec
       || info->gotobj != alpha_elf_tdata (info->tsec->owner)->gotobj)
     return 0;
 
@@ -3612,6 +3600,8 @@ elf64_alpha_relax_section (bfd *abfd, asection *sec,
       || sec->reloc_count == 0)
     return TRUE;
 
+  BFD_ASSERT (is_alpha_elf (abfd));
+
   /* Make sure our GOT and PLT tables are up-to-date.  */
   if (alpha_elf_hash_table(link_info)->relax_trip != link_info->relax_trip)
     {
@@ -3628,7 +3618,7 @@ elf64_alpha_relax_section (bfd *abfd, asection *sec,
 	}
     }
 
-  symtab_hdr = &elf_tdata (abfd)->symtab_hdr;
+  symtab_hdr = &elf_symtab_hdr (abfd);
   local_got_entries = alpha_elf_tdata(abfd)->local_got_entries;
 
   /* Load the relocations for this section.  */
@@ -3935,7 +3925,7 @@ elf64_alpha_relocate_section_r (bfd *output_bfd ATTRIBUTE_UNUSED,
   struct elf_link_hash_entry **sym_hashes;
   bfd_boolean ret_val = TRUE;
 
-  symtab_hdr_sh_info = elf_tdata (input_bfd)->symtab_hdr.sh_info;
+  symtab_hdr_sh_info = elf_symtab_hdr (input_bfd).sh_info;
   sym_hashes = elf_sym_hashes (input_bfd);
 
   relend = relocs + input_section->reloc_count;
@@ -4023,6 +4013,8 @@ elf64_alpha_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
   struct alpha_elf_got_entry **local_got_entries;
   bfd_boolean ret_val;
 
+  BFD_ASSERT (is_alpha_elf (input_bfd));
+  
   /* Handle relocatable links with a smaller loop.  */
   if (info->relocatable)
     return elf64_alpha_relocate_section_r (output_bfd, info, input_bfd,
@@ -4033,7 +4025,7 @@ elf64_alpha_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
   ret_val = TRUE;
 
-  symtab_hdr = &elf_tdata (input_bfd)->symtab_hdr;
+  symtab_hdr = &elf_symtab_hdr (input_bfd);
 
   dynobj = elf_hash_table (info)->dynobj;
   if (dynobj)
@@ -5043,15 +5035,11 @@ elf64_alpha_final_link (bfd *abfd, struct bfd_link_info *info)
 	      input_section = p->u.indirect.section;
 	      input_bfd = input_section->owner;
 
-	      if (bfd_get_flavour (input_bfd) != bfd_target_elf_flavour
-		  || (get_elf_backend_data (input_bfd)
-		      ->elf_backend_ecoff_debug_swap) == NULL)
-		{
-		  /* I don't know what a non ALPHA ELF bfd would be
-		     doing with a .mdebug section, but I don't really
-		     want to deal with it.  */
-		  continue;
-		}
+	      if (! is_alpha_elf (input_bfd))
+		/* I don't know what a non ALPHA ELF bfd would be
+		   doing with a .mdebug section, but I don't really
+		   want to deal with it.  */
+		continue;
 
 	      input_swap = (get_elf_backend_data (input_bfd)
 			    ->elf_backend_ecoff_debug_swap);

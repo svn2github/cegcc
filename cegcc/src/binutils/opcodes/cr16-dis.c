@@ -1,5 +1,5 @@
 /* Disassembler code for CR16.
-   Copyright 2007 Free Software Foundation, Inc.
+   Copyright 2007, 2008 Free Software Foundation, Inc.
    Contributed by M R Swami Reddy (MR.Swami.Reddy@nsc.com).
 
    This file is part of GAS, GDB and the GNU binutils.
@@ -307,6 +307,11 @@ static unsigned long
 build_mask (void)
 {
   unsigned long mask = SBM (instruction->match_bits);
+
+  /* Adjust mask for bcond with 32-bit size instruction.  */
+  if ((IS_INSN_MNEMONIC("b") && instruction->size == 2))
+    mask = 0xff0f0000;
+
   return mask;
 }
 
@@ -317,7 +322,7 @@ match_opcode (void)
 {
   unsigned long mask;
   /* The instruction 'constant' opcode doewsn't exceed 32 bits.  */
-  unsigned long doubleWord = words[1] + (words[0] << 16);
+  unsigned long doubleWord = (words[1] + (words[0] << 16)) & 0xffffffff;
 
   /* Start searching from end of instruction table.  */
   instruction = &cr16_instruction[NUMOPCODES - 2];
@@ -326,6 +331,10 @@ match_opcode (void)
   while (instruction >= cr16_instruction)
     {
       mask = build_mask ();
+      /* Adjust mask for bcond with 32-bit size instruction */
+      if ((IS_INSN_MNEMONIC("b") && instruction->size == 2))
+        mask = 0xff0f0000;
+
       if ((doubleWord & mask) == BIN (instruction->match,
                                       instruction->match_bits))
         return 1;

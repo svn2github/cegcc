@@ -1,5 +1,5 @@
-/* dwwrf.h - DWARF support header file
-   Copyright 2005, 2007
+/* dwarf.h - DWARF support header file
+   Copyright 2005, 2007, 2008
    Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
@@ -31,7 +31,13 @@ typedef unsigned long dwarf_size_type;
 
 struct dwarf_section
 {
-  const char *name;
+  /* A debug section has a different name when it's stored compressed
+   * or not.  COMPRESSED_NAME and UNCOMPRESSED_NAME are the two
+   * possibilities.  NAME is set to whichever one is used for this
+   * input file, as determined by load_debug_section().  */
+  const char *uncompressed_name;
+  const char *compressed_name;
+  const char* name;
   unsigned char *start;
   dwarf_vma address;
   dwarf_size_type size;
@@ -91,11 +97,12 @@ extern dwarf_vma (*byte_get) (unsigned char *, int);
 extern dwarf_vma byte_get_little_endian (unsigned char *, int);
 extern dwarf_vma byte_get_big_endian (unsigned char *, int);
 
-extern dwarf_vma eh_addr_size;
+extern int eh_addr_size;
 
 extern int do_debug_info;
 extern int do_debug_abbrevs;
 extern int do_debug_lines;
+extern int do_debug_lines_decoded;
 extern int do_debug_pubnames;
 extern int do_debug_aranges;
 extern int do_debug_ranges;
@@ -104,6 +111,8 @@ extern int do_debug_frames_interp;
 extern int do_debug_macinfo;
 extern int do_debug_str;
 extern int do_debug_loc;
+
+extern void init_dwarf_regnames (unsigned int);
 
 extern int load_debug_section (enum dwarf_section_display_enum,
 			       void *);

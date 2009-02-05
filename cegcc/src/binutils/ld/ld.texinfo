@@ -1,7 +1,8 @@
 \input texinfo
 @setfilename ld.info
 @c Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-@c 2001, 2002, 2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
+@c 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
+@c Free Software Foundation, Inc.
 @syncodeindex ky cp
 @c man begin INCLUDE
 @include configdoc.texi
@@ -25,6 +26,7 @@
 @set HPPA
 @set I960
 @set M68HC11
+@set M68K
 @set MMIX
 @set MSP430
 @set POWERPC
@@ -53,10 +55,10 @@ This file documents the @sc{gnu} linker LD
 version @value{VERSION}.
 
 Copyright @copyright{} 1991, 92, 93, 94, 95, 96, 97, 98, 99, 2000,
-2001, 2002, 2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
+2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009 Free Software Foundation, Inc.
 
 Permission is granted to copy, distribute and/or modify this document
-under the terms of the GNU Free Documentation License, Version 1.1
+under the terms of the GNU Free Documentation License, Version 1.3
 or any later version published by the Free Software Foundation;
 with no Invariant Sections, with no Front-Cover Texts, and with no
 Back-Cover Texts.  A copy of the license is included in the
@@ -91,10 +93,10 @@ section entitled ``GNU Free Documentation License''.
 @vskip 0pt plus 1filll
 @c man begin COPYRIGHT
 Copyright @copyright{} 1991, 92, 93, 94, 95, 96, 97, 98, 99, 2000, 2001,
-2002, 2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
+2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009 Free Software Foundation, Inc.
 
 Permission is granted to copy, distribute and/or modify this document
-under the terms of the GNU Free Documentation License, Version 1.1
+under the terms of the GNU Free Documentation License, Version 1.3
 or any later version published by the Free Software Foundation;
 with no Invariant Sections, with no Front-Cover Texts, and with no
 Back-Cover Texts.  A copy of the license is included in the
@@ -116,8 +118,8 @@ This file documents the @sc{gnu} linker ld
 version @value{VERSION}.
 
 This document is distributed under the terms of the GNU Free
-Documentation License.  A copy of the license is included in the
-section entitled ``GNU Free Documentation License''.
+Documentation License version 1.3.  A copy of the license is included
+in the section entitled ``GNU Free Documentation License''.
 
 @menu
 * Overview::                    Overview
@@ -144,6 +146,9 @@ section entitled ``GNU Free Documentation License''.
 @end ifset
 @ifset M68HC11
 * M68HC11/68HC12::              ld and the Motorola 68HC11 and 68HC12 families
+@end ifset
+@ifset M68K
+* M68K::                        ld and Motorola 68K family
 @end ifset
 @ifset POWERPC
 * PowerPC ELF32::               ld and PowerPC 32-bit ELF Support
@@ -297,10 +302,11 @@ augments the main linker script used for the link (either the default
 linker script or the one specified by using @samp{-T}).  This feature
 permits the linker to link against a file which appears to be an object
 or an archive, but actually merely defines some symbol values, or uses
-@code{INPUT} or @code{GROUP} to load other objects.  Note that
-specifying a script in this way merely augments the main linker script;
-use the @samp{-T} option to replace the default linker script entirely.
-@xref{Scripts}.
+@code{INPUT} or @code{GROUP} to load other objects.  Specifying a
+script in this way merely augments the main linker script, with the
+extra commands placed after the main script; use the @samp{-T} option
+to replace the default linker script entirely, but note the effect of
+the @code{INSERT} command.  @xref{Scripts}.
 
 For options whose names are a single letter,
 option arguments must either follow the option letter without intervening
@@ -452,13 +458,26 @@ and other ways of specifying the entry point.
 @kindex --exclude-libs
 @item --exclude-libs @var{lib},@var{lib},...
 Specifies a list of archive libraries from which symbols should not be automatically
-exported. The library names may be delimited by commas or colons.  Specifying
+exported.  The library names may be delimited by commas or colons.  Specifying
 @code{--exclude-libs ALL} excludes symbols in all archive libraries from
 automatic export.  This option is available only for the i386 PE targeted
 port of the linker and for ELF targeted ports.  For i386 PE, symbols
 explicitly listed in a .def file are still exported, regardless of this
 option.  For ELF targeted ports, symbols affected by this option will
 be treated as hidden.
+
+@kindex --exclude-modules-for-implib
+@item --exclude-modules-for-implib @var{module},@var{module},...
+Specifies a list of object files or archive members, from which symbols
+should not be automatically exported, but which should be copied wholesale
+into the import library being generated during the link.  The module names
+may be delimited by commas or colons, and must match exactly the filenames
+used by @command{ld} to open the files; for archive members, this is simply
+the member name, but for object files the name listed must include and
+match precisely any path used to specify the input file on the linker's
+command-line.  This option is available only for the i386 PE targeted port
+of the linker.  Symbols explicitly listed in a .def file are still exported,
+regardless of this option.
 
 @cindex dynamic symbol table
 @kindex -E
@@ -1075,9 +1094,11 @@ This option affects ELF DT_NEEDED tags for dynamic libraries mentioned
 on the command line after the @option{--as-needed} option.  Normally,
 the linker will add a DT_NEEDED tag for each dynamic library mentioned
 on the command line, regardless of whether the library is actually
-needed.  @option{--as-needed} causes DT_NEEDED tags to only be emitted
-for libraries that satisfy some symbol reference from regular objects
-which is undefined at the point that the library was linked.
+needed.  @option{--as-needed} causes a DT_NEEDED tag to only be emitted
+for a library that satisfies a symbol reference from regular objects
+which is undefined at the point that the library was linked, or, if
+the library is not found in the DT_NEEDED lists of other libraries
+linked up to that point, a reference from another dynamic library.
 @option{--no-as-needed} restores the default behaviour.
 
 @kindex --add-needed
@@ -1187,6 +1208,9 @@ perform this check, and if it finds any overlaps it will produce
 suitable error messages.  The linker does know about, and does make
 allowances for sections in overlays.  The default behaviour can be
 restored by using the command line switch @option{--check-sections}.
+Section overlap is not usually checked for relocatable links.  You can
+force checking in that case by using the @option{--check-sections}
+option.
 
 @cindex cross reference table
 @kindex --cref
@@ -1258,10 +1282,12 @@ generating dynamically linked ELF executables.  The default dynamic
 linker is normally correct; don't use this unless you know what you are
 doing.
 
-
 @kindex --fatal-warnings
+@kindex --no-fatal-warnings
 @item --fatal-warnings
-Treat all warnings as errors.
+@itemx --no-fatal-warnings
+Treat all warnings as errors.  The default behaviour can be restored
+with the option @option{--no-fatal-warnings}.
 
 @kindex --force-exe-suffix
 @item  --force-exe-suffix
@@ -1280,10 +1306,24 @@ it ends in a @code{.exe} suffix.
 @item --gc-sections
 @itemx --no-gc-sections
 Enable garbage collection of unused input sections.  It is ignored on
-targets that do not support this option.  This option is not compatible
-with @samp{-r} or @samp{--emit-relocs}. The default behaviour (of not
+targets that do not support this option.  The default behaviour (of not
 performing this garbage collection) can be restored by specifying
 @samp{--no-gc-sections} on the command line.
+
+@samp{--gc-sections} decides which input sections are used by
+examining symbols and relocations.  The section containing the entry
+symbol and all sections containing symbols undefined on the
+command-line will be kept, as will sections containing symbols
+referenced by dynamic objects.  Note that when building shared
+libraries, the linker must assume that any visible symbol is
+referenced.  Once this initial set of sections has been determined,
+the linker recursively marks as used any section referenced by their
+relocations.  See @samp{--entry} and @samp{--undefined}.
+
+This option can be set when doing a partial link (enabled with option
+@samp{-r}).  In this case the root of symbols kept must be explicitely 
+specified either by an @samp{--entry} or @samp{--undefined} option or by
+a @code{ENTRY} command in the linker script.
 
 @kindex --print-gc-sections
 @kindex --no-print-gc-sections
@@ -1343,21 +1383,34 @@ first definition will be used.
 @kindex --no-allow-shlib-undefined
 @item --allow-shlib-undefined
 @itemx --no-allow-shlib-undefined
-Allows (the default) or disallows undefined symbols in shared libraries.
+Allows or disallows undefined symbols in shared libraries.
 This switch is similar to @option{--no-undefined} except that it
 determines the behaviour when the undefined symbols are in a
 shared library rather than a regular object file.  It does not affect
 how undefined symbols in regular object files are handled.
 
-The reason that @option{--allow-shlib-undefined} is the default is that
-the shared library being specified at link time may not be the same as
-the one that is available at load time, so the symbols might actually be
-resolvable at load time.  Plus there are some systems, (eg BeOS) where
-undefined symbols in shared libraries is normal.  (The kernel patches
-them at load time to select which function is most appropriate
-for the current architecture.  This is used for example to dynamically
-select an appropriate memset function).  Apparently it is also normal
-for HPPA shared libraries to have undefined symbols.
+The default behaviour is to report errors for any undefined symbols
+referenced in shared libraries if the linker is being used to create
+an executable, but to allow them if the linker is being used to create
+a shared library.
+
+The reasons for allowing undefined symbol references in shared
+libraries specified at link time are that:
+
+@itemize @bullet
+@item
+A shared library specified at link time may not be the same as the one
+that is available at load time, so the symbol might actually be
+resolvable at load time.
+@item
+There are some operating systems, eg BeOS and HPPA, where undefined
+symbols in shared libraries are normal.
+
+The BeOS kernel for example patches shared libraries at load time to
+select whichever function is most appropriate for the current
+architecture.  This is used, for example, to dynamically select an
+appropriate memset function.
+@end itemize
 
 @kindex --no-undefined-version
 @item --no-undefined-version
@@ -1603,13 +1656,14 @@ and SunOS platforms.  On SunOS, the linker will automatically create a
 shared library if the @option{-e} option is not used and there are
 undefined symbols in the link.
 
-@item --sort-common
+@item --sort-common [= ascending | descending]
 @kindex --sort-common
-This option tells @command{ld} to sort the common symbols by size when it
-places them in the appropriate output sections.  First come all the one
-byte symbols, then all the two byte, then all the four byte, and then
-everything else.  This is to prevent gaps between symbols due to
-alignment constraints.
+This option tells @command{ld} to sort the common symbols by alignment in
+ascending or descending order when it places them in the appropriate output
+sections.  The symbol alignments considered are sixteen-byte or larger,
+eight-byte, four-byte, two-byte, and one-byte. This is to prevent gaps
+between symbols due to alignment constraints.  If no sorting order is
+specified, then descending order is assumed.
 
 @kindex --sort-section name
 @item --sort-section name
@@ -1687,6 +1741,12 @@ sign (``@key{=}''), and @var{org}.
 @itemx -Ttext @var{org}
 Same as --section-start, with @code{.bss}, @code{.data} or
 @code{.text} as the @var{sectionname}.
+
+@kindex -Ttext-segment @var{org}
+@itemx -Ttext-segment @var{org}
+@cindex text segment origin, cmd line
+When creating an ELF executable or shared object, it will set the address
+of the first byte of the text segment.
 
 @kindex --unresolved-symbols
 @item --unresolved-symbols=@var{method}
@@ -2425,6 +2485,28 @@ paging and addresses within the memory window.
 @c man end
 @end ifset
 
+@ifset M68K
+@subsection Options specific to Motorola 68K target
+
+@c man begin OPTIONS
+
+The following options are supported to control handling of GOT generation
+when linking for 68K targets.
+
+@table @gcctabopt
+
+@kindex --got
+@item --got=@var{type}
+This option tells the linker which GOT generation scheme to use.
+@var{type} should be one of @samp{single}, @samp{negative},
+@samp{multigot} or @samp{target}.  For more information refer to the
+Info entry for @file{ld}.
+
+@end table
+
+@c man end
+@end ifset
+
 @ifset UsesEnvVars
 @node Environment
 @section Environment Variables
@@ -2720,6 +2802,9 @@ be searched for in the current directory, and in any directory specified
 with the @option{-L} option.  You can nest calls to @code{INCLUDE} up to
 10 levels deep.
 
+You can place @code{INCLUDE} directives at the top level, in @code{MEMORY} or
+@code{SECTIONS} commands, or in output section descriptions.
+
 @item INPUT(@var{file}, @var{file}, @dots{})
 @itemx INPUT(@var{file} @var{file} @dots{})
 @kindex INPUT(@var{files})
@@ -2888,6 +2973,35 @@ output file is specified (@samp{-r}).
 This command has the same effect as the @samp{--no-define-common}
 command-line option: to make @code{ld} omit the assignment of addresses
 to common symbols even for a non-relocatable output file.
+
+@item INSERT [ AFTER | BEFORE ] @var{output_section}
+@kindex INSERT
+@cindex insert user script into default script
+This command is typically used in a script specified by @samp{-T} to
+augment the default @code{SECTIONS} with, for example, overlays.  It
+inserts all prior linker script statements after (or before)
+@var{output_section}, and also causes @samp{-T} to not override the
+default linker script.  The exact insertion point is as for orphan
+sections.  @xref{Location Counter}.  The insertion happens after the
+linker has mapped input sections to output sections.  Prior to the
+insertion, since @samp{-T} scripts are parsed before the default
+linker script, statements in the @samp{-T} script occur before the
+default linker script statements in the internal linker representation
+of the script.  In particular, input section assignments will be made
+to @samp{-T} output sections before those in the default script.  Here
+is an example of how a @samp{-T} script using @code{INSERT} might look:
+
+@smallexample
+SECTIONS
+@{
+  OVERLAY :
+  @{
+    .ov1 @{ ov1*(.text) @}
+    .ov2 @{ ov2*(.text) @}
+  @}
+@}
+INSERT AFTER .text;
+@end smallexample
 
 @item NOCROSSREFS(@var{section} @var{section} @dots{})
 @kindex NOCROSSREFS(@var{sections})
@@ -3358,6 +3472,29 @@ needs to be at a particular location in memory.  For example:
 data.o(.data)
 @end smallexample
 
+You can also specify files within archives by writing a pattern
+matching the archive, a colon, then the pattern matching the file,
+with no whitespace around the colon.
+
+@table @samp
+@item archive:file
+matches file within archive
+@item archive:
+matches the whole archive
+@item :file
+matches file but not one in an archive
+@end table
+
+Either one or both of @samp{archive} and @samp{file} can contain shell
+wildcards.  On DOS based file systems, the linker will assume that a
+single letter followed by a colon is a drive specifier, so
+@samp{c:myfile.o} is a simple file specification, not @samp{myfile.o}
+within an archive called @samp{c}.  @samp{archive:file} filespecs may
+also be used within an @code{EXCLUDE_FILE} list, but may not appear in
+other linker script contexts.  For instance, you cannot extract a file
+from an archive by using @samp{archive:file} in an @code{INPUT}
+command.
+
 If you use a file name without a list of sections, then all sections in
 the input file will be included in the output section.  This is not
 commonly done, but it may by useful on occasion.  For example:
@@ -3365,7 +3502,8 @@ commonly done, but it may by useful on occasion.  For example:
 data.o
 @end smallexample
 
-When you use a file name which does not contain any wild card
+When you use a file name which is not an @samp{archive:file} specifier
+and does not contain any wild card
 characters, the linker will first see if you also specified the file
 name on the linker command line or in an @code{INPUT} command.  If you
 did not, the linker will attempt to open the file as an input file, as
@@ -4461,7 +4599,11 @@ When the linker finds a symbol defined in a library which is not
 specifically bound to a version node, it will effectively bind it to an
 unspecified base version of the library.  You can bind all otherwise
 unspecified symbols to a given version node by using @samp{global: *;}
-somewhere in the version script.
+somewhere in the version script.  Note that it's slightly crazy to use
+wildcards in a global spec except on the last version node.  Global
+wildcards elsewhere run the risk of accidentally adding symbols to the
+set exported for an old version.  That's wrong since older versions
+ought to have a fixed set of symbols.
 
 The names of the version nodes have no specific meaning other than what
 they might suggest to the person reading them.  The @samp{2.0} version
@@ -4600,7 +4742,10 @@ All constants are integers.
 
 As in C, the linker considers an integer beginning with @samp{0} to be
 octal, and an integer beginning with @samp{0x} or @samp{0X} to be
-hexadecimal.  The linker considers other integers to be decimal.
+hexadecimal.  Alternatively the linker accepts suffixes of @samp{h} or
+@samp{H} for hexadeciaml, @samp{o} or @samp{O} for octal, @samp{b} or
+@samp{B} for binary and @samp{d} or @samp{D} for decimal.  Any integer
+value without a prefix or a suffix is considered to be decimal.
 
 @cindex scaled integers
 @cindex K and M integer suffixes
@@ -4619,12 +4764,18 @@ constant by
 ${\rm 1024}$ or ${\rm 1024}^2$
 @end tex
 @c END TEXI2ROFF-KILL
-respectively. For example, the following all refer to the same quantity:
+respectively.  For example, the following
+all refer to the same quantity:
+
 @smallexample
 _fourk_1 = 4K;
 _fourk_2 = 4096;
 _fourk_3 = 0x1000;
+_fourk_4 = 10000o;
 @end smallexample
+
+Note - the @code{K} and @code{M} suffixes cannot be used in
+conjunction with the base suffixes mentioned above.
 
 @node Symbols
 @subsection Symbol Names
@@ -4661,6 +4812,14 @@ at the end of the file.
 
 For ELF targets, the attribute of the section includes section type as
 well as section flag.
+
+If an orphaned section's name is representable as a C identifier then
+the linker will automatically @pxref{PROVIDE} two symbols:
+__start_SECNAME and __end_SECNAME, where SECNAME is the name of the
+section.  These indicate the start address and end address of the
+orphaned section respectively.  Note: most section names are not
+representable as C identifiers because they contain a @samp{.}
+character.
 
 @node Location Counter
 @subsection The Location Counter
@@ -5257,6 +5416,9 @@ functionality are not listed.
 @ifset HPPA
 * HPPA ELF32::                  @command{ld} and HPPA 32-bit ELF
 @end ifset
+@ifset M68K
+* M68K::			@command{ld} and the Motorola 68K family
+@end ifset
 @ifset MMIX
 * MMIX::			@command{ld} and MMIX
 @end ifset
@@ -5461,13 +5623,6 @@ trampoline address instead of the function address. This is typically the
 case when a pointer to a function is taken. The pointer will in fact
 point to the function trampoline.
 
-@cindex PIC_VENEER
-@kindex --pic-veneer
-The @samp{--pic-veneer} switch makes the linker use PIC sequences for
-ARM/Thumb interworking veneers, even if the rest of the binary
-is not PIC.  This avoids problems on uClinux targets where
-@samp{--emit-relocs} is used to generate relocatable binaries.
-
 @ifclear GENERIC
 @lowersections
 @end ifclear
@@ -5497,6 +5652,13 @@ The @samp{--thumb-entry} switch is a duplicate of the generic
 But it also sets the bottom bit of the address, so that it can be
 branched to using a BX instruction, and the program will start
 executing in Thumb mode straight away.
+
+@cindex PE import table prefixing
+@kindex --use-nul-prefixed-import-tables
+The @samp{--use-nul-prefixed-import-tables} switch is specifying, that
+the import tables idata4 and idata5 have to be generated with a zero
+elememt prefix for import libraries. This is the old style to generate
+import tables. By default this option is turned off.
 
 @cindex BE8
 @kindex --be8
@@ -5539,6 +5701,21 @@ linker, which causes v4t @code{BX rM} instructions to be rewritten as
 
 In the former case, the switch should not be used, and @samp{R_ARM_V4BX}
 relocations are ignored.
+
+@cindex FIX_V4BX_INTERWORKING
+@kindex --fix-v4bx-interworking
+Replace @code{BX rM} instructions identified by @samp{R_ARM_V4BX}
+relocations with a branch to the following veneer:
+
+@smallexample
+TST rM, #1
+MOVEQ PC, rM
+BX Rn
+@end smallexample
+
+This allows generation of libraries/applications that work on ARMv4 cores
+and are still interworking safe.  Note that the above veneer clobbers the
+condition flags, so may cause incorrect progrm behavior in rare cases.
 
 @cindex USE_BLX
 @kindex --use-blx
@@ -5583,12 +5760,58 @@ are sufficient to avoid the erratum in both the scalar and vector cases.
 
 @cindex NO_ENUM_SIZE_WARNING
 @kindex --no-enum-size-warning
-The @samp{--no-enum-size-warning} switch prevents the linker from
+The @option{--no-enum-size-warning} switch prevents the linker from
 warning when linking object files that specify incompatible EABI
 enumeration size attributes.  For example, with this switch enabled,
 linking of an object file using 32-bit enumeration values with another
 using enumeration values fitted into the smallest possible space will
 not be diagnosed.
+
+@cindex NO_WCHAR_SIZE_WARNING
+@kindex --no-wchar-size-warning
+The @option{--no-wchar-size-warning} switch prevents the linker from
+warning when linking object files that specify incompatible EABI
+@code{wchar_t} size attributes.  For example, with this switch enabled,
+linking of an object file using 32-bit @code{wchar_t} values with another
+using 16-bit @code{wchar_t} values will not be diagnosed.
+
+@cindex PIC_VENEER
+@kindex --pic-veneer
+The @samp{--pic-veneer} switch makes the linker use PIC sequences for
+ARM/Thumb interworking veneers, even if the rest of the binary
+is not PIC.  This avoids problems on uClinux targets where
+@samp{--emit-relocs} is used to generate relocatable binaries.
+
+@cindex STUB_GROUP_SIZE
+@kindex --stub-group-size=@var{N}
+The linker will automatically generate and insert small sequences of
+code into a linked ARM ELF executable whenever an attempt is made to
+perform a function call to a symbol that is too far away.  The
+placement of these sequences of instructions - called stubs - is
+controlled by the command line option @option{--stub-group-size=N}.
+The placement is important because a poor choice can create a need for
+duplicate stubs, increasing the code sizw.  The linker will try to
+group stubs together in order to reduce interruptions to the flow of
+code, but it needs guidance as to how big these groups should be and
+where they should be placed.
+
+The value of @samp{N}, the parameter to the
+@option{--stub-group-size=} option controls where the stub groups are
+placed.  If it is negative then all stubs are placed before the first
+branch that needs them.  If it is positive then the stubs can be
+placed either before or after the branches that need them.  If the
+value of @samp{N} is 1 (either +1 or -1) then the linker will choose
+exactly where to place groups of stubs, using its built in heuristics.
+A value of @samp{N} greater than 1 (or smaller than -1) tells the
+linker that a single group of stubs can service at most @samp{N} bytes
+from the input sections.
+
+The default, if @option{--stub-group-size=} is not specified, is
+@samp{N = +1}.
+
+Farcalls stubs insertion is fully supported for the ARM-EABI target
+only, because it relies on object files properties not present
+otherwise.
 
 @ifclear GENERIC
 @lowersections
@@ -5637,6 +5860,35 @@ large, it may not be possible for a branch to reach its stub.
 @end ifclear
 @end ifset
 
+@ifset M68K
+@ifclear GENERIC
+@raisesections
+@end ifclear
+
+@node M68K
+@section @command{ld} and the Motorola 68K family
+
+@cindex Motorola 68K GOT generation
+@kindex --got=@var{type}
+The @samp{--got=@var{type}} option lets you choose the GOT generation scheme.
+The choices are @samp{single}, @samp{negative}, @samp{multigot} and
+@samp{target}.  When @samp{target} is selected the linker chooses
+the default GOT generation scheme for the current target.
+@samp{single} tells the linker to generate a single GOT with
+entries only at non-negative offsets.
+@samp{negative} instructs the linker to generate a single GOT with
+entries at both negative and positive offsets.  Not all environments
+support such GOTs.
+@samp{multigot} allows the linker to generate several GOTs in the
+output file.  All GOT references from a single input object
+file access the same GOT, but references from different input object
+files might access different GOTs.  Not all environments support such GOTs.
+
+@ifclear GENERIC
+@lowersections
+@end ifclear
+@end ifset
+
 @ifset MMIX
 @ifclear GENERIC
 @raisesections
@@ -5658,10 +5910,10 @@ global register multiplied by 8.  Register @code{$255} is not included in
 this section; it is always set to the program entry, which is at the
 symbol @code{Main} for @code{mmo} files.
 
-Symbols with the prefix @code{__.MMIX.start.}, for example
-@code{__.MMIX.start..text} and @code{__.MMIX.start..data} are special;
-there must be only one each, even if they are local.  The default linker
-script uses these to set the default start address of a section.
+Global symbols with the prefix @code{__.MMIX.start.}, for example
+@code{__.MMIX.start..text} and @code{__.MMIX.start..data} are special.
+The default linker script uses these to set the default start address
+of a section.
 
 Initial and trailing multiples of zero-valued 32-bit words in a section,
 are left out from an mmo file.
@@ -5851,7 +6103,7 @@ disable the optimization.
 @item --no-opd-optimize
 PowerPC64 @command{ld} normally removes @code{.opd} section entries
 corresponding to deleted link-once functions, or functions removed by
-the action of @samp{--gc-sections} or linker scrip @code{/DISCARD/}.
+the action of @samp{--gc-sections} or linker script @code{/DISCARD/}.
 Use this option to disable @code{.opd} optimization.
 
 @cindex PowerPC64 OPD spacing
@@ -6034,6 +6286,7 @@ which is controlled by the following command line options:
 @item --export-all-symbols   [This is the default]
 @item --exclude-symbols
 @item --exclude-libs
+@item --exclude-modules-for-implib
 @end itemize
 
 If, however, @samp{--export-all-symbols} is not given explicitly on the
@@ -6917,6 +7170,8 @@ If you have more than one @code{SECT} statement for the same
 @var{secname}, only the @emph{first} sets the start address.
 @end table
 
+@node GNU Free Documentation License
+@appendix GNU Free Documentation License
 @include fdl.texi
 
 @node LD Index

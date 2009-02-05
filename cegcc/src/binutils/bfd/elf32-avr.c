@@ -1,5 +1,5 @@
 /* AVR-specific support for 32-bit ELF
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2006, 2007
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2006, 2007, 2008
    Free Software Foundation, Inc.
    Contributed by Denis Chertykov <denisc@overta.ru>
 
@@ -854,10 +854,11 @@ avr_final_link_relocate (reloc_howto_type *                 howto,
 	{
           /* Relative distance is too large.  */
 
-	  /* Always apply WRAPAROUND for avr2 and avr4.  */
+	  /* Always apply WRAPAROUND for avr2, avr25, and avr4.  */
 	  switch (bfd_get_mach (input_bfd))
 	    {
 	    case bfd_mach_avr2:
+	    case bfd_mach_avr25:
 	    case bfd_mach_avr4:
 	      break;
 
@@ -1296,8 +1297,20 @@ bfd_elf_avr_final_write_processing (bfd *abfd,
       val = E_AVR_MACH_AVR1;
       break;
 
+    case bfd_mach_avr25:
+      val = E_AVR_MACH_AVR25;
+      break;
+
     case bfd_mach_avr3:
       val = E_AVR_MACH_AVR3;
+      break;
+
+    case bfd_mach_avr31:
+      val = E_AVR_MACH_AVR31;
+      break;
+
+    case bfd_mach_avr35:
+      val = E_AVR_MACH_AVR35;
       break;
 
     case bfd_mach_avr4:
@@ -1306,6 +1319,10 @@ bfd_elf_avr_final_write_processing (bfd *abfd,
 
     case bfd_mach_avr5:
       val = E_AVR_MACH_AVR5;
+      break;
+
+    case bfd_mach_avr51:
+      val = E_AVR_MACH_AVR51;
       break;
 
     case bfd_mach_avr6:
@@ -1342,8 +1359,20 @@ elf32_avr_object_p (bfd *abfd)
 	  e_set = bfd_mach_avr1;
 	  break;
 
+	case E_AVR_MACH_AVR25:
+	  e_set = bfd_mach_avr25;
+	  break;
+
 	case E_AVR_MACH_AVR3:
 	  e_set = bfd_mach_avr3;
+	  break;
+
+	case E_AVR_MACH_AVR31:
+	  e_set = bfd_mach_avr31;
+	  break;
+
+	case E_AVR_MACH_AVR35:
+	  e_set = bfd_mach_avr35;
 	  break;
 
 	case E_AVR_MACH_AVR4:
@@ -1352,6 +1381,10 @@ elf32_avr_object_p (bfd *abfd)
 
 	case E_AVR_MACH_AVR5:
 	  e_set = bfd_mach_avr5;
+	  break;
+
+	case E_AVR_MACH_AVR51:
+	  e_set = bfd_mach_avr51;
 	  break;
 
 	case E_AVR_MACH_AVR6:
@@ -2034,7 +2067,8 @@ elf32_avr_relax_section (bfd *abfd,
                         /* Check for local symbols.  */
                         isym = (Elf_Internal_Sym *) symtab_hdr->contents;
                         isymend = isym + symtab_hdr->sh_info;
-                        for (; isym < isymend; isym++)
+			/* PR 6019: There may not be any local symbols.  */
+                        for (; isym != NULL && isym < isymend; isym++)
                          {
                            if (isym->st_value == section_offset_of_ret_insn
                                && isym->st_shndx == sec_shndx)
@@ -2589,6 +2623,7 @@ get_local_syms (bfd *input_bfd, struct bfd_link_info *info)
   unsigned int bfd_indx;
   Elf_Internal_Sym *local_syms, **all_local_syms;
   struct elf32_avr_link_hash_table *htab = avr_link_hash_table (info);
+  bfd_size_type amt;
 
   if (htab == NULL)
     return -1;
@@ -2596,7 +2631,7 @@ get_local_syms (bfd *input_bfd, struct bfd_link_info *info)
   /* We want to read in symbol extension records only once.  To do this
      we need to read in the local symbols in parallel and save them for
      later use; so hold pointers to the local symbols in an array.  */
-  bfd_size_type amt = sizeof (Elf_Internal_Sym *) * htab->bfd_count;
+  amt = sizeof (Elf_Internal_Sym *) * htab->bfd_count;
   all_local_syms = bfd_zmalloc (amt);
   htab->all_local_syms = all_local_syms;
   if (all_local_syms == NULL)
@@ -2757,15 +2792,20 @@ elf32_avr_size_stubs (bfd *output_bfd,
                       /* It's a local symbol.  */
                       Elf_Internal_Sym *sym;
                       Elf_Internal_Shdr *hdr;
+		      unsigned int shndx;
 
                       sym = local_syms + r_indx;
-                      hdr = elf_elfsections (input_bfd)[sym->st_shndx];
-                      sym_sec = hdr->bfd_section;
                       if (ELF_ST_TYPE (sym->st_info) != STT_SECTION)
                         sym_value = sym->st_value;
-                      destination = (sym_value + irela->r_addend
-                                     + sym_sec->output_offset
-                                     + sym_sec->output_section->vma);
+		      shndx = sym->st_shndx;
+		      if (shndx < elf_numsections (input_bfd))
+			{
+			  hdr = elf_elfsections (input_bfd)[shndx];
+			  sym_sec = hdr->bfd_section;
+			  destination = (sym_value + irela->r_addend
+					 + sym_sec->output_offset
+					 + sym_sec->output_section->vma);
+			}
                     }
                   else
                     {

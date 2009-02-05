@@ -1,6 +1,6 @@
 /* tc-arm.c -- Assemble for the ARM
    Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-   2004, 2005, 2006, 2007
+   2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
    Contributed by Richard Earnshaw (rwe@pegasus.esprit.ec.org)
 	Modified by David Taylor (dtaylor@armltd.co.uk)
@@ -41,8 +41,6 @@
 #endif
 
 #include "dwarf2dbg.h"
-
-#define WARN_DEPRECATED 1
 
 #ifdef OBJ_ELF
 /* Must be at least the size of the largest unwind opcode (currently two).  */
@@ -143,6 +141,10 @@ static int atpcs	     = FALSE;
 static int support_interwork = FALSE;
 static int uses_apcs_float   = FALSE;
 static int pic_code	     = FALSE;
+static int fix_v4bx	     = FALSE;
+/* Warn on using deprecated features.  */
+static int warn_on_deprecated = TRUE;
+
 
 /* Variables that we set while parsing command-line options.  Once all
    options have been read we re-process these values to set the real
@@ -191,11 +193,14 @@ static const arm_feature_set arm_ext_v6k = ARM_FEATURE (ARM_EXT_V6K, 0);
 static const arm_feature_set arm_ext_v6z = ARM_FEATURE (ARM_EXT_V6Z, 0);
 static const arm_feature_set arm_ext_v6t2 = ARM_FEATURE (ARM_EXT_V6T2, 0);
 static const arm_feature_set arm_ext_v6_notm = ARM_FEATURE (ARM_EXT_V6_NOTM, 0);
+static const arm_feature_set arm_ext_barrier = ARM_FEATURE (ARM_EXT_BARRIER, 0);
+static const arm_feature_set arm_ext_msr = ARM_FEATURE (ARM_EXT_THUMB_MSR, 0);
 static const arm_feature_set arm_ext_div = ARM_FEATURE (ARM_EXT_DIV, 0);
 static const arm_feature_set arm_ext_v7 = ARM_FEATURE (ARM_EXT_V7, 0);
 static const arm_feature_set arm_ext_v7a = ARM_FEATURE (ARM_EXT_V7A, 0);
 static const arm_feature_set arm_ext_v7r = ARM_FEATURE (ARM_EXT_V7R, 0);
-static const arm_feature_set arm_ext_v7m = ARM_FEATURE (ARM_EXT_V7M, 0);
+static const arm_feature_set arm_ext_m =
+  ARM_FEATURE (ARM_EXT_V6M | ARM_EXT_V7M, 0);
 
 static const arm_feature_set arm_arch_any = ARM_ANY;
 static const arm_feature_set arm_arch_full = ARM_FEATURE (-1, -1);
@@ -217,9 +222,12 @@ static const arm_feature_set fpu_vfp_ext_v1xd =
 static const arm_feature_set fpu_vfp_ext_v1 = ARM_FEATURE (0, FPU_VFP_EXT_V1);
 static const arm_feature_set fpu_vfp_ext_v2 = ARM_FEATURE (0, FPU_VFP_EXT_V2);
 static const arm_feature_set fpu_vfp_ext_v3 = ARM_FEATURE (0, FPU_VFP_EXT_V3);
+static const arm_feature_set fpu_vfp_ext_d32 =
+  ARM_FEATURE (0, FPU_VFP_EXT_D32);
 static const arm_feature_set fpu_neon_ext_v1 = ARM_FEATURE (0, FPU_NEON_EXT_V1);
 static const arm_feature_set fpu_vfp_v3_or_neon_ext =
   ARM_FEATURE (0, FPU_NEON_EXT_V1 | FPU_VFP_EXT_V3);
+static const arm_feature_set fpu_neon_fp16 = ARM_FEATURE (0, FPU_NEON_FP16);
 
 static int mfloat_abi_opt = -1;
 /* Record user cpu selection for object attributes.  */
@@ -232,6 +240,8 @@ static int meabi_flags = EABI_DEFAULT;
 # else
 static int meabi_flags = EF_ARM_EABI_UNKNOWN;
 # endif
+
+static int attributes_set_explicitly[NUM_KNOWN_OBJ_ATTRIBUTES];
 
 bfd_boolean
 arm_is_eabi (void)
@@ -650,6 +660,7 @@ struct asm_opcode
 #define THUMB2_LOAD_BIT 0x00100000
 
 #define BAD_ARGS	_("bad arguments to instruction")
+#define BAD_SP          _("r13 not allowed here")
 #define BAD_PC		_("r15 not allowed here")
 #define BAD_COND	_("instruction cannot be conditional")
 #define BAD_OVERLAP	_("registers may not be the same")
@@ -1603,16 +1614,16 @@ parse_vfp_reg_list (char **ccp, unsigned int *pbase, enum reg_list_els etype)
 
   if (etype != REGLIST_VFP_S)
     {
-      /* VFPv3 allows 32 D registers.  */
-      if (ARM_CPU_HAS_FEATURE (cpu_variant, fpu_vfp_ext_v3))
+      /* VFPv3 allows 32 D registers, except for the VFPv3-D16 variant.  */
+      if (ARM_CPU_HAS_FEATURE (cpu_variant, fpu_vfp_ext_d32))
         {
           max_regs = 32;
           if (thumb_mode)
             ARM_MERGE_FEATURE_SETS (thumb_arch_used, thumb_arch_used,
-                                    fpu_vfp_ext_v3);
+                                    fpu_vfp_ext_d32);
           else
             ARM_MERGE_FEATURE_SETS (arm_arch_used, arm_arch_used,
-                                    fpu_vfp_ext_v3);
+                                    fpu_vfp_ext_d32);
         }
       else
         max_regs = 16;
@@ -1982,7 +1993,7 @@ insert_reg_alias (char *str, int number, int type)
   new->builtin = FALSE;
   new->neon = NULL;
 
-  if (hash_insert (arm_reg_hsh, name, (PTR) new))
+  if (hash_insert (arm_reg_hsh, name, (void *) new))
     abort ();
 
   return new;
@@ -2284,7 +2295,7 @@ s_unreq (int a ATTRIBUTE_UNUSED)
 	  char * p;
 	  char * nbuf;
 
-	  hash_delete (arm_reg_hsh, name);
+	  hash_delete (arm_reg_hsh, name, FALSE);
 	  free ((char *) reg->name);
           if (reg->neon)
             free (reg->neon);
@@ -2300,7 +2311,7 @@ s_unreq (int a ATTRIBUTE_UNUSED)
 	  reg = hash_find (arm_reg_hsh, nbuf);
 	  if (reg)
 	    {
-	      hash_delete (arm_reg_hsh, nbuf);
+	      hash_delete (arm_reg_hsh, nbuf, FALSE);
 	      free ((char *) reg->name);
 	      if (reg->neon)
 		free (reg->neon);
@@ -2312,7 +2323,7 @@ s_unreq (int a ATTRIBUTE_UNUSED)
 	  reg = hash_find (arm_reg_hsh, nbuf);
 	  if (reg)
 	    {
-	      hash_delete (arm_reg_hsh, nbuf);
+	      hash_delete (arm_reg_hsh, nbuf, FALSE);
 	      free ((char *) reg->name);
 	      if (reg->neon)
 		free (reg->neon);
@@ -3082,7 +3093,7 @@ s_arm_unwind_fnstart (int ignored ATTRIBUTE_UNUSED)
   unwind.personality_index = -1;
   unwind.frame_size = 0;
   unwind.fp_offset = 0;
-  unwind.fp_reg = 13;
+  unwind.fp_reg = REG_SP;
   unwind.fp_used = 0;
   unwind.sp_restored = 0;
 }
@@ -3450,7 +3461,7 @@ s_arm_unwind_save_mmxwr (void)
 
       if (reg == FAIL)
 	{
-	  as_bad (_(reg_expected_msgs[REG_TYPE_MMXWR]));
+	  as_bad ("%s", _(reg_expected_msgs[REG_TYPE_MMXWR]));
 	  goto error;
 	}
 
@@ -3464,7 +3475,7 @@ s_arm_unwind_save_mmxwr (void)
 	  hi_reg = arm_reg_parse (&input_line_pointer, REG_TYPE_MMXWR);
 	  if (hi_reg == FAIL)
 	    {
-	      as_bad (_(reg_expected_msgs[REG_TYPE_MMXWR]));
+	      as_bad ("%s", _(reg_expected_msgs[REG_TYPE_MMXWR]));
 	      goto error;
 	    }
 	  else if (reg >= hi_reg)
@@ -3582,7 +3593,7 @@ s_arm_unwind_save_mmxwcg (void)
 
       if (reg == FAIL)
 	{
-	  as_bad (_(reg_expected_msgs[REG_TYPE_MMXWCG]));
+	  as_bad ("%s", _(reg_expected_msgs[REG_TYPE_MMXWCG]));
 	  goto error;
 	}
 
@@ -3597,7 +3608,7 @@ s_arm_unwind_save_mmxwcg (void)
 	  hi_reg = arm_reg_parse (&input_line_pointer, REG_TYPE_MMXWCG);
 	  if (hi_reg == FAIL)
 	    {
-	      as_bad (_(reg_expected_msgs[REG_TYPE_MMXWCG]));
+	      as_bad ("%s", _(reg_expected_msgs[REG_TYPE_MMXWCG]));
 	      goto error;
 	    }
 	  else if (reg >= hi_reg)
@@ -3670,6 +3681,7 @@ s_arm_unwind_save (int arch_v6)
 	  ignore_rest_of_line ();
 	  return;
 	}
+      input_line_pointer = peek;
       s_arm_unwind_save_fpa (reg->number);
       return;
 
@@ -3702,7 +3714,7 @@ s_arm_unwind_movsp (int ignored ATTRIBUTE_UNUSED)
   reg = arm_reg_parse (&input_line_pointer, REG_TYPE_RN);
   if (reg == FAIL)
     {
-      as_bad (_(reg_expected_msgs[REG_TYPE_RN]));
+      as_bad ("%s", _(reg_expected_msgs[REG_TYPE_RN]));
       ignore_rest_of_line ();
       return;
     }
@@ -3794,7 +3806,7 @@ s_arm_unwind_setfp (int ignored ATTRIBUTE_UNUSED)
 
   demand_empty_rest_of_line ();
 
-  if (sp_reg != 13 && sp_reg != unwind.fp_reg)
+  if (sp_reg != REG_SP && sp_reg != unwind.fp_reg)
     {
       as_bad (_("register must be either sp or set by a previous"
 		"unwind_movsp directive"));
@@ -3804,7 +3816,7 @@ s_arm_unwind_setfp (int ignored ATTRIBUTE_UNUSED)
   /* Don't generate any opcodes, just record the information for later.	 */
   unwind.fp_reg = fp_reg;
   unwind.fp_used = 1;
-  if (sp_reg == 13)
+  if (sp_reg == REG_SP)
     unwind.fp_offset = unwind.frame_size - offset;
   else
     unwind.fp_offset -= offset;
@@ -3875,7 +3887,10 @@ s_arm_unwind_raw (int ignored ATTRIBUTE_UNUSED)
 static void
 s_arm_eabi_attribute (int ignored ATTRIBUTE_UNUSED)
 {
-  s_vendor_attribute (OBJ_ATTR_PROC);
+  int tag = s_vendor_attribute (OBJ_ATTR_PROC);
+
+  if (tag < NUM_KNOWN_OBJ_ATTRIBUTES)
+    attributes_set_explicitly[tag] = 1;
 }
 #endif /* OBJ_ELF */
 
@@ -5036,14 +5051,23 @@ parse_ror (char **str)
 static int
 parse_cond (char **str)
 {
-  char *p, *q;
+  char *q;
   const struct asm_cond *c;
+  int n;
+  /* Condition codes are always 2 characters, so matching up to
+     3 characters is sufficient.  */
+  char cond[3];
 
-  p = q = *str;
-  while (ISALPHA (*q))
-    q++;
+  q = *str;
+  n = 0;
+  while (ISALPHA (*q) && n < 3)
+    {
+      cond[n] = TOLOWER(*q);
+      q++;
+      n++;
+    }
 
-  c = hash_find_n (arm_cond_hsh, p, q - p);
+  c = hash_find_n (arm_cond_hsh, cond, n);
   if (!c)
     {
       inst.error = _("condition required");
@@ -5202,16 +5226,6 @@ parse_neon_mov (char **str, int *which_operand)
               inst.operands[i].present = 1;
             }
         }
-      else if (parse_qfloat_immediate (&ptr, &inst.operands[i].imm) == SUCCESS)
-          /* Case 2: VMOV<c><q>.<dt> <Qd>, #<float-imm>
-             Case 3: VMOV<c><q>.<dt> <Dd>, #<float-imm>
-             Case 10: VMOV.F32 <Sd>, #<imm>
-             Case 11: VMOV.F64 <Dd>, #<imm>  */
-        inst.operands[i].immisfloat = 1;
-      else if (parse_big_immediate (&ptr, i) == SUCCESS)
-          /* Case 2: VMOV<c><q>.<dt> <Qd>, #<imm>
-             Case 3: VMOV<c><q>.<dt> <Dd>, #<imm>  */
-        ;
       else if ((val = arm_typed_reg_parse (&ptr, REG_TYPE_NSDQ, &rtype,
                                            &optype)) != FAIL)
         {
@@ -5251,6 +5265,16 @@ parse_neon_mov (char **str, int *which_operand)
               inst.operands[i++].present = 1;
             }
         }
+      else if (parse_qfloat_immediate (&ptr, &inst.operands[i].imm) == SUCCESS)
+          /* Case 2: VMOV<c><q>.<dt> <Qd>, #<float-imm>
+             Case 3: VMOV<c><q>.<dt> <Dd>, #<float-imm>
+             Case 10: VMOV.F32 <Sd>, #<imm>
+             Case 11: VMOV.F64 <Dd>, #<imm>  */
+        inst.operands[i].immisfloat = 1;
+      else if (parse_big_immediate (&ptr, i) == SUCCESS)
+          /* Case 2: VMOV<c><q>.<dt> <Qd>, #<imm>
+             Case 3: VMOV<c><q>.<dt> <Dd>, #<imm>  */
+        ;
       else
         {
           first_error (_("expected <Rm> or <Dm> or <Qm> operand"));
@@ -6100,6 +6124,18 @@ parse_operands (char *str, const unsigned char *pattern)
     }						\
 } while (0)
 
+/* Reject "bad registers" for Thumb-2 instructions.  Many Thumb-2
+   instructions are unpredictable if these registers are used.  This
+   is the BadReg predicate in ARM's Thumb-2 documentation.  */
+#define reject_bad_reg(reg)				\
+  do							\
+   if (reg == REG_SP || reg == REG_PC)			\
+     {							\
+       inst.error = (reg == REG_SP) ? BAD_SP : BAD_PC;	\
+       return;						\
+     }							\
+  while (0)
+
 /* Functions for operand encoding.  ARM, then Thumb.  */
 
 #define rotate_left(v, n) (v << n | v >> (32 - n))
@@ -6156,14 +6192,14 @@ encode_arm_vfp_reg (int reg, enum vfp_reg_pos pos)
   if ((pos == VFP_REG_Dd || pos == VFP_REG_Dn || pos == VFP_REG_Dm)
       && reg > 15)
     {
-      if (ARM_CPU_HAS_FEATURE (cpu_variant, fpu_vfp_ext_v3))
+      if (ARM_CPU_HAS_FEATURE (cpu_variant, fpu_vfp_ext_d32))
         {
           if (thumb_mode)
             ARM_MERGE_FEATURE_SETS (thumb_arch_used, thumb_arch_used,
-                                    fpu_vfp_ext_v3);
+                                    fpu_vfp_ext_d32);
           else
             ARM_MERGE_FEATURE_SETS (arm_arch_used, arm_arch_used,
-                                    fpu_vfp_ext_v3);
+                                    fpu_vfp_ext_d32);
         }
       else
         {
@@ -6759,10 +6795,25 @@ do_blx (void)
 static void
 do_bx (void)
 {
+  bfd_boolean want_reloc;
+
   if (inst.operands[0].reg == REG_PC)
     as_tsktsk (_("use of r15 in bx in ARM mode is not really useful"));
 
   inst.instruction |= inst.operands[0].reg;
+  /* Output R_ARM_V4BX relocations if is an EABI object that looks like
+     it is for ARMv4t or earlier.  */
+  want_reloc = !ARM_CPU_HAS_FEATURE (selected_cpu, arm_ext_v5);
+  if (object_arch && !ARM_CPU_HAS_FEATURE (*object_arch, arm_ext_v5))
+      want_reloc = TRUE;
+
+#ifdef OBJ_ELF
+  if (EF_ARM_EABI_VERSION (meabi_flags) < EF_ARM_EABI_VER4)
+#endif
+    want_reloc = FALSE;
+
+  if (want_reloc)
+    inst.reloc.type = BFD_RELOC_ARM_V4BX;
 }
 
 
@@ -6809,9 +6860,30 @@ do_cmp (void)
 static void
 do_co_reg (void)
 {
+  unsigned Rd;
+
+  Rd = inst.operands[2].reg;
+  if (thumb_mode)
+    {
+      if (inst.instruction == 0xee000010
+	  || inst.instruction == 0xfe000010)
+	/* MCR, MCR2  */
+	reject_bad_reg (Rd);
+      else
+	/* MRC, MRC2  */
+	constraint (Rd == REG_SP, BAD_SP);
+    }
+  else
+    {
+      /* MCR */
+      if (inst.instruction == 0xe000010)
+	constraint (Rd == REG_PC, BAD_PC);
+    }
+
+
   inst.instruction |= inst.operands[0].reg << 8;
   inst.instruction |= inst.operands[1].imm << 21;
-  inst.instruction |= inst.operands[2].reg << 12;
+  inst.instruction |= Rd << 12;
   inst.instruction |= inst.operands[3].reg << 16;
   inst.instruction |= inst.operands[4].reg;
   inst.instruction |= inst.operands[5].imm << 5;
@@ -6833,10 +6905,26 @@ do_co_reg (void)
 static void
 do_co_reg2c (void)
 {
+  unsigned Rd, Rn;
+
+  Rd = inst.operands[2].reg;
+  Rn = inst.operands[3].reg;
+
+  if (thumb_mode)
+    {
+      reject_bad_reg (Rd);
+      reject_bad_reg (Rn);
+    }
+  else
+    {
+      constraint (Rd == REG_PC, BAD_PC);
+      constraint (Rn == REG_PC, BAD_PC);
+    }
+
   inst.instruction |= inst.operands[0].reg << 8;
   inst.instruction |= inst.operands[1].imm << 4;
-  inst.instruction |= inst.operands[2].reg << 12;
-  inst.instruction |= inst.operands[3].reg << 16;
+  inst.instruction |= Rd << 12;
+  inst.instruction |= Rn << 16;
   inst.instruction |= inst.operands[4].reg;
 }
 
@@ -7466,10 +7554,10 @@ do_srs (void)
   if (inst.operands[0].present)
     {
       reg = inst.operands[0].reg;
-      constraint (reg != 13, _("SRS base register must be r13"));
+      constraint (reg != REG_SP, _("SRS base register must be r13"));
     }
   else
-    reg = 13;
+    reg = REG_SP;
 
   inst.instruction |= reg << 16;
   inst.instruction |= inst.operands[1].imm;
@@ -8359,7 +8447,10 @@ do_t_add_sub_w (void)
   Rd = inst.operands[0].reg;
   Rn = inst.operands[1].reg;
 
-  constraint (Rd == 15, _("PC not allowed as destination"));
+  /* If Rn is REG_PC, this is ADR; if Rn is REG_SP, then this is the
+     SP-{plus,minute}-immediate form of the instruction.  */
+  reject_bad_reg (Rd);
+
   inst.instruction |= (Rn << 16) | (Rd << 8);
   inst.reloc.type = BFD_RELOC_ARM_T32_IMM12;
 }
@@ -8392,6 +8483,8 @@ do_t_add_sub (void)
       if (!inst.operands[2].isreg)
 	{
 	  int add;
+
+	  constraint (Rd == REG_SP && Rs != REG_SP, BAD_SP);
 
 	  add = (inst.instruction == T_MNEM_add
 		 || inst.instruction == T_MNEM_adds);
@@ -8429,6 +8522,7 @@ do_t_add_sub (void)
 	    {
 	      if (Rd == REG_PC)
 		{
+		  constraint (add, BAD_PC);
 		  constraint (Rs != REG_LR || inst.instruction != T_MNEM_subs,
 			     _("only SUBS PC, LR, #const allowed"));
 		  constraint (inst.reloc.exp.X_op != O_constant,
@@ -8480,27 +8574,33 @@ do_t_add_sub (void)
 		  return;
 		}
 
-	      if (inst.instruction == T_MNEM_add)
+	      if (inst.instruction == T_MNEM_add && (Rd == Rs || Rd == Rn))
 		{
-		  if (Rd == Rs)
+		  /* Thumb-1 cores (except v6-M) require at least one high
+		     register in a narrow non flag setting add.  */
+		  if (Rd > 7 || Rn > 7
+		      || ARM_CPU_HAS_FEATURE (selected_cpu, arm_ext_v6t2)
+		      || ARM_CPU_HAS_FEATURE (selected_cpu, arm_ext_msr))
 		    {
+		      if (Rd == Rn)
+			{
+			  Rn = Rs;
+			  Rs = Rd;
+			}
 		      inst.instruction = T_OPCODE_ADD_HI;
 		      inst.instruction |= (Rd & 8) << 4;
 		      inst.instruction |= (Rd & 7);
 		      inst.instruction |= Rn << 3;
 		      return;
 		    }
-		  /* ... because addition is commutative! */
-		  else if (Rd == Rn)
-		    {
-		      inst.instruction = T_OPCODE_ADD_HI;
-		      inst.instruction |= (Rd & 8) << 4;
-		      inst.instruction |= (Rd & 7);
-		      inst.instruction |= Rs << 3;
-		      return;
-		    }
 		}
 	    }
+	  
+	  constraint (Rd == REG_PC, BAD_PC);
+	  constraint (Rd == REG_SP && Rs != REG_SP, BAD_SP);
+	  constraint (Rs == REG_PC, BAD_PC);
+	  reject_bad_reg (Rn);
+
 	  /* If we get here, it can't be done in 16 bits.  */
 	  constraint (inst.operands[2].shifted && inst.operands[2].immisreg,
 		      _("shift must be constant"));
@@ -8559,18 +8659,23 @@ do_t_add_sub (void)
 static void
 do_t_adr (void)
 {
-  if (unified_syntax && inst.size_req == 0 && inst.operands[0].reg <= 7)
+  unsigned Rd;
+
+  Rd = inst.operands[0].reg;
+  reject_bad_reg (Rd);
+
+  if (unified_syntax && inst.size_req == 0 && Rd <= 7)
     {
       /* Defer to section relaxation.  */
       inst.relax = inst.instruction;
       inst.instruction = THUMB_OP16 (inst.instruction);
-      inst.instruction |= inst.operands[0].reg << 4;
+      inst.instruction |= Rd << 4;
     }
   else if (unified_syntax && inst.size_req != 2)
     {
       /* Generate a 32-bit opcode.  */
       inst.instruction = THUMB_OP32 (inst.instruction);
-      inst.instruction |= inst.operands[0].reg << 8;
+      inst.instruction |= Rd << 8;
       inst.reloc.type = BFD_RELOC_ARM_T32_ADD_PC12;
       inst.reloc.pc_rel = 1;
     }
@@ -8582,7 +8687,7 @@ do_t_adr (void)
       inst.reloc.exp.X_add_number -= 4; /* PC relative adjust.  */
       inst.reloc.pc_rel = 1;
 
-      inst.instruction |= inst.operands[0].reg << 4;
+      inst.instruction |= Rd << 4;
     }
 }
 
@@ -8602,6 +8707,11 @@ do_t_arit3 (void)
 	? inst.operands[1].reg    /* Rd, Rs, foo */
 	: inst.operands[0].reg);  /* Rd, foo -> Rd, Rd, foo */
   Rn = inst.operands[2].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rs);
+  if (inst.operands[2].isreg)
+    reject_bad_reg (Rn);
 
   if (unified_syntax)
     {
@@ -8685,6 +8795,11 @@ do_t_arit3c (void)
 	? inst.operands[1].reg    /* Rd, Rs, foo */
 	: inst.operands[0].reg);  /* Rd, foo -> Rd, Rd, foo */
   Rn = inst.operands[2].reg;
+  
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rs);
+  if (inst.operands[2].isreg)
+    reject_bad_reg (Rn);
 
   if (unified_syntax)
     {
@@ -8783,11 +8898,14 @@ do_t_barrier (void)
 static void
 do_t_bfc (void)
 {
+  unsigned Rd;
   unsigned int msb = inst.operands[1].imm + inst.operands[2].imm;
   constraint (msb > 32, _("bit-field extends past end of register"));
   /* The instruction encoding stores the LSB and MSB,
      not the LSB and width.  */
-  inst.instruction |= inst.operands[0].reg << 8;
+  Rd = inst.operands[0].reg;
+  reject_bad_reg (Rd);
+  inst.instruction |= Rd << 8;
   inst.instruction |= (inst.operands[1].imm & 0x1c) << 10;
   inst.instruction |= (inst.operands[1].imm & 0x03) << 6;
   inst.instruction |= msb - 1;
@@ -8796,19 +8914,28 @@ do_t_bfc (void)
 static void
 do_t_bfi (void)
 {
+  int Rd, Rn;
   unsigned int msb;
+
+  Rd = inst.operands[0].reg;
+  reject_bad_reg (Rd);
 
   /* #0 in second position is alternative syntax for bfc, which is
      the same instruction but with REG_PC in the Rm field.  */
   if (!inst.operands[1].isreg)
-    inst.operands[1].reg = REG_PC;
+    Rn = REG_PC;
+  else
+    {
+      Rn = inst.operands[1].reg;
+      reject_bad_reg (Rn);
+    }
 
   msb = inst.operands[2].imm + inst.operands[3].imm;
   constraint (msb > 32, _("bit-field extends past end of register"));
   /* The instruction encoding stores the LSB and MSB,
      not the LSB and width.  */
-  inst.instruction |= inst.operands[0].reg << 8;
-  inst.instruction |= inst.operands[1].reg << 16;
+  inst.instruction |= Rd << 8;
+  inst.instruction |= Rn << 16;
   inst.instruction |= (inst.operands[2].imm & 0x1c) << 10;
   inst.instruction |= (inst.operands[2].imm & 0x03) << 6;
   inst.instruction |= msb - 1;
@@ -8817,10 +8944,18 @@ do_t_bfi (void)
 static void
 do_t_bfx (void)
 {
+  unsigned Rd, Rn;
+
+  Rd = inst.operands[0].reg;
+  Rn = inst.operands[1].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rn);
+
   constraint (inst.operands[2].imm + inst.operands[3].imm > 32,
 	      _("bit-field extends past end of register"));
-  inst.instruction |= inst.operands[0].reg << 8;
-  inst.instruction |= inst.operands[1].reg << 16;
+  inst.instruction |= Rd << 8;
+  inst.instruction |= Rn << 16;
   inst.instruction |= (inst.operands[2].imm & 0x1c) << 10;
   inst.instruction |= (inst.operands[2].imm & 0x03) << 6;
   inst.instruction |= inst.operands[3].imm - 1;
@@ -8841,8 +8976,11 @@ do_t_blx (void)
 {
   constraint (current_it_mask && current_it_mask != 0x10, BAD_BRANCH);
   if (inst.operands[0].isreg)
-    /* We have a register, so this is BLX(2).  */
-    inst.instruction |= inst.operands[0].reg << 3;
+    {
+      constraint (inst.operands[0].reg == REG_PC, BAD_PC);
+      /* We have a register, so this is BLX(2).  */
+      inst.instruction |= inst.operands[0].reg << 3;
+    }
   else
     {
       /* No register.  This must be BLX(1).  */
@@ -8954,19 +9092,29 @@ do_t_bx (void)
 static void
 do_t_bxj (void)
 {
-  constraint (current_it_mask && current_it_mask != 0x10, BAD_BRANCH);
-  if (inst.operands[0].reg == REG_PC)
-    as_tsktsk (_("use of r15 in bxj is not really useful"));
+  int Rm;
 
-  inst.instruction |= inst.operands[0].reg << 16;
+  constraint (current_it_mask && current_it_mask != 0x10, BAD_BRANCH);
+  Rm = inst.operands[0].reg;
+  reject_bad_reg (Rm);
+  inst.instruction |= Rm << 16;
 }
 
 static void
 do_t_clz (void)
 {
-  inst.instruction |= inst.operands[0].reg << 8;
-  inst.instruction |= inst.operands[1].reg << 16;
-  inst.instruction |= inst.operands[1].reg;
+  unsigned Rd;
+  unsigned Rm;
+
+  Rd = inst.operands[0].reg;
+  Rm = inst.operands[1].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rm);
+
+  inst.instruction |= Rd << 8;
+  inst.instruction |= Rm << 16;
+  inst.instruction |= Rm;
 }
 
 static void
@@ -9042,11 +9190,20 @@ do_t_dbg (void)
 static void
 do_t_div (void)
 {
-  if (!inst.operands[1].present)
-    inst.operands[1].reg = inst.operands[0].reg;
-  inst.instruction |= inst.operands[0].reg << 8;
-  inst.instruction |= inst.operands[1].reg << 16;
-  inst.instruction |= inst.operands[2].reg;
+  unsigned Rd, Rn, Rm;
+
+  Rd = inst.operands[0].reg;
+  Rn = (inst.operands[1].present
+	? inst.operands[1].reg : Rd);
+  Rm = inst.operands[2].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rn);
+  reject_bad_reg (Rm);
+
+  inst.instruction |= Rd << 8;
+  inst.instruction |= Rn << 16;
+  inst.instruction |= Rm;
 }
 
 static void
@@ -9451,24 +9608,53 @@ do_t_ldstt (void)
 static void
 do_t_mla (void)
 {
-  inst.instruction |= inst.operands[0].reg << 8;
-  inst.instruction |= inst.operands[1].reg << 16;
-  inst.instruction |= inst.operands[2].reg;
-  inst.instruction |= inst.operands[3].reg << 12;
+  unsigned Rd, Rn, Rm, Ra;
+  
+  Rd = inst.operands[0].reg;
+  Rn = inst.operands[1].reg;
+  Rm = inst.operands[2].reg;
+  Ra = inst.operands[3].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rn);
+  reject_bad_reg (Rm);
+  reject_bad_reg (Ra);
+
+  inst.instruction |= Rd << 8;
+  inst.instruction |= Rn << 16;
+  inst.instruction |= Rm;
+  inst.instruction |= Ra << 12;
 }
 
 static void
 do_t_mlal (void)
 {
-  inst.instruction |= inst.operands[0].reg << 12;
-  inst.instruction |= inst.operands[1].reg << 8;
-  inst.instruction |= inst.operands[2].reg << 16;
-  inst.instruction |= inst.operands[3].reg;
+  unsigned RdLo, RdHi, Rn, Rm;
+
+  RdLo = inst.operands[0].reg;
+  RdHi = inst.operands[1].reg;
+  Rn = inst.operands[2].reg;
+  Rm = inst.operands[3].reg;
+
+  reject_bad_reg (RdLo);
+  reject_bad_reg (RdHi);
+  reject_bad_reg (Rn);
+  reject_bad_reg (Rm);
+
+  inst.instruction |= RdLo << 12;
+  inst.instruction |= RdHi << 8;
+  inst.instruction |= Rn << 16;
+  inst.instruction |= Rm;
 }
 
 static void
 do_t_mov_cmp (void)
 {
+  unsigned Rn, Rm;
+
+  Rn = inst.operands[0].reg;
+  Rm = inst.operands[1].reg;
+
   if (unified_syntax)
     {
       int r0off = (inst.instruction == T_MNEM_mov
@@ -9477,7 +9663,7 @@ do_t_mov_cmp (void)
       bfd_boolean narrow;
       bfd_boolean low_regs;
 
-      low_regs = (inst.operands[0].reg <= 7 && inst.operands[1].reg <= 7);
+      low_regs = (Rn <= 7 && Rm <= 7);
       opcode = inst.instruction;
       if (current_it_mask)
 	narrow = opcode != T_MNEM_movs;
@@ -9490,11 +9676,34 @@ do_t_mov_cmp (void)
       /* MOVS PC, LR is encoded as SUBS PC, LR, #0.  */
       if (opcode == T_MNEM_movs && inst.operands[1].isreg
 	  && !inst.operands[1].shifted
-	  && inst.operands[0].reg == REG_PC
-	  && inst.operands[1].reg == REG_LR)
+	  && Rn == REG_PC
+	  && Rm == REG_LR)
 	{
 	  inst.instruction = T2_SUBS_PC_LR;
 	  return;
+	}
+
+      if (opcode == T_MNEM_cmp)
+	{
+	  constraint (Rn == REG_PC, BAD_PC);
+	  reject_bad_reg (Rm);
+	}
+      else if (opcode == T_MNEM_mov
+	       || opcode == T_MNEM_movs)
+	{
+	  if (inst.operands[1].isreg)
+	    {
+	      if (opcode == T_MNEM_movs)
+		{
+		  reject_bad_reg (Rn);
+		  reject_bad_reg (Rm);
+		}
+	      else if ((Rn == REG_SP || Rn == REG_PC)
+		       && (Rm == REG_SP || Rm == REG_PC))
+		reject_bad_reg (Rm);
+	    }
+	  else
+	    reject_bad_reg (Rn);
 	}
 
       if (!inst.operands[1].isreg)
@@ -9505,7 +9714,7 @@ do_t_mov_cmp (void)
 	  if (low_regs && narrow)
 	    {
 	      inst.instruction = THUMB_OP16 (opcode);
-	      inst.instruction |= inst.operands[0].reg << 8;
+	      inst.instruction |= Rn << 8;
 	      if (inst.size_req == 2)
 		inst.reloc.type = BFD_RELOC_ARM_THUMB_IMM;
 	      else
@@ -9515,7 +9724,7 @@ do_t_mov_cmp (void)
 	    {
 	      inst.instruction = THUMB_OP32 (inst.instruction);
 	      inst.instruction = (inst.instruction & 0xe1ffffff) | 0x10000000;
-	      inst.instruction |= inst.operands[0].reg << r0off;
+	      inst.instruction |= Rn << r0off;
 	      inst.reloc.type = BFD_RELOC_ARM_T32_IMMEDIATE;
 	    }
 	}
@@ -9537,7 +9746,7 @@ do_t_mov_cmp (void)
 	  if (!low_regs || inst.operands[1].imm > 7)
 	    narrow = FALSE;
 
-	  if (inst.operands[0].reg != inst.operands[1].reg)
+	  if (Rn != Rm)
 	    narrow = FALSE;
 
 	  switch (inst.operands[1].shift_kind)
@@ -9561,7 +9770,7 @@ do_t_mov_cmp (void)
 	  inst.instruction = opcode;
 	  if (narrow)
 	    {
-	      inst.instruction |= inst.operands[0].reg;
+	      inst.instruction |= Rn;
 	      inst.instruction |= inst.operands[1].imm << 3;
 	    }
 	  else
@@ -9569,8 +9778,8 @@ do_t_mov_cmp (void)
 	      if (flags)
 		inst.instruction |= CONDS_BIT;
 
-	      inst.instruction |= inst.operands[0].reg << 8;
-	      inst.instruction |= inst.operands[1].reg << 16;
+	      inst.instruction |= Rn << 8;
+	      inst.instruction |= Rm << 16;
 	      inst.instruction |= inst.operands[1].imm;
 	    }
 	}
@@ -9601,14 +9810,14 @@ do_t_mov_cmp (void)
 
 	  if (narrow)
 	    {
-	      inst.instruction |= inst.operands[0].reg;
-	      inst.instruction |= inst.operands[1].reg << 3;
+	      inst.instruction |= Rn;
+	      inst.instruction |= Rm << 3;
 	      inst.reloc.type = BFD_RELOC_ARM_THUMB_SHIFT;
 	    }
 	  else
 	    {
 	      inst.instruction = THUMB_OP32 (inst.instruction);
-	      inst.instruction |= inst.operands[0].reg << r0off;
+	      inst.instruction |= Rn << r0off;
 	      encode_thumb32_shifted_operand (1);
 	    }
 	}
@@ -9617,32 +9826,32 @@ do_t_mov_cmp (void)
 	  {
 	  case T_MNEM_mov:
 	    inst.instruction = T_OPCODE_MOV_HR;
-	    inst.instruction |= (inst.operands[0].reg & 0x8) << 4;
-	    inst.instruction |= (inst.operands[0].reg & 0x7);
-	    inst.instruction |= inst.operands[1].reg << 3;
+	    inst.instruction |= (Rn & 0x8) << 4;
+	    inst.instruction |= (Rn & 0x7);
+	    inst.instruction |= Rm << 3;
 	    break;
 
 	  case T_MNEM_movs:
 	    /* We know we have low registers at this point.
 	       Generate ADD Rd, Rs, #0.  */
 	    inst.instruction = T_OPCODE_ADD_I3;
-	    inst.instruction |= inst.operands[0].reg;
-	    inst.instruction |= inst.operands[1].reg << 3;
+	    inst.instruction |= Rn;
+	    inst.instruction |= Rm << 3;
 	    break;
 
 	  case T_MNEM_cmp:
 	    if (low_regs)
 	      {
 		inst.instruction = T_OPCODE_CMP_LR;
-		inst.instruction |= inst.operands[0].reg;
-		inst.instruction |= inst.operands[1].reg << 3;
+		inst.instruction |= Rn;
+		inst.instruction |= Rm << 3;
 	      }
 	    else
 	      {
 		inst.instruction = T_OPCODE_CMP_HR;
-		inst.instruction |= (inst.operands[0].reg & 0x8) << 4;
-		inst.instruction |= (inst.operands[0].reg & 0x7);
-		inst.instruction |= inst.operands[1].reg << 3;
+		inst.instruction |= (Rn & 0x8) << 4;
+		inst.instruction |= (Rn & 0x7);
+		inst.instruction |= Rm << 3;
 	      }
 	    break;
 	  }
@@ -9652,7 +9861,7 @@ do_t_mov_cmp (void)
   inst.instruction = THUMB_OP16 (inst.instruction);
   if (inst.operands[1].isreg)
     {
-      if (inst.operands[0].reg < 8 && inst.operands[1].reg < 8)
+      if (Rn < 8 && Rm < 8)
 	{
 	  /* A move of two lowregs is encoded as ADD Rd, Rs, #0
 	     since a MOV instruction produces unpredictable results.  */
@@ -9661,8 +9870,8 @@ do_t_mov_cmp (void)
 	  else
 	    inst.instruction = T_OPCODE_CMP_LR;
 
-	  inst.instruction |= inst.operands[0].reg;
-	  inst.instruction |= inst.operands[1].reg << 3;
+	  inst.instruction |= Rn;
+	  inst.instruction |= Rm << 3;
 	}
       else
 	{
@@ -9675,9 +9884,9 @@ do_t_mov_cmp (void)
     }
   else
     {
-      constraint (inst.operands[0].reg > 7,
+      constraint (Rn > 7,
 		  _("only lo regs allowed with immediate"));
-      inst.instruction |= inst.operands[0].reg << 8;
+      inst.instruction |= Rn << 8;
       inst.reloc.type = BFD_RELOC_ARM_THUMB_IMM;
     }
 }
@@ -9685,6 +9894,7 @@ do_t_mov_cmp (void)
 static void
 do_t_mov16 (void)
 {
+  unsigned Rd;
   bfd_vma imm;
   bfd_boolean top;
 
@@ -9700,7 +9910,10 @@ do_t_mov16 (void)
       inst.reloc.type = BFD_RELOC_ARM_THUMB_MOVT;
     }
 
-  inst.instruction |= inst.operands[0].reg << 8;
+  Rd = inst.operands[0].reg;
+  reject_bad_reg (Rd);
+
+  inst.instruction |= Rd << 8;
   if (inst.reloc.type == BFD_RELOC_UNUSED)
     {
       imm = inst.reloc.exp.X_add_number;
@@ -9714,6 +9927,18 @@ do_t_mov16 (void)
 static void
 do_t_mvn_tst (void)
 {
+  unsigned Rn, Rm;
+  
+  Rn = inst.operands[0].reg;
+  Rm = inst.operands[1].reg;
+
+  if (inst.instruction == T_MNEM_cmp
+      || inst.instruction == T_MNEM_cmn)
+    constraint (Rn == REG_PC, BAD_PC);
+  else
+    reject_bad_reg (Rn);
+  reject_bad_reg (Rm);
+
   if (unified_syntax)
     {
       int r0off = (inst.instruction == T_MNEM_mvn
@@ -9723,7 +9948,7 @@ do_t_mvn_tst (void)
       if (inst.size_req == 4
 	  || inst.instruction > 0xffff
 	  || inst.operands[1].shifted
-	  || inst.operands[0].reg > 7 || inst.operands[1].reg > 7)
+	  || Rn > 7 || Rm > 7)
 	narrow = FALSE;
       else if (inst.instruction == T_MNEM_cmn)
 	narrow = TRUE;
@@ -9739,7 +9964,7 @@ do_t_mvn_tst (void)
 	  if (inst.instruction < 0xffff)
 	    inst.instruction = THUMB_OP32 (inst.instruction);
 	  inst.instruction = (inst.instruction & 0xe1ffffff) | 0x10000000;
-	  inst.instruction |= inst.operands[0].reg << r0off;
+	  inst.instruction |= Rn << r0off;
 	  inst.reloc.type = BFD_RELOC_ARM_T32_IMMEDIATE;
 	}
       else
@@ -9748,8 +9973,8 @@ do_t_mvn_tst (void)
 	  if (narrow)
 	    {
 	      inst.instruction = THUMB_OP16 (inst.instruction);
-	      inst.instruction |= inst.operands[0].reg;
-	      inst.instruction |= inst.operands[1].reg << 3;
+	      inst.instruction |= Rn;
+	      inst.instruction |= Rm << 3;
 	    }
 	  else
 	    {
@@ -9758,7 +9983,7 @@ do_t_mvn_tst (void)
 			  _("shift must be constant"));
 	      if (inst.instruction < 0xffff)
 		inst.instruction = THUMB_OP32 (inst.instruction);
-	      inst.instruction |= inst.operands[0].reg << r0off;
+	      inst.instruction |= Rn << r0off;
 	      encode_thumb32_shifted_operand (1);
 	    }
 	}
@@ -9769,18 +9994,19 @@ do_t_mvn_tst (void)
 		  || inst.instruction == T_MNEM_mvns, BAD_THUMB32);
       constraint (!inst.operands[1].isreg || inst.operands[1].shifted,
 		  _("unshifted register required"));
-      constraint (inst.operands[0].reg > 7 || inst.operands[1].reg > 7,
+      constraint (Rn > 7 || Rm > 7,
 		  BAD_HIREG);
 
       inst.instruction = THUMB_OP16 (inst.instruction);
-      inst.instruction |= inst.operands[0].reg;
-      inst.instruction |= inst.operands[1].reg << 3;
+      inst.instruction |= Rn;
+      inst.instruction |= Rm << 3;
     }
 }
 
 static void
 do_t_mrs (void)
 {
+  unsigned Rd;
   int flags;
 
   if (do_vfp_nsyn_mrs () == SUCCESS)
@@ -9789,7 +10015,7 @@ do_t_mrs (void)
   flags = inst.operands[1].imm & (PSR_c|PSR_x|PSR_s|PSR_f|SPSR_BIT);
   if (flags == 0)
     {
-      constraint (!ARM_CPU_HAS_FEATURE (cpu_variant, arm_ext_v7m),
+      constraint (!ARM_CPU_HAS_FEATURE (cpu_variant, arm_ext_m),
 		  _("selected processor does not support "
 		    "requested special purpose register"));
     }
@@ -9797,13 +10023,16 @@ do_t_mrs (void)
     {
       constraint (!ARM_CPU_HAS_FEATURE (cpu_variant, arm_ext_v1),
 		  _("selected processor does not support "
-		    "requested special purpose register %x"));
+		    "requested special purpose register"));
       /* mrs only accepts CPSR/SPSR/CPSR_all/SPSR_all.  */
       constraint ((flags & ~SPSR_BIT) != (PSR_c|PSR_f),
 		  _("'CPSR' or 'SPSR' expected"));
     }
 
-  inst.instruction |= inst.operands[0].reg << 8;
+  Rd = inst.operands[0].reg;
+  reject_bad_reg (Rd);
+
+  inst.instruction |= Rd << 8;
   inst.instruction |= (flags & SPSR_BIT) >> 2;
   inst.instruction |= inst.operands[1].imm & 0xff;
 }
@@ -9812,6 +10041,7 @@ static void
 do_t_msr (void)
 {
   int flags;
+  unsigned Rn;
 
   if (do_vfp_nsyn_msr () == SUCCESS)
     return;
@@ -9827,59 +10057,105 @@ do_t_msr (void)
     }
   else
     {
-      constraint (!ARM_CPU_HAS_FEATURE (cpu_variant, arm_ext_v7m),
+      constraint (!ARM_CPU_HAS_FEATURE (cpu_variant, arm_ext_m),
 		  _("selected processor does not support "
 		    "requested special purpose register"));
       flags |= PSR_f;
     }
+  
+  Rn = inst.operands[1].reg;
+  reject_bad_reg (Rn);
+
   inst.instruction |= (flags & SPSR_BIT) >> 2;
   inst.instruction |= (flags & ~SPSR_BIT) >> 8;
   inst.instruction |= (flags & 0xff);
-  inst.instruction |= inst.operands[1].reg << 16;
+  inst.instruction |= Rn << 16;
 }
 
 static void
 do_t_mul (void)
 {
+  bfd_boolean narrow;
+  unsigned Rd, Rn, Rm;
+
   if (!inst.operands[2].present)
     inst.operands[2].reg = inst.operands[0].reg;
 
-  /* There is no 32-bit MULS and no 16-bit MUL. */
-  if (unified_syntax && inst.instruction == T_MNEM_mul)
+  Rd = inst.operands[0].reg;
+  Rn = inst.operands[1].reg;
+  Rm = inst.operands[2].reg;
+
+  if (unified_syntax)
     {
-      inst.instruction = THUMB_OP32 (inst.instruction);
-      inst.instruction |= inst.operands[0].reg << 8;
-      inst.instruction |= inst.operands[1].reg << 16;
-      inst.instruction |= inst.operands[2].reg << 0;
+      if (inst.size_req == 4
+	  || (Rd != Rn
+	      && Rd != Rm)
+	  || Rn > 7
+	  || Rm > 7)
+	narrow = FALSE;
+      else if (inst.instruction == T_MNEM_muls)
+	narrow = (current_it_mask == 0);
+      else
+	narrow = (current_it_mask != 0);
     }
   else
     {
-      constraint (!unified_syntax
-		  && inst.instruction == T_MNEM_muls, BAD_THUMB32);
-      constraint (inst.operands[0].reg > 7 || inst.operands[1].reg > 7,
+      constraint (inst.instruction == T_MNEM_muls, BAD_THUMB32);
+      constraint (Rn > 7 || Rm > 7,
 		  BAD_HIREG);
+      narrow = TRUE;
+    }
 
+  if (narrow)
+    {
+      /* 16-bit MULS/Conditional MUL.  */
       inst.instruction = THUMB_OP16 (inst.instruction);
-      inst.instruction |= inst.operands[0].reg;
+      inst.instruction |= Rd;
 
-      if (inst.operands[0].reg == inst.operands[1].reg)
-	inst.instruction |= inst.operands[2].reg << 3;
-      else if (inst.operands[0].reg == inst.operands[2].reg)
-	inst.instruction |= inst.operands[1].reg << 3;
+      if (Rd == Rn)
+	inst.instruction |= Rm << 3;
+      else if (Rd == Rm)
+	inst.instruction |= Rn << 3;
       else
 	constraint (1, _("dest must overlap one source register"));
+    }
+  else
+    {
+      constraint(inst.instruction != T_MNEM_mul,
+		 _("Thumb-2 MUL must not set flags"));
+      /* 32-bit MUL.  */
+      inst.instruction = THUMB_OP32 (inst.instruction);
+      inst.instruction |= Rd << 8;
+      inst.instruction |= Rn << 16;
+      inst.instruction |= Rm << 0;
+
+      reject_bad_reg (Rd);
+      reject_bad_reg (Rn);
+      reject_bad_reg (Rm);
     }
 }
 
 static void
 do_t_mull (void)
 {
-  inst.instruction |= inst.operands[0].reg << 12;
-  inst.instruction |= inst.operands[1].reg << 8;
-  inst.instruction |= inst.operands[2].reg << 16;
-  inst.instruction |= inst.operands[3].reg;
+  unsigned RdLo, RdHi, Rn, Rm;
 
-  if (inst.operands[0].reg == inst.operands[1].reg)
+  RdLo = inst.operands[0].reg;
+  RdHi = inst.operands[1].reg;
+  Rn = inst.operands[2].reg;
+  Rm = inst.operands[3].reg;
+
+  reject_bad_reg (RdLo);
+  reject_bad_reg (RdHi);
+  reject_bad_reg (Rn);
+  reject_bad_reg (Rm);
+
+  inst.instruction |= RdLo << 12;
+  inst.instruction |= RdHi << 8;
+  inst.instruction |= Rn << 16;
+  inst.instruction |= Rm;
+
+ if (RdLo == RdHi)
     as_tsktsk (_("rdhi and rdlo must be different"));
 }
 
@@ -9895,8 +10171,15 @@ do_t_nop (void)
 	}
       else
 	{
-	  inst.instruction = THUMB_OP16 (inst.instruction);
-	  inst.instruction |= inst.operands[0].imm << 4;
+	  /* PR9722: Check for Thumb2 availability before
+	     generating a thumb2 nop instruction.  */
+	  if (ARM_CPU_HAS_FEATURE (cpu_variant, arm_arch_t2))
+	    {
+	      inst.instruction = THUMB_OP16 (inst.instruction);
+	      inst.instruction |= inst.operands[0].imm << 4;
+	    }
+	  else
+	    inst.instruction = 0x46c0;
 	}
     }
   else
@@ -9949,11 +10232,55 @@ do_t_neg (void)
 }
 
 static void
+do_t_orn (void)
+{
+  unsigned Rd, Rn;
+
+  Rd = inst.operands[0].reg;
+  Rn = inst.operands[1].present ? inst.operands[1].reg : Rd;
+
+  reject_bad_reg (Rd);
+  /* Rn == REG_SP is unpredictable; Rn == REG_PC is MVN.  */
+  reject_bad_reg (Rn);
+
+  inst.instruction |= Rd << 8;
+  inst.instruction |= Rn << 16;
+
+  if (!inst.operands[2].isreg)
+    {
+      inst.instruction = (inst.instruction & 0xe1ffffff) | 0x10000000;
+      inst.reloc.type = BFD_RELOC_ARM_T32_IMMEDIATE;
+    }
+  else
+    {
+      unsigned Rm;
+
+      Rm = inst.operands[2].reg;
+      reject_bad_reg (Rm);
+
+      constraint (inst.operands[2].shifted
+		  && inst.operands[2].immisreg,
+		  _("shift must be constant"));
+      encode_thumb32_shifted_operand (2);
+    }
+}
+
+static void
 do_t_pkhbt (void)
 {
-  inst.instruction |= inst.operands[0].reg << 8;
-  inst.instruction |= inst.operands[1].reg << 16;
-  inst.instruction |= inst.operands[2].reg;
+  unsigned Rd, Rn, Rm;
+
+  Rd = inst.operands[0].reg;
+  Rn = inst.operands[1].reg;
+  Rm = inst.operands[2].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rn);
+  reject_bad_reg (Rm);
+
+  inst.instruction |= Rd << 8;
+  inst.instruction |= Rn << 16;
+  inst.instruction |= Rm;
   if (inst.operands[3].present)
     {
       unsigned int val = inst.reloc.exp.X_add_number;
@@ -9975,6 +10302,9 @@ do_t_pkhtb (void)
 static void
 do_t_pld (void)
 {
+  if (inst.operands[0].immisreg)
+    reject_bad_reg (inst.operands[0].imm);
+
   encode_thumb32_addr_mode (0, /*is_t=*/FALSE, /*is_d=*/FALSE);
 }
 
@@ -10015,40 +10345,77 @@ do_t_push_pop (void)
 static void
 do_t_rbit (void)
 {
-  inst.instruction |= inst.operands[0].reg << 8;
-  inst.instruction |= inst.operands[1].reg << 16;
+  unsigned Rd, Rm;
+
+  Rd = inst.operands[0].reg;
+  Rm = inst.operands[1].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rm);
+
+  inst.instruction |= Rd << 8;
+  inst.instruction |= Rm << 16;
+  inst.instruction |= Rm;
 }
 
 static void
 do_t_rev (void)
 {
-  if (inst.operands[0].reg <= 7 && inst.operands[1].reg <= 7
+  unsigned Rd, Rm;
+
+  Rd = inst.operands[0].reg;
+  Rm = inst.operands[1].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rm);
+
+  if (Rd <= 7 && Rm <= 7
       && inst.size_req != 4)
     {
       inst.instruction = THUMB_OP16 (inst.instruction);
-      inst.instruction |= inst.operands[0].reg;
-      inst.instruction |= inst.operands[1].reg << 3;
+      inst.instruction |= Rd;
+      inst.instruction |= Rm << 3;
     }
   else if (unified_syntax)
     {
       inst.instruction = THUMB_OP32 (inst.instruction);
-      inst.instruction |= inst.operands[0].reg << 8;
-      inst.instruction |= inst.operands[1].reg << 16;
-      inst.instruction |= inst.operands[1].reg;
+      inst.instruction |= Rd << 8;
+      inst.instruction |= Rm << 16;
+      inst.instruction |= Rm;
     }
   else
     inst.error = BAD_HIREG;
 }
 
 static void
+do_t_rrx (void)
+{
+  unsigned Rd, Rm;
+
+  Rd = inst.operands[0].reg;
+  Rm = inst.operands[1].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rm);
+  
+  inst.instruction |= Rd << 8;
+  inst.instruction |= Rm;
+}
+
+static void
 do_t_rsb (void)
 {
-  int Rd, Rs;
+  unsigned Rd, Rs;
 
   Rd = inst.operands[0].reg;
   Rs = (inst.operands[1].present
 	? inst.operands[1].reg    /* Rd, Rs, foo */
 	: inst.operands[0].reg);  /* Rd, foo -> Rd, Rd, foo */
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rs);
+  if (inst.operands[2].isreg)
+    reject_bad_reg (inst.operands[2].reg);
 
   inst.instruction |= Rd << 8;
   inst.instruction |= Rs << 16;
@@ -10137,10 +10504,14 @@ do_t_shift (void)
       if (inst.size_req == 4)
 	narrow = FALSE;
 
+      reject_bad_reg (inst.operands[0].reg);
+      reject_bad_reg (inst.operands[1].reg);
+					    
       if (!narrow)
 	{
 	  if (inst.operands[2].isreg)
 	    {
+	      reject_bad_reg (inst.operands[2].reg);
 	      inst.instruction = THUMB_OP32 (inst.instruction);
 	      inst.instruction |= inst.operands[0].reg << 8;
 	      inst.instruction |= inst.operands[1].reg << 16;
@@ -10233,9 +10604,19 @@ do_t_shift (void)
 static void
 do_t_simd (void)
 {
-  inst.instruction |= inst.operands[0].reg << 8;
-  inst.instruction |= inst.operands[1].reg << 16;
-  inst.instruction |= inst.operands[2].reg;
+  unsigned Rd, Rn, Rm;
+
+  Rd = inst.operands[0].reg;
+  Rn = inst.operands[1].reg;
+  Rm = inst.operands[2].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rn);
+  reject_bad_reg (Rm);
+
+  inst.instruction |= Rd << 8;
+  inst.instruction |= Rn << 16;
+  inst.instruction |= Rm;
 }
 
 static void
@@ -10253,9 +10634,17 @@ do_t_smc (void)
 static void
 do_t_ssat (void)
 {
-  inst.instruction |= inst.operands[0].reg << 8;
+  unsigned Rd, Rn;
+
+  Rd = inst.operands[0].reg;
+  Rn = inst.operands[2].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rn);
+
+  inst.instruction |= Rd << 8;
   inst.instruction |= inst.operands[1].imm - 1;
-  inst.instruction |= inst.operands[2].reg << 16;
+  inst.instruction |= Rn << 16;
 
   if (inst.operands[3].present)
     {
@@ -10276,9 +10665,17 @@ do_t_ssat (void)
 static void
 do_t_ssat16 (void)
 {
-  inst.instruction |= inst.operands[0].reg << 8;
+  unsigned Rd, Rn;
+
+  Rd = inst.operands[0].reg;
+  Rn = inst.operands[2].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rn);
+
+  inst.instruction |= Rd << 8;
   inst.instruction |= inst.operands[1].imm - 1;
-  inst.instruction |= inst.operands[2].reg << 16;
+  inst.instruction |= Rn << 16;
 }
 
 static void
@@ -10317,29 +10714,47 @@ do_t_strexd (void)
 static void
 do_t_sxtah (void)
 {
-  inst.instruction |= inst.operands[0].reg << 8;
-  inst.instruction |= inst.operands[1].reg << 16;
-  inst.instruction |= inst.operands[2].reg;
+  unsigned Rd, Rn, Rm;
+
+  Rd = inst.operands[0].reg;
+  Rn = inst.operands[1].reg;
+  Rm = inst.operands[2].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rn);
+  reject_bad_reg (Rm);
+
+  inst.instruction |= Rd << 8;
+  inst.instruction |= Rn << 16;
+  inst.instruction |= Rm;
   inst.instruction |= inst.operands[3].imm << 4;
 }
 
 static void
 do_t_sxth (void)
 {
+  unsigned Rd, Rm;
+
+  Rd = inst.operands[0].reg;
+  Rm = inst.operands[1].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rm);
+		     
   if (inst.instruction <= 0xffff && inst.size_req != 4
-      && inst.operands[0].reg <= 7 && inst.operands[1].reg <= 7
+      && Rd <= 7 && Rm <= 7
       && (!inst.operands[2].present || inst.operands[2].imm == 0))
     {
       inst.instruction = THUMB_OP16 (inst.instruction);
-      inst.instruction |= inst.operands[0].reg;
-      inst.instruction |= inst.operands[1].reg << 3;
+      inst.instruction |= Rd;
+      inst.instruction |= Rm << 3;
     }
   else if (unified_syntax)
     {
       if (inst.instruction <= 0xffff)
 	inst.instruction = THUMB_OP32 (inst.instruction);
-      inst.instruction |= inst.operands[0].reg << 8;
-      inst.instruction |= inst.operands[1].reg;
+      inst.instruction |= Rd << 8;
+      inst.instruction |= Rm;
       inst.instruction |= inst.operands[2].imm << 4;
     }
   else
@@ -10359,25 +10774,39 @@ do_t_swi (void)
 static void
 do_t_tb (void)
 {
+  unsigned Rn, Rm;
   int half;
 
   half = (inst.instruction & 0x10) != 0;
   constraint (current_it_mask && current_it_mask != 0x10, BAD_BRANCH);
   constraint (inst.operands[0].immisreg,
 	      _("instruction requires register index"));
-  constraint (inst.operands[0].imm == 15,
-	      _("PC is not a valid index register"));
+
+  Rn = inst.operands[0].reg;
+  Rm = inst.operands[0].imm;
+  
+  constraint (Rn == REG_SP, BAD_SP);
+  reject_bad_reg (Rm);
+
   constraint (!half && inst.operands[0].shifted,
 	      _("instruction does not allow shifted index"));
-  inst.instruction |= (inst.operands[0].reg << 16) | inst.operands[0].imm;
+  inst.instruction |= (Rn << 16) | Rm;
 }
 
 static void
 do_t_usat (void)
 {
-  inst.instruction |= inst.operands[0].reg << 8;
+  unsigned Rd, Rn;
+
+  Rd = inst.operands[0].reg;
+  Rn = inst.operands[2].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rn);
+
+  inst.instruction |= Rd << 8;
   inst.instruction |= inst.operands[1].imm;
-  inst.instruction |= inst.operands[2].reg << 16;
+  inst.instruction |= Rn << 16;
 
   if (inst.operands[3].present)
     {
@@ -10398,9 +10827,17 @@ do_t_usat (void)
 static void
 do_t_usat16 (void)
 {
-  inst.instruction |= inst.operands[0].reg << 8;
+  unsigned Rd, Rn;
+
+  Rd = inst.operands[0].reg;
+  Rn = inst.operands[2].reg;
+
+  reject_bad_reg (Rd);
+  reject_bad_reg (Rn);
+
+  inst.instruction |= Rd << 8;
   inst.instruction |= inst.operands[1].imm;
-  inst.instruction |= inst.operands[2].reg << 16;
+  inst.instruction |= Rn << 16;
 }
 
 /* Neon instruction encoder helpers.  */
@@ -10650,36 +11087,37 @@ static struct neon_shape_info neon_shape_tab[] =
 
 enum neon_type_mask
 {
-  N_S8   = 0x000001,
-  N_S16  = 0x000002,
-  N_S32  = 0x000004,
-  N_S64  = 0x000008,
-  N_U8   = 0x000010,
-  N_U16  = 0x000020,
-  N_U32  = 0x000040,
-  N_U64  = 0x000080,
-  N_I8   = 0x000100,
-  N_I16  = 0x000200,
-  N_I32  = 0x000400,
-  N_I64  = 0x000800,
-  N_8    = 0x001000,
-  N_16   = 0x002000,
-  N_32   = 0x004000,
-  N_64   = 0x008000,
-  N_P8   = 0x010000,
-  N_P16  = 0x020000,
-  N_F32  = 0x040000,
-  N_F64  = 0x080000,
-  N_KEY  = 0x100000, /* key element (main type specifier).  */
-  N_EQK  = 0x200000, /* given operand has the same type & size as the key.  */
-  N_VFP  = 0x400000, /* VFP mode: operand size must match register width.  */
-  N_DBL  = 0x000001, /* if N_EQK, this operand is twice the size.  */
-  N_HLF  = 0x000002, /* if N_EQK, this operand is half the size.  */
-  N_SGN  = 0x000004, /* if N_EQK, this operand is forced to be signed.  */
-  N_UNS  = 0x000008, /* if N_EQK, this operand is forced to be unsigned.  */
-  N_INT  = 0x000010, /* if N_EQK, this operand is forced to be integer.  */
-  N_FLT  = 0x000020, /* if N_EQK, this operand is forced to be float.  */
-  N_SIZ  = 0x000040, /* if N_EQK, this operand is forced to be size-only.  */
+  N_S8   = 0x0000001,
+  N_S16  = 0x0000002,
+  N_S32  = 0x0000004,
+  N_S64  = 0x0000008,
+  N_U8   = 0x0000010,
+  N_U16  = 0x0000020,
+  N_U32  = 0x0000040,
+  N_U64  = 0x0000080,
+  N_I8   = 0x0000100,
+  N_I16  = 0x0000200,
+  N_I32  = 0x0000400,
+  N_I64  = 0x0000800,
+  N_8    = 0x0001000,
+  N_16   = 0x0002000,
+  N_32   = 0x0004000,
+  N_64   = 0x0008000,
+  N_P8   = 0x0010000,
+  N_P16  = 0x0020000,
+  N_F16  = 0x0040000,
+  N_F32  = 0x0080000,
+  N_F64  = 0x0100000,
+  N_KEY  = 0x1000000, /* key element (main type specifier).  */
+  N_EQK  = 0x2000000, /* given operand has the same type & size as the key.  */
+  N_VFP  = 0x4000000, /* VFP mode: operand size must match register width.  */
+  N_DBL  = 0x0000001, /* if N_EQK, this operand is twice the size.  */
+  N_HLF  = 0x0000002, /* if N_EQK, this operand is half the size.  */
+  N_SGN  = 0x0000004, /* if N_EQK, this operand is forced to be signed.  */
+  N_UNS  = 0x0000008, /* if N_EQK, this operand is forced to be unsigned.  */
+  N_INT  = 0x0000010, /* if N_EQK, this operand is forced to be integer.  */
+  N_FLT  = 0x0000020, /* if N_EQK, this operand is forced to be float.  */
+  N_SIZ  = 0x0000040, /* if N_EQK, this operand is forced to be size-only.  */
   N_UTYP = 0,
   N_MAX_NONSPECIAL = N_F64
 };
@@ -10873,6 +11311,7 @@ type_chk_of_el_type (enum neon_el_type type, unsigned size)
     case NT_float:
       switch (size)
         {
+	case 16: return N_F16;
         case 32: return N_F32;
         case 64: return N_F64;
         default: ;
@@ -11440,7 +11879,7 @@ nsyn_insert_sp (void)
 {
   inst.operands[1] = inst.operands[0];
   memset (&inst.operands[0], '\0', sizeof (inst.operands[0]));
-  inst.operands[0].reg = 13;
+  inst.operands[0].reg = REG_SP;
   inst.operands[0].isreg = 1;
   inst.operands[0].writeback = 1;
   inst.operands[0].present = 1;
@@ -12566,25 +13005,28 @@ neon_cvt_flavour (enum neon_shape rs)
   CVT_VAR (1, N_U32, N_F32);
   CVT_VAR (2, N_F32, N_S32);
   CVT_VAR (3, N_F32, N_U32);
+  /* Half-precision conversions.  */
+  CVT_VAR (4, N_F32, N_F16);
+  CVT_VAR (5, N_F16, N_F32);
 
   whole_reg = N_VFP;
 
   /* VFP instructions.  */
-  CVT_VAR (4, N_F32, N_F64);
-  CVT_VAR (5, N_F64, N_F32);
-  CVT_VAR (6, N_S32, N_F64 | key);
-  CVT_VAR (7, N_U32, N_F64 | key);
-  CVT_VAR (8, N_F64 | key, N_S32);
-  CVT_VAR (9, N_F64 | key, N_U32);
+  CVT_VAR (6, N_F32, N_F64);
+  CVT_VAR (7, N_F64, N_F32);
+  CVT_VAR (8, N_S32, N_F64 | key);
+  CVT_VAR (9, N_U32, N_F64 | key);
+  CVT_VAR (10, N_F64 | key, N_S32);
+  CVT_VAR (11, N_F64 | key, N_U32);
   /* VFP instructions with bitshift.  */
-  CVT_VAR (10, N_F32 | key, N_S16);
-  CVT_VAR (11, N_F32 | key, N_U16);
-  CVT_VAR (12, N_F64 | key, N_S16);
-  CVT_VAR (13, N_F64 | key, N_U16);
-  CVT_VAR (14, N_S16, N_F32 | key);
-  CVT_VAR (15, N_U16, N_F32 | key);
-  CVT_VAR (16, N_S16, N_F64 | key);
-  CVT_VAR (17, N_U16, N_F64 | key);
+  CVT_VAR (12, N_F32 | key, N_S16);
+  CVT_VAR (13, N_F32 | key, N_U16);
+  CVT_VAR (14, N_F64 | key, N_S16);
+  CVT_VAR (15, N_F64 | key, N_U16);
+  CVT_VAR (16, N_S16, N_F32 | key);
+  CVT_VAR (17, N_U16, N_F32 | key);
+  CVT_VAR (18, N_S16, N_F64 | key);
+  CVT_VAR (19, N_U16, N_F64 | key);
 
   return -1;
 #undef CVT_VAR
@@ -12608,6 +13050,8 @@ do_vfp_nsyn_cvt (enum neon_shape rs, int flavour)
           "fultos",
           NULL,
           NULL,
+	  NULL,
+	  NULL,
           "ftosld",
           "ftould",
           "fsltod",
@@ -12640,6 +13084,8 @@ do_vfp_nsyn_cvt (enum neon_shape rs, int flavour)
           "ftouis",
           "fsitos",
           "fuitos",
+	  "NULL",
+	  "NULL",
           "fcvtsd",
           "fcvtds",
           "ftosid",
@@ -12669,6 +13115,8 @@ do_vfp_nsyn_cvtz (void)
       NULL,
       NULL,
       NULL,
+      NULL,
+      NULL,
       "ftosizd",
       "ftouizd"
     };
@@ -12681,11 +13129,11 @@ static void
 do_neon_cvt (void)
 {
   enum neon_shape rs = neon_select_shape (NS_DDI, NS_QQI, NS_FFI, NS_DD, NS_QQ,
-    NS_FD, NS_DF, NS_FF, NS_NULL);
+    NS_FD, NS_DF, NS_FF, NS_QD, NS_DQ, NS_NULL);
   int flavour = neon_cvt_flavour (rs);
 
   /* VFP rather than Neon conversions.  */
-  if (flavour >= 4)
+  if (flavour >= 6)
     {
       do_vfp_nsyn_cvt (rs, flavour);
       return;
@@ -12696,6 +13144,9 @@ do_neon_cvt (void)
     case NS_DDI:
     case NS_QQI:
       {
+        unsigned immbits;
+        unsigned enctab[] = { 0x0000100, 0x1000100, 0x0, 0x1000000 };
+
         if (vfp_or_neon_is_neon (NEON_CHECK_CC | NEON_CHECK_ARCH) == FAIL)
           return;
 
@@ -12703,8 +13154,7 @@ do_neon_cvt (void)
            integer conversion.  */
         if (inst.operands[2].present && inst.operands[2].imm == 0)
           goto int_encode;
-        unsigned immbits = 32 - inst.operands[2].imm;
-        unsigned enctab[] = { 0x0000100, 0x1000100, 0x0, 0x1000000 };
+       immbits = 32 - inst.operands[2].imm;
         inst.instruction = NEON_ENC_IMMED (inst.instruction);
         if (flavour != -1)
           inst.instruction |= enctab[flavour];
@@ -12745,10 +13195,68 @@ do_neon_cvt (void)
       }
     break;
 
+    /* Half-precision conversions for Advanced SIMD -- neon.  */
+    case NS_QD:
+    case NS_DQ:
+
+      if ((rs == NS_DQ)
+	  && (inst.vectype.el[0].size != 16 || inst.vectype.el[1].size != 32))
+	  {
+	    as_bad (_("operand size must match register width"));
+	    break;
+	  }
+
+      if ((rs == NS_QD)
+	  && ((inst.vectype.el[0].size != 32 || inst.vectype.el[1].size != 16)))
+	  {
+	    as_bad (_("operand size must match register width"));
+	    break;
+	  }
+
+      if (rs == NS_DQ)
+        inst.instruction = 0x3b60600;
+      else
+	inst.instruction = 0x3b60700;
+
+      inst.instruction |= LOW4 (inst.operands[0].reg) << 12;
+      inst.instruction |= HI1 (inst.operands[0].reg) << 22;
+      inst.instruction |= LOW4 (inst.operands[1].reg);
+      inst.instruction |= HI1 (inst.operands[1].reg) << 5;
+      inst.instruction = neon_dp_fixup (inst.instruction);
+      break;
+
     default:
       /* Some VFP conversions go here (s32 <-> f32, u32 <-> f32).  */
       do_vfp_nsyn_cvt (rs, flavour);
     }
+}
+
+static void
+do_neon_cvtb (void)
+{
+  inst.instruction = 0xeb20a40;
+
+  /* The sizes are attached to the mnemonic.  */
+  if (inst.vectype.el[0].type != NT_invtype
+      && inst.vectype.el[0].size == 16)
+    inst.instruction |= 0x00010000;
+
+  /* Programmer's syntax: the sizes are attached to the operands.  */
+  else if (inst.operands[0].vectype.type != NT_invtype
+	   && inst.operands[0].vectype.size == 16)
+    inst.instruction |= 0x00010000;
+
+  encode_arm_vfp_reg (inst.operands[0].reg, VFP_REG_Sd);
+  encode_arm_vfp_reg (inst.operands[1].reg, VFP_REG_Sm);
+  do_vfp_cond_or_thumb ();
+}
+
+
+static void
+do_neon_cvtt (void)
+{
+  do_neon_cvtb ();
+  inst.instruction |= 0x80;
 }
 
 static void
@@ -12939,7 +13447,9 @@ do_neon_ext (void)
   struct neon_type_el et = neon_check_type (3, rs,
     N_EQK, N_EQK, N_8 | N_16 | N_32 | N_64 | N_KEY);
   unsigned imm = (inst.operands[3].imm * et.size) / 8;
-  constraint (imm >= (neon_quad (rs) ? 16 : 8), _("shift out of range"));
+
+  constraint (imm >= (unsigned) (neon_quad (rs) ? 16 : 8),
+	      _("shift out of range"));
   inst.instruction |= LOW4 (inst.operands[0].reg) << 12;
   inst.instruction |= HI1 (inst.operands[0].reg) << 22;
   inst.instruction |= LOW4 (inst.operands[1].reg) << 16;
@@ -14049,7 +14559,7 @@ opcode_lookup (char **str)
 	  return opcode;
 	}
 
-      if (unified_syntax)
+      if (warn_on_deprecated && unified_syntax)
 	as_warn (_("conditional infixes are deprecated in unified syntax"));
       affix = base + (opcode->tag - OT_odd_infix_0);
       cond = hash_find_n (arm_cond_hsh, affix, 2);
@@ -14133,7 +14643,7 @@ opcode_lookup (char **str)
 	  || opcode->tag == OT_cinfix3_legacy))
     {
       /* step CM */
-      if (unified_syntax
+      if (warn_on_deprecated && unified_syntax
 	  && (opcode->tag == OT_cinfix3
 	      || opcode->tag == OT_cinfix3_deprecated))
 	as_warn (_("conditional infixes are deprecated in unified syntax"));
@@ -14174,7 +14684,7 @@ md_assemble (char *str)
       return;
     }
 
-  if (opcode->tag == OT_cinfix3_deprecated)
+  if (warn_on_deprecated && opcode->tag == OT_cinfix3_deprecated)
     as_warn (_("s suffix on comparison instruction is deprecated"));
 
   /* The value which unconditional instructions should have in place of the
@@ -14208,7 +14718,8 @@ md_assemble (char *str)
 	{
 	  /* Implicit require narrow instructions on Thumb-1.  This avoids
 	     relaxation accidentally introducing Thumb-2 instructions.  */
-	  if (opcode->tencode != do_t_blx && opcode->tencode != do_t_branch23)
+	  if (opcode->tencode != do_t_blx && opcode->tencode != do_t_branch23
+	      && !ARM_CPU_HAS_FEATURE(*opcode->tvariant, arm_ext_msr))
 	    inst.size_req = 2;
 	}
 
@@ -14262,18 +14773,25 @@ md_assemble (char *str)
 			      *opcode->tvariant);
       /* Many Thumb-2 instructions also have Thumb-1 variants, so explicitly
 	 set those bits when Thumb-2 32-bit instructions are seen.  ie.
-	 anything other than bl/blx.
+	 anything other than bl/blx and v6-M instructions.
 	 This is overly pessimistic for relaxable instructions.  */
-      if ((inst.size == 4 && (inst.instruction & 0xf800e800) != 0xf000e800)
-	  || inst.relax)
+      if (((inst.size == 4 && (inst.instruction & 0xf800e800) != 0xf000e800)
+	   || inst.relax)
+	  && !ARM_CPU_HAS_FEATURE(*opcode->tvariant, arm_ext_msr))
 	ARM_MERGE_FEATURE_SETS (thumb_arch_used, thumb_arch_used,
 				arm_ext_v6t2);
     }
   else if (ARM_CPU_HAS_FEATURE (cpu_variant, arm_ext_v1))
     {
+      bfd_boolean is_bx;
+
+      /* bx is allowed on v5 cores, and sometimes on v4 cores.  */
+      is_bx = (opcode->aencode == do_bx);
+
       /* Check that this instruction is supported for this CPU.  */
-      if (!opcode->avariant ||
-	  !ARM_CPU_HAS_FEATURE (cpu_variant, *opcode->avariant))
+      if (!(is_bx && fix_v4bx)
+	  && !(opcode->avariant &&
+	       ARM_CPU_HAS_FEATURE (cpu_variant, *opcode->avariant)))
 	{
 	  as_bad (_("selected processor does not support `%s'"), str);
 	  return;
@@ -14295,8 +14813,7 @@ md_assemble (char *str)
 	opcode->aencode ();
       /* Arm mode bx is marked as both v4T and v5 because it's still required
          on a hypothetical non-thumb v5 core.  */
-      if (ARM_CPU_HAS_FEATURE (*opcode->avariant, arm_ext_v4t)
-	  || ARM_CPU_HAS_FEATURE (*opcode->avariant, arm_ext_v5))
+      if (is_bx)
 	ARM_MERGE_FEATURE_SETS (arm_arch_used, arm_arch_used, arm_ext_v4t);
       else
 	ARM_MERGE_FEATURE_SETS (arm_arch_used, arm_arch_used,
@@ -15006,11 +15523,15 @@ static const struct asm_opcode insns[] =
 
 #undef ARM_VARIANT
 #define ARM_VARIANT &arm_ext_v3	/* ARM 6 Status register instructions.	*/
+#undef THUMB_VARIANT
+#define THUMB_VARIANT &arm_ext_msr
  TCE(mrs,	10f0000, f3ef8000, 2, (APSR_RR, RVC_PSR), mrs, t_mrs),
  TCE(msr,	120f000, f3808000, 2, (RVC_PSR, RR_EXi), msr, t_msr),
 
 #undef ARM_VARIANT
 #define ARM_VARIANT &arm_ext_v3m	 /* ARM 7M long multiplies.  */
+#undef THUMB_VARIANT
+#define THUMB_VARIANT &arm_ext_v6t2
  TCE(smull,	0c00090, fb800000, 4, (RRnpc, RRnpc, RRnpc, RRnpc), mull, t_mull),
   CM(smull,s,	0d00090,           4, (RRnpc, RRnpc, RRnpc, RRnpc), mull),
  TCE(umull,	0800090, fba00000, 4, (RRnpc, RRnpc, RRnpc, RRnpc), mull, t_mull),
@@ -15081,10 +15602,10 @@ static const struct asm_opcode insns[] =
  TCE(smulwb,	12000a0, fb30f000, 3, (RRnpc, RRnpc, RRnpc),	    smul, t_simd),
  TCE(smulwt,	12000e0, fb30f010, 3, (RRnpc, RRnpc, RRnpc),	    smul, t_simd),
 
- TCE(qadd,	1000050, fa80f080, 3, (RRnpc, RRnpc, RRnpc),	    rd_rm_rn, rd_rm_rn),
- TCE(qdadd,	1400050, fa80f090, 3, (RRnpc, RRnpc, RRnpc),	    rd_rm_rn, rd_rm_rn),
- TCE(qsub,	1200050, fa80f0a0, 3, (RRnpc, RRnpc, RRnpc),	    rd_rm_rn, rd_rm_rn),
- TCE(qdsub,	1600050, fa80f0b0, 3, (RRnpc, RRnpc, RRnpc),	    rd_rm_rn, rd_rm_rn),
+ TCE(qadd,	1000050, fa80f080, 3, (RRnpc, RRnpc, RRnpc),	    rd_rm_rn, t_simd),
+ TCE(qdadd,	1400050, fa80f090, 3, (RRnpc, RRnpc, RRnpc),	    rd_rm_rn, t_simd),
+ TCE(qsub,	1200050, fa80f0a0, 3, (RRnpc, RRnpc, RRnpc),	    rd_rm_rn, t_simd),
+ TCE(qdsub,	1600050, fa80f0b0, 3, (RRnpc, RRnpc, RRnpc),	    rd_rm_rn, t_simd),
 
 #undef ARM_VARIANT
 #define ARM_VARIANT &arm_ext_v5e /*  ARM Architecture 5TE.  */
@@ -15132,40 +15653,64 @@ static const struct asm_opcode insns[] =
  TCE(pkhtb,	6800050, eac00020, 4, (RRnpc, RRnpc, RRnpc, oSHar),   pkhtb, t_pkhtb),
  TCE(qadd16,	6200f10, fa90f010, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(qadd8,	6200f90, fa80f010, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ TCE(qasx,	6200f30, faa0f010, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ /* Old name for QASX.  */
  TCE(qaddsubx,	6200f30, faa0f010, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ TCE(qsax,	6200f50, fae0f010, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ /* Old name for QSAX.  */
+ TCE(qsubaddx,	6200f50, fae0f010, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(qsub16,	6200f70, fad0f010, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(qsub8,	6200ff0, fac0f010, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
- TCE(qsubaddx,	6200f50, fae0f010, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(sadd16,	6100f10, fa90f000, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(sadd8,	6100f90, fa80f000, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ TCE(sasx,	6100f30, faa0f000, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ /* Old name for SASX.  */
  TCE(saddsubx,	6100f30, faa0f000, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(shadd16,	6300f10, fa90f020, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(shadd8,	6300f90, fa80f020, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ TCE(shasx,     6300f30, faa0f020, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ /* Old name for SHASX.  */
  TCE(shaddsubx, 6300f30, faa0f020, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ TCE(shsax,      6300f50, fae0f020, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ /* Old name for SHSAX.  */
+ TCE(shsubaddx, 6300f50, fae0f020, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(shsub16,	6300f70, fad0f020, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(shsub8,	6300ff0, fac0f020, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
- TCE(shsubaddx, 6300f50, fae0f020, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ TCE(ssax,	6100f50, fae0f000, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ /* Old name for SSAX.  */
+ TCE(ssubaddx,	6100f50, fae0f000, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(ssub16,	6100f70, fad0f000, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(ssub8,	6100ff0, fac0f000, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
- TCE(ssubaddx,	6100f50, fae0f000, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(uadd16,	6500f10, fa90f040, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(uadd8,	6500f90, fa80f040, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ TCE(uasx,	6500f30, faa0f040, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ /* Old name for UASX.  */
  TCE(uaddsubx,	6500f30, faa0f040, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(uhadd16,	6700f10, fa90f060, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(uhadd8,	6700f90, fa80f060, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ TCE(uhasx,     6700f30, faa0f060, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ /* Old name for UHASX.  */
  TCE(uhaddsubx, 6700f30, faa0f060, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ TCE(uhsax,     6700f50, fae0f060, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ /* Old name for UHSAX.  */
+ TCE(uhsubaddx, 6700f50, fae0f060, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(uhsub16,	6700f70, fad0f060, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(uhsub8,	6700ff0, fac0f060, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
- TCE(uhsubaddx, 6700f50, fae0f060, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(uqadd16,	6600f10, fa90f050, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(uqadd8,	6600f90, fa80f050, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ TCE(uqasx,     6600f30, faa0f050, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ /* Old name for UQASX.  */
  TCE(uqaddsubx, 6600f30, faa0f050, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ TCE(uqsax,     6600f50, fae0f050, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ /* Old name for UQSAX.  */
+ TCE(uqsubaddx, 6600f50, fae0f050, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(uqsub16,	6600f70, fad0f050, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(uqsub8,	6600ff0, fac0f050, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
- TCE(uqsubaddx, 6600f50, fae0f050, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TCE(usub16,	6500f70, fad0f040, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
- TCE(usub8,	6500ff0, fac0f040, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ TCE(usax,	6500f50, fae0f040, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ /* Old name for USAX.  */
  TCE(usubaddx,	6500f50, fae0f040, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
+ TCE(usub8,	6500ff0, fac0f040, 3, (RRnpc, RRnpc, RRnpc),	   rd_rn_rm, t_simd),
  TUF(rfeia,	8900a00, e990c000, 1, (RRw),			   rfe, rfe),
   UF(rfeib,	9900a00,           1, (RRw),			   rfe),
   UF(rfeda,	8100a00,           1, (RRw),			   rfe),
@@ -15259,21 +15804,24 @@ static const struct asm_opcode insns[] =
  /* ARM does not really have an IT instruction, so always allow it.  */
 #undef ARM_VARIANT
 #define ARM_VARIANT &arm_ext_v1
- TUE(it,        0, bf08, 1, (COND),    it, t_it),
- TUE(itt,       0, bf0c, 1, (COND),    it, t_it),
- TUE(ite,       0, bf04, 1, (COND),    it, t_it),
- TUE(ittt,      0, bf0e, 1, (COND),    it, t_it),
- TUE(itet,      0, bf06, 1, (COND),    it, t_it),
- TUE(itte,      0, bf0a, 1, (COND),    it, t_it),
- TUE(itee,      0, bf02, 1, (COND),    it, t_it),
- TUE(itttt,     0, bf0f, 1, (COND),    it, t_it),
- TUE(itett,     0, bf07, 1, (COND),    it, t_it),
- TUE(ittet,     0, bf0b, 1, (COND),    it, t_it),
- TUE(iteet,     0, bf03, 1, (COND),    it, t_it),
- TUE(ittte,     0, bf0d, 1, (COND),    it, t_it),
- TUE(itete,     0, bf05, 1, (COND),    it, t_it),
- TUE(ittee,     0, bf09, 1, (COND),    it, t_it),
- TUE(iteee,     0, bf01, 1, (COND),    it, t_it),
+ TUE(it,        0,        bf08,     1, (COND),   it,    t_it),
+ TUE(itt,       0,        bf0c,     1, (COND),   it,    t_it),
+ TUE(ite,       0,        bf04,     1, (COND),   it,    t_it),
+ TUE(ittt,      0,        bf0e,     1, (COND),   it,    t_it),
+ TUE(itet,      0,        bf06,     1, (COND),   it,    t_it),
+ TUE(itte,      0,        bf0a,     1, (COND),   it,    t_it),
+ TUE(itee,      0,        bf02,     1, (COND),   it,    t_it),
+ TUE(itttt,     0,        bf0f,     1, (COND),   it,    t_it),
+ TUE(itett,     0,        bf07,     1, (COND),   it,    t_it),
+ TUE(ittet,     0,        bf0b,     1, (COND),   it,    t_it),
+ TUE(iteet,     0,        bf03,     1, (COND),   it,    t_it),
+ TUE(ittte,     0,        bf0d,     1, (COND),   it,    t_it),
+ TUE(itete,     0,        bf05,     1, (COND),   it,    t_it),
+ TUE(ittee,     0,        bf09,     1, (COND),   it,    t_it),
+ TUE(iteee,     0,        bf01,     1, (COND),   it,    t_it),
+ /* ARM/Thumb-2 instructions with no Thumb-1 equivalent.  */
+ TC3(rrx,       01a00060, ea4f0030, 2, (RR, RR), rd_rm, t_rrx),
+ TC3(rrxs,      01b00060, ea5f0030, 2, (RR, RR), rd_rm, t_rrx),
 
  /* Thumb2 only instructions.  */
 #undef ARM_VARIANT
@@ -15281,6 +15829,8 @@ static const struct asm_opcode insns[] =
 
  TCE(addw,	0, f2000000, 3, (RR, RR, EXPi), 0, t_add_sub_w),
  TCE(subw,	0, f2a00000, 3, (RR, RR, EXPi), 0, t_add_sub_w),
+ TCE(orn,       0, ea600000, 3, (RR, oRR, SH),  0, t_orn),
+ TCE(orns,      0, ea700000, 3, (RR, oRR, SH),  0, t_orn),
  TCE(tbb,       0, e8d0f000, 1, (TB), 0, t_tb),
  TCE(tbh,       0, e8d0f010, 1, (TB), 0, t_tb),
 
@@ -15290,6 +15840,15 @@ static const struct asm_opcode insns[] =
  TCE(sdiv,	0, fb90f0f0, 3, (RR, oRR, RR), 0, t_div),
  TCE(udiv,	0, fbb0f0f0, 3, (RR, oRR, RR), 0, t_div),
 
+ /* ARM V6M/V7 instructions.  */
+#undef ARM_VARIANT
+#define ARM_VARIANT &arm_ext_barrier
+#undef THUMB_VARIANT
+#define THUMB_VARIANT &arm_ext_barrier
+ TUF(dmb,	57ff050, f3bf8f50, 1, (oBARRIER), barrier,  t_barrier),
+ TUF(dsb,	57ff040, f3bf8f40, 1, (oBARRIER), barrier,  t_barrier),
+ TUF(isb,	57ff060, f3bf8f60, 1, (oBARRIER), barrier,  t_barrier),
+
  /* ARM V7 instructions.  */
 #undef ARM_VARIANT
 #define ARM_VARIANT &arm_ext_v7
@@ -15297,9 +15856,6 @@ static const struct asm_opcode insns[] =
 #define THUMB_VARIANT &arm_ext_v7
  TUF(pli,	450f000, f910f000, 1, (ADDR),	  pli,	    t_pld),
  TCE(dbg,	320f0f0, f3af80f0, 1, (I15),	  dbg,	    t_dbg),
- TUF(dmb,	57ff050, f3bf8f50, 1, (oBARRIER), barrier,  t_barrier),
- TUF(dsb,	57ff040, f3bf8f40, 1, (oBARRIER), barrier,  t_barrier),
- TUF(isb,	57ff060, f3bf8f60, 1, (oBARRIER), barrier,  t_barrier),
 
 #undef ARM_VARIANT
 #define ARM_VARIANT &fpu_fpa_ext_v1  /* Core FPA instruction set (V1).  */
@@ -15897,6 +16453,9 @@ static const struct asm_opcode insns[] =
  NCE(vstr,      d000b00, 2, (RVSD, ADDRGLDC), neon_ldr_str),
 
  nCEF(vcvt,     vcvt,    3, (RNSDQ, RNSDQ, oI32b), neon_cvt),
+ nCEF(vcvtb,	vcvt,	 2, (RVS, RVS), neon_cvtb),
+ nCEF(vcvtt,	vcvt,	 2, (RVS, RVS), neon_cvtt),
+
 
   /* NOTE: All VMOV encoding is special-cased!  */
  NCE(vmov,      0,       1, (VMOV), neon_mov),
@@ -18767,7 +19326,7 @@ md_apply_fix (fixS *	fixP,
 	  /* REL format relocations are limited to a 16-bit addend.  */
 	  if (!fixP->fx_done)
 	    {
-	      if (value < -0x1000 || value > 0xffff)
+	      if (value < -0x8000 || value > 0x7fff)
 		  as_bad_where (fixP->fx_file, fixP->fx_line,
 				_("offset out of range"));
 	    }
@@ -18968,6 +19527,11 @@ md_apply_fix (fixS *	fixP,
         }
       break;
 
+    case BFD_RELOC_ARM_V4BX:
+      /* This will need to go in the object file.  */
+      fixP->fx_done = 0;
+      break;
+
     case BFD_RELOC_UNUSED:
     default:
       as_bad_where (fixP->fx_file, fixP->fx_line,
@@ -19118,6 +19682,7 @@ tc_gen_reloc (asection *section, fixS *fixp)
     case BFD_RELOC_ARM_LDC_SB_G0:
     case BFD_RELOC_ARM_LDC_SB_G1:
     case BFD_RELOC_ARM_LDC_SB_G2:
+    case BFD_RELOC_ARM_V4BX:
       code = fixp->fx_r_type;
       break;
 
@@ -19361,6 +19926,17 @@ arm_fix_adjustable (fixS * fixP)
       || fixP->fx_r_type == BFD_RELOC_ARM_LDR_PC_G0)
     return 0;
 
+  /* MOVW/MOVT REL relocations have limited offsets, so keep the symbols.  */
+  if (fixP->fx_r_type == BFD_RELOC_ARM_MOVW
+      || fixP->fx_r_type == BFD_RELOC_ARM_MOVT
+      || fixP->fx_r_type == BFD_RELOC_ARM_MOVW_PCREL
+      || fixP->fx_r_type == BFD_RELOC_ARM_MOVT_PCREL
+      || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVW
+      || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVT
+      || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVW_PCREL
+      || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVT_PCREL)
+    return 0;
+
   return 1;
 }
 #endif /* defined (OBJ_ELF) || defined (OBJ_COFF) */
@@ -19532,25 +20108,25 @@ md_begin (void)
     as_fatal (_("virtual memory exhausted"));
 
   for (i = 0; i < sizeof (insns) / sizeof (struct asm_opcode); i++)
-    hash_insert (arm_ops_hsh, insns[i].template, (PTR) (insns + i));
+    hash_insert (arm_ops_hsh, insns[i].template, (void *) (insns + i));
   for (i = 0; i < sizeof (conds) / sizeof (struct asm_cond); i++)
-    hash_insert (arm_cond_hsh, conds[i].template, (PTR) (conds + i));
+    hash_insert (arm_cond_hsh, conds[i].template, (void *) (conds + i));
   for (i = 0; i < sizeof (shift_names) / sizeof (struct asm_shift_name); i++)
-    hash_insert (arm_shift_hsh, shift_names[i].name, (PTR) (shift_names + i));
+    hash_insert (arm_shift_hsh, shift_names[i].name, (void *) (shift_names + i));
   for (i = 0; i < sizeof (psrs) / sizeof (struct asm_psr); i++)
-    hash_insert (arm_psr_hsh, psrs[i].template, (PTR) (psrs + i));
+    hash_insert (arm_psr_hsh, psrs[i].template, (void *) (psrs + i));
   for (i = 0; i < sizeof (v7m_psrs) / sizeof (struct asm_psr); i++)
-    hash_insert (arm_v7m_psr_hsh, v7m_psrs[i].template, (PTR) (v7m_psrs + i));
+    hash_insert (arm_v7m_psr_hsh, v7m_psrs[i].template, (void *) (v7m_psrs + i));
   for (i = 0; i < sizeof (reg_names) / sizeof (struct reg_entry); i++)
-    hash_insert (arm_reg_hsh, reg_names[i].name, (PTR) (reg_names + i));
+    hash_insert (arm_reg_hsh, reg_names[i].name, (void *) (reg_names + i));
   for (i = 0;
        i < sizeof (barrier_opt_names) / sizeof (struct asm_barrier_opt);
        i++)
     hash_insert (arm_barrier_opt_hsh, barrier_opt_names[i].template,
-		 (PTR) (barrier_opt_names + i));
+		 (void *) (barrier_opt_names + i));
 #ifdef OBJ_ELF
   for (i = 0; i < sizeof (reloc_names) / sizeof (struct reloc_entry); i++)
-    hash_insert (arm_reloc_hsh, reloc_names[i].name, (PTR) (reloc_names + i));
+    hash_insert (arm_reloc_hsh, reloc_names[i].name, (void *) (reloc_names + i));
 #endif
 
   set_constant_flonums ();
@@ -19752,6 +20328,8 @@ md_begin (void)
 	      -mthumb			 Start in Thumb mode
 	      -mthumb-interwork		 Code supports ARM/Thumb interworking
 
+	      -m[no-]warn-deprecated     Warn about deprecated features
+	      
       For now we will also provide support for:
 
 	      -mapcs-32			 32-bit Program counter
@@ -19805,6 +20383,7 @@ const char * md_shortopts = "m:k";
 #define OPTION_EL (OPTION_MD_BASE + 1)
 #endif
 #endif
+#define OPTION_FIX_V4BX (OPTION_MD_BASE + 2)
 
 struct option md_longopts[] =
 {
@@ -19814,6 +20393,7 @@ struct option md_longopts[] =
 #ifdef OPTION_EL
   {"EL", no_argument, NULL, OPTION_EL},
 #endif
+  {"fix-v4bx", no_argument, NULL, OPTION_FIX_V4BX},
   {NULL, no_argument, NULL, 0}
 };
 
@@ -19847,6 +20427,10 @@ struct arm_option_table arm_opts[] =
   /* These are recognized by the assembler, but have no affect on code.	 */
   {"mapcs-frame", N_("use frame pointer"), NULL, 0, NULL},
   {"mapcs-stack-check", N_("use stack size checking"), NULL, 0, NULL},
+
+  {"mwarn-deprecated", NULL, &warn_on_deprecated, 1, NULL},
+  {"mno-warn-deprecated", N_("do not warn on use of deprecated feature"),
+   &warn_on_deprecated, 0, NULL},
   {NULL, NULL, NULL, 0, NULL}
 };
 
@@ -20031,6 +20615,8 @@ static const struct arm_cpu_option_table arm_cpus[] =
   {"arm922t",		ARM_ARCH_V4T,	 FPU_ARCH_FPA,    NULL},
   {"arm940t",		ARM_ARCH_V4T,	 FPU_ARCH_FPA,    NULL},
   {"arm9tdmi",		ARM_ARCH_V4T,	 FPU_ARCH_FPA,	  NULL},
+  {"fa526",		ARM_ARCH_V4,	 FPU_ARCH_FPA,	  NULL},
+  {"fa626",		ARM_ARCH_V4,	 FPU_ARCH_FPA,	  NULL},
   /* For V5 or later processors we default to using VFP; but the user
      should really set the FPU type explicitly.	 */
   {"arm9e-r0",		ARM_ARCH_V5TExP, FPU_ARCH_VFP_V2, NULL},
@@ -20054,6 +20640,8 @@ static const struct arm_cpu_option_table arm_cpus[] =
   {"arm1022e",		ARM_ARCH_V5TE,	 FPU_ARCH_VFP_V2, NULL},
   {"arm1026ejs",	ARM_ARCH_V5TEJ,	 FPU_ARCH_VFP_V2, "ARM1026EJ-S"},
   {"arm1026ej-s",	ARM_ARCH_V5TEJ,	 FPU_ARCH_VFP_V2, NULL},
+  {"fa626te",		ARM_ARCH_V5TE,	 FPU_NONE,	  NULL},
+  {"fa726te",		ARM_ARCH_V5TE,	 FPU_ARCH_VFP_V2, NULL},
   {"arm1136js",		ARM_ARCH_V6,	 FPU_NONE,	  "ARM1136J-S"},
   {"arm1136j-s",	ARM_ARCH_V6,	 FPU_NONE,	  NULL},
   {"arm1136jfs",	ARM_ARCH_V6,	 FPU_ARCH_VFP_V2, "ARM1136JF-S"},
@@ -20067,8 +20655,12 @@ static const struct arm_cpu_option_table arm_cpus[] =
   {"cortex-a8",		ARM_ARCH_V7A,	 ARM_FEATURE(0, FPU_VFP_V3
                                                         | FPU_NEON_EXT_V1),
                                                           NULL},
+  {"cortex-a9",		ARM_ARCH_V7A,	 ARM_FEATURE(0, FPU_VFP_V3
+                                                        | FPU_NEON_EXT_V1),
+                                                          NULL},
   {"cortex-r4",		ARM_ARCH_V7R,	 FPU_NONE,	  NULL},
   {"cortex-m3",		ARM_ARCH_V7M,	 FPU_NONE,	  NULL},
+  {"cortex-m1",		ARM_ARCH_V6M,	 FPU_NONE,	  NULL},
   /* ??? XSCALE is really an architecture.  */
   {"xscale",		ARM_ARCH_XSCALE, FPU_ARCH_VFP_V2, NULL},
   /* ??? iwmmxt is not a processor.  */
@@ -20117,6 +20709,7 @@ static const struct arm_arch_option_table arm_archs[] =
   {"armv6kt2",		ARM_ARCH_V6KT2,	 FPU_ARCH_VFP},
   {"armv6zt2",		ARM_ARCH_V6ZT2,	 FPU_ARCH_VFP},
   {"armv6zkt2",		ARM_ARCH_V6ZKT2, FPU_ARCH_VFP},
+  {"armv6-m",		ARM_ARCH_V6M,	 FPU_ARCH_VFP},
   {"armv7",		ARM_ARCH_V7,	 FPU_ARCH_VFP},
   /* The official spelling of the ARMv7 profile variants is the dashed form.
      Accept the non-dashed form for compatibility with old toolchains.  */
@@ -20164,16 +20757,20 @@ static const struct arm_option_cpu_value_table arm_fpus[] =
   {"softvfp+vfp",	FPU_ARCH_VFP_V2},
   {"vfp",		FPU_ARCH_VFP_V2},
   {"vfp9",		FPU_ARCH_VFP_V2},
-  {"vfp3",              FPU_ARCH_VFP_V3},
+  {"vfp3",              FPU_ARCH_VFP_V3}, /* For backwards compatbility.  */
   {"vfp10",		FPU_ARCH_VFP_V2},
   {"vfp10-r0",		FPU_ARCH_VFP_V1},
   {"vfpxd",		FPU_ARCH_VFP_V1xD},
+  {"vfpv2",		FPU_ARCH_VFP_V2},
+  {"vfpv3",		FPU_ARCH_VFP_V3},
+  {"vfpv3-d16",		FPU_ARCH_VFP_V3D16},
   {"arm1020t",		FPU_ARCH_VFP_V1},
   {"arm1020e",		FPU_ARCH_VFP_V2},
   {"arm1136jfs",	FPU_ARCH_VFP_V2},
   {"arm1136jf-s",	FPU_ARCH_VFP_V2},
   {"maverick",		FPU_ARCH_MAVERICK},
   {"neon",              FPU_ARCH_VFP_V3_PLUS_NEON_V1},
+  {"neon-fp16",		FPU_ARCH_NEON_FP16},
   {NULL,		ARM_ARCH_NONE}
 };
 
@@ -20402,7 +20999,7 @@ struct arm_long_option_table arm_long_opts[] =
   {"mfloat-abi=", N_("<abi>\t  assemble for floating point ABI <abi>"),
    arm_parse_float_abi, NULL},
 #ifdef OBJ_ELF
-  {"meabi=", N_("<ver>\t  assemble for eabi version <ver>"),
+  {"meabi=", N_("<ver>\t\t  assemble for eabi version <ver>"),
    arm_parse_eabi, NULL},
 #endif
   {NULL, NULL, 0, NULL}
@@ -20429,6 +21026,10 @@ md_parse_option (int c, char * arg)
       break;
 #endif
 
+    case OPTION_FIX_V4BX:
+      fix_v4bx = TRUE;
+      break;
+
     case 'a':
       /* Listing option.  Just ignore these, we don't support additional
 	 ones.	*/
@@ -20441,12 +21042,10 @@ md_parse_option (int c, char * arg)
 	      && ((arg == NULL && opt->option[1] == 0)
 		  || streq (arg, opt->option + 1)))
 	    {
-#if WARN_DEPRECATED
 	      /* If the option is deprecated, tell the user.  */
-	      if (opt->deprecated != NULL)
+	      if (warn_on_deprecated && opt->deprecated != NULL)
 		as_tsktsk (_("option `-%c%s' is deprecated: %s"), c,
 			   arg ? arg : "", _(opt->deprecated));
-#endif
 
 	      if (opt->var != NULL)
 		*opt->var = opt->value;
@@ -20461,12 +21060,10 @@ md_parse_option (int c, char * arg)
 	      && ((arg == NULL && fopt->option[1] == 0)
 		  || streq (arg, fopt->option + 1)))
 	    {
-#if WARN_DEPRECATED
 	      /* If the option is deprecated, tell the user.  */
-	      if (fopt->deprecated != NULL)
+	      if (warn_on_deprecated && fopt->deprecated != NULL)
 		as_tsktsk (_("option `-%c%s' is deprecated: %s"), c,
 			   arg ? arg : "", _(fopt->deprecated));
-#endif
 
 	      if (fopt->var != NULL)
 		*fopt->var = &fopt->value;
@@ -20483,12 +21080,10 @@ md_parse_option (int c, char * arg)
 	      && strncmp (arg, lopt->option + 1,
 			  strlen (lopt->option + 1)) == 0)
 	    {
-#if WARN_DEPRECATED
 	      /* If the option is deprecated, tell the user.  */
-	      if (lopt->deprecated != NULL)
+	      if (warn_on_deprecated && lopt->deprecated != NULL)
 		as_tsktsk (_("option `-%c%s' is deprecated: %s"), c, arg,
 			   _(lopt->deprecated));
-#endif
 
 	      /* Call the sup-option parser.  */
 	      return lopt->func (arg + strlen (lopt->option) - 1);
@@ -20526,6 +21121,9 @@ md_show_usage (FILE * fp)
   fprintf (fp, _("\
   -EL                     assemble code for a little-endian cpu\n"));
 #endif
+
+  fprintf (fp, _("\
+  --fix-v4bx              Allow BX in ARMv4 code\n"));
 }
 
 
@@ -20543,17 +21141,38 @@ static const cpu_arch_ver_table cpu_arch_ver[] =
     {1, ARM_ARCH_V4},
     {2, ARM_ARCH_V4T},
     {3, ARM_ARCH_V5},
+    {3, ARM_ARCH_V5T},
     {4, ARM_ARCH_V5TE},
     {5, ARM_ARCH_V5TEJ},
     {6, ARM_ARCH_V6},
     {7, ARM_ARCH_V6Z},
-    {8, ARM_ARCH_V6K},
-    {9, ARM_ARCH_V6T2},
+    {9, ARM_ARCH_V6K},
+    {11, ARM_ARCH_V6M},
+    {8, ARM_ARCH_V6T2},
     {10, ARM_ARCH_V7A},
     {10, ARM_ARCH_V7R},
     {10, ARM_ARCH_V7M},
     {0, ARM_ARCH_NONE}
 };
+
+/* Set an attribute if it has not already been set by the user.  */
+static void
+aeabi_set_attribute_int (int tag, int value)
+{
+  if (tag < 1
+      || tag >= NUM_KNOWN_OBJ_ATTRIBUTES
+      || !attributes_set_explicitly[tag])
+    bfd_elf_add_proc_attr_int (stdoutput, tag, value);
+}
+
+static void
+aeabi_set_attribute_string (int tag, const char *value)
+{
+  if (tag < 1
+      || tag >= NUM_KNOWN_OBJ_ATTRIBUTES
+      || !attributes_set_explicitly[tag])
+    bfd_elf_add_proc_attr_string (stdoutput, tag, value);
+}
 
 /* Set the public EABI object attributes.  */
 static void
@@ -20601,44 +21220,47 @@ aeabi_set_public_attributes (void)
 	  for (i = 0; p[i]; i++)
 	    p[i] = TOUPPER (p[i]);
 	}
-      bfd_elf_add_proc_attr_string (stdoutput, 5, p);
+      aeabi_set_attribute_string (Tag_CPU_name, p);
     }
   /* Tag_CPU_arch.  */
-  bfd_elf_add_proc_attr_int (stdoutput, 6, arch);
+  aeabi_set_attribute_int (Tag_CPU_arch, arch);
   /* Tag_CPU_arch_profile.  */
   if (ARM_CPU_HAS_FEATURE (flags, arm_ext_v7a))
-    bfd_elf_add_proc_attr_int (stdoutput, 7, 'A');
+    aeabi_set_attribute_int (Tag_CPU_arch_profile, 'A');
   else if (ARM_CPU_HAS_FEATURE (flags, arm_ext_v7r))
-    bfd_elf_add_proc_attr_int (stdoutput, 7, 'R');
-  else if (ARM_CPU_HAS_FEATURE (flags, arm_ext_v7m))
-    bfd_elf_add_proc_attr_int (stdoutput, 7, 'M');
+    aeabi_set_attribute_int (Tag_CPU_arch_profile, 'R');
+  else if (ARM_CPU_HAS_FEATURE (flags, arm_ext_m))
+    aeabi_set_attribute_int (Tag_CPU_arch_profile, 'M');
   /* Tag_ARM_ISA_use.  */
-  if (ARM_CPU_HAS_FEATURE (arm_arch_used, arm_arch_full))
-    bfd_elf_add_proc_attr_int (stdoutput, 8, 1);
+  if (ARM_CPU_HAS_FEATURE (flags, arm_ext_v1)
+      || arch == 0)
+    aeabi_set_attribute_int (Tag_ARM_ISA_use, 1);
   /* Tag_THUMB_ISA_use.  */
-  if (ARM_CPU_HAS_FEATURE (thumb_arch_used, arm_arch_full))
-    bfd_elf_add_proc_attr_int (stdoutput, 9,
-	ARM_CPU_HAS_FEATURE (thumb_arch_used, arm_arch_t2) ? 2 : 1);
+  if (ARM_CPU_HAS_FEATURE (flags, arm_ext_v4t)
+      || arch == 0)
+    aeabi_set_attribute_int (Tag_THUMB_ISA_use,
+	ARM_CPU_HAS_FEATURE (flags, arm_arch_t2) ? 2 : 1);
   /* Tag_VFP_arch.  */
-  if (ARM_CPU_HAS_FEATURE (thumb_arch_used, fpu_vfp_ext_v3)
-      || ARM_CPU_HAS_FEATURE (arm_arch_used, fpu_vfp_ext_v3))
-    bfd_elf_add_proc_attr_int (stdoutput, 10, 3);
-  else if (ARM_CPU_HAS_FEATURE (thumb_arch_used, fpu_vfp_ext_v2)
-           || ARM_CPU_HAS_FEATURE (arm_arch_used, fpu_vfp_ext_v2))
-    bfd_elf_add_proc_attr_int (stdoutput, 10, 2);
-  else if (ARM_CPU_HAS_FEATURE (thumb_arch_used, fpu_vfp_ext_v1)
-           || ARM_CPU_HAS_FEATURE (arm_arch_used, fpu_vfp_ext_v1)
-           || ARM_CPU_HAS_FEATURE (thumb_arch_used, fpu_vfp_ext_v1xd)
-           || ARM_CPU_HAS_FEATURE (arm_arch_used, fpu_vfp_ext_v1xd))
-    bfd_elf_add_proc_attr_int (stdoutput, 10, 1);
+  if (ARM_CPU_HAS_FEATURE (flags, fpu_vfp_ext_d32))
+    aeabi_set_attribute_int (Tag_VFP_arch, 3);
+  else if (ARM_CPU_HAS_FEATURE (flags, fpu_vfp_ext_v3))
+    aeabi_set_attribute_int (Tag_VFP_arch, 4);
+  else if (ARM_CPU_HAS_FEATURE (flags, fpu_vfp_ext_v2))
+    aeabi_set_attribute_int (Tag_VFP_arch, 2);
+  else if (ARM_CPU_HAS_FEATURE (flags, fpu_vfp_ext_v1)
+           || ARM_CPU_HAS_FEATURE (flags, fpu_vfp_ext_v1xd))
+    aeabi_set_attribute_int (Tag_VFP_arch, 1);
   /* Tag_WMMX_arch.  */
-  if (ARM_CPU_HAS_FEATURE (thumb_arch_used, arm_cext_iwmmxt)
-      || ARM_CPU_HAS_FEATURE (arm_arch_used, arm_cext_iwmmxt))
-    bfd_elf_add_proc_attr_int (stdoutput, 11, 1);
-  /* Tag_NEON_arch.  */
-  if (ARM_CPU_HAS_FEATURE (thumb_arch_used, fpu_neon_ext_v1)
-      || ARM_CPU_HAS_FEATURE (arm_arch_used, fpu_neon_ext_v1))
-    bfd_elf_add_proc_attr_int (stdoutput, 12, 1);
+  if (ARM_CPU_HAS_FEATURE (flags, arm_cext_iwmmxt2))
+    aeabi_set_attribute_int (Tag_WMMX_arch, 2);
+  else if (ARM_CPU_HAS_FEATURE (flags, arm_cext_iwmmxt))
+    aeabi_set_attribute_int (Tag_WMMX_arch, 1);
+  /* Tag_Advanced_SIMD_arch (formerly Tag_NEON_arch).  */
+  if (ARM_CPU_HAS_FEATURE (flags, fpu_neon_ext_v1))
+    aeabi_set_attribute_int (Tag_Advanced_SIMD_arch, 1);
+  /* Tag_VFP_HP_extension (formerly Tag_NEON_FP16_arch).  */
+  if (ARM_CPU_HAS_FEATURE (flags, fpu_neon_fp16))
+    aeabi_set_attribute_int (Tag_VFP_HP_extension, 1);
 }
 
 /* Add the default contents for the .ARM.attributes section.  */
@@ -20758,7 +21380,6 @@ s_arm_object_arch (int ignored ATTRIBUTE_UNUSED)
   ignore_rest_of_line ();
 }
 
-
 /* Parse a .fpu directive.  */
 
 static void
@@ -20790,8 +21411,79 @@ s_arm_fpu (int ignored ATTRIBUTE_UNUSED)
 }
 
 /* Copy symbol information.  */
+
 void
 arm_copy_symbol_attributes (symbolS *dest, symbolS *src)
 {
   ARM_GET_FLAG (dest) = ARM_GET_FLAG (src);
 }
+
+#ifdef OBJ_ELF
+/* Given a symbolic attribute NAME, return the proper integer value.
+   Returns -1 if the attribute is not known.  */
+
+int
+arm_convert_symbolic_attribute (const char *name)
+{
+  static const struct
+  {
+    const char * name;
+    const int    tag;
+  }
+  attribute_table[] =
+    {
+      /* When you modify this table you should
+	 also modify the list in doc/c-arm.texi.  */
+#define T(tag) {#tag, tag}
+      T (Tag_CPU_raw_name),
+      T (Tag_CPU_name),
+      T (Tag_CPU_arch),
+      T (Tag_CPU_arch_profile),
+      T (Tag_ARM_ISA_use),
+      T (Tag_THUMB_ISA_use),
+      T (Tag_VFP_arch),
+      T (Tag_WMMX_arch),
+      T (Tag_Advanced_SIMD_arch),
+      T (Tag_PCS_config),
+      T (Tag_ABI_PCS_R9_use),
+      T (Tag_ABI_PCS_RW_data),
+      T (Tag_ABI_PCS_RO_data),
+      T (Tag_ABI_PCS_GOT_use),
+      T (Tag_ABI_PCS_wchar_t),
+      T (Tag_ABI_FP_rounding),
+      T (Tag_ABI_FP_denormal),
+      T (Tag_ABI_FP_exceptions),
+      T (Tag_ABI_FP_user_exceptions),
+      T (Tag_ABI_FP_number_model),
+      T (Tag_ABI_align8_needed),
+      T (Tag_ABI_align8_preserved),
+      T (Tag_ABI_enum_size),
+      T (Tag_ABI_HardFP_use),
+      T (Tag_ABI_VFP_args),
+      T (Tag_ABI_WMMX_args),
+      T (Tag_ABI_optimization_goals),
+      T (Tag_ABI_FP_optimization_goals),
+      T (Tag_compatibility),
+      T (Tag_CPU_unaligned_access),
+      T (Tag_VFP_HP_extension),
+      T (Tag_ABI_FP_16bit_format),
+      T (Tag_nodefaults),
+      T (Tag_also_compatible_with),
+      T (Tag_conformance),
+      T (Tag_T2EE_use),
+      T (Tag_Virtualization_use),
+      T (Tag_MPextension_use)
+#undef T
+    };
+  unsigned int i;
+
+  if (name == NULL)
+    return -1;
+
+  for (i = 0; i < ARRAY_SIZE (attribute_table); i++)
+    if (strcmp (name, attribute_table[i].name) == 0)
+      return attribute_table[i].tag;
+
+  return -1;
+}
+#endif /* OBJ_ELF */

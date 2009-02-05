@@ -1,6 +1,6 @@
 /* Renesas / SuperH SH specific support for 32-bit ELF
    Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-   2006, 2007 Free Software Foundation, Inc.
+   2006, 2007, 2008 Free Software Foundation, Inc.
    Contributed by Ian Lance Taylor, Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -487,7 +487,7 @@ sh_elf_relax_section (bfd *abfd, asection *sec,
     }
 #endif
 
-  symtab_hdr = &elf_tdata (abfd)->symtab_hdr;
+  symtab_hdr = &elf_symtab_hdr (abfd);
 
   internal_relocs = (_bfd_elf_link_read_relocs
 		     (abfd, sec, NULL, (Elf_Internal_Rela *) NULL,
@@ -852,7 +852,7 @@ sh_elf_relax_delete_bytes (bfd *abfd, asection *sec, bfd_vma addr,
   unsigned int symcount;
   asection *o;
 
-  symtab_hdr = &elf_tdata (abfd)->symtab_hdr;
+  symtab_hdr = &elf_symtab_hdr (abfd);
   isymbuf = (Elf_Internal_Sym *) symtab_hdr->contents;
 
   sec_shndx = _bfd_elf_section_from_bfd_section (abfd, sec);
@@ -2154,20 +2154,19 @@ struct sh_elf_obj_tdata
 #define sh_elf_local_got_tls_type(abfd) \
   (sh_elf_tdata (abfd)->local_got_tls_type)
 
+#define is_sh_elf(bfd) \
+  (bfd_get_flavour (bfd) == bfd_target_elf_flavour \
+   && elf_tdata (bfd) != NULL \
+   && elf_object_id (bfd) == SH_ELF_TDATA)
+
 /* Override the generic function because we need to store sh_elf_obj_tdata
    as the specific tdata.  */
 
 static bfd_boolean
 sh_elf_mkobject (bfd *abfd)
 {
-  if (abfd->tdata.any == NULL)
-    {
-      bfd_size_type amt = sizeof (struct sh_elf_obj_tdata);
-      abfd->tdata.any = bfd_zalloc (abfd, amt);
-      if (abfd->tdata.any == NULL)
-	return FALSE;
-    }
-  return bfd_elf_mkobject (abfd);
+  return bfd_elf_allocate_object (abfd, sizeof (struct sh_elf_obj_tdata),
+				  SH_ELF_TDATA);
 }
 
 /* sh ELF linker hash table.  */
@@ -2818,6 +2817,19 @@ allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
 	    }
 	}
 
+      if (htab->vxworks_p)
+	{
+	  struct elf_sh_dyn_relocs **pp;
+
+	  for (pp = &eh->dyn_relocs; (p = *pp) != NULL; )
+	    {
+	      if (strcmp (p->sec->output_section->name, ".tls_vars") == 0)
+		*pp = p->next;
+	      else
+		pp = &p->next;
+	    }
+	}
+
       /* Also discard relocs on undefined weak syms with non-default
 	 visibility.  */
       if (eh->dyn_relocs != NULL
@@ -2958,7 +2970,7 @@ sh_elf_size_dynamic_sections (bfd *output_bfd ATTRIBUTE_UNUSED,
       Elf_Internal_Shdr *symtab_hdr;
       asection *srel;
 
-      if (bfd_get_flavour (ibfd) != bfd_target_elf_flavour)
+      if (! is_sh_elf (ibfd))
 	continue;
 
       for (s = ibfd->sections; s != NULL; s = s->next)
@@ -2978,6 +2990,13 @@ sh_elf_size_dynamic_sections (bfd *output_bfd ATTRIBUTE_UNUSED,
 		     linker script /DISCARD/, so we'll be discarding
 		     the relocs too.  */
 		}
+	      else if (htab->vxworks_p
+		       && strcmp (p->sec->output_section->name,
+				  ".tls_vars") == 0)
+		{
+		  /* Relocations in vxworks .tls_vars sections are
+		     handled specially by the loader.  */
+		}
 	      else if (p->count != 0)
 		{
 		  srel = elf_section_data (p->sec)->sreloc;
@@ -2992,7 +3011,7 @@ sh_elf_size_dynamic_sections (bfd *output_bfd ATTRIBUTE_UNUSED,
       if (!local_got)
 	continue;
 
-      symtab_hdr = &elf_tdata (ibfd)->symtab_hdr;
+      symtab_hdr = &elf_symtab_hdr (ibfd);
       locsymcount = symtab_hdr->sh_info;
 #ifdef INCLUDE_SHMEDIA
       /* Count datalabel local GOT.  */
@@ -3167,9 +3186,12 @@ sh_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
   asection *splt;
   asection *sreloc;
   asection *srelgot;
+  bfd_boolean is_vxworks_tls;
+
+  BFD_ASSERT (is_sh_elf (input_bfd));
 
   htab = sh_elf_hash_table (info);
-  symtab_hdr = &elf_tdata (input_bfd)->symtab_hdr;
+  symtab_hdr = &elf_symtab_hdr (input_bfd);
   sym_hashes = elf_sym_hashes (input_bfd);
   dynobj = htab->root.dynobj;
   local_got_offsets = elf_local_got_offsets (input_bfd);
@@ -3179,6 +3201,11 @@ sh_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
   splt = htab->splt;
   sreloc = NULL;
   srelgot = NULL;
+  /* We have to handle relocations in vxworks .tls_vars sections
+     specially, because the dynamic loader is 'weird'.  */
+  is_vxworks_tls = (htab->vxworks_p && info->shared
+		    && !strcmp (input_section->output_section->name,
+				".tls_vars"));
 
   rel = relocs;
   relend = relocs + input_section->reloc_count;
@@ -3585,6 +3612,7 @@ sh_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 		  || h->root.type != bfd_link_hash_undefweak)
 	      && r_symndx != 0
 	      && (input_section->flags & SEC_ALLOC) != 0
+	      && !is_vxworks_tls
 	      && (r_type == R_SH_DIR32
 		  || !SYMBOL_CALLS_LOCAL (info, h)))
 	    {
@@ -3598,22 +3626,10 @@ sh_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	      if (sreloc == NULL)
 		{
-		  const char *name;
-
-		  name = (bfd_elf_string_from_elf_section
-			  (input_bfd,
-			   elf_elfheader (input_bfd)->e_shstrndx,
-			   elf_section_data (input_section)->rel_hdr.sh_name));
-		  if (name == NULL)
+		  sreloc = _bfd_elf_get_dynamic_reloc_section
+		    (input_bfd, input_section, /*rela?*/ TRUE);
+		  if (sreloc == NULL)
 		    return FALSE;
-
-		  BFD_ASSERT (CONST_STRNEQ (name, ".rela")
-			      && strcmp (bfd_get_section_name (input_bfd,
-							       input_section),
-					 name + 5) == 0);
-
-		  sreloc = bfd_get_section_by_name (dynobj, name);
-		  BFD_ASSERT (sreloc != NULL);
 		}
 
 	      skip = FALSE;
@@ -4324,22 +4340,10 @@ sh_elf_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 
 	    if (sreloc == NULL)
 	      {
-		const char *name;
-
-		name = (bfd_elf_string_from_elf_section
-			(input_bfd,
-			 elf_elfheader (input_bfd)->e_shstrndx,
-			 elf_section_data (input_section)->rel_hdr.sh_name));
-		if (name == NULL)
+		sreloc = _bfd_elf_get_dynamic_reloc_section
+		  (input_bfd, input_section, /*rela?*/ TRUE);
+		if (sreloc == NULL)
 		  return FALSE;
-
-		BFD_ASSERT (CONST_STRNEQ (name, ".rela")
-			    && strcmp (bfd_get_section_name (input_bfd,
-							     input_section),
-				       name + 5) == 0);
-
-		sreloc = bfd_get_section_by_name (dynobj, name);
-		BFD_ASSERT (sreloc != NULL);
 	      }
 
 	    if (h == NULL || h->dynindx == -1)
@@ -4427,7 +4431,7 @@ sh_elf_get_relocated_section_contents (bfd *output_bfd,
 						       relocatable,
 						       symbols);
 
-  symtab_hdr = &elf_tdata (input_bfd)->symtab_hdr;
+  symtab_hdr = &elf_symtab_hdr (input_bfd);
 
   memcpy (data, elf_section_data (input_section)->this_hdr.contents,
 	  (size_t) input_section->size);
@@ -4564,9 +4568,12 @@ sh_elf_gc_sweep_hook (bfd *abfd, struct bfd_link_info *info,
   bfd_signed_vma *local_got_refcounts;
   const Elf_Internal_Rela *rel, *relend;
 
+  if (info->relocatable)
+    return TRUE;
+
   elf_section_data (sec)->local_dynrel = NULL;
 
-  symtab_hdr = &elf_tdata (abfd)->symtab_hdr;
+  symtab_hdr = &elf_symtab_hdr (abfd);
   sym_hashes = elf_sym_hashes (abfd);
   local_got_refcounts = elf_local_got_refcounts (abfd);
 
@@ -4856,7 +4863,9 @@ sh_elf_check_relocs (bfd *abfd, struct bfd_link_info *info, asection *sec,
   if (info->relocatable)
     return TRUE;
 
-  symtab_hdr = &elf_tdata (abfd)->symtab_hdr;
+  BFD_ASSERT (is_sh_elf (abfd));
+
+  symtab_hdr = &elf_symtab_hdr (abfd);
   sym_hashes = elf_sym_hashes (abfd);
 
   htab = sh_elf_hash_table (info);
@@ -5190,37 +5199,11 @@ sh_elf_check_relocs (bfd *abfd, struct bfd_link_info *info, asection *sec,
 		 section in dynobj and make room for this reloc.  */
 	      if (sreloc == NULL)
 		{
-		  const char *name;
+		  sreloc = _bfd_elf_make_dynamic_reloc_section
+		    (sec, htab->root.dynobj, 2, abfd, /*rela?*/ TRUE);
 
-		  name = (bfd_elf_string_from_elf_section
-			  (abfd,
-			   elf_elfheader (abfd)->e_shstrndx,
-			   elf_section_data (sec)->rel_hdr.sh_name));
-		  if (name == NULL)
-		    return FALSE;
-
-		  BFD_ASSERT (CONST_STRNEQ (name, ".rela")
-			      && strcmp (bfd_get_section_name (abfd, sec),
-					 name + 5) == 0);
-
-		  sreloc = bfd_get_section_by_name (htab->root.dynobj, name);
 		  if (sreloc == NULL)
-		    {
-		      flagword flags;
-
-		      flags = (SEC_HAS_CONTENTS | SEC_READONLY
-			       | SEC_IN_MEMORY | SEC_LINKER_CREATED);
-		      if ((sec->flags & SEC_ALLOC) != 0)
-			flags |= SEC_ALLOC | SEC_LOAD;
-		      sreloc = bfd_make_section_with_flags (htab->root.dynobj,
-							    name,
-							    flags);
-		      if (sreloc == NULL
-			  || ! bfd_set_section_alignment (htab->root.dynobj,
-							  sreloc, 2))
-			return FALSE;
-		    }
-		  elf_section_data (sec)->sreloc = sreloc;
+		    return FALSE;
 		}
 
 	      /* If this is a global symbol, we count the number of
@@ -5355,12 +5338,11 @@ sh_elf_set_private_flags (bfd *abfd, flagword flags)
 static bfd_boolean
 sh_elf_copy_private_data (bfd * ibfd, bfd * obfd)
 {
-  if (   bfd_get_flavour (ibfd) != bfd_target_elf_flavour
-      || bfd_get_flavour (obfd) != bfd_target_elf_flavour)
-    return TRUE;
-
   /* Copy object attributes.  */
   _bfd_elf_copy_obj_attributes (ibfd, obfd);
+
+  if (! is_sh_elf (ibfd) || ! is_sh_elf (obfd))
+    return TRUE;
 
   return sh_elf_set_private_flags (obfd, elf_elfheader (ibfd)->e_flags);
 }
@@ -5388,8 +5370,7 @@ sh_elf_merge_private_data (bfd *ibfd, bfd *obfd)
 {
   extern bfd_boolean sh_merge_bfd_arch (bfd *, bfd *);
 
-  if (   bfd_get_flavour (ibfd) != bfd_target_elf_flavour
-      || bfd_get_flavour (obfd) != bfd_target_elf_flavour)
+  if (! is_sh_elf (ibfd) || ! is_sh_elf (obfd))
     return TRUE;
 
   if (! elf_flags_init (obfd))

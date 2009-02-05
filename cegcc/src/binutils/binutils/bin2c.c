@@ -1,5 +1,5 @@
 /* bin2c.c -- dump binary file in hex format
-   Copyright 2007 Free Software Foundation, Inc.
+   Copyright 2007, 2008 Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
@@ -21,31 +21,6 @@
 #include "sysdep.h"
 #include "bfd.h"
 #include "bucomm.h"
-
-#if !defined O_BINARY && defined _O_BINARY
-  /* For MSC-compatible compilers.  */
-# define O_BINARY _O_BINARY
-# define O_TEXT _O_TEXT
-#endif
-
-#ifdef __BEOS__
-  /* BeOS 5 has O_BINARY and O_TEXT, but they have no effect.  */
-# undef O_BINARY
-# undef O_TEXT
-#endif
-
-#if O_BINARY
-# ifndef __DJGPP__
-#  define setmode _setmode
-#  define fileno(_fp) _fileno (_fp)
-# endif /* not DJGPP */
-# define SET_BINARY(_f) \
-  do { if (!isatty (_f)) setmode (_f, O_BINARY); } while (0)
-#else
-# define SET_BINARY(f) (void) 0
-# define O_BINARY 0
-# define O_TEXT 0
-#endif /* O_BINARY */
 
 int
 main (int argc, char *argv[])

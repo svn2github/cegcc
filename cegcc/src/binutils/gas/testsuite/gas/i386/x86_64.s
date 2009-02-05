@@ -127,10 +127,10 @@ mov symbol(%rip), %eax
 .intel_syntax noprefix
 
 #immediates - various sizes:
-mov al, flat:symbol
-mov ax, flat:symbol
-mov eax, flat:symbol
-mov rax, flat:symbol
+mov al, offset flat:symbol
+mov ax, offset flat:symbol
+mov eax, offset flat:symbol
+mov rax, offset flat:symbol
 
 #parts aren't supported by the parser, yet (and not at all for symbol refs)
 #mov eax, high part symbol
@@ -194,6 +194,12 @@ cmpxchg16b (%rax)
 cmpxchg16b oword ptr [rax]
 
 .att_syntax
+	movsx	%al, %si
+	movsx	%al, %esi
+	movsx	%al, %rsi
+	movsx	%ax, %esi
+	movsx	%ax, %rsi
+	movsx	%eax, %rsi
 	movsx	(%rax), %edx
 	movsx	(%rax), %rdx
 	movsx	(%rax), %dx
@@ -203,6 +209,11 @@ cmpxchg16b oword ptr [rax]
 	movswl	(%rax), %edx
 	movswq	(%rax), %rdx
 
+	movzx	%al, %si
+	movzx	%al, %esi
+	movzx	%al, %rsi
+	movzx	%ax, %esi
+	movzx	%ax, %rsi
 	movzx	(%rax), %edx
 	movzx	(%rax), %rdx
 	movzx	(%rax), %dx
@@ -216,12 +227,23 @@ cmpxchg16b oword ptr [rax]
 	movzwq	(%rax), %rdx
 
 	.intel_syntax noprefix
+	movsx	si,al
+	movsx	esi,al
+	movsx	rsi,al
+	movsx	esi,ax
+	movsx	rsi,ax
+	movsx	rsi,eax
 	movsx	edx,BYTE PTR [rax]
 	movsx	rdx,BYTE PTR [rax]
 	movsx	dx,BYTE PTR [rax]
 	movsx	edx,WORD PTR [rax]
 	movsx	rdx,WORD PTR [rax]
 
+	movzx	si,al
+	movzx	esi,al
+	movzx	rsi,al
+	movzx	esi,ax
+	movzx	rsi,ax
 	movzx	edx,BYTE PTR [rax]
 	movzx	rdx,BYTE PTR [rax]
 	movzx	dx,BYTE PTR [rax]
@@ -233,5 +255,55 @@ cmpxchg16b oword ptr [rax]
 	movq	QWORD PTR [rsp],xmm1
 	movq	[rsp],xmm1
 
-# Get a good alignment.
- .p2align	4,0
+.att_syntax
+	fnstsw
+	fnstsw	%ax
+	fstsw
+	fstsw	%ax
+
+	.intel_syntax noprefix
+	fnstsw
+	fnstsw	ax
+	fstsw
+	fstsw	ax
+
+.att_syntax
+movsx (%rax),%ax
+movsx (%rax),%eax
+movsx (%rax),%rax
+movsxb	(%rax), %dx
+movsxb	(%rax), %edx
+movsxb	(%rax), %rdx
+movsxw	(%rax), %edx
+movsxw	(%rax), %rdx
+movsxl	(%rax), %rdx
+movsxd (%rax),%rax
+movzx (%rax),%ax
+movzx (%rax),%eax
+movzx (%rax),%rax
+movzxb	(%rax), %dx
+movzxb	(%rax), %edx
+movzxb	(%rax), %rdx
+movzxw	(%rax), %edx
+movzxw	(%rax), %rdx
+
+movnti %eax, (%rax)
+movntil %eax, (%rax)
+movnti %rax, (%rax)
+movntiq %rax, (%rax)
+
+.intel_syntax noprefix
+
+movsx ax, BYTE PTR [rax]
+movsx eax, BYTE PTR [rax]
+movsx eax, WORD PTR [rax]
+movsx rax, WORD PTR [rax]
+movsx rax, DWORD PTR [rax]
+movsxd rax, [rax]
+movzx ax, BYTE PTR [rax]
+movzx eax, BYTE PTR [rax]
+movzx eax, WORD PTR [rax]
+movzx rax, WORD PTR [rax]
+
+movnti dword ptr [rax], eax
+movnti qword ptr [rax], rax

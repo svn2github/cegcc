@@ -1,6 +1,6 @@
 /* linker.c -- BFD linker routines
    Copyright 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005, 2006, 2007
+   2003, 2004, 2005, 2006, 2007, 2008
    Free Software Foundation, Inc.
    Written by Steve Chamberlain and Ian Lance Taylor, Cygnus Support
 
@@ -151,9 +151,9 @@ SUBSUBSECTION
 
 	Sometimes the <<_bfd_link_add_symbols>> function must store
 	some information in the hash table entry to be used by the
-	<<_bfd_final_link>> function.  In such a case the <<creator>>
-	field of the hash table must be checked to make sure that the
-	hash table was created by an object file of the same format.
+	<<_bfd_final_link>> function.  In such a case the output bfd
+	xvec must be checked to make sure that the hash table was
+	created by an object file of the same format.
 
 	The <<_bfd_final_link>> routine must be prepared to handle a
 	hash entry without any extra information added by the
@@ -165,7 +165,7 @@ SUBSUBSECTION
 	initialization function.
 
 	See <<ecoff_link_add_externals>> for an example of how to
-	check the <<creator>> field before saving information (in this
+	check the output bfd before saving information (in this
 	case, the ECOFF external symbol debugging information) in a
 	hash table entry.
 
@@ -471,13 +471,12 @@ _bfd_link_hash_newfunc (struct bfd_hash_entry *entry,
 bfd_boolean
 _bfd_link_hash_table_init
   (struct bfd_link_hash_table *table,
-   bfd *abfd,
+   bfd *abfd ATTRIBUTE_UNUSED,
    struct bfd_hash_entry *(*newfunc) (struct bfd_hash_entry *,
 				      struct bfd_hash_table *,
 				      const char *),
    unsigned int entsize)
 {
-  table->creator = abfd->xvec;
   table->undefs = NULL;
   table->undefs_tail = NULL;
   table->type = bfd_link_generic_hash_table;
@@ -738,8 +737,8 @@ _bfd_generic_link_hash_table_free (struct bfd_link_hash_table *hash)
    the hash table pointing to different instances of the symbol
    structure.  */
 
-static bfd_boolean
-generic_link_read_symbols (bfd *abfd)
+bfd_boolean
+bfd_generic_link_read_symbols (bfd *abfd)
 {
   if (bfd_get_outsymbols (abfd) == NULL)
     {
@@ -835,7 +834,7 @@ generic_link_add_object_symbols (bfd *abfd,
   bfd_size_type symcount;
   struct bfd_symbol **outsyms;
 
-  if (! generic_link_read_symbols (abfd))
+  if (!bfd_generic_link_read_symbols (abfd))
     return FALSE;
   symcount = _bfd_generic_link_get_symcount (abfd);
   outsyms = _bfd_generic_link_get_symbols (abfd);
@@ -1165,7 +1164,7 @@ generic_link_check_archive_element (bfd *abfd,
 
   *pneeded = FALSE;
 
-  if (! generic_link_read_symbols (abfd))
+  if (!bfd_generic_link_read_symbols (abfd))
     return FALSE;
 
   pp = _bfd_generic_link_get_symbols (abfd);
@@ -1359,7 +1358,7 @@ generic_link_add_symbol_list (bfd *abfd,
 	     hash table other than the generic hash table, so we only
 	     do this if we are certain that the hash table is a
 	     generic one.  */
-	  if (info->hash->creator == abfd->xvec)
+	  if (info->output_bfd->xvec == abfd->xvec)
 	    {
 	      if (h->sym == NULL
 		  || (! bfd_is_und_section (bfd_get_section (p))
@@ -2160,7 +2159,7 @@ _bfd_generic_link_output_symbols (bfd *output_bfd,
   asymbol **sym_ptr;
   asymbol **sym_end;
 
-  if (! generic_link_read_symbols (input_bfd))
+  if (!bfd_generic_link_read_symbols (input_bfd))
     return FALSE;
 
   /* Create a filename symbol if we are supposed to.  */
@@ -2243,7 +2242,7 @@ _bfd_generic_link_output_symbols (bfd *output_bfd,
 		 this routine will be called with a hash table
 		 other than a generic hash table, so we double
 		 check that.  */
-	      if (info->hash->creator == input_bfd->xvec)
+	      if (info->output_bfd->xvec == input_bfd->xvec)
 		{
 		  if (h->sym != NULL)
 		    *sym_ptr = sym = h->sym;
@@ -2753,7 +2752,7 @@ default_indirect_link_order (bfd *output_bfd,
 	 have retrieved them by this point, but we are being called by
 	 a specific linker, presumably because we are linking
 	 different types of object files together.  */
-      if (! generic_link_read_symbols (input_bfd))
+      if (!bfd_generic_link_read_symbols (input_bfd))
 	return FALSE;
 
       /* Since we have been called by a specific linker, rather than
@@ -2797,18 +2796,36 @@ default_indirect_link_order (bfd *output_bfd,
 	}
     }
 
-  /* Get and relocate the section contents.  */
-  sec_size = (input_section->rawsize > input_section->size
-	      ? input_section->rawsize
-	      : input_section->size);
-  contents = bfd_malloc (sec_size);
-  if (contents == NULL && sec_size != 0)
-    goto error_return;
-  new_contents = (bfd_get_relocated_section_contents
-		  (output_bfd, info, link_order, contents, info->relocatable,
-		   _bfd_generic_link_get_symbols (input_bfd)));
-  if (!new_contents)
-    goto error_return;
+  if ((output_section->flags & (SEC_GROUP | SEC_LINKER_CREATED)) == SEC_GROUP
+      && input_section->size != 0)
+    {
+      /* Group section contents are set by bfd_elf_set_group_contents.  */
+      if (!output_bfd->output_has_begun)
+	{
+	  /* FIXME: This hack ensures bfd_elf_set_group_contents is called.  */
+	  if (!bfd_set_section_contents (output_bfd, output_section, "", 0, 1))
+	    goto error_return;
+	}
+      new_contents = output_section->contents;
+      BFD_ASSERT (new_contents != NULL);
+      BFD_ASSERT (input_section->output_offset == 0);
+    }
+  else
+    {
+      /* Get and relocate the section contents.  */
+      sec_size = (input_section->rawsize > input_section->size
+		  ? input_section->rawsize
+		  : input_section->size);
+      contents = bfd_malloc (sec_size);
+      if (contents == NULL && sec_size != 0)
+	goto error_return;
+      new_contents = (bfd_get_relocated_section_contents
+		      (output_bfd, info, link_order, contents,
+		       info->relocatable,
+		       _bfd_generic_link_get_symbols (input_bfd)));
+      if (!new_contents)
+	goto error_return;
+    }
 
   /* Output the section contents.  */
   loc = input_section->output_offset * bfd_octets_per_byte (output_bfd);

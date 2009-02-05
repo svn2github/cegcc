@@ -319,6 +319,8 @@ enum demangle_component_type
      and the right subtree is the member type.  CV-qualifiers appear
      on the latter.  */
   DEMANGLE_COMPONENT_PTRMEM_TYPE,
+  /* A fixed-point type.  */
+  DEMANGLE_COMPONENT_FIXED_TYPE,
   /* An argument list.  The left subtree is the current argument, and
      the right subtree is either NULL or another ARGLIST node.  */
   DEMANGLE_COMPONENT_ARGLIST,
@@ -362,7 +364,19 @@ enum demangle_component_type
      using 'n' instead of '-', we want a way to indicate a negative
      number which involves neither modifying the mangled string nor
      allocating a new copy of the literal in memory.  */
-  DEMANGLE_COMPONENT_LITERAL_NEG
+  DEMANGLE_COMPONENT_LITERAL_NEG,
+  /* A libgcj compiled resource.  The left subtree is the name of the
+     resource.  */
+  DEMANGLE_COMPONENT_JAVA_RESOURCE,
+  /* A name formed by the concatenation of two parts.  The left
+     subtree is the first part and the right subtree the second.  */
+  DEMANGLE_COMPONENT_COMPOUND_NAME,
+  /* A name formed by a single character.  */
+  DEMANGLE_COMPONENT_CHARACTER,
+  /* A decltype type.  */
+  DEMANGLE_COMPONENT_DECLTYPE,
+  /* A pack expansion.  */
+  DEMANGLE_COMPONENT_PACK_EXPANSION
 };
 
 /* Types which are only used internally.  */
@@ -407,6 +421,17 @@ struct demangle_component
       struct demangle_component *name;
     } s_extended_operator;
 
+    /* For DEMANGLE_COMPONENT_FIXED_TYPE.  */
+    struct
+    {
+      /* The length, indicated by a C integer type name.  */
+      struct demangle_component *length;
+      /* _Accum or _Fract?  */
+      short accum;
+      /* Saturating or not?  */
+      short sat;
+    } s_fixed;
+
     /* For DEMANGLE_COMPONENT_CTOR.  */
     struct
     {
@@ -447,6 +472,12 @@ struct demangle_component
       /* Template parameter index.  */
       long number;
     } s_number;
+
+    /* For DEMANGLE_COMPONENT_CHARACTER.  */
+    struct
+    {
+      int character;
+    } s_character;
 
     /* For other types.  */
     struct

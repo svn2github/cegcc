@@ -1,6 +1,6 @@
 /* tc-hppa.h -- Header file for the PA
    Copyright 1989, 1993, 1994, 1995, 1997, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
+   2003, 2004, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -146,14 +146,23 @@ int hppa_fix_adjustable (struct fix *);
    two symbols.  This includes the difference of two symbols when
    one of them is undefined (this comes up in PIC code generation).
 
-   We don't define DIFF_EXPR_OK because it does the wrong thing if
-   the add symbol is undefined and the sub symbol is a symbol in
-   the same section as the relocation.  We also need some way to
-   specialize some code in adjust_reloc_syms.  */
+   We allow the difference of two symbols when the subtract symbol is
+   local to the relocation.  This is implemented using R_HPPA_COMPLEX.
+
+   This has some limitations.  Difference expressions only work between
+   symbols in the same segment/quadrant of a module since the HP dynamic
+   loader relocates the text and data segments independently.  Thus, a
+   difference expression can't be used between text and data symbols,
+   or between symbols in different executable modules.  */
+#define DIFF_EXPR_OK 1
+#define TC_FORCE_RELOCATION_SUB_LOCAL(FIX, SEG) 1
 #define UNDEFINED_DIFFERENCE_OK
 #endif
 
 #ifdef OBJ_ELF
+
+/* Difference expressions for the 64-bit HP-UX target have the same
+   limitations as those for the 32-bit SOM target.  */
 #define DIFF_EXPR_OK 1
 
 /* Handle .type psuedo.  Given a type string of `millicode', set the
@@ -175,6 +184,7 @@ int hppa_fix_adjustable (struct fix *);
 	|| (S_GET_SEGMENT (sym) == &bfd_abs_section \
 	    && ! S_IS_EXTERNAL (sym)) \
 	|| strcmp (S_GET_NAME (sym), "$global$") == 0 \
+	|| strcmp (S_GET_NAME (sym), "$segrel$") == 0 \
 	|| strcmp (S_GET_NAME (sym), "$PIC_pcrel$0") == 0 \
 	|| strcmp (S_GET_NAME (sym), "$tls_gdidx$") == 0 \
 	|| strcmp (S_GET_NAME (sym), "$tls_ldidx$") == 0 \
@@ -186,8 +196,6 @@ int hppa_fix_adjustable (struct fix *);
 
 #define elf_tc_final_processing	elf_hppa_final_processing
 void elf_hppa_final_processing (void);
-
-#define DWARF2_LINE_MIN_INSN_LENGTH 4
 #endif /* OBJ_ELF */
 
 #define md_operand(x)
@@ -198,7 +206,7 @@ void elf_hppa_final_processing (void);
 
 int hppa_force_reg_syms_absolute (expressionS *, operatorT, expressionS *);
 
-#define TC_FIX_TYPE PTR
+#define TC_FIX_TYPE void *
 #define TC_INIT_FIX_DATA(FIX) ((FIX)->tc_fix_data = NULL)
 
 #ifdef OBJ_ELF
@@ -213,10 +221,21 @@ extern int hppa_regname_to_dw2regnum (char *regname);
 #define DWARF2_LINE_MIN_INSN_LENGTH 4
 #define DWARF2_DEFAULT_RETURN_COLUMN 2
 #if TARGET_ARCH_SIZE == 64
-#define DWARF2_CIE_DATA_ALIGNMENT (-8)
+#define DWARF2_CIE_DATA_ALIGNMENT 8
+#define DWARF2_FDE_RELOC_SIZE 8
 #else
-#define DWARF2_CIE_DATA_ALIGNMENT (-4)
-#endif
+#define DWARF2_CIE_DATA_ALIGNMENT 4
 #endif
 
+#if !defined (TE_LINUX) && !defined (TE_NetBSD)
+/* Due to the way dynamic linking to personality functions is handled
+   on HP-UX, we need to have a read-write .eh_frame section.  */
+#define DWARF2_EH_FRAME_READ_ONLY 0
+
+/* Because differences between text and data symbols don't work, we
+   can't use difference expressions during CFI generation.  */
+#define CFI_DIFF_EXPR_OK 0
+#endif
+
+#endif /* OBJ_ELF */
 #endif /* _TC_HPPA_H */

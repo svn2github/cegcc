@@ -2,6 +2,7 @@ deffile.h
 elf-hints-local.h
 emultempl/armcoff.em
 emultempl/pe.em
+ld.h
 ldcref.c
 ldctor.c
 ldctor.h
@@ -11,7 +12,6 @@ ldexp.c
 ldexp.h
 ldfile.c
 ldfile.h
-ld.h
 ldlang.c
 ldlang.h
 ldlex.h
@@ -30,5 +30,3 @@ pe-dll.c
 pe-dll.h
 pep-dll.c
 pep-dll.h
-sha1.c
-sha1.h

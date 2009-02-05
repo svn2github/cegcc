@@ -1,6 +1,6 @@
 /* MIPS ELF support for BFD.
    Copyright 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005
+   2003, 2004, 2005, 2008
    Free Software Foundation, Inc.
 
    By Ian Lance Taylor, Cygnus Support, <ian@cygnus.com>, from
@@ -213,6 +213,8 @@ END_RELOC_NUMBERS (R_MIPS_maxext)
 #define E_MIPS_MACH_4120	0x00870000
 #define E_MIPS_MACH_4111	0x00880000
 #define E_MIPS_MACH_SB1         0x008a0000
+#define E_MIPS_MACH_OCTEON	0x008b0000
+#define E_MIPS_MACH_XLR     	0x008c0000
 #define E_MIPS_MACH_5400	0x00910000
 #define E_MIPS_MACH_5500	0x00980000
 #define E_MIPS_MACH_9000	0x00990000
@@ -225,21 +227,21 @@ END_RELOC_NUMBERS (R_MIPS_maxext)
 
 /* Defined and allocated common symbol.  Value is virtual address.  If
    relocated, alignment must be preserved.  */
-#define SHN_MIPS_ACOMMON	0xff00
+#define SHN_MIPS_ACOMMON	SHN_LORESERVE
 
 /* Defined and allocated text symbol.  Value is virtual address.
    Occur in the dynamic symbol table of Alpha OSF/1 and Irix 5 executables.  */
-#define SHN_MIPS_TEXT		0xff01
+#define SHN_MIPS_TEXT		(SHN_LORESERVE + 1)
 
 /* Defined and allocated data symbol.  Value is virtual address.
    Occur in the dynamic symbol table of Alpha OSF/1 and Irix 5 executables.  */
-#define SHN_MIPS_DATA		0xff02
+#define SHN_MIPS_DATA		(SHN_LORESERVE + 2)
 
 /* Small common symbol.  */
-#define SHN_MIPS_SCOMMON	0xff03
+#define SHN_MIPS_SCOMMON	(SHN_LORESERVE + 3)
 
 /* Small undefined symbol.  */
-#define SHN_MIPS_SUNDEFINED	0xff04
+#define SHN_MIPS_SUNDEFINED	(SHN_LORESERVE + 4)
 
 /* Processor specific section types.  */
 
@@ -661,6 +663,12 @@ extern void bfd_mips_elf32_swap_reginfo_out
 
 /* Address of auxiliary .dynamic.  */
 #define DT_MIPS_AUX_DYNAMIC	0x70000031
+
+/* Address of the base of the PLTGOT.  */
+#define DT_MIPS_PLTGOT         0x70000032
+
+/* Points to the base of a writable PLT.  */
+#define DT_MIPS_RWPLT          0x70000034
 
 /* Flags which may appear in a DT_MIPS_FLAGS entry.  */
 
@@ -722,8 +730,24 @@ extern void bfd_mips_elf32_swap_reginfo_out
 #define STO_HIDDEN		STV_HIDDEN
 #define STO_PROTECTED		STV_PROTECTED
 
+/* The MIPS psABI was updated in 2008 with support for PLTs and copy
+   relocs.  There are therefore two types of nonzero SHN_UNDEF functions:
+   PLT entries and traditional MIPS lazy binding stubs.  We mark the former
+   with STO_MIPS_PLT to distinguish them from the latter.  */
+#define STO_MIPS_PLT		0x8
+
+/* This value is used to mark PIC functions in an object that mixes
+   PIC and non-PIC.  */
+#define STO_MIPS_PIC		0x20
+#define ELF_ST_IS_MIPS_PIC(OTHER) \
+  (((OTHER) & ~ELF_ST_VISIBILITY (-1)) == STO_MIPS_PIC)
+#define ELF_ST_SET_MIPS_PIC(OTHER) \
+  (STO_MIPS_PIC | ELF_ST_VISIBILITY (OTHER))
+
 /* This value is used for a mips16 .text symbol.  */
 #define STO_MIPS16		0xf0
+#define ELF_ST_IS_MIPS16(OTHER) (((OTHER) & 0xf0) == STO_MIPS16)
+#define ELF_ST_SET_MIPS16(OTHER) (((OTHER) & ~0xf0) | STO_MIPS16)
 
 /* This bit is used on Irix to indicate a symbol whose definition
    is optional - if, at final link time, it cannot be found, no

@@ -1503,11 +1503,35 @@ static reloc_howto_type mips16_elf64_howto_table_rel[] =
 	 0x0000ffff,	        /* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
-  /* A placeholder for MIPS16 reference to global offset table.  */
-  EMPTY_HOWTO (R_MIPS16_GOT16),
+  /* A MIPS16 reference to the global offset table.  */
+  HOWTO (R_MIPS16_GOT16,	/* type */
+	 0,			/* rightshift */
+	 2,			/* size (0 = byte, 1 = short, 2 = long) */
+	 16,			/* bitsize */
+	 FALSE,			/* pc_relative */
+	 0,			/* bitpos */
+	 complain_overflow_dont, /* complain_on_overflow */
+	 _bfd_mips_elf_got16_reloc, /* special_function */
+	 "R_MIPS16_GOT16",	/* name */
+	 TRUE,			/* partial_inplace */
+	 0x0000ffff,		/* src_mask */
+	 0x0000ffff,	        /* dst_mask */
+	 FALSE),		/* pcrel_offset */
 
-  /* A placeholder for MIPS16 16 bit call through global offset table.  */
-  EMPTY_HOWTO (R_MIPS16_CALL16),
+  /* A MIPS16 call through the global offset table.  */
+  HOWTO (R_MIPS16_CALL16,	/* type */
+	 0,			/* rightshift */
+	 2,			/* size (0 = byte, 1 = short, 2 = long) */
+	 16,			/* bitsize */
+	 FALSE,			/* pc_relative */
+	 0,			/* bitpos */
+	 complain_overflow_dont, /* complain_on_overflow */
+	 _bfd_mips_elf_generic_reloc, /* special_function */
+	 "R_MIPS16_CALL16",	/* name */
+	 TRUE,			/* partial_inplace */
+	 0x0000ffff,		/* src_mask */
+	 0x0000ffff,	        /* dst_mask */
+	 FALSE),		/* pcrel_offset */
 
   /* MIPS16 high 16 bits of symbol value.  */
   HOWTO (R_MIPS16_HI16,		/* type */
@@ -1575,11 +1599,35 @@ static reloc_howto_type mips16_elf64_howto_table_rela[] =
 	 0x0000ffff,	        /* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
-  /* A placeholder for MIPS16 reference to global offset table.  */
-  EMPTY_HOWTO (R_MIPS16_GOT16),
+  /* A MIPS16 reference to the global offset table.  */
+  HOWTO (R_MIPS16_GOT16,	/* type */
+	 0,			/* rightshift */
+	 2,			/* size (0 = byte, 1 = short, 2 = long) */
+	 16,			/* bitsize */
+	 FALSE,			/* pc_relative */
+	 0,			/* bitpos */
+	 complain_overflow_dont, /* complain_on_overflow */
+	 _bfd_mips_elf_got16_reloc, /* special_function */
+	 "R_MIPS16_GOT16",	/* name */
+	 FALSE,			/* partial_inplace */
+	 0x0000ffff,		/* src_mask */
+	 0x0000ffff,	        /* dst_mask */
+	 FALSE),		/* pcrel_offset */
 
-  /* A placeholder for MIPS16 16 bit call through global offset table.  */
-  EMPTY_HOWTO (R_MIPS16_CALL16),
+  /* A MIPS16 call through the global offset table.  */
+  HOWTO (R_MIPS16_CALL16,	/* type */
+	 0,			/* rightshift */
+	 2,			/* size (0 = byte, 1 = short, 2 = long) */
+	 16,			/* bitsize */
+	 FALSE,			/* pc_relative */
+	 0,			/* bitpos */
+	 complain_overflow_dont, /* complain_on_overflow */
+	 _bfd_mips_elf_generic_reloc, /* special_function */
+	 "R_MIPS16_CALL16",	/* name */
+	 FALSE,			/* partial_inplace */
+	 0x0000ffff,		/* src_mask */
+	 0x0000ffff,	        /* dst_mask */
+	 FALSE),		/* pcrel_offset */
 
   /* MIPS16 high 16 bits of symbol value.  */
   HOWTO (R_MIPS16_HI16,		/* type */
@@ -1675,6 +1723,38 @@ static reloc_howto_type elf_mips_gnu_rela16_s2 =
 	 0,			/* src_mask */
 	 0x0000ffff,		/* dst_mask */
 	 TRUE);			/* pcrel_offset */
+
+/* Originally a VxWorks extension, but now used for other systems too.  */
+static reloc_howto_type elf_mips_copy_howto =
+  HOWTO (R_MIPS_COPY,		/* type */
+	 0,			/* rightshift */
+	 0,			/* this one is variable size */
+	 0,			/* bitsize */
+	 FALSE,			/* pc_relative */
+	 0,			/* bitpos */
+	 complain_overflow_bitfield, /* complain_on_overflow */
+	 bfd_elf_generic_reloc,	/* special_function */
+	 "R_MIPS_COPY",		/* name */
+	 FALSE,			/* partial_inplace */
+	 0x0,         		/* src_mask */
+	 0x0,		        /* dst_mask */
+	 FALSE);		/* pcrel_offset */
+
+/* Originally a VxWorks extension, but now used for other systems too.  */
+static reloc_howto_type elf_mips_jump_slot_howto =
+  HOWTO (R_MIPS_JUMP_SLOT,	/* type */
+	 0,			/* rightshift */
+	 4,			/* size (0 = byte, 1 = short, 2 = long) */
+	 64,			/* bitsize */
+	 FALSE,			/* pc_relative */
+	 0,			/* bitpos */
+	 complain_overflow_bitfield, /* complain_on_overflow */
+	 bfd_elf_generic_reloc,	/* special_function */
+	 "R_MIPS_JUMP_SLOT",	/* name */
+	 FALSE,			/* partial_inplace */
+	 0x0,         		/* src_mask */
+	 0x0,		        /* dst_mask */
+	 FALSE);		/* pcrel_offset */
 
 /* Swap in a MIPS 64-bit Rel reloc.  */
 
@@ -2197,6 +2277,8 @@ static const struct elf_reloc_map mips16_reloc_map[] =
 {
   { BFD_RELOC_MIPS16_JMP, R_MIPS16_26 - R_MIPS16_min },
   { BFD_RELOC_MIPS16_GPREL, R_MIPS16_GPREL - R_MIPS16_min },
+  { BFD_RELOC_MIPS16_GOT16, R_MIPS16_GOT16 - R_MIPS16_min },
+  { BFD_RELOC_MIPS16_CALL16, R_MIPS16_CALL16 - R_MIPS16_min },
   { BFD_RELOC_MIPS16_HI16_S, R_MIPS16_HI16 - R_MIPS16_min },
   { BFD_RELOC_MIPS16_LO16, R_MIPS16_LO16 - R_MIPS16_min },
 };
@@ -2233,6 +2315,10 @@ bfd_elf64_bfd_reloc_type_lookup (bfd *abfd ATTRIBUTE_UNUSED,
       return &elf_mips_gnu_vtinherit_howto;
     case BFD_RELOC_VTABLE_ENTRY:
       return &elf_mips_gnu_vtentry_howto;
+    case BFD_RELOC_MIPS_COPY:
+      return &elf_mips_copy_howto;
+    case BFD_RELOC_MIPS_JUMP_SLOT:
+      return &elf_mips_jump_slot_howto;
     default:
       bfd_set_error (bfd_error_bad_value);
       return NULL;
@@ -2268,6 +2354,10 @@ bfd_elf64_bfd_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
     return &elf_mips_gnu_rel16_s2;
   if (strcasecmp (elf_mips_gnu_rela16_s2.name, r_name) == 0)
     return &elf_mips_gnu_rela16_s2;
+  if (strcasecmp (elf_mips_copy_howto.name, r_name) == 0)
+    return &elf_mips_copy_howto;
+  if (strcasecmp (elf_mips_jump_slot_howto.name, r_name) == 0)
+    return &elf_mips_jump_slot_howto;
 
   return NULL;
 }
@@ -2288,6 +2378,10 @@ mips_elf64_rtype_to_howto (unsigned int r_type, bfd_boolean rela_p)
 	return &elf_mips_gnu_rela16_s2;
       else
 	return &elf_mips_gnu_rel16_s2;
+    case R_MIPS_COPY:
+      return &elf_mips_copy_howto;
+    case R_MIPS_JUMP_SLOT:
+      return &elf_mips_jump_slot_howto;
     default:
       if (r_type >= R_MIPS16_min && r_type < R_MIPS16_max)
 	{
@@ -3107,6 +3201,7 @@ const struct elf_size_info mips_elf64_size_info =
 #define elf_backend_check_relocs	_bfd_mips_elf_check_relocs
 #define elf_backend_merge_symbol_attribute \
 				_bfd_mips_elf_merge_symbol_attribute
+#define elf_backend_get_target_dtag	_bfd_mips_elf_get_target_dtag
 #define elf_backend_adjust_dynamic_symbol \
 				_bfd_mips_elf_adjust_dynamic_symbol
 #define elf_backend_always_size_sections \
@@ -3128,7 +3223,6 @@ const struct elf_size_info mips_elf64_size_info =
 #define elf_backend_gc_sweep_hook	_bfd_mips_elf_gc_sweep_hook
 #define elf_backend_copy_indirect_symbol \
 					_bfd_mips_elf_copy_indirect_symbol
-#define elf_backend_hide_symbol		_bfd_mips_elf_hide_symbol
 #define elf_backend_ignore_discarded_relocs \
 					_bfd_mips_elf_ignore_discarded_relocs
 #define elf_backend_mips_irix_compat	elf64_mips_irix_compat
@@ -3146,6 +3240,9 @@ const struct elf_size_info mips_elf64_size_info =
 #define elf_backend_may_use_rel_p	1
 #define elf_backend_may_use_rela_p	1
 #define elf_backend_default_use_rela_p	1
+#define elf_backend_rela_plts_and_copies_p 0
+#define elf_backend_plt_readonly	1
+#define elf_backend_plt_sym_val		_bfd_mips_elf_plt_sym_val
 
 #define elf_backend_sign_extend_vma	TRUE
 
@@ -3160,6 +3257,7 @@ const struct elf_size_info mips_elf64_size_info =
 #define bfd_elf64_set_section_contents	_bfd_mips_elf_set_section_contents
 #define bfd_elf64_bfd_get_relocated_section_contents \
 				_bfd_elf_mips_get_relocated_section_contents
+#define bfd_elf64_mkobject		_bfd_mips_elf_mkobject
 #define bfd_elf64_bfd_link_hash_table_create \
 				_bfd_mips_elf_link_hash_table_create
 #define bfd_elf64_bfd_final_link	_bfd_mips_elf_final_link

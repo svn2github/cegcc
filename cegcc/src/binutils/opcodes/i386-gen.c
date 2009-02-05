@@ -1,4 +1,5 @@
-/* Copyright 2007, 2008  Free Software Foundation, Inc.
+/* Copyright 2007, 2008, 2009
+   Free Software Foundation, Inc.
 
    This file is part of the GNU opcodes library.
 
@@ -22,6 +23,7 @@
 #include <errno.h>
 #include "getopt.h"
 #include "libiberty.h"
+#include "hashtab.h"
 #include "safe-ctype.h"
 
 #include "i386-opc.h"
@@ -38,14 +40,14 @@ typedef struct initializer
   const char *init;
 } initializer;
 
-static initializer cpu_flag_init [] =
+static initializer cpu_flag_init[] =
 {
   { "CPU_UNKNOWN_FLAGS",
     "unknown" },
   { "CPU_GENERIC32_FLAGS",
     "Cpu186|Cpu286|Cpu386" },
   { "CPU_GENERIC64_FLAGS", 
-    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuP4|CpuMMX|CpuMMX2|CpuSSE|CpuSSE2" },
+    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuClflush|CpuMMX|CpuSSE|CpuSSE2|CpuLM" },
   { "CPU_NONE_FLAGS",
    "0" },
   { "CPU_I186_FLAGS",
@@ -63,56 +65,82 @@ static initializer cpu_flag_init [] =
   { "CPU_P2_FLAGS",
     "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuMMX" },
   { "CPU_P3_FLAGS",
-    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuMMX|CpuMMX2|CpuSSE" },
+    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuMMX|CpuSSE" },
   { "CPU_P4_FLAGS",
-    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuP4|CpuMMX|CpuMMX2|CpuSSE|CpuSSE2" },
+    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuClflush|CpuMMX|CpuSSE|CpuSSE2" },
   { "CPU_NOCONA_FLAGS",
-    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuP4|CpuMMX|CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3|CpuLM" },
+    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuClflush|CpuMMX|CpuSSE|CpuSSE2|CpuSSE3|CpuLM" },
   { "CPU_CORE_FLAGS",
-    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuP4|CpuMMX|CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3" },
+    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuClflush|CpuMMX|CpuSSE|CpuSSE2|CpuSSE3" },
   { "CPU_CORE2_FLAGS",
-    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuP4|CpuMMX|CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3|CpuLM" },
+    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuClflush|CpuMMX|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3|CpuLM" },
+  { "CPU_COREI7_FLAGS",
+    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuClflush|CpuMMX|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3|CpuSSE4_1|CpuSSE4_2|CpuRdtscp|CpuLM" },
   { "CPU_K6_FLAGS",
-    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|CpuK6|CpuMMX" },
+    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|CpuSYSCALL|CpuMMX" },
   { "CPU_K6_2_FLAGS",
-    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|CpuK6|CpuMMX|Cpu3dnow" },
+    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|CpuSYSCALL|CpuMMX|Cpu3dnow" },
   { "CPU_ATHLON_FLAGS",
-    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuK6|CpuMMX|CpuMMX2|Cpu3dnow|Cpu3dnowA" },
+    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuSYSCALL|CpuMMX|Cpu3dnow|Cpu3dnowA" },
   { "CPU_K8_FLAGS",
-    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuK6|CpuK8|CpuMMX|CpuMMX2|Cpu3dnow|Cpu3dnowA|CpuSSE|CpuSSE2|CpuLM" },
+    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuSYSCALL|CpuRdtscp|CpuMMX|Cpu3dnow|Cpu3dnowA|CpuSSE|CpuSSE2|CpuLM" },
   { "CPU_AMDFAM10_FLAGS",
-    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuK6|CpuK8|CpuMMX|CpuMMX2|Cpu3dnow|Cpu3dnowA|CpuSSE|CpuSSE2|CpuSSE3|CpuSSE4a|CpuABM|CpuLM" },
+    "Cpu186|Cpu286|Cpu386|Cpu486|Cpu586|Cpu686|CpuSYSCALL|CpuRdtscp|CpuMMX|Cpu3dnow|Cpu3dnowA|CpuSSE|CpuSSE2|CpuSSE3|CpuSSE4a|CpuABM|CpuLM" },
+  { "CPU_CLFLUSH_FLAGS",
+    "CpuClflush" },
+  { "CPU_SYSCALL_FLAGS",
+    "CpuSYSCALL" },
   { "CPU_MMX_FLAGS",
     "CpuMMX" },
   { "CPU_SSE_FLAGS",
-    "CpuMMX|CpuMMX2|CpuSSE" },
+    "CpuMMX|CpuSSE" },
   { "CPU_SSE2_FLAGS",
-    "CpuMMX|CpuMMX2|CpuSSE|CpuSSE2" },
+    "CpuMMX|CpuSSE|CpuSSE2" },
   { "CPU_SSE3_FLAGS",
-    "CpuMMX|CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3" },
+    "CpuMMX|CpuSSE|CpuSSE2|CpuSSE3" },
   { "CPU_SSSE3_FLAGS",
-    "CpuMMX|CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3" },
+    "CpuMMX|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3" },
   { "CPU_SSE4_1_FLAGS",
-    "CpuMMX|CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3|CpuSSE4_1" },
+    "CpuMMX|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3|CpuSSE4_1" },
   { "CPU_SSE4_2_FLAGS",
-    "CpuMMX|CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3|CpuSSE4_1|CpuSSE4_2" },
+    "CpuMMX|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3|CpuSSE4_1|CpuSSE4_2" },
+  { "CPU_VMX_FLAGS",
+    "CpuVMX" },
+  { "CPU_SMX_FLAGS",
+    "CpuSMX" },
+  { "CPU_XSAVE_FLAGS",
+    "CpuXsave" },
+  { "CPU_AES_FLAGS",
+    "CpuMMX|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3|CpuSSE4_1|CpuSSE4_2|CpuAES" },
+  { "CPU_PCLMUL_FLAGS",
+    "CpuMMX|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3|CpuSSE4_1|CpuSSE4_2|CpuPCLMUL" },
+  { "CPU_FMA_FLAGS",
+    "CpuMMX|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3|CpuSSE4_1|CpuSSE4_2|CpuAVX|CpuFMA" },
+  { "CPU_MOVBE_FLAGS",
+    "CpuMovbe" },
+  { "CPU_RDTSCP_FLAGS",
+    "CpuRdtscp" },
+  { "CPU_EPT_FLAGS",
+    "CpuEPT" },
   { "CPU_3DNOW_FLAGS",
     "CpuMMX|Cpu3dnow" },
   { "CPU_3DNOWA_FLAGS",
-    "CpuMMX|CpuMMX2|Cpu3dnow|Cpu3dnowA" },
+    "CpuMMX|Cpu3dnow|Cpu3dnowA" },
   { "CPU_PADLOCK_FLAGS",
     "CpuPadLock" },
   { "CPU_SVME_FLAGS",
     "CpuSVME" },
   { "CPU_SSE4A_FLAGS",
-    "CpuMMX|CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3|CpuSSE4a" },
+    "CpuMMX|CpuSSE|CpuSSE2|CpuSSE3|CpuSSE4a" },
   { "CPU_ABM_FLAGS",
     "CpuABM" },
   { "CPU_SSE5_FLAGS",
-    "CpuMMX|CpuMMX2|CpuSSE|CpuSSE2|CpuSSE3|CpuSSE4a|CpuABM|CpuSSE5"},
+    "CpuMMX|CpuSSE|CpuSSE2|CpuSSE3|CpuSSE4a|CpuABM|CpuSSE5"},
+  { "CPU_AVX_FLAGS",
+    "CpuMMX|CpuSSE|CpuSSE2|CpuSSE3|CpuSSSE3|CpuSSE4_1|CpuSSE4_2|CpuAVX" },
 };
 
-static initializer operand_type_init [] =
+static initializer operand_type_init[] =
 {
   { "OPERAND_TYPE_NONE",
     "0" },
@@ -176,12 +204,16 @@ static initializer operand_type_init [] =
     "RegMMX" },
   { "OPERAND_TYPE_REGXMM",
     "RegXMM" },
+  { "OPERAND_TYPE_REGYMM",
+    "RegYMM" },
   { "OPERAND_TYPE_ESSEG",
     "EsSeg" },
   { "OPERAND_TYPE_ACC32",
-    "Reg32|Acc" },
+    "Reg32|Acc|Dword" },
   { "OPERAND_TYPE_ACC64",
-    "Reg64|Acc" },
+    "Reg64|Acc|Qword" },
+  { "OPERAND_TYPE_INOUTPORTREG",
+    "InOutPortReg" },
   { "OPERAND_TYPE_REG16_INOUTPORTREG",
     "Reg16|InOutPortReg" },
   { "OPERAND_TYPE_DISP16_32",
@@ -202,6 +234,8 @@ static initializer operand_type_init [] =
     "Imm32|Imm32S|Imm64|Disp32" },
   { "OPERAND_TYPE_IMM32_32S_64_DISP32_64",
     "Imm32|Imm32S|Imm64|Disp32|Disp64" },
+  { "OPERAND_TYPE_VEX_IMM4",
+    "VEX_Imm4" },
 };
 
 typedef struct bitfield
@@ -221,17 +255,16 @@ static bitfield cpu_flags[] =
   BITFIELD (Cpu486),
   BITFIELD (Cpu586),
   BITFIELD (Cpu686),
-  BITFIELD (CpuP4),
-  BITFIELD (CpuK6),
-  BITFIELD (CpuK8),
+  BITFIELD (CpuClflush),
+  BITFIELD (CpuSYSCALL),
   BITFIELD (CpuMMX),
-  BITFIELD (CpuMMX2),
   BITFIELD (CpuSSE),
   BITFIELD (CpuSSE2),
   BITFIELD (CpuSSE3),
   BITFIELD (CpuSSSE3),
   BITFIELD (CpuSSE4_1),
   BITFIELD (CpuSSE4_2),
+  BITFIELD (CpuAVX),
   BITFIELD (CpuSSE4a),
   BITFIELD (CpuSSE5),
   BITFIELD (Cpu3dnow),
@@ -241,7 +274,14 @@ static bitfield cpu_flags[] =
   BITFIELD (CpuVMX),
   BITFIELD (CpuSMX),
   BITFIELD (CpuABM),
+  BITFIELD (CpuXsave),
+  BITFIELD (CpuAES),
+  BITFIELD (CpuPCLMUL),
+  BITFIELD (CpuFMA),
   BITFIELD (CpuLM),
+  BITFIELD (CpuMovbe),
+  BITFIELD (CpuEPT),
+  BITFIELD (CpuRdtscp),
   BITFIELD (Cpu64),
   BITFIELD (CpuNo64),
 #ifdef CpuUnused
@@ -253,6 +293,7 @@ static bitfield opcode_modifiers[] =
 {
   BITFIELD (D),
   BITFIELD (W),
+  BITFIELD (S),
   BITFIELD (Modrm),
   BITFIELD (ShortForm),
   BITFIELD (Jump),
@@ -273,16 +314,11 @@ static bitfield opcode_modifiers[] =
   BITFIELD (No_sSuf),
   BITFIELD (No_qSuf),
   BITFIELD (No_ldSuf),
-  BITFIELD (CheckSize),
-  BITFIELD (Byte),
-  BITFIELD (Word),
-  BITFIELD (Dword),
-  BITFIELD (Qword),
-  BITFIELD (Xmmword),
   BITFIELD (FWait),
   BITFIELD (IsString),
   BITFIELD (RegKludge),
   BITFIELD (FirstXmm0),
+  BITFIELD (Implicit1stXmm0),
   BITFIELD (ByteOkIntel),
   BITFIELD (ToDword),
   BITFIELD (ToQword),
@@ -295,9 +331,23 @@ static bitfield opcode_modifiers[] =
   BITFIELD (Drex),
   BITFIELD (Drexv),
   BITFIELD (Drexc),
+  BITFIELD (Vex),
+  BITFIELD (Vex256),
+  BITFIELD (VexNDS),
+  BITFIELD (VexNDD),
+  BITFIELD (VexW0),
+  BITFIELD (VexW1),
+  BITFIELD (Vex0F),
+  BITFIELD (Vex0F38),
+  BITFIELD (Vex0F3A),
+  BITFIELD (Vex3Sources),
+  BITFIELD (VexImmExt),
+  BITFIELD (SSE2AVX),
+  BITFIELD (NoAVX),
   BITFIELD (OldGcc),
   BITFIELD (ATTMnemonic),
   BITFIELD (ATTSyntax),
+  BITFIELD (IntelSyntax),
 };
 
 static bitfield operand_types[] =
@@ -309,6 +359,7 @@ static bitfield operand_types[] =
   BITFIELD (FloatReg),
   BITFIELD (RegMMX),
   BITFIELD (RegXMM),
+  BITFIELD (RegYMM),
   BITFIELD (Imm8),
   BITFIELD (Imm8S),
   BITFIELD (Imm16),
@@ -334,10 +385,24 @@ static bitfield operand_types[] =
   BITFIELD (JumpAbsolute),
   BITFIELD (EsSeg),
   BITFIELD (RegMem),
+  BITFIELD (Mem),
+  BITFIELD (Byte),
+  BITFIELD (Word),
+  BITFIELD (Dword),
+  BITFIELD (Fword),
+  BITFIELD (Qword),
+  BITFIELD (Tbyte),
+  BITFIELD (Xmmword),
+  BITFIELD (Ymmword),
+  BITFIELD (Unspecified),
+  BITFIELD (Anysize),
+  BITFIELD (Vex_Imm4),
 #ifdef OTUnused
   BITFIELD (OTUnused),
 #endif
 };
+
+static const char *filename;
 
 static int
 compare (const void *x, const void *y)
@@ -363,7 +428,8 @@ static void
 process_copyright (FILE *fp)
 {
   fprintf (fp, "/* This file is automatically generated by i386-gen.  Do not edit!  */\n\
-/* Copyright 2007, 2008  Free Software Foundation, Inc.\n\
+/* Copyright 2007, 2008, 2009\n\
+   Free Software Foundation, Inc.\n\
 \n\
    This file is part of the GNU opcodes library.\n\
 \n\
@@ -418,7 +484,7 @@ remove_trailing_whitespaces (char *str)
    pointer to the one after it.  */
 
 static char *
-next_field (char *str, char sep, char **next)
+next_field (char *str, char sep, char **next, char *last)
 {
   char *p;
 
@@ -430,16 +496,21 @@ next_field (char *str, char sep, char **next)
 
   *next = str + 1; 
 
+  if (p >= last)
+    abort ();
+
   return p;
 }
 
 static void
-set_bitfield (const char *f, bitfield *array, unsigned int size)
+set_bitfield (const char *f, bitfield *array, unsigned int size, int lineno)
 {
   unsigned int i;
 
-  if (strcmp (f, "CpuSledgehammer") == 0)
-    f= "CpuK8";
+  if (strcmp (f, "Mmword") == 0)
+    f= "Qword";
+  else if (strcmp (f, "Oword") == 0)
+    f= "Xmmword";
 
   for (i = 0; i < size; i++)
     if (strcasecmp (array[i].name, f) == 0)
@@ -448,8 +519,10 @@ set_bitfield (const char *f, bitfield *array, unsigned int size)
 	return;
       }
 
-  printf ("Unknown bitfield: %s\n", f);
-  abort ();
+  if (lineno != -1)
+    fail (_("%s: %d: Unknown bitfield: %s\n"), filename, lineno, f);
+  else
+    fail (_("Unknown bitfield: %s\n"), f);
 }
 
 static void
@@ -478,7 +551,8 @@ output_cpu_flags (FILE *table, bitfield *flags, unsigned int size,
 
 static void
 process_i386_cpu_flag (FILE *table, char *flag, int macro,
-		       const char *comma, const char *indent)
+		       const char *comma, const char *indent,
+		       int lineno)
 {
   char *str, *next, *last;
   bitfield flags [ARRAY_SIZE (cpu_flags)];
@@ -501,9 +575,9 @@ process_i386_cpu_flag (FILE *table, char *flag, int macro,
       last = flag + strlen (flag);
       for (next = flag; next && next < last; )
 	{
-	  str = next_field (next, '|', &next);
+	  str = next_field (next, '|', &next, last);
 	  if (str)
-	    set_bitfield (str, flags, ARRAY_SIZE (flags));
+	    set_bitfield (str, flags, ARRAY_SIZE (flags), lineno);
 	}
     }
 
@@ -529,7 +603,7 @@ output_opcode_modifier (FILE *table, bitfield *modifier, unsigned int size)
 }
 
 static void
-process_i386_opcode_modifier (FILE *table, char *mod)
+process_i386_opcode_modifier (FILE *table, char *mod, int lineno)
 {
   char *str, *next, *last;
   bitfield modifiers [ARRAY_SIZE (opcode_modifiers)];
@@ -542,9 +616,9 @@ process_i386_opcode_modifier (FILE *table, char *mod)
       last = mod + strlen (mod);
       for (next = mod; next && next < last; )
 	{
-	  str = next_field (next, '|', &next);
+	  str = next_field (next, '|', &next, last);
 	  if (str)
-	    set_bitfield (str, modifiers, ARRAY_SIZE (modifiers));
+	    set_bitfield (str, modifiers, ARRAY_SIZE (modifiers), lineno);
 	}
     }
   output_opcode_modifier (table, modifiers, ARRAY_SIZE (modifiers));
@@ -576,7 +650,7 @@ output_operand_type (FILE *table, bitfield *types, unsigned int size,
 
 static void
 process_i386_operand_type (FILE *table, char *op, int macro,
-			   const char *indent)
+			   const char *indent, int lineno)
 {
   char *str, *next, *last;
   bitfield types [ARRAY_SIZE (operand_types)];
@@ -589,9 +663,9 @@ process_i386_operand_type (FILE *table, char *op, int macro,
       last = op + strlen (op);
       for (next = op; next && next < last; )
 	{
-	  str = next_field (next, '|', &next);
+	  str = next_field (next, '|', &next, last);
 	  if (str)
-	    set_bitfield (str, types, ARRAY_SIZE (types));
+	    set_bitfield (str, types, ARRAY_SIZE (types), lineno);
 	}
     }
   output_operand_type (table, types, ARRAY_SIZE (types), macro,
@@ -599,27 +673,167 @@ process_i386_operand_type (FILE *table, char *op, int macro,
 }
 
 static void
+output_i386_opcode (FILE *table, const char *name, char *str,
+		    char *last, int lineno)
+{
+  unsigned int i;
+  char *operands, *base_opcode, *extension_opcode, *opcode_length;
+  char *cpu_flags, *opcode_modifier, *operand_types [MAX_OPERANDS];
+
+  /* Find number of operands.  */
+  operands = next_field (str, ',', &str, last);
+
+  /* Find base_opcode.  */
+  base_opcode = next_field (str, ',', &str, last);
+
+  /* Find extension_opcode.  */
+  extension_opcode = next_field (str, ',', &str, last);
+
+  /* Find opcode_length.  */
+  opcode_length = next_field (str, ',', &str, last);
+
+  /* Find cpu_flags.  */
+  cpu_flags = next_field (str, ',', &str, last);
+
+  /* Find opcode_modifier.  */
+  opcode_modifier = next_field (str, ',', &str, last);
+
+  /* Remove the first {.  */
+  str = remove_leading_whitespaces (str);
+  if (*str != '{')
+    abort ();
+  str = remove_leading_whitespaces (str + 1);
+
+  i = strlen (str);
+
+  /* There are at least "X}".  */
+  if (i < 2)
+    abort ();
+
+  /* Remove trailing white spaces and }. */
+  do
+    {
+      i--;
+      if (ISSPACE (str[i]) || str[i] == '}')
+	str[i] = '\0';
+      else
+	break;
+    }
+  while (i != 0);
+
+  last = str + i;
+
+  /* Find operand_types.  */
+  for (i = 0; i < ARRAY_SIZE (operand_types); i++)
+    {
+      if (str >= last)
+	{
+	  operand_types [i] = NULL;
+	  break;
+	}
+
+      operand_types [i] = next_field (str, ',', &str, last);
+      if (*operand_types[i] == '0')
+	{
+	  if (i != 0)
+	    operand_types[i] = NULL;
+	  break;
+	}
+    }
+
+  fprintf (table, "  { \"%s\", %s, %s, %s, %s,\n",
+	   name, operands, base_opcode, extension_opcode,
+	   opcode_length);
+
+  process_i386_cpu_flag (table, cpu_flags, 0, ",", "    ", lineno);
+
+  process_i386_opcode_modifier (table, opcode_modifier, lineno);
+
+  fprintf (table, "    { ");
+
+  for (i = 0; i < ARRAY_SIZE (operand_types); i++)
+    {
+      if (operand_types[i] == NULL || *operand_types[i] == '0')
+	{
+	  if (i == 0)
+	    process_i386_operand_type (table, "0", 0, "\t  ", lineno);
+	  break;
+	}
+
+      if (i != 0)
+	fprintf (table, ",\n      ");
+
+      process_i386_operand_type (table, operand_types[i], 0,
+				 "\t  ", lineno);
+    }
+  fprintf (table, " } },\n");
+}
+
+struct opcode_hash_entry
+{
+  struct opcode_hash_entry *next;
+  char *name;
+  char *opcode;
+  int lineno;
+};
+
+/* Calculate the hash value of an opcode hash entry P.  */
+
+static hashval_t
+opcode_hash_hash (const void *p)
+{
+  struct opcode_hash_entry *entry = (struct opcode_hash_entry *) p;
+  return htab_hash_string (entry->name);
+}
+
+/* Compare a string Q against an opcode hash entry P.  */
+
+static int
+opcode_hash_eq (const void *p, const void *q)
+{
+  struct opcode_hash_entry *entry = (struct opcode_hash_entry *) p;
+  const char *name = (const char *) q;
+  return strcmp (name, entry->name) == 0;
+}
+
+static void
 process_i386_opcodes (FILE *table)
 {
-  FILE *fp = fopen ("i386-opc.tbl", "r");
+  FILE *fp;
   char buf[2048];
-  unsigned int i;
-  char *str, *p, *last;
-  char *name, *operands, *base_opcode, *extension_opcode;
-  char *opcode_length;
-  char *cpu_flags, *opcode_modifier, *operand_types [MAX_OPERANDS];
+  unsigned int i, j;
+  char *str, *p, *last, *name;
+  struct opcode_hash_entry **hash_slot, **entry, *next;
+  htab_t opcode_hash_table;
+  struct opcode_hash_entry **opcode_array;
+  unsigned int opcode_array_size = 1024;
+  int lineno = 0;
+
+  filename = "i386-opc.tbl";
+  fp = fopen (filename, "r");
 
   if (fp == NULL)
     fail (_("can't find i386-opc.tbl for reading, errno = %s\n"),
 	  xstrerror (errno));
 
+  i = 0;
+  opcode_array = (struct opcode_hash_entry **)
+    xmalloc (sizeof (*opcode_array) * opcode_array_size);
+
+  opcode_hash_table = htab_create_alloc (16, opcode_hash_hash,
+					 opcode_hash_eq, NULL,
+					 xcalloc, free);
+
   fprintf (table, "\n/* i386 opcode table.  */\n\n");
   fprintf (table, "const template i386_optab[] =\n{\n");
 
+  /* Put everything on opcode array.  */
   while (!feof (fp))
     {
       if (fgets (buf, sizeof (buf), fp) == NULL)
 	break;
+
+      lineno++;
 
       p = remove_leading_whitespaces (buf);
 
@@ -634,7 +848,7 @@ process_i386_opcodes (FILE *table)
       switch (p[0])
 	{
 	case '#':
-	  fprintf (table, "%s\n", p);
+	  /* Ignore comments.  */
 	case '\0':
 	  continue;
 	  break;
@@ -645,129 +859,73 @@ process_i386_opcodes (FILE *table)
       last = p + strlen (p);
 
       /* Find name.  */
-      name = next_field (p, ',', &str);
+      name = next_field (p, ',', &str, last);
 
-      if (str >= last)
-	abort ();
+      /* Get the slot in hash table.  */
+      hash_slot = (struct opcode_hash_entry **)
+	htab_find_slot_with_hash (opcode_hash_table, name,
+				  htab_hash_string (name),
+				  INSERT);
 
-      /* Find number of operands.  */
-      operands = next_field (str, ',', &str);
-
-      if (str >= last)
-	abort ();
-
-      /* Find base_opcode.  */
-      base_opcode = next_field (str, ',', &str);
-
-      if (str >= last)
-	abort ();
-
-      /* Find extension_opcode.  */
-      extension_opcode = next_field (str, ',', &str);
-
-      if (str >= last)
-	abort ();
-
-      /* Find opcode_length.  */
-      opcode_length = next_field (str, ',', &str);
-
-      if (str >= last)
-	abort ();
-
-      /* Find cpu_flags.  */
-      cpu_flags = next_field (str, ',', &str);
-
-      if (str >= last)
-	abort ();
-
-      /* Find opcode_modifier.  */
-      opcode_modifier = next_field (str, ',', &str);
-
-      if (str >= last)
-	abort ();
-
-      /* Remove the first {.  */
-      str = remove_leading_whitespaces (str);
-      if (*str != '{')
-	abort ();
-      str = remove_leading_whitespaces (str + 1);
-
-      i = strlen (str);
-
-      /* There are at least "X}".  */
-      if (i < 2)
-	abort ();
-
-      /* Remove trailing white spaces and }. */
-      do
+      if (*hash_slot == NULL)
 	{
-	  i--;
-	  if (ISSPACE (str[i]) || str[i] == '}')
-	    str[i] = '\0';
-	  else
-	    break;
-	}
-      while (i != 0);
-
-      last = str + i;
-
-      /* Find operand_types.  */
-      for (i = 0; i < ARRAY_SIZE (operand_types); i++)
-	{
-	  if (str >= last)
+	  /* It is the new one.  Put it on opcode array.  */
+	  if (i >= opcode_array_size)
 	    {
-	      operand_types [i] = NULL;
-	      break;
+	      /* Grow the opcode array when needed.  */
+	      opcode_array_size += 1024;
+	      opcode_array = (struct opcode_hash_entry **)
+		xrealloc (opcode_array,
+			  sizeof (*opcode_array) * opcode_array_size);
 	    }
 
-	  operand_types [i] = next_field (str, ',', &str);
-	  if (*operand_types[i] == '0')
-	    {
-	      if (i != 0)
-		operand_types[i] = NULL;
-	      break;
-	    }
+	  opcode_array[i] = (struct opcode_hash_entry *)
+	    xmalloc (sizeof (struct opcode_hash_entry));
+	  opcode_array[i]->next = NULL;
+	  opcode_array[i]->name = xstrdup (name);
+	  opcode_array[i]->opcode = xstrdup (str);
+	  opcode_array[i]->lineno = lineno;
+	  *hash_slot = opcode_array[i];
+	  i++;
 	}
-
-      fprintf (table, "  { \"%s\", %s, %s, %s, %s,\n",
-	       name, operands, base_opcode, extension_opcode,
-	       opcode_length);
-
-      process_i386_cpu_flag (table, cpu_flags, 0, ",", "    ");
-
-      process_i386_opcode_modifier (table, opcode_modifier);
-
-      fprintf (table, "    { ");
-
-      for (i = 0; i < ARRAY_SIZE (operand_types); i++)
+      else
 	{
-	  if (operand_types[i] == NULL
-	      || *operand_types[i] == '0')
-	    {
-	      if (i == 0)
-		process_i386_operand_type (table, "0", 0, "\t  ");
-	      break;
-	    }
-
-	  if (i != 0)
-	    fprintf (table, ",\n      ");
-
-	  process_i386_operand_type (table, operand_types[i], 0,
-				     "\t  ");
+	  /* Append it to the existing one.  */
+	  entry = hash_slot;
+	  while ((*entry) != NULL)
+	    entry = &(*entry)->next;
+	  *entry = (struct opcode_hash_entry *)
+	    xmalloc (sizeof (struct opcode_hash_entry));
+	  (*entry)->next = NULL;
+	  (*entry)->name = (*hash_slot)->name;
+	  (*entry)->opcode = xstrdup (str);
+	  (*entry)->lineno = lineno;
 	}
-      fprintf (table, " } },\n");
+    }
+
+  /* Process opcode array.  */
+  for (j = 0; j < i; j++)
+    {
+      for (next = opcode_array[j]; next; next = next->next)
+	{
+	  name = next->name;
+	  str = next->opcode;
+	  lineno = next->lineno;
+	  last = str + strlen (str);
+	  output_i386_opcode (table, name, str, last, lineno);
+	}
     }
 
   fclose (fp);
 
   fprintf (table, "  { NULL, 0, 0, 0, 0,\n");
 
-  process_i386_cpu_flag (table, "0", 0, ",", "    ");
+  process_i386_cpu_flag (table, "0", 0, ",", "    ", -1);
 
-  process_i386_opcode_modifier (table, "0");
+  process_i386_opcode_modifier (table, "0", -1);
  
   fprintf (table, "    { ");
-  process_i386_operand_type (table, "0", 0, "\t  ");
+  process_i386_operand_type (table, "0", 0, "\t  ", -1);
   fprintf (table, " } }\n");
 
   fprintf (table, "};\n");
@@ -776,11 +934,15 @@ process_i386_opcodes (FILE *table)
 static void
 process_i386_registers (FILE *table)
 {
-  FILE *fp = fopen ("i386-reg.tbl", "r");
+  FILE *fp;
   char buf[2048];
   char *str, *p, *last;
   char *reg_name, *reg_type, *reg_flags, *reg_num;
+  char *dw2_32_num, *dw2_64_num;
+  int lineno = 0;
 
+  filename = "i386-reg.tbl";
+  fp = fopen (filename, "r");
   if (fp == NULL)
     fail (_("can't find i386-reg.tbl for reading, errno = %s\n"),
 	  xstrerror (errno));
@@ -792,6 +954,8 @@ process_i386_registers (FILE *table)
     {
       if (fgets (buf, sizeof (buf), fp) == NULL)
 	break;
+
+      lineno++;
 
       p = remove_leading_whitespaces (buf);
 
@@ -817,31 +981,29 @@ process_i386_registers (FILE *table)
       last = p + strlen (p);
 
       /* Find reg_name.  */
-      reg_name = next_field (p, ',', &str);
-
-      if (str >= last)
-	abort ();
+      reg_name = next_field (p, ',', &str, last);
 
       /* Find reg_type.  */
-      reg_type = next_field (str, ',', &str);
-
-      if (str >= last)
-	abort ();
+      reg_type = next_field (str, ',', &str, last);
 
       /* Find reg_flags.  */
-      reg_flags = next_field (str, ',', &str);
-
-      if (str >= last)
-	abort ();
+      reg_flags = next_field (str, ',', &str, last);
 
       /* Find reg_num.  */
-      reg_num = next_field (str, ',', &str);
+      reg_num = next_field (str, ',', &str, last);
 
       fprintf (table, "  { \"%s\",\n    ", reg_name);
 
-      process_i386_operand_type (table, reg_type, 0, "\t");
+      process_i386_operand_type (table, reg_type, 0, "\t", lineno);
 
-      fprintf (table, ",\n    %s, %s },\n", reg_flags, reg_num);
+      /* Find 32-bit Dwarf2 register number.  */
+      dw2_32_num = next_field (str, ',', &str, last);
+
+      /* Find 64-bit Dwarf2 register number.  */
+      dw2_64_num = next_field (str, ',', &str, last);
+
+      fprintf (table, ",\n    %s, %s, { %s, %s } },\n",
+	       reg_flags, reg_num, dw2_32_num, dw2_64_num);
     }
 
   fclose (fp);
@@ -868,7 +1030,7 @@ process_i386_initializers (void)
     {
       fprintf (fp, "\n#define %s \\\n", cpu_flag_init[i].name);
       init = xstrdup (cpu_flag_init[i].init);
-      process_i386_cpu_flag (fp, init, 1, "", "  ");
+      process_i386_cpu_flag (fp, init, 1, "", "  ", -1);
       free (init);
     }
 
@@ -876,7 +1038,7 @@ process_i386_initializers (void)
     {
       fprintf (fp, "\n\n#define %s \\\n  ", operand_type_init[i].name);
       init = xstrdup (operand_type_init[i].init);
-      process_i386_operand_type (fp, init, 1, "      ");
+      process_i386_operand_type (fp, init, 1, "      ", -1);
       free (init);
     }
   fprintf (fp, "\n");

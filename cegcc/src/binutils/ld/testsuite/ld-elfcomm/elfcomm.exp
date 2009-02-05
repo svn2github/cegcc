@@ -28,6 +28,74 @@ if ![is_elf_format] {
     return
 }
 
+proc test_sort_common {} {
+    global exec_output
+    global objdump
+    global srcdir
+    global subdir
+    global as
+    global ld
+  
+    set test "--sort-common (descending)"
+  
+    verbose "Check to see that --sort-common sorts in descending alignment"
+
+    # We do not run the sort common tests for the DLX target because we know that the linker
+    # will seg-fault.  The built-in DLX linker script requires that there be something in the
+    # .text section and our sort-common.s file does not provide anything.
+    if [istarget dlx-*-*] {
+	untested "$test"
+	return 0
+    }
+    
+    if { ![ld_assemble $as $srcdir/$subdir/sort-common.s tmpdir/sort-common.o] } {
+	unresolved "$test"
+	return 0
+    }
+
+    if { ![ld_simple_link $ld tmpdir/sort-common.dx "--sort-common=descending tmpdir/sort-common.o"] } {
+	fail "$test"
+	return 0
+    }
+
+    send_log "$objdump --syms tmpdir/sort-common.dx | grep var | sort\n"
+    set exec_output [run_host_cmd "$objdump" "--syms tmpdir/sort-common.dx | grep var | sort"]
+
+    # Don't know why, but the CR ports fail this test.
+    setup_xfail "cr16-*-*" "crx-*-*"
+
+    # Note: The second regexp is for targets which put small commons in a .sbss
+    #  section and large commons in a .bss section.
+    if {   ![regexp ".*var_16.*var_8.*var_4.*var_2.*var_1.*" $exec_output]
+        && ![regexp ".*sbss.*var_8.*var_4.*var_2.*var_1.*bss.*var_16.*" $exec_output] } {      
+	fail $test
+    } else {
+	pass $test
+    }
+
+    set test "--sort-common (ascending)"
+  
+    verbose "Check to see that --sort-common=ascending sorts in ascending alignment"
+
+    if { ![ld_simple_link $ld tmpdir/sort-common.ax "--sort-common=ascending tmpdir/sort-common.o"] } {
+	fail "$test"
+	return 0
+    }
+
+    send_log "$objdump --syms tmpdir/sort-common.ax | grep var | sort\n"
+    set exec_output [run_host_cmd "$objdump" "--syms tmpdir/sort-common.ax | grep var | sort"]
+
+    if {![regexp ".*var_1.*var_2.*var_4.*var_8.*var_16.*" $exec_output]} {      
+	fail $test
+	return 0
+    }
+
+    pass $test
+    return 1
+}
+
+test_sort_common
+
 set test1	"size/aligment change of common symbols"
 set test1w1	"$test1 (warning 1)"
 set test1w2	"$test1 (warning 2)"
@@ -54,7 +122,7 @@ proc dump_common1 { testname } {
     global READELF
 
     send_log "$READELF --syms tmpdir/common1.o | grep foo\n"
-    set exec_output [run_host_cmd "readelf" "--syms tmpdir/common1.o | grep foo"]
+    set exec_output [run_host_cmd "$READELF" "--syms tmpdir/common1.o | grep foo"]
 
     if {   ![regexp "(\[ 	\]*)(\[0-9\]+):(\[ 	\]*)(\[0\]*)80(\[ 	\]+)4(\[ 	\]+)(COMMON|OBJECT)(\[ 	\]+)GLOBAL(\[ 	\]+)DEFAULT(\[ 	\]+)(PRC\\\[0xff03\\\]|COM|SCOM)(\[ 	\]+)_?foo2" $exec_output]
 	|| ![regexp "(\[ 	\]*)(\[0-9\]+):(\[ 	\]*)(\[0-9\]+)(\[ 	\]+)21(\[ 	\]+)OBJECT(\[ 	\]+)GLOBAL(\[ 	\]+)DEFAULT(\[ 	\]+)(\[0-9\]+)(\[ 	\]+)_?foo1" $exec_output] } {
@@ -79,7 +147,7 @@ proc stt_common_test { options testname } {
     }
 
     send_log "$READELF --syms tmpdir/common.exe | grep foo\n"
-    set exec_output [run_host_cmd "readelf" "--syms tmpdir/common.exe | grep foo"]
+    set exec_output [run_host_cmd "$READELF" "--syms tmpdir/common.exe | grep foo"]
 
     if {![regexp "(\[ 	\]*)(\[0-9\]+):(\[ 	\]*)(\[0-9\]+)(\[ 	\]+)(\[0-9\]+)(\[ 	\]+)COMMON(\[ 	\]+)GLOBAL(\[ 	\]+)DEFAULT(\[ 	\]+)(\[0-9\]+)(\[ 	\]+)_?foo2" $exec_output] } {
 	fail $testname
@@ -96,7 +164,7 @@ proc assembler_generates_commons {} {
     global READELF
 
     verbose "Check to see if STT_COMMON symbols are being generated:"
-    set exec_output [run_host_cmd "readelf" "--syms tmpdir/common1a.o | grep foo"]
+    set exec_output [run_host_cmd "$READELF" "--syms tmpdir/common1a.o | grep foo"]
 
     if { ![regexp "(\[ 	\]*)(\[0-9\]+):(\[ 	\]*)(\[0\]*)80(\[ 	\]+).(\[ 	\]+)COMMON(\[ 	\]+)GLOBAL(\[ 	\]+)DEFAULT(\[ 	\]+)(PRC\\\[0xff03\\\]|COM|SCOM)(\[ 	\]+)_?foo2" $exec_output] } {
 	verbose "STT_COMMON not generated"

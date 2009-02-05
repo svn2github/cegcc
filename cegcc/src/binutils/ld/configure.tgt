@@ -111,7 +111,7 @@ xscale-*-coff)		targ_emul=armcoff ;;
 xscale-*-elf)		targ_emul=armelf
 			;;
 avr-*-*)		targ_emul=avr2
-			targ_extra_emuls="avr1 avr3 avr4 avr5 avr6"
+			targ_extra_emuls="avr1 avr25 avr3 avr31 avr35 avr4 avr5 avr51 avr6"
 			;;
 bfin-*-elf)		targ_emul=elf32bfin;
 			targ_extra_emuls="elf32bfinfd"
@@ -125,8 +125,8 @@ bfin-*-uclinux*)	targ_emul=elf32bfin;
 			targ_extra_emuls="elf32bfinfd"
 			targ_extra_libpath=$targ_extra_emuls
 			;;
-bfin-*-linux-uclibc*)	targ_emul=elf32bfin;
-			targ_extra_emuls="elf32bfinfd"
+bfin-*-linux-uclibc*)	targ_emul=elf32bfinfd;
+			targ_extra_emuls="elf32bfin"
 			targ_extra_libpath=$targ_extra_emuls
 			;;
 cr16-*-elf*)            targ_emul=elf32cr16 ;;
@@ -210,6 +210,11 @@ i[3-7]86-*-solaris2*)	targ_emul=elf_i386_ldso
                         targ_extra_emuls="elf_i386 elf_x86_64"
 			targ_extra_libpath=$targ_extra_emuls
                         ;;
+x86_64-*-solaris2*)
+			targ_emul=elf_x86_64
+			targ_extra_emuls="elf_i386 elf_i386_ldso"
+			targ_extra_libpath=elf_i386
+			tdir_elf_i386=`echo ${targ_alias} | sed -e 's/x86_64/i386/'` ;;
 i[3-7]86-*-unixware)	targ_emul=elf_i386 ;;
 i[3-7]86-*-solaris*)	targ_emul=elf_i386_ldso
                         targ_extra_emuls="elf_i386"
@@ -300,10 +305,15 @@ ip2k-*-elf)		targ_emul=elf32ip2k
 			;;
 iq2000-*-elf)           targ_emul=elf32iq2000 ; targ_extra_emuls="elf32iq10"
 			;;
-m32c-*-elf)		targ_emul=elf32m32c
+lm32-*-*linux*)         targ_emul=elf32lm32fd ;;
+lm32-*-*)               targ_emul=elf32lm32 ; targ_extra_emuls="elf32lm32fd" 
+                        ;;
+m32c-*-elf | m32c-*-rtems*)
+			targ_emul=elf32m32c
 			;;
 m32r*le-*-elf*)         targ_emul=m32rlelf ;;
-m32r*-*-elf*)           targ_emul=m32relf ;;
+m32r*-*-elf* | m32r*-*-rtems*)
+			targ_emul=m32relf ;;
 m32r*le-*-linux-*)      targ_emul=m32rlelf_linux ;;
 m32r*-*-linux-*)        targ_emul=m32relf_linux
 			;;
@@ -625,7 +635,7 @@ xc16x-*-elf)		targ_emul=elf32xc16x
                         ;;
 xstormy16-*-*)		targ_emul=elf32xstormy16
 			;;
-xtensa-*-*)		targ_emul=elf32xtensa
+xtensa*-*-*)		targ_emul=elf32xtensa
 			;;
 z80-*-coff)		targ_emul=z80
 			;;
@@ -675,7 +685,7 @@ sparc*-*-solaris2*)
 
 spu-*-elf*)
   # This allows to build a pair of PPU/SPU toolchains with common sysroot.
-  NATIVE_LIB_DIRS='/usr/spu/lib'
+  NATIVE_LIB_DIRS='/lib'
   ;;
 
 i[03-9x]86-*-cygwin*)

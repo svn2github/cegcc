@@ -123,6 +123,31 @@ set build_tests {
   {"Build libdata1.so"
    "-shared" "-fPIC"
    {data1.c} {} "libdata1.so"}
+  {"Build libcomm1.o"
+   "-r -nostdlib" ""
+   {comm1.c} {} "libcomm1.o"}
+  {"Build libfunc1.so"
+   "-shared" "-fPIC"
+   {func1.c} {} "libfunc1.so"}
+  {"Build libpr9676-1.a"
+   "" "-fPIC"
+   {pr9676-1.c} {} "libpr9676-1.a"}
+  {"Build libpr9676-2.a"
+   "" "-fPIC"
+   {pr9676-2.c} {} "libpr9676-2.a"}
+  {"Build libpr9676-3.so"
+   "-shared" "-fPIC"
+   {pr9676-3.c} {} "libpr9676-3.so"}
+  {"Build libpr9676-4.so"
+   "-shared" "-fPIC"
+   {pr9676-4.c} {} "libpr9676-4.so"}
+  {"Build libpr9676-4a.so"
+   "-shared tmpdir/pr9676-4.o -Ltmpdir -lpr9676-3 -Wl,--start-group -lpr9676-1 -lpr9676-2 -Wl,--end-group"
+   "-fPIC"
+   {dummy.c} {{readelf {-s} pr9676.rd}} "libpr9676-4a.so"}
+  {"Build libpr9679.so"
+   "-shared" "-fPIC -O0"
+   {pr9679-1.c pr9679-2.c} {{readelf {-s} pr9679.rd}} "libpr9679.so"}
 }
 
 set run_tests {
@@ -235,6 +260,12 @@ set run_tests {
     {"Run with libdata1.so"
      "tmpdir/libdata1.so" ""
      {dynbss1.c} "dynbss1" "pass.out"}
+    {"Run with libfunc1.so comm1.o"
+     "tmpdir/libfunc1.so tmpdir/comm1.o" ""
+     {dummy.c} "comm1" "pass.out"}
+    {"Run with comm1.o libfunc1.so"
+     "tmpdir/comm1.o tmpdir/libfunc1.so" ""
+     {dummy.c} "comm1" "pass.out"}
 }
 
 run_cc_link_tests $build_tests

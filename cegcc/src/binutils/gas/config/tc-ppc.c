@@ -1,6 +1,6 @@
 /* tc-ppc.c -- Assemble for the PowerPC or POWER (RS/6000)
    Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-   2004, 2005, 2006, 2007 Free Software Foundation, Inc.
+   2004, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Cygnus Support.
 
    This file is part of GAS, the GNU Assembler.
@@ -178,6 +178,10 @@ const char ppc_symbol_chars[] = "%[";
 
 /* The dwarf2 data alignment, adjusted for 32 or 64 bit.  */
 int ppc_cie_data_alignment;
+
+/* The type of processor we are assembling for.  This is one or more
+   of the PPC_OPCODE flags defined in opcode/ppc.h.  */
+ppc_cpu_t ppc_cpu = 0;
 
 /* The target specific pseudo-ops which we support.  */
 
@@ -699,10 +703,6 @@ ppc_parse_name (const char *name, expressionS *expr)
 
 /* Local variables.  */
 
-/* The type of processor we are assembling for.  This is one or more
-   of the PPC_OPCODE flags defined in opcode/ppc.h.  */
-static unsigned long ppc_cpu = 0;
-
 /* Whether to target xcoff64/elf64.  */
 static unsigned int ppc_obj64 = BFD_DEFAULT_TARGET_SIZE == 64;
 
@@ -825,7 +825,8 @@ const size_t md_longopts_size = sizeof (md_longopts);
 static int
 parse_cpu (const char *arg)
 {
-  unsigned long altivec_or_spe = ppc_cpu & (PPC_OPCODE_ALTIVEC | PPC_OPCODE_SPE);
+  ppc_cpu_t retain_flags =
+    ppc_cpu & (PPC_OPCODE_ALTIVEC | PPC_OPCODE_VSX | PPC_OPCODE_SPE);
 
   /* -mpwrx and -mpwr2 mean to assemble for the IBM POWER/2
      (RIOS2).  */
@@ -849,12 +850,14 @@ parse_cpu (const char *arg)
   /* Do all PPC750s have paired single ops?  */
   else if (strcmp (arg, "750cl") == 0)
     ppc_cpu = PPC_OPCODE_PPC | PPC_OPCODE_PPCPS;
-  /* -m403 and -m405 mean to assemble for the PowerPC 403/405.  */
-  else if (strcmp (arg, "403") == 0
-	   || strcmp (arg, "405") == 0)
+  else if (strcmp (arg, "403") == 0)
     ppc_cpu = (PPC_OPCODE_PPC | PPC_OPCODE_CLASSIC
 	       | PPC_OPCODE_403 | PPC_OPCODE_32);
-  else if (strcmp (arg, "440") == 0)
+  else if (strcmp (arg, "405") == 0)
+    ppc_cpu = (PPC_OPCODE_PPC | PPC_OPCODE_CLASSIC
+	       | PPC_OPCODE_403 | PPC_OPCODE_405 | PPC_OPCODE_32);
+  else if (strcmp (arg, "440") == 0
+	   || strcmp (arg, "464") == 0)
     ppc_cpu = (PPC_OPCODE_PPC | PPC_OPCODE_BOOKE | PPC_OPCODE_32
 	       | PPC_OPCODE_440 | PPC_OPCODE_ISEL | PPC_OPCODE_RFMCI);
   else if (strcmp (arg, "7400") == 0
@@ -871,21 +874,34 @@ parse_cpu (const char *arg)
       if (ppc_cpu == 0)
 	ppc_cpu = PPC_OPCODE_PPC | PPC_OPCODE_CLASSIC;
 
-      altivec_or_spe |= PPC_OPCODE_ALTIVEC;
+      retain_flags |= PPC_OPCODE_ALTIVEC;
+    }
+  else if (strcmp (arg, "vsx") == 0)
+    {
+      if (ppc_cpu == 0)
+	ppc_cpu = PPC_OPCODE_PPC | PPC_OPCODE_CLASSIC;
+
+      retain_flags |= PPC_OPCODE_VSX;
     }
   else if (strcmp (arg, "e500") == 0 || strcmp (arg, "e500x2") == 0)
     {
       ppc_cpu = (PPC_OPCODE_PPC | PPC_OPCODE_BOOKE | PPC_OPCODE_SPE
 		 | PPC_OPCODE_ISEL | PPC_OPCODE_EFS | PPC_OPCODE_BRLOCK
 		 | PPC_OPCODE_PMR | PPC_OPCODE_CACHELCK
-		 | PPC_OPCODE_RFMCI);
+		 | PPC_OPCODE_RFMCI | PPC_OPCODE_E500MC);
+    }
+  else if (strcmp (arg, "e500mc") == 0)
+    {
+      ppc_cpu = (PPC_OPCODE_PPC | PPC_OPCODE_BOOKE | PPC_OPCODE_ISEL
+		 | PPC_OPCODE_PMR | PPC_OPCODE_CACHELCK
+		 | PPC_OPCODE_RFMCI | PPC_OPCODE_E500MC);
     }
   else if (strcmp (arg, "spe") == 0)
     {
       if (ppc_cpu == 0)
 	ppc_cpu = PPC_OPCODE_PPC | PPC_OPCODE_EFS;
 
-      altivec_or_spe |= PPC_OPCODE_SPE;
+      retain_flags |= PPC_OPCODE_SPE;
     }
   /* -mppc64 and -m620 mean to assemble for the 64-bit PowerPC
      620.  */
@@ -903,12 +919,6 @@ parse_cpu (const char *arg)
     {
       ppc_cpu = PPC_OPCODE_PPC | PPC_OPCODE_BOOKE | PPC_OPCODE_32;
     }
-  /* -mbooke64 means enable 64-bit BookE support.  */
-  else if (strcmp (arg, "booke64") == 0)
-    {
-      ppc_cpu = (PPC_OPCODE_PPC | PPC_OPCODE_BOOKE
-		 | PPC_OPCODE_BOOKE64 | PPC_OPCODE_64);
-    }
   else if (strcmp (arg, "power4") == 0)
     {
       ppc_cpu = (PPC_OPCODE_PPC | PPC_OPCODE_CLASSIC
@@ -924,13 +934,21 @@ parse_cpu (const char *arg)
     {
       ppc_cpu = (PPC_OPCODE_PPC | PPC_OPCODE_CLASSIC
 		 | PPC_OPCODE_64 | PPC_OPCODE_POWER4
-		 | PPC_OPCODE_POWER5 | PPC_OPCODE_POWER6);
+		 | PPC_OPCODE_POWER5 | PPC_OPCODE_POWER6
+		 | PPC_OPCODE_ALTIVEC);
+    }
+  else if (strcmp (arg, "power7") == 0)
+    {
+      ppc_cpu = (PPC_OPCODE_PPC | PPC_OPCODE_CLASSIC
+		 | PPC_OPCODE_64 | PPC_OPCODE_POWER4
+		 | PPC_OPCODE_POWER5 | PPC_OPCODE_POWER6
+		 | PPC_OPCODE_ALTIVEC | PPC_OPCODE_VSX);
     }
   else if (strcmp (arg, "cell") == 0)
     {
       ppc_cpu = (PPC_OPCODE_PPC | PPC_OPCODE_CLASSIC
 		 | PPC_OPCODE_64 | PPC_OPCODE_POWER4
-		 | PPC_OPCODE_CELL);
+		 | PPC_OPCODE_CELL | PPC_OPCODE_ALTIVEC);
     }
   /* -mcom means assemble for the common intersection between Power
      and PowerPC.  At present, we just allow the union, rather
@@ -943,8 +961,8 @@ parse_cpu (const char *arg)
   else
     return 0;
 
-  /* Make sure the the Altivec and SPE bits are not lost.  */
-  ppc_cpu |= altivec_or_spe;
+  /* Make sure the the Altivec, VSX and SPE bits are not lost.  */
+  ppc_cpu |= retain_flags;
   return 1;
 }
 
@@ -1115,26 +1133,30 @@ PowerPC options:\n\
 -m601			generate code for PowerPC 601\n\
 -mppc, -mppc32, -m603, -m604\n\
 			generate code for PowerPC 603/604\n\
--m403, -m405		generate code for PowerPC 403/405\n\
+-m403			generate code for PowerPC 403\n\
+-m405			generate code for PowerPC 405\n\
 -m440			generate code for PowerPC 440\n\
+-m464			generate code for PowerPC 464\n\
 -m7400, -m7410, -m7450, -m7455\n\
 			generate code for PowerPC 7400/7410/7450/7455\n\
 -m750cl			generate code for PowerPC 750cl\n"));
   fprintf (stream, _("\
 -mppc64, -m620		generate code for PowerPC 620/625/630\n\
 -mppc64bridge		generate code for PowerPC 64, including bridge insns\n\
--mbooke64		generate code for 64-bit PowerPC BookE\n\
--mbooke, mbooke32	generate code for 32-bit PowerPC BookE\n\
+-mbooke			generate code for 32-bit PowerPC BookE\n\
 -mpower4		generate code for Power4 architecture\n\
 -mpower5		generate code for Power5 architecture\n\
 -mpower6		generate code for Power6 architecture\n\
+-mpower7		generate code for Power7 architecture\n\
 -mcell			generate code for Cell Broadband Engine architecture\n\
 -mcom			generate code Power/PowerPC common instructions\n\
 -many			generate code for any architecture (PWR/PWRX/PPC)\n"));
   fprintf (stream, _("\
 -maltivec		generate code for AltiVec\n\
+-mvsx			generate code for Vector-Scalar (VSX) instructions\n\
 -me300			generate code for PowerPC e300 family\n\
 -me500, -me500x2	generate code for Motorola e500 core complex\n\
+-me500mc,               generate code for Freescale e500mc core complex\n\
 -mspe			generate code for Motorola SPE instructions\n\
 -mregnames		Allow symbolic names for registers\n\
 -mno-regnames		Do not allow symbolic names for registers\n"));
@@ -1255,7 +1277,6 @@ ppc_setup_opcodes (void)
   const struct powerpc_macro *macro;
   const struct powerpc_macro *macro_end;
   bfd_boolean bad_insn = FALSE;
-  unsigned long prev_opcode = 0;
 
   if (ppc_hash != NULL)
     hash_die (ppc_hash);
@@ -1303,17 +1324,55 @@ ppc_setup_opcodes (void)
 	{
 	  const unsigned char *o;
 	  unsigned long omask = op->mask;
-	  unsigned long major_opcode = PPC_OP (op->opcode);
 
-	  /* The major opcodes had better be sorted.  Code in the disassembler
-	     assumes the insns are sorted according to major opcode.  */
-	  if (major_opcode < prev_opcode)
+	  if (op != powerpc_opcodes)
 	    {
-	      as_bad (_("major opcode is not sorted for %s"),
-		      op->name);
-	      bad_insn = TRUE;
+	      /* The major opcodes had better be sorted.  Code in the
+		 disassembler assumes the insns are sorted according to
+		 major opcode.  */
+	      if (PPC_OP (op[0].opcode) < PPC_OP (op[-1].opcode))
+		{
+		  as_bad (_("major opcode is not sorted for %s"),
+			  op->name);
+		  bad_insn = TRUE;
+		}
+
+	      /* Warn if the table isn't more strictly ordered.
+		 Unfortunately it doesn't seem possible to order the
+		 table on much more than the major opcode, which makes
+		 it difficult to implement a binary search in the
+		 disassembler.  The problem is that we have multiple
+		 ways to disassemble instructions, and we usually want
+		 to choose a more specific form (with more bits set in
+		 the opcode) than a more general form.  eg. all of the
+		 following are equivalent:
+		 bne label	# opcode = 0x40820000, mask = 0xff830003
+		 bf  2,label	# opcode = 0x40800000, mask = 0xff800003
+		 bc  4,2,label	# opcode = 0x40000000, mask = 0xfc000003
+
+		 There are also cases where the table needs to be out
+		 of order to disassemble the correct instruction for
+		 processor variants.  */
+	      else if (0)
+		{
+		  unsigned long t1 = op[0].opcode;
+		  unsigned long t2 = op[-1].opcode;
+
+		  if (((t1 ^ t2) & 0xfc0007ff) == 0
+		      && (t1 & 0xfc0006df) == 0x7c000286)
+		    {
+		      /* spr field is split.  */
+		      t1 = ((t1 & ~0x1ff800)
+			    | ((t1 & 0xf800) << 5) | ((t1 & 0x1f0000) >> 5));
+		      t2 = ((t2 & ~0x1ff800)
+			    | ((t2 & 0xf800) << 5) | ((t2 & 0x1f0000) >> 5));
+		    }
+		  if (t1 < t2)
+		    as_warn (_("%s (%08lx %08lx) after %s (%08lx %08lx)"),
+			     op[0].name, op[0].opcode, op[0].mask,
+			     op[-1].name, op[-1].opcode, op[-1].mask);
+		}
 	    }
-	  prev_opcode = major_opcode;
 
 	  /* The mask had better not trim off opcode bits.  */
 	  if ((op->opcode & omask) != op->opcode)
@@ -1353,23 +1412,7 @@ ppc_setup_opcodes (void)
 	      || ((op->flags & (PPC_OPCODE_32 | PPC_OPCODE_64))
 		  == (ppc_cpu & (PPC_OPCODE_32 | PPC_OPCODE_64)))
 	      || (ppc_cpu & PPC_OPCODE_64_BRIDGE) != 0)
-	  /* Certain instructions (eg: extsw) do not exist in the
-	     32-bit BookE instruction set, but they do exist in the
-	     64-bit BookE instruction set, and other PPC instruction
-	     sets.  Check to see if the opcode has the BOOKE64 flag set.
-	     If it does make sure that the target CPU is not the BookE32.  */
-	  && ((op->flags & PPC_OPCODE_BOOKE64) == 0
-	      || (ppc_cpu & PPC_OPCODE_BOOKE64) == PPC_OPCODE_BOOKE64
-	      || (ppc_cpu & PPC_OPCODE_BOOKE) == 0)
-	  && ((op->flags & (PPC_OPCODE_POWER4 | PPC_OPCODE_NOPOWER4)) == 0
-	      || ((op->flags & PPC_OPCODE_POWER4)
-		  == (ppc_cpu & PPC_OPCODE_POWER4)))
-	  && ((op->flags & PPC_OPCODE_POWER5) == 0
-	      || ((op->flags & PPC_OPCODE_POWER5)
-		  == (ppc_cpu & PPC_OPCODE_POWER5)))
-	  && ((op->flags & PPC_OPCODE_POWER6) == 0
-	      || ((op->flags & PPC_OPCODE_POWER6)
-		  == (ppc_cpu & PPC_OPCODE_POWER6))))
+	  && !(ppc_cpu & op->deprecated))
 	{
 	  const char *retval;
 
@@ -1528,6 +1571,7 @@ static unsigned long
 ppc_insert_operand (unsigned long insn,
 		    const struct powerpc_operand *operand,
 		    offsetT val,
+		    ppc_cpu_t ppc_cpu,
 		    char *file,
 		    unsigned int line)
 {
@@ -2484,7 +2528,7 @@ md_assemble (char *str)
       else if (ex.X_op == O_register)
 	{
 	  insn = ppc_insert_operand (insn, operand, ex.X_add_number,
-				     (char *) NULL, 0);
+				     ppc_cpu, (char *) NULL, 0);
 	}
       else if (ex.X_op == O_constant)
 	{
@@ -2553,7 +2597,7 @@ md_assemble (char *str)
 	      }
 #endif /* OBJ_ELF */
 	  insn = ppc_insert_operand (insn, operand, ex.X_add_number,
-				     (char *) NULL, 0);
+				     ppc_cpu, (char *) NULL, 0);
 	}
 #ifdef OBJ_ELF
       else if ((reloc = ppc_elf_suffix (&str, &ex)) != BFD_RELOC_UNUSED)
@@ -2565,7 +2609,7 @@ md_assemble (char *str)
 	      break;
 	    case BFD_RELOC_PPC_TLS:
 	      insn = ppc_insert_operand (insn, operand, ppc_obj64 ? 13 : 2,
-					 (char *) NULL, 0);
+					 ppc_cpu, (char *) NULL, 0);
 	      break;
 	  /* We'll only use the 32 (or 64) bit form of these relocations
 	     in constants.  Instructions get the 16 bit form.  */
@@ -2908,7 +2952,7 @@ ppc_macro (char *str, const struct powerpc_macro *macro)
 #ifdef OBJ_ELF
 /* For ELF, add support for SHF_EXCLUDE and SHT_ORDERED.  */
 
-int
+bfd_vma
 ppc_section_letter (int letter, char **ptr_msg)
 {
   if (letter == 'e')
@@ -2918,7 +2962,7 @@ ppc_section_letter (int letter, char **ptr_msg)
   return -1;
 }
 
-int
+bfd_vma
 ppc_section_word (char *str, size_t len)
 {
   if (len == 7 && strncmp (str, "exclude", 7) == 0)
@@ -2937,7 +2981,7 @@ ppc_section_type (char *str, size_t len)
 }
 
 int
-ppc_section_flags (int flags, int attr, int type)
+ppc_section_flags (flagword flags, bfd_vma attr, int type)
 {
   if (type == SHT_ORDERED)
     flags |= SEC_ALLOC | SEC_LOAD | SEC_SORT_ENTRIES;
@@ -4092,7 +4136,7 @@ ppc_machine (int ignore ATTRIBUTE_UNUSED)
 {
   char *cpu_string;
 #define MAX_HISTORY 100
-  static unsigned long *cpu_history;
+  static ppc_cpu_t *cpu_history;
   static int curr_hist;
 
   SKIP_WHITESPACE ();
@@ -4113,7 +4157,7 @@ ppc_machine (int ignore ATTRIBUTE_UNUSED)
 
   if (cpu_string != NULL)
     {
-      unsigned long old_cpu = ppc_cpu;
+      ppc_cpu_t old_cpu = ppc_cpu;
       char *p;
 
       for (p = cpu_string; *p != 0; p++)
@@ -5632,6 +5676,7 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
       else
 	insn = bfd_getl32 ((unsigned char *) where);
       insn = ppc_insert_operand (insn, operand, (offsetT) value,
+				 fixP->tc_fix_data.ppc_cpu,
 				 fixP->fx_file, fixP->fx_line);
       if (target_big_endian)
 	bfd_putb32 ((bfd_vma) insn, (unsigned char *) where);

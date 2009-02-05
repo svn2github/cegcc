@@ -4,7 +4,7 @@
 #readelf: -wf
 #target: x86_64-*-*
 
-The section .eh_frame contains:
+Contents of the .eh_frame section:
 
 00000000 00000014 00000000 CIE
   Version:               1
@@ -14,8 +14,8 @@ The section .eh_frame contains:
   Return address column: 16
   Augmentation data:     1b
 
-  DW_CFA_def_cfa: r7 ofs 8
-  DW_CFA_offset: r16 at cfa-8
+  DW_CFA_def_cfa: r7 \(rsp\) ofs 8
+  DW_CFA_offset: r16 \(rip\) at cfa-8
   DW_CFA_nop
   DW_CFA_nop
 

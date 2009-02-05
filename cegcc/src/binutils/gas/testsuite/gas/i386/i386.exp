@@ -79,6 +79,8 @@ if [expr ([istarget "i*86-*-*"] ||  [istarget "x86_64-*-*"]) && [gas_32_check]] 
     run_dump_test "nops-4"
     run_dump_test "nops-4-i386"
     run_dump_test "nops-4-i686"
+    run_dump_test "nops-5"
+    run_dump_test "nops-5-i686"
     run_dump_test "addr16"
     run_dump_test "addr32"
     run_dump_test "sse4_1"
@@ -107,6 +109,47 @@ if [expr ([istarget "i*86-*-*"] ||  [istarget "x86_64-*-*"]) && [gas_32_check]] 
     run_dump_test "arch-7"
     run_dump_test "arch-8"
     run_dump_test "arch-9"
+    run_dump_test "arch-10"
+    run_list_test "arch-10-1" "-march=generic32 -I${srcdir}/$subdir -al"
+    run_list_test "arch-10-2" "-march=i686 -I${srcdir}/$subdir -al"
+    run_list_test "arch-10-3" "-march=i686+sse4.2 -I${srcdir}/$subdir -al"
+    run_list_test "arch-10-4" "-march=i686+sse4+vmx+smx -I${srcdir}/$subdir -al"
+    run_dump_test "arch-11"
+    run_dump_test "arch-12"
+    run_dump_test "xsave"
+    run_dump_test "xsave-intel"
+    run_dump_test "aes"
+    run_dump_test "aes-intel"
+    run_dump_test "clmul"
+    run_dump_test "clmul-intel"
+    run_dump_test "avx"
+    run_dump_test "avx-intel"
+    run_dump_test "sse2avx"
+    run_list_test "inval-avx" "-al"
+    run_dump_test "sse-check"
+    run_dump_test "sse-check-none"
+    run_dump_test "sse-check-warn"
+    run_list_test "sse-check-error" "-msse-check=error -I${srcdir}/$subdir -al"
+    run_dump_test "sse-noavx"
+    run_dump_test "movbe"
+    run_dump_test "movbe-intel"
+    run_list_test "inval-movbe" "-al"
+    run_dump_test "ept"
+    run_dump_test "ept-intel"
+    run_list_test "inval-ept" "-al"
+    run_dump_test "arch-avx-1"
+    run_list_test "arch-avx-1-1" "-march=generic32+avx -I${srcdir}/$subdir -al"
+    run_list_test "arch-avx-1-2" "-march=generic32+aes -I${srcdir}/$subdir -al"
+    run_list_test "arch-avx-1-3" "-march=generic32+pclmul -I${srcdir}/$subdir -al"
+    run_list_test "arch-avx-1-4" "-march=generic32+avx+aes -I${srcdir}/$subdir -al"
+    run_list_test "arch-avx-1-5" "-march=generic32+avx+pclmul -I${srcdir}/$subdir -al"
+    run_list_test "arch-avx-1-6" "-march=generic32+aes+pclmul -I${srcdir}/$subdir -al"
+    run_dump_test "opts"
+    run_dump_test "opts-intel"
+    run_dump_test "sse2avx-opts"
+    run_dump_test "sse2avx-opts-intel"
+    run_dump_test "fma"
+    run_dump_test "fma-intel"
 
     # These tests require support for 8 and 16 bit relocs,
     # so we only run them for ELF and COFF targets.
@@ -137,6 +180,10 @@ if [expr ([istarget "i*86-*-*"] ||  [istarget "x86_64-*-*"]) && [gas_32_check]] 
 	run_dump_test "reloc32"
 	run_list_test "reloc32" "--defsym _bad_=1"
 	run_dump_test "mixed-mode-reloc32"
+	run_dump_test "att-regs"
+	run_dump_test "intel-regs"
+	run_list_test "inval-equ-1" "-al"
+	run_list_test "inval-equ-2" "-al"
     }
 
     # This is a PE specific test.
@@ -149,6 +196,11 @@ if [expr ([istarget "i*86-*-*"] ||  [istarget "x86_64-*-*"]) && [gas_32_check]] 
     set ASFLAGS "$old_ASFLAGS"
 }
 
+if [expr [istarget "i*86-*-*"] || [istarget "x86_64-*-*"]] then {
+    run_dump_test "string-ok"
+    run_list_test "string-bad" ""
+}
+
 if [expr ([istarget "i*86-*-*"] || [istarget "x86_64-*-*"]) && [gas_64_check]] then {
 
     global ASFLAGS
@@ -159,7 +211,12 @@ if [expr ([istarget "i*86-*-*"] || [istarget "x86_64-*-*"]) && [gas_64_check]] t
     run_dump_test "x86-64-addr32"
     run_dump_test "x86-64-addr32-intel"
     run_dump_test "x86-64-opcode"
-    run_dump_test "x86-64-pcrel"
+    run_dump_test "x86-64-intel64"
+    if { ![istarget "*-*-mingw*"] } then {
+      run_dump_test "x86-64-pcrel"
+    } else {
+      run_dump_test "x86-64-w64-pcrel"
+    }
     run_dump_test "x86-64-rip"
     run_dump_test "x86-64-rip-intel"
     run_dump_test "x86-64-stack"
@@ -197,6 +254,8 @@ if [expr ([istarget "i*86-*-*"] || [istarget "x86_64-*-*"]) && [gas_64_check]] t
     run_dump_test "x86-64-nops-4"
     run_dump_test "x86-64-nops-4-core2"
     run_dump_test "x86-64-nops-4-k8"
+    run_dump_test "x86-64-nops-5"
+    run_dump_test "x86-64-nops-5-k8"
     run_dump_test "x86-64-sse4_1"
     run_dump_test "x86-64-sse4_1-intel"
     run_dump_test "x86-64-sse4_2"
@@ -207,16 +266,51 @@ if [expr ([istarget "i*86-*-*"] || [istarget "x86_64-*-*"]) && [gas_64_check]] t
     run_dump_test "x86-64-simd"
     run_dump_test "x86-64-simd-intel"
     run_dump_test "x86-64-simd-suffix"
-    run_dump_test "x86-64-sse5"
+    if { ![istarget "*-*-mingw*"] } then {
+      run_dump_test "x86-64-sse5"
+    }
     run_dump_test "x86-64-mem"
     run_dump_test "x86-64-mem-intel"
     run_dump_test "x86-64-reg"
     run_dump_test "x86-64-reg-intel"
     run_dump_test "x86-64-sib"
     run_dump_test "x86-64-sib-intel"
-    run_dump_test "x86-64-opcode-inval"
-    run_dump_test "x86-64-opcode-inval-intel"
+    if { ![istarget "*-*-mingw*"] } then {
+      run_dump_test "x86-64-opcode-inval"
+      run_dump_test "x86-64-opcode-inval-intel"
+    }
     run_dump_test "rexw"
+    run_dump_test "x86-64-arch-1"
+    run_dump_test "x86-64-arch-2"
+    run_dump_test "x86-64-xsave"
+    run_dump_test "x86-64-xsave-intel"
+    run_dump_test "x86-64-aes"
+    run_dump_test "x86-64-aes-intel"
+    run_dump_test "x86-64-clmul"
+    run_dump_test "x86-64-clmul-intel"
+    run_dump_test "x86-64-avx"
+    run_dump_test "x86-64-avx-intel"
+    run_dump_test "x86-64-sse2avx"
+    run_list_test "x86-64-inval-avx" "-al"
+    run_dump_test "x86-64-sse-check"
+    run_dump_test "x86-64-sse-check-none"
+    run_dump_test "x86-64-sse-check-warn"
+    run_list_test "x86-64-sse-check-error" "-msse-check=error -I${srcdir}/$subdir -al"
+    run_dump_test "x86-64-sse-noavx"
+    run_dump_test "x86-64-movbe"
+    run_dump_test "x86-64-movbe-intel"
+    run_list_test "x86-64-inval-movbe" "-al"
+    run_dump_test "x86-64-ept"
+    run_dump_test "x86-64-ept-intel"
+    run_list_test "x86-64-inval-ept" "-al"
+    run_dump_test "x86-64-opts"
+    run_dump_test "x86-64-opts-intel"
+    run_dump_test "x86-64-sse2avx-opts"
+    run_dump_test "x86-64-sse2avx-opts-intel"
+    run_dump_test "x86-64-avx-swap"
+    run_dump_test "x86-64-avx-swap-intel"
+    run_dump_test "x86-64-fma"
+    run_dump_test "x86-64-fma-intel"
 
     if { ![istarget "*-*-aix*"]
       && ![istarget "*-*-beos*"]

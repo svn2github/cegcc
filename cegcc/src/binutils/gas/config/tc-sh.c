@@ -3096,6 +3096,7 @@ enum options
   OPTION_NO_EXPAND,
   OPTION_PT32,
 #endif
+  OPTION_H_TICK_HEX,
   OPTION_DUMMY  /* Not used.  This is just here to make it easy to add and subtract options from this enum.  */
 };
 
@@ -3122,6 +3123,7 @@ struct option md_longopts[] =
   {"no-expand",              no_argument, NULL, OPTION_NO_EXPAND},
   {"expand-pt32",            no_argument, NULL, OPTION_PT32},
 #endif /* HAVE_SH64 */
+  { "h-tick-hex", no_argument,	      NULL, OPTION_H_TICK_HEX  },
 
   {NULL, no_argument, NULL, 0}
 };
@@ -3251,6 +3253,10 @@ md_parse_option (int c, char *arg ATTRIBUTE_UNUSED)
       sh64_pt32 = TRUE;
       break;
 #endif /* HAVE_SH64 */
+
+    case OPTION_H_TICK_HEX:
+      enable_h_tick_hex = 1;
+      break;
 
     default:
       return 0;
@@ -4018,6 +4024,23 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
       break;
 
     case BFD_RELOC_SH_PCRELIMM8BY4:
+      /* If we are dealing with a known destination ... */
+      if ((fixP->fx_addsy == NULL || S_IS_DEFINED (fixP->fx_addsy))
+	  && (fixP->fx_subsy == NULL || S_IS_DEFINED (fixP->fx_addsy)))
+      {
+	/* Don't silently move the destination due to misalignment.
+	   The absolute address is the fragment base plus the offset into
+	   the fragment plus the pc relative offset to the label.  */
+	if ((fixP->fx_frag->fr_address + fixP->fx_where + val) & 3)
+	  as_bad_where (fixP->fx_file, fixP->fx_line,
+			_("offset to unaligned destination"));
+
+	/* The displacement cannot be zero or backward even if aligned.
+	   Allow -2 because val has already been adjusted somewhere.  */
+	if (val < -2)
+	  as_bad_where (fixP->fx_file, fixP->fx_line, _("negative offset"));
+      }
+
       /* The lower two bits of the PC are cleared before the
          displacement is added in.  We can assume that the destination
          is on a 4 byte boundary.  If this instruction is also on a 4

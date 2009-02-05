@@ -1,5 +1,5 @@
 /* tc-m32c.c -- Assembler for the Renesas M32C.
-   Copyright (C) 2005, 2006, 2007 Free Software Foundation.
+   Copyright (C) 2005, 2006, 2007, 2008 Free Software Foundation.
    Contributed by RedHat.
 
    This file is part of GAS, the GNU Assembler.
@@ -68,12 +68,14 @@ const char * md_shortopts = M32C_SHORTOPTS;
 #define OPTION_CPU_M16C	       (OPTION_MD_BASE)
 #define OPTION_CPU_M32C        (OPTION_MD_BASE + 1)
 #define OPTION_LINKRELAX       (OPTION_MD_BASE + 2)
+#define OPTION_H_TICK_HEX      (OPTION_MD_BASE + 3)
 
 struct option md_longopts[] =
 {
   { "m16c",       no_argument,	      NULL, OPTION_CPU_M16C   },
   { "m32c",       no_argument,	      NULL, OPTION_CPU_M32C   },
   { "relax",      no_argument,	      NULL, OPTION_LINKRELAX   },
+  { "h-tick-hex", no_argument,	      NULL, OPTION_H_TICK_HEX  },
   {NULL, no_argument, NULL, 0}
 };
 size_t md_longopts_size = sizeof (md_longopts);
@@ -125,6 +127,10 @@ md_parse_option (int c, char * arg ATTRIBUTE_UNUSED)
       m32c_relax = 1;
       break;
 
+    case OPTION_H_TICK_HEX:
+      enable_h_tick_hex = 1;
+      break;
+
     default:
       return 0;
     }
@@ -153,6 +159,9 @@ const pseudo_typeS md_pseudo_table[] =
   { "bss",	s_bss, 		0},
   { "3byte",	cons,		3 },
   { "word",	cons,		4 },
+  {"file",	(void (*) (int)) dwarf2_directive_file, 0},
+  {"loc",	dwarf2_directive_loc, 0},
+  {"loc_mark_labels", dwarf2_directive_loc_mark_labels, 0},
   { NULL, 	NULL, 		0 }
 };
 
@@ -860,22 +869,22 @@ md_convert_frag (bfd *   abfd ATTRIBUTE_UNUSED,
 
     case -M32C_MACRO_ADJNZ_2:
       rl_addend = 0x31;
-      op[2] = addend;
+      op[2] = addend - 2;
       operand = M32C_OPERAND_LAB_16_8;
       break;
     case -M32C_MACRO_ADJNZ_3:
       rl_addend = 0x41;
-      op[3] = addend;
+      op[3] = addend - 2;
       operand = M32C_OPERAND_LAB_24_8;
       break;
     case -M32C_MACRO_ADJNZ_4:
       rl_addend = 0x51;
-      op[4] = addend;
+      op[4] = addend - 2;
       operand = M32C_OPERAND_LAB_32_8;
       break;
     case -M32C_MACRO_ADJNZ_5:
       rl_addend = 0x61;
-      op[5] = addend;
+      op[5] = addend - 2;
       operand = M32C_OPERAND_LAB_40_8;
       break;
 
@@ -1297,8 +1306,6 @@ m32c_fix_adjustable (fixS * fixP)
 }
 
 /* Worker function for m32c_is_colon_insn().  */
-static char restore_colon PARAMS ((int));
-
 static char
 restore_colon (int advance_i_l_p_by)
 {
