@@ -143,7 +143,9 @@ namespace std
 #endif
 #ifdef _GLIBCXX_USE_WCHAR_T
   using ::wcstombs;
+#ifndef __MINGW32CE__
   using ::wctomb;
+#endif
 #endif // _GLIBCXX_USE_WCHAR_T
 
   inline long

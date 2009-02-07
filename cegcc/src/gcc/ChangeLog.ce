@@ -1,3 +1,9 @@
+2009-02-07  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	gcc/libstdc++/
+	* include/c_std/std_cstdlib.h [__MINGW32CE__]: Don't pull in
+	wctomb.
+
 2008-09-24  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	gcc/libstdc++/
