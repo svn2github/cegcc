@@ -1,5 +1,10 @@
 2009-02-07  Pedro Alves  <pedroalves@users.sourceforge.net>
 
+	* scripts: New top-level directory.  Move build-mingw32ce.sh and
+	build-cegcc.sh there.
+
+2009-02-07  Pedro Alves  <pedroalves@users.sourceforge.net>
+
 	* VERSIONS: Update to reflect recent binutils, w32api and mingw
 	merges from upstream.
 
