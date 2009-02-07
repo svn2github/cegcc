@@ -1,3 +1,8 @@
+2008-09-30  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	* build-cegcc.sh (COMPONENTS_NUM): Correctly get array size.
+	* build-mingw32ce.sh (COMPONENTS_NUM): Likewise.
+
 2008-09-26  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	* build-cegcc.sh (build_bootstrap_gcc): Remove unneeded
