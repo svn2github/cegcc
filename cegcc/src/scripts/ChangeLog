@@ -1,0 +1,4 @@
+2009-02-07  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	* build-cegcc.sh (BASE_DIRECTORY): Step one level down.
+	* build-mingw32ce.sh (BASE_DIRECTORY): Likewise.

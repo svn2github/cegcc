@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 
 BASE_DIRECTORY=`dirname $0`
-BASE_DIRECTORY=`(cd ${BASE_DIRECTORY}; pwd)`
+BASE_DIRECTORY=`(cd ${BASE_DIRECTORY}; cd ..; pwd)`
 ME=`basename $0`
 
 # FIXME: some components need this (mingwdll), but they shouldn't.
