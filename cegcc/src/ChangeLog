@@ -1,7 +1,7 @@
 2009-02-07  Pedro Alves  <pedroalves@users.sourceforge.net>
 
-	* scripts: New top-level directory.  Move build-mingw32ce.sh and
-	build-cegcc.sh there.
+	* scripts: New top-level directory.  Move build-mingw32ce.sh,
+	build-cegcc.sh, and build-mingw32ce-dlls.sh there.
 
 2009-02-07  Pedro Alves  <pedroalves@users.sourceforge.net>
 
