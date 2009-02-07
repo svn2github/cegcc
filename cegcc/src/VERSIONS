@@ -1,24 +1,24 @@
-Versions of the subdirectories below are :
+Versions of the subdirectories below are:
 
-- gcc 4.1.0 from 
+- gcc 4.1.0 from
+
 	ftp://ftp.gnu.org/pub/gnu/gcc/gcc-4.1.0
 	gcc-core-4.1.0.tar.bz2
 	gcc-g++-4.1.0.tar.bz2
 
-  Note : gcc-4.3.2 is added to the source tree as src/gcc-4.3.2,
-  it's not the default build yet.
-	
 - newlib 1.14.0
+
 	ftp://sources.redhat.com/pub/newlib/index.html
 	ftp://sources.redhat.com/pub/newlib/newlib-1.14.0.tar.gz
-	
-- gdb : there is no longer a gdb source in our tree.
-  We can use the gdb version from the GNU distribution sites without change.
-	
-- binutils from CVS (latest update: 8 January 2008)
 
-- w32api from cvs, 5 February 2007
-    cvs -d :pserver:anoncvs@cygwin.com:/cvs/src/winsup/w32api ...
+- binutils from cvs, 4 February 2009
 
-- mingw from cvs, 5 February 2007
-    cvs -d :pserver:anoncvs@cygwin.com:/cvs/src/winsup/mingw ...
+	cvs -d :pserver:anoncvs@sourceware.org:/cvs/src ...
+
+- w32api from cvs, 6 February 2009
+
+	cvs -d :pserver:anoncvs@cygwin.com:/cvs/src/winsup/w32api ...
+
+- mingw from cvs, 6 February 2009
+
+	cvs -d :pserver:anoncvs@cygwin.com:/cvs/src/winsup/mingw ...

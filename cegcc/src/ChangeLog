@@ -1,3 +1,8 @@
+2009-02-07  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	* VERSIONS: Update to reflect recent binutils, w32api and mingw
+	merges from upstream.
+
 2008-09-30  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	* build-cegcc.sh (COMPONENTS_NUM): Correctly get array size.
