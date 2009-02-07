@@ -70,21 +70,31 @@ DWORD WINAPI GetDeviceDriverBaseNameW(LPVOID,LPWSTR,DWORD);
 DWORD WINAPI GetDeviceDriverFileNameA(LPVOID,LPSTR,DWORD);
 DWORD WINAPI GetDeviceDriverFileNameW(LPVOID,LPWSTR,DWORD);
 BOOL WINAPI GetProcessMemoryInfo(HANDLE,PPROCESS_MEMORY_COUNTERS,DWORD);
+#if (_WIN32_WINNT >= 0x0501)
+DWORD WINAPI GetProcessImageFileNameA(HANDLE,LPSTR,DWORD);
+DWORD WINAPI GetProcessImageFileNameW(HANDLE,LPWSTR,DWORD);
+#endif
 
 #endif /* not RC_INVOKED */
 
 #ifdef UNICODE
 #define GetModuleBaseName GetModuleBaseNameW
 #define GetModuleFileNameEx GetModuleFileNameExW
-#define GetMappedFilenameEx GetMappedFilenameExW
+#define GetMappedFileName GetMappedFileNameW
 #define GetDeviceDriverBaseName GetDeviceDriverBaseNameW
 #define GetDeviceDriverFileName GetDeviceDriverFileNameW
+#if (_WIN32_WINNT >= 0x0501)
+#define GetProcessImageFileName GetProcessImageFileNameW
+#endif
 #else
 #define GetModuleBaseName GetModuleBaseNameA
 #define GetModuleFileNameEx GetModuleFileNameExA
-#define GetMappedFilenameEx GetMappedFilenameExA
+#define GetMappedFileName GetMappedFileNameA
 #define GetDeviceDriverBaseName GetDeviceDriverBaseNameA
 #define GetDeviceDriverFileName GetDeviceDriverFileNameA
+#if (_WIN32_WINNT >= 0x0501)
+#define GetProcessImageFileName GetProcessImageFileNameA
+#endif
 #endif
 
 #ifdef __cplusplus

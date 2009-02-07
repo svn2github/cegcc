@@ -67,7 +67,7 @@ extern "C" {
 #define TRUE 1
 #endif
 
-/* Pseudo modifiers for parameters 
+/* Pseudo modifiers for parameters
    We don't use these unnecessary defines in the w32api headers. Define
    them by default since that is what people expect, but allow users
    to avoid the pollution.  */
@@ -168,9 +168,9 @@ extern "C" {
 #define DBG_UNREFERENCED_PARAMETER(P)
 #define DBG_UNREFERENCED_LOCAL_VARIABLE(L)
 
-#ifdef __GNUC__
 #ifndef NONAMELESSUNION
-#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95) 
+#ifdef __GNUC__
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95)
 #define _ANONYMOUS_UNION __extension__
 #define _ANONYMOUS_STRUCT __extension__
 #else
@@ -178,11 +178,11 @@ extern "C" {
 #define _ANONYMOUS_UNION __extension__
 #endif /* __cplusplus */
 #endif /* __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95) */
-#endif /* NONAMELESSUNION */
 #elif defined(__WATCOMC__)
 #define _ANONYMOUS_UNION
 #define _ANONYMOUS_STRUCT
 #endif /* __GNUC__/__WATCOMC__ */
+#endif /* NONAMELESSUNION */
 
 #ifndef _ANONYMOUS_UNION
 #define _ANONYMOUS_UNION
@@ -291,12 +291,11 @@ DECLARE_HANDLE(HFONT);
 DECLARE_HANDLE(HICON);
 DECLARE_HANDLE(HKEY);
 /* FIXME: How to handle these. SM_CMONITORS etc in winuser.h also. */
-/* #if (WINVER >= 0x0500) */
 DECLARE_HANDLE(HMONITOR);
 #define HMONITOR_DECLARED 1
 DECLARE_HANDLE(HTERMINAL);
 DECLARE_HANDLE(HWINEVENTHOOK);
-/* #endif */
+
 typedef HKEY *PHKEY;
 DECLARE_HANDLE(HMENU);
 DECLARE_HANDLE(HMETAFILE);

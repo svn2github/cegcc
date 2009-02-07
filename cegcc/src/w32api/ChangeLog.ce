@@ -1,3 +1,7 @@
+2009-02-07  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	Merge from upstream.  Now at 3.12.
+
 2009-02-01  Ryan Raasch  <ryan.raasch@gmail.com>
 
 	* libce/directx/strmiids.c : New file, copy from src/lib/directx.

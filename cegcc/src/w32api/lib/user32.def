@@ -366,6 +366,7 @@ InsertMenuA@20
 InsertMenuItemA@16
 InsertMenuItemW@16
 InsertMenuW@20
+InternalGetWindowText@12
 IntersectRect@12
 InvalidateRect@12
 InvalidateRgn@12
@@ -483,6 +484,7 @@ RegisterClipboardFormatA@4
 RegisterClipboardFormatW@4
 RegisterDeviceNotificationA@12
 RegisterDeviceNotificationW@12
+RegisterPowerSettingNotification@12
 RegisterHotKey@16
 RegisterRawInputDevices@12
 RegisterWindowMessageA@4
@@ -612,6 +614,7 @@ UnpackDDElParam@16
 UnregisterClassA@8
 UnregisterClassW@8
 UnregisterDeviceNotification@4
+UnregisterPowerSettingNotification@4
 UnregisterHotKey@8
 UpdateLayeredWindow@36
 UpdateWindow@4

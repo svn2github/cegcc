@@ -3828,7 +3828,7 @@ KeGetCurrentIrql(
  *   VOID)
  */
 #define KeGetCurrentProcessorNumber() \
-  ((ULONG)KeGetCurrentKPCR()->ProcessorNumber)
+  ((ULONG)KeGetCurrentKPCR()->Number)
 
 
 #if  __USE_NTOSKRNL__
@@ -3842,13 +3842,13 @@ NTOSAPI
 LONG
 DDKFASTAPI
 InterlockedIncrement(
-  /*IN*/ PLONG  VOLATILE  Addend);
+  /*IN*/ LONG VOLATILE *Addend);
 
 NTOSAPI
 LONG
 DDKFASTAPI
 InterlockedDecrement(
-  /*IN*/ PLONG  VOLATILE  Addend);
+  /*IN*/ LONG VOLATILE *Addend);
 
 NTOSAPI
 LONG
@@ -4895,6 +4895,10 @@ DDKAPI
 RtlStringFromGUID( 
   /*IN*/ REFGUID  Guid, 
   /*OUT*/ PUNICODE_STRING  GuidString);
+
+#define RtlStringCbCopyA(dst, dst_len, src) strncpy(dst, src, dst_len)
+#define RtlStringCbPrintfA(args...) snprintf(args)
+#define RtlStringCbVPrintfA(args...) vsnprintf(args)
 
 NTOSAPI
 BOOLEAN
@@ -7350,6 +7354,11 @@ KeEnterCriticalRegion(
 #define KeFlushIoBuffers(_Mdl, _ReadOperation, _DmaOperation)
 
 NTOSAPI
+VOID
+DDKAPI
+KeFlushQueuedDpcs(VOID);
+
+NTOSAPI
 PRKTHREAD
 DDKAPI
 KeGetCurrentThread(
@@ -7448,6 +7457,8 @@ VOID
 DDKAPI
 KeLeaveCriticalRegion(
   VOID);
+
+#define KeMemoryBarrier() asm("mfence;")
 
 NTOSAPI
 NTSTATUS
@@ -7719,38 +7730,18 @@ KeWaitForSingleObject(
   /*IN*/ BOOLEAN  Alertable,
   /*IN*/ PLARGE_INTEGER  Timeout  /*OPTIONAL*/);
 
-#if defined(_X86_)
-
 NTOSAPI
 VOID
-FASTCALL
-KfLowerIrql(
-  /*IN*/ KIRQL  NewIrql);
-
-NTOSAPI
-KIRQL
-FASTCALL
-KfRaiseIrql(
-  /*IN*/ KIRQL  NewIrql);
-
-#define KeLowerIrql(a) KfLowerIrql(a)
-#define KeRaiseIrql(a,b) *(b) = KfRaiseIrql(a)
-
-#else
+DDKAPI
+KeRaiseIrql(
+  /*IN*/ KIRQL new_irql,
+  /*OUT*/ PKIRQL old_irql);
 
 NTOSAPI
 VOID
 DDKAPI
 KeLowerIrql(
-  /*IN*/ KIRQL  NewIrql);
-
-NTOSAPI
-KIRQL
-DDKAPI
-KeRaiseIrql(
-  /*IN*/ KIRQL  NewIrql);
-
-#endif
+  /*IN*/ KIRQL irql);
 
 NTOSAPI
 KIRQL

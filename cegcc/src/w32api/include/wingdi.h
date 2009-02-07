@@ -358,6 +358,8 @@ extern "C" {
 #define OUT_RASTER_PRECIS	6
 #define OUT_TT_ONLY_PRECIS	7
 #define OUT_OUTLINE_PRECIS	8
+//http://www.pinvoke.net/default.aspx/Structures/LOGFONT.html
+#define OUT_PS_ONLY_PRECIS      10
 #define CLIP_DEFAULT_PRECIS	0
 #define CLIP_CHARACTER_PRECIS	1
 #define CLIP_STROKE_PRECIS	2
@@ -1202,6 +1204,7 @@ extern "C" {
 #endif
 #if(WINVER >= 0x0501)
 #define DM_DISPLAYFIXEDOUTPUT 0x20000000
+#define DM_DISPLAYORIENTATION 0x00000080
 #define DMDO_DEFAULT 0x00000000
 #define DMDO_90 0x00000001
 #define DMDO_180 0x00000002
@@ -1324,6 +1327,15 @@ extern "C" {
 #define DISPLAY_DEVICE_VGA_COMPATIBLE      0x00000010
 #define DISPLAY_DEVICE_REMOVABLE           0x00000020
 #define DISPLAY_DEVICE_MODESPRUNED         0x08000000
+
+#if (_WIN32_WINNT >= 0x0500)
+#define NTM_NONNEGATIVE_AC  0x00010000
+#define NTM_PS_OPENTYPE     0x00020000
+#define NTM_TT_OPENTYPE     0x00040000
+#define NTM_MULTIPLEMASTER  0x00080000
+#define NTM_TYPE1           0x00100000
+#define NTM_DSIG            0x00200000
+#endif
 
 #if (_WIN32_WINNT >= 0x0500)
 #define GGI_MARK_NONEXISTING_GLYPHS 1
@@ -2928,16 +2940,15 @@ WINGDIAPI int WINAPI GetTextCharsetInfo(HDC,LPFONTSIGNATURE,DWORD);
 WINGDIAPI COLORREF WINAPI GetTextColor(HDC);
 WINGDIAPI BOOL WINAPI GetTextExtentExPointA(HDC,LPCSTR,int,int,LPINT,LPINT,LPSIZE);
 WINGDIAPI BOOL WINAPI GetTextExtentExPointW( HDC,LPCWSTR,int,int,LPINT,LPINT,LPSIZE );
-#ifndef _WIN32_WCE
-WINGDIAPI BOOL WINAPI GetTextExtentPointA(HDC,LPCSTR,int,LPSIZE);
-WINGDIAPI BOOL WINAPI GetTextExtentPointW(HDC,LPCWSTR,int,LPSIZE);
+#if (_WIN32_WINNT >= 0x0500)
+WINGDIAPI BOOL WINAPI GetTextExtentExPointI(HDC, LPWORD, int, int, LPINT, LPINT, LPSIZE);
+#endif
+#if !defined (_WIN32_WCE)
 WINGDIAPI BOOL WINAPI GetTextExtentPoint32A(HDC,LPCSTR,int,LPSIZE);
 WINGDIAPI BOOL WINAPI GetTextExtentPoint32W( HDC,LPCWSTR,int,LPSIZE);
-#else
-#if (_WIN32_WCE >= 0x200)
+#elif (_WIN32_WCE >= 0x200)
 #define GetTextExtentPointW(hdc,cstr,len,size) GetTextExtentExPointW(hdc,cstr,len,0,NULL,NULL,size)
 #define GetTextExtentPoint32W GetTextExtentPointW
-#endif
 #endif
 WINGDIAPI int WINAPI GetTextFaceA(HDC,int,LPSTR);
 WINGDIAPI int WINAPI GetTextFaceW(HDC,int,LPWSTR);
