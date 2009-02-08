@@ -1,3 +1,8 @@
+2009-02-08  Rikky <rikky@users.sourceforge.net>
+
+	* binutils/windres.c : Fix [ 2574606 ] "windres can't detect
+	architecture" problem.
+
 2009-02-04  Pedro Alves <pedroalves@users.sourceforge.net>
 
 	Merge from FSF head.

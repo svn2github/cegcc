@@ -1109,7 +1109,7 @@ set_endianess (bfd *abfd, const char *target)
 	    if (!find_arch_match (tname, arches))
 	      {
 		char *new_tname = (char *) alloca (strlen (hyp) + 1);
-		strcpy (new_tname, hyp);
+		strcpy (new_tname, hyp + 1);
 		while ((hyp = strrchr (new_tname, '-')) != NULL)
 		  {
 		    *hyp = 0;
