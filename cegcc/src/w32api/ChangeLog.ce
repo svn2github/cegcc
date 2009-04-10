@@ -1,5 +1,7 @@
 2009-04-10  Marcel Smit  <marcelsmit@users.sourceforge.net>
 
+	* include/cegcc.h.in (__CEGCC_VERSION__) : Add backslashes at the end
+	of lines to allow line continuation.
 	* include/kfuncs.h (TlsAlloc, TlsFree, PulseEvent, ResetEvent,
 	SetEvent, GetCurrentThread, GetCurrentProcess, GetCurrentThreadId,
 	GetCurrentProcessId) : Change them from macros to inline functions.

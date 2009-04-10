@@ -18,8 +18,8 @@
 /* Automatic changes above */
 
 #define	__CEGCC_VERSION__	\
-	(((__CEGCC_VERSION_MAJOR__) << 16)
-	 + ((__CEGCC_VERSION_MINOR__) << 8)
+	(((__CEGCC_VERSION_MAJOR__) << 16) \
+	 + ((__CEGCC_VERSION_MINOR__) << 8) \
 	 + (__CEGCC_PATCHLEVEL__))
 
 #ifdef __cplusplus
