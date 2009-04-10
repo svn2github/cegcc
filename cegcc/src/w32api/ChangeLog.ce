@@ -1,3 +1,9 @@
+2009-04-10  Marcel Smit  <marcelsmit@users.sourceforge.net>
+
+	* include/kfuncs.h (TlsAlloc, TlsFree, PulseEvent, ResetEvent,
+	SetEvent, GetCurrentThread, GetCurrentProcess, GetCurrentThreadId,
+	GetCurrentProcessId) : Change them from macros to inline functions.
+
 2009-02-07  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	Merge from upstream.  Now at 3.12.

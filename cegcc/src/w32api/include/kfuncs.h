@@ -21,11 +21,26 @@
 #define SH_CURPROC              2
 
 /* Process/Thread ID Methods */
-#define	GetCurrentThread()	((HANDLE)(SH_CURTHREAD+SYS_HANDLE_BASE))
-#define	GetCurrentProcess()	((HANDLE)(SH_CURPROC+SYS_HANDLE_BASE))
-#define	GetCurrentThreadId()	((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURTHREAD]))
-#define	GetCurrentProcessId()	((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURPROC]))
+inline HANDLE GetCurrentProcess()
+{
+  return ((HANDLE)(SH_CURPROC+SYS_HANDLE_BASE));
 
+}
+
+inline HANDLE GetCurrentThread()
+{
+  return ((HANDLE)(SH_CURTHREAD+SYS_HANDLE_BASE));
+}
+
+inline DWORD GetCurrentThreadId()
+{
+  return ((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURTHREAD]));
+}
+
+inline DWORD GetCurrentProcessId()
+{
+  return ((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURPROC]));
+}
 
 /* EventModify signature hinted on:
    http://msdn.microsoft.com/library/default.asp?url=/library/en-us/wcehardware5/html/wce50lrfCeLogImportTable.asp
@@ -37,16 +52,38 @@ WINBASEAPI BOOL WINAPI EventModify(HANDLE h, DWORD e);
 #define	EVENT_PULSE	1
 #define	EVENT_RESET	2
 #define	EVENT_SET	3
-#define	PulseEvent(x)	EventModify(x, EVENT_PULSE)
-#define	ResetEvent(x)	EventModify(x, EVENT_RESET)
-#define	SetEvent(x)	EventModify(x, EVENT_SET)
+
+inline BOOL PulseEvent (HANDLE x)
+{
+  return EventModify(x, EVENT_PULSE);
+}
+
+inline BOOL ResetEvent (HANDLE x)
+{
+  return EventModify(x, EVENT_PULSE);
+}
+
+inline BOOL SetEvent (HANDLE x)
+{
+  return EventModify(x, EVENT_PULSE);
+}
 
 /* TLS Constants and Constructs */
 #define TLS_FUNCALLOC   0
 #define TLS_FUNCFREE    1
 
 WINBASEAPI DWORD WINAPI TlsCall(DWORD func, DWORD val);
-#define TlsAlloc()  (TlsCall(TLS_FUNCALLOC, 0))
-#define TlsFree(x)  (TlsCall(TLS_FUNCFREE, x))
+
+inline DWORD TlsAlloc (void)
+{
+  return (TlsCall(TLS_FUNCALLOC, 0));
+}
+
+inline BOOL WINAPI TlsFree(DWORD x)
+{
+  return (TlsCall(TLS_FUNCFREE, x));
+}
 
 #endif
+
+ 	  	 
