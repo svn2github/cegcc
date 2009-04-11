@@ -21,23 +21,23 @@
 #define SH_CURPROC              2
 
 /* Process/Thread ID Methods */
-inline HANDLE GetCurrentProcess()
+static inline HANDLE GetCurrentProcess()
 {
   return ((HANDLE)(SH_CURPROC+SYS_HANDLE_BASE));
 
 }
 
-inline HANDLE GetCurrentThread()
+static inline HANDLE GetCurrentThread()
 {
   return ((HANDLE)(SH_CURTHREAD+SYS_HANDLE_BASE));
 }
 
-inline DWORD GetCurrentThreadId()
+static inline DWORD GetCurrentThreadId()
 {
   return ((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURTHREAD]));
 }
 
-inline DWORD GetCurrentProcessId()
+static inline DWORD GetCurrentProcessId()
 {
   return ((DWORD)(((HANDLE *)(PUserKData+SYSHANDLE_OFFSET))[SH_CURPROC]));
 }
@@ -53,17 +53,17 @@ WINBASEAPI BOOL WINAPI EventModify(HANDLE h, DWORD e);
 #define	EVENT_RESET	2
 #define	EVENT_SET	3
 
-inline BOOL PulseEvent (HANDLE x)
+static inline BOOL PulseEvent (HANDLE x)
 {
   return EventModify(x, EVENT_PULSE);
 }
 
-inline BOOL ResetEvent (HANDLE x)
+static inline BOOL ResetEvent (HANDLE x)
 {
   return EventModify(x, EVENT_PULSE);
 }
 
-inline BOOL SetEvent (HANDLE x)
+static inline BOOL SetEvent (HANDLE x)
 {
   return EventModify(x, EVENT_PULSE);
 }
@@ -74,16 +74,14 @@ inline BOOL SetEvent (HANDLE x)
 
 WINBASEAPI DWORD WINAPI TlsCall(DWORD func, DWORD val);
 
-inline DWORD TlsAlloc (void)
+static inline DWORD TlsAlloc (void)
 {
   return (TlsCall(TLS_FUNCALLOC, 0));
 }
 
-inline BOOL WINAPI TlsFree(DWORD x)
+static inline BOOL WINAPI TlsFree(DWORD x)
 {
   return (TlsCall(TLS_FUNCFREE, x));
 }
 
 #endif
-
- 	  	 
