@@ -68,7 +68,7 @@ Boston, MA 02110-1301, USA.  */
    and to corelibc, a static lib that contains the start files, among other
    basic crt stuff.  */
 #undef LIB_SPEC
-#define LIB_SPEC "-lcoredll -lcorelibc"
+#define LIB_SPEC "-lcoredll"
 
 #undef LINK_SPEC
 #define LINK_SPEC "\
@@ -77,3 +77,13 @@ Boston, MA 02110-1301, USA.  */
   %{static:-Bstatic} %{!static:-Bdynamic} \
   %{shared|mdll: -e DllMainCRTStartup} \
   "
+
+#undef STARTFILE_SPEC
+#define STARTFILE_SPEC "%{shared|mdll:dllcrt3%O%s} \
+  %{!shared:%{!mdll:crt3%O%s}} %{pg:gcrt3%O%s}"
+
+
+/* Include in the mingw32 libraries with libgcc */
+#undef LIBGCC_SPEC
+#define LIBGCC_SPEC \
+  "%{mthreads:-lmingwthrd} -lmingw32 -lgcc -lceoldname -lmingwex"
