@@ -73,8 +73,13 @@ Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
 int
 __gthr_win32_once (__gthread_once_t *once, void (*func) (void))
 {
-  if (once == NULL || func == NULL)
+  if (once == NULL || func == NULL) {
+#ifdef EINVAL
     return EINVAL;
+#else
+    return ERROR_INVALID_FUNCTION;
+#endif
+  }
 
   if (! once->done)
     {

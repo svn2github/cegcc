@@ -1,3 +1,9 @@
+2009-04-11  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* gcc/config/i386/t-cygming : Include the src/mingw/include tree so
+	libgcc2 can be compiled.
+	* gcc/config/i386/gthr-win32.c : Use ERROR_INVALID_FUNCTION, not EINVAL.
+
 2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* libgcov.c (gcov_exit) [UNDER_CE]: Fix mbstowcs/wcstombs
