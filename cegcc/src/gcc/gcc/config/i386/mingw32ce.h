@@ -31,6 +31,49 @@ Boston, MA 02110-1301, USA.  */
       builtin_define ("_WIN32");				\
       builtin_define_std ("WIN32");				\
       builtin_define_std ("WINNT");				\
-      builtin_define_std ("UNDER_CE");				\
     }								\
   while (0)
+
+#undef CPP_SPEC
+#define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{mthreads:-D_MT} \
+-D__COREDLL__ -D__MINGW32__ -D__MINGW32CE__ -D__CEGCC_VERSION__ \
+%{!nostdinc: -idirafter ../include/w32api%s -idirafter ../../include/w32api%s }"
+
+#undef TARGET_OS_CPP_BUILTINS
+#define TARGET_OS_CPP_BUILTINS()				\
+  do								\
+  {								\
+      /* We currently define UNDER_CE to a non-value, as it seems \
+         MSVC2005 does the same.  */ \
+      builtin_define_std ("UNDER_CE");				\
+      builtin_define ("_UNICODE");				\
+      builtin_define_std ("UNICODE");				\
+	  /* Let's just ignore stdcall, and fastcall.  */ \
+      builtin_define ("__stdcall=__attribute__((__cdecl__))");	\
+      builtin_define ("__fastcall=__attribute__((__cdecl__))");	\
+      builtin_define ("__cdecl=__attribute__((__cdecl__))");		\
+      if (!flag_iso)							\
+        {								\
+          builtin_define ("_stdcall=__attribute__((__cdecl__))");	\
+          builtin_define ("_fastcall=__attribute__((__cdecl__))");	\
+          builtin_define ("_cdecl=__attribute__((__cdecl__))");	\
+        }								\
+      /* Even though linkonce works with static libs, this is needed 	\
+          to compare typeinfo symbols across dll boundaries.  */	\
+      builtin_define ("__GXX_MERGED_TYPEINFO_NAMES=0");		\
+  }                                                           \
+  while (0)
+
+/* Link with coredll, the main libc in the native SDK, 
+   and to corelibc, a static lib that contains the start files, among other
+   basic crt stuff.  */
+#undef LIB_SPEC
+#define LIB_SPEC "-lcoredll -lcorelibc"
+
+#undef LINK_SPEC
+#define LINK_SPEC "\
+  %{shared: %{mdll: %eshared and mdll are not compatible}} \
+  %{shared: --shared} %{mdll:--dll} \
+  %{static:-Bstatic} %{!static:-Bdynamic} \
+  %{shared|mdll: -e DllMainCRTStartup} \
+  "

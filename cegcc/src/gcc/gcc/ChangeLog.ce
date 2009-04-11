@@ -8,6 +8,7 @@
 	__MSVCRT__ is not predefined by the compiler.
 	* gcc/config/i386/mingw32ce.h(EXTRA_OS_CPP_BUILTINS) : Redefine, so
 	UNDER_CE is predefined by the compiler.
+	* gcc/config/i386/mingw32ce.h(TARGET_OS_CPP_BUILTINS) : Copy from ARM.
 
 2007-12-25  Pedro Alves  <pedro_alves@portugalmail.pt>
 
