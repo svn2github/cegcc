@@ -31,5 +31,6 @@ Boston, MA 02110-1301, USA.  */
       builtin_define ("_WIN32");				\
       builtin_define_std ("WIN32");				\
       builtin_define_std ("WINNT");				\
+      builtin_define_std ("UNDER_CE");				\
     }								\
   while (0)
