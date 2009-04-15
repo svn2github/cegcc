@@ -1,3 +1,7 @@
+2009-04-14  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* config.gcc : Add new file gcc/config/i386/mingw32ce.h .
+
 2009-04-11  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* gcc/config/i386/t-cygming : Include the src/mingw/include tree so
