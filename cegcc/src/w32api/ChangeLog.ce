@@ -1,3 +1,7 @@
+2009-04-15  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/winbase.h : Include inlined functions only from one file.
+
 2009-04-11  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/windefs.h, include/kfuncs.h : change inlined functions to
