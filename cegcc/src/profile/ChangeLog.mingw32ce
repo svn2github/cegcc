@@ -1,3 +1,8 @@
+2009-04-16  Johnny Willemsen  <jwillemsen@remedy.nl>
+
+	* profile/profil.c : Change __arm__ #ifdefs to UNDER_CE so they work
+	on x86 too.
+
 2008-01-13  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* profile/config.sub profile/Makefile.in : Adjust so arm-cegcc and
