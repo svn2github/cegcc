@@ -1,3 +1,8 @@
+2009-04-20  Johnny Willemsen <jwillemsen@remedy.nl>
+
+	* include/winbase.h (CeSetThreadPriority, CeGetThreadPriority) :
+	Declare.
+
 2009-04-15  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/winbase.h : Include inlined functions only from one file.
