@@ -4,16 +4,157 @@
 <p>
 I didn't know what to expect from a cross-debugging session so I figure there
 must be others like me.
-Here's a transcript of a debugging session I
-did with the cross-debugger that's part of the
-<font color="red"><b>0.02</b></font>
-binary pre-release of cegcc.
-(Don't worry about the old version number, all of this is still valid.)
+Here are a few transcripts of a debugging sessions I
+did with the cross-debugger.
+(Don't worry about the old version number in some of the cases,
+all of this is still valid.)
 <p>
 I've annotated it slightly.
 My input is in <font color="green"><i>green italic</i></font>,
 my notes are in <font color="red"><b>red bold</b></font>,
 all the rest is output.
+<h1>A debugging session with gdb 6.8 and gdbserver (cegcc svn as of April 2009)</h1>
+<p>
+I used two two xterm windows in this debugging session.
+One was used to start the application on the remote device,
+the other contained the gdb session.
+<p>
+The window used to start the application obviously also shows its output.
+It is not disturbed by gdb input/output,
+a big difference with the older debugging sessions (without gdbserver) below.
+<h2>Application startup via gdbserver</h2>
+<pre>
+dannypc: {25} <font color="green"><i>arm-mingw32ce-gcc -g -o fibo.exe fibo.c</i></font>
+dannypc: {26} <font color="green"><i>rcp fibo.exe ipaq:/temp</i></font>
+dannypc: {27} <font color="green"><i>rsh ipaq /temp/gdbserver :9999 /temp/fibo.exe</i></font> <font color="red"><b>Starts the application, tell gdbserver that it should expect a gdb at port number 9999</b></font>
+Process /temp/fibo.exe created; pid = 610050410
+Listening on port 9999
+Remote debugging from host 172.17.1.2 <font color="red"><b>This appears after the first <font color="green">c</font> command in gdb</b></font>
+Yow, command [\temp\fibo.exe] param []
+fibo(1) = 1 <font color="red"><b>This appears after the second <font color="green">c</font> command in gdb</b></font>
+fibo(2) = 1 <font color="red"><b>This appears after ... etc</b></font>
+fibo(3) = 2
+fibo(4) = 3
+fibo(5) = 5
+fibo(6) = 8
+fibo(7) = 13
+fibo(8) = 21
+fibo(9) = 34
+fibo(10) = 55
+fibo(11) = 89
+fibo(12) = 144
+fibo(13) = 233
+fibo(14) = 377
+fibo(15) = 610
+fibo(16) = 987
+fibo(17) = 1597
+fibo(18) = 2584
+fibo(19) = 4181
+
+Child exited with status 0
+</pre>
+<h2>The debugging session</h2>
+<pre>
+dannypc: {110} <font color="green"><i>arm-mingw32ce-gdb fibo.exe </i></font>
+GNU gdb 6.8
+Copyright (C) 2008 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "--host=i686-pc-linux-gnu --target=arm-mingw32ce"...
+(gdb) <font color="green"><i>target remote ipaq:9999 </i></font><font color="red"><b>Tell gdb which remote target to connect to, port number must match the one used in the gdbserver startup</b></font>
+Remote debugging using ipaq:9999
+[New Thread 574050242]
+Error while mapping shared library sections:
+coredll.dll.0409.mui: No such file or directory.
+Error while mapping shared library sections:
+coredll.dll: No such file or directory.
+Symbol file not found for coredll.dll.0409.mui
+Symbol file not found for coredll.dll
+WinMainCRTStartup (hInst=0x245ca16a, hPrevInst=0x0, lpCmdLine=0x2611fed8, 
+    nCmdShow=5)
+    at /home/danny/src/cegcc/svn.sf.net/cegcc/trunk/cegcc/src/mingw/crt3.c:35
+35      {
+(gdb) where
+#0  WinMainCRTStartup (hInst=0x245ca16a, hPrevInst=0x0, lpCmdLine=0x2611fed8, 
+    nCmdShow=5)
+    at /home/danny/src/cegcc/svn.sf.net/cegcc/trunk/cegcc/src/mingw/crt3.c:35
+(gdb) <font color="green"><i>l WinMain</i></font>
+11                      return 1;
+12              return fibo(n-1) + fibo(n-2);
+13      }
+14
+15      int APIENTRY WinMain(HINSTANCE a,HINSTANCE b,LPWSTR c,int d)
+16      {
+17              FILE    *f;
+18              int     i, r, len;
+19              wchar_t *ws, buf[MAX_PATH];
+20              char    *s;
+(gdb) 
+21
+22      #ifdef  TO_FILE
+23              f = fopen(FN, "w");
+24      #else
+25              f = stderr;
+26      #endif
+27              len = GetModuleFileNameW(NULL, buf, MAX_PATH);
+28              s = malloc(len+1);
+29              wcstombs(s, buf, len+1);
+30              fprintf(f, "Yow, command [%s] ", s);
+(gdb) 
+31              ws = GetCommandLineW();
+32              len = wcslen(ws);
+33              s = malloc(len+1);
+34              wcstombs(s, ws, len+1);
+35              fprintf(f, "param [%s]\r\n", s);
+36
+37              for (i=1; i<20; i++) {
+38                      r = fibo(i);
+39                      fprintf(f, "fibo(%d) = %d\r\n", i, r);
+40              }
+(gdb) <font color="green"><i>break 39</i></font>
+Breakpoint 1 at 0x112c0: file fibo.c, line 39.
+(gdb) <font color="green"><i>c</i></font>
+Continuing.
+
+Breakpoint 1, WinMain (a=0x245ca16a, b=0x0, c=0x2611fed8, d=5) at fibo.c:39
+39                      fprintf(f, "fibo(%d) = %d\r\n", i, r);
+(gdb) <font color="green"><i>p i</i></font>
+$1 = 1
+(gdb) <font color="green"><i>p r</i></font>
+$2 = 1
+(gdb) <font color="green"><i>c</i></font>
+Continuing.
+
+Breakpoint 1, WinMain (a=0x245ca16a, b=0x0, c=0x2611fed8, d=5) at fibo.c:39
+39                      fprintf(f, "fibo(%d) = %d\r\n", i, r);
+(gdb) <font color="green"><i>p i</i></font>
+$3 = 2
+(gdb) <font color="green"><i>p r</i></font>
+$4 = 1
+(gdb) <font color="green"><i>c</i></font>
+Continuing.
+
+Breakpoint 1, WinMain (a=0x245ca16a, b=0x0, c=0x2611fed8, d=5) at fibo.c:39
+39                      fprintf(f, "fibo(%d) = %d\r\n", i, r);
+(gdb) <font color="green"><i>p i</i></font>
+$5 = 3
+(gdb) <font color="green"><i>p r</i></font>
+$6 = 2
+(gdb) <font color="green"><i>c</i></font>
+Continuing.
+
+Breakpoint 1, WinMain (a=0x245ca16a, b=0x0, c=0x2611fed8, d=5) at fibo.c:39
+39                      fprintf(f, "fibo(%d) = %d\r\n", i, r);
+(gdb) <font color="green"><i>del 1</i></font>
+(gdb) <font color="green"><i>c</i></font>
+Continuing.
+
+Program exited normally.
+(gdb) <font color="green"><i>q</i></font>
+dannypc: {111} 
+</pre>
 <h1>A debugging session with 0.02 using RAPI</h1>
 <p>
 <pre>
