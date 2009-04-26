@@ -7,6 +7,8 @@
 typedef void (*StreamHandler)(FILE *, int, int);
 
 void HandleSystemInfo(FILE *, int, int);
+void HandleField(FILE *, int, int);
+void HandleException(FILE *, int, int);
 
 struct {
 	enum _MINIDUMP_STREAM_TYPE	stream_type;
@@ -16,11 +18,11 @@ struct {
 	{ UnusedStream, "Unused Stream", NULL },
 	{ ceStreamNull,	"Stream Null",	NULL },
 	{ ceStreamSystemInfo,	"System info",	HandleSystemInfo },
-	{ ceStreamException,	"Exception",	NULL },
-	{ ceStreamModuleList,	"Module",	NULL },
-	{ ceStreamProcessList,	"Process",	NULL },
-	{ ceStreamThreadList,	"Thread",	NULL },
-	{ ceStreamThreadContextList,	"Thread Context", NULL },
+	{ ceStreamException,	"Exception",	HandleException },
+	{ ceStreamModuleList,	"Module",	HandleField },
+	{ ceStreamProcessList,	"Process",	HandleField },
+	{ ceStreamThreadList,	"Thread",	HandleField },
+	{ ceStreamThreadContextList,	"Thread Context", HandleField },
 	{ ceStreamThreadCallStackList,	"Thread Callstack", NULL },
 	{ ceStreamMemoryVirtualList,	"Memory virtual list", NULL },
 	{ ceStreamMemoryPhysicalList,	"Memory physical list", NULL },
@@ -142,3 +144,42 @@ void HandleSystemInfo(FILE *f, int off, int len)
 	free(oem);
 }
 
+void HandleField(FILE *f, int off, int len)
+{
+#if 0
+	CEDUMP_FIELD_INFO	field;
+	char			*label, *format;
+
+	fseek(f, off, SEEK_SET);
+	fread(&field, sizeof(field), 1, f);
+
+	fprintf(stderr, "Field at off %x, totsize %d, size %d\n",
+			off, len, field.FieldSize);
+	label = ReadString(f, field.FieldLabel);
+//	format = ReadString(f, field.FieldFormat);
+	fprintf(stderr, "\tlabel (%s)\n", label);
+	free(label);
+#endif
+}
+
+void HandleException(FILE *f, int off, int len)
+{
+	CEDUMP_EXCEPTION_STREAM	exs;
+	CEDUMP_EXCEPTION	ex;
+	ULONG32			*param;
+	int			i;
+
+	fseek(f, off, SEEK_SET);
+	fread(&exs, sizeof(exs), 1, f);
+	fread(&ex, sizeof(ex), 1, f);
+
+	fprintf(stderr, "Exception : code %X, flags %x, address %X\n",
+			ex.ExceptionCode,
+			ex.ExceptionFlags,
+			ex.ExceptionAddress);
+	param = calloc(ex.NumberParameters, sizeof(ULONG32));
+	fread(param, sizeof(ULONG32), ex.NumberParameters, f);
+	for (i=0; i<ex.NumberParameters; i++)
+		fprintf(stderr, "Parameter %d : [%X]\n",
+				i, param[i]);
+}

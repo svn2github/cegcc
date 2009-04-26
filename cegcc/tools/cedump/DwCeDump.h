@@ -184,7 +184,7 @@ typedef struct _CEDUMP_MEMORY_LIST {
  * This structure contains the exception record for the exception
  * that caused the dump file to be generated.
  */
-#define	EXCEPTION_MAXIMUM_PARAMETERS	8	/* ?? */
+#define	EXCEPTION_MAXIMUM_PARAMETERS	0	/* ?? */
 typedef struct _CEDUMP_EXCEPTION {
 	ULONG32 ExceptionCode;
 	ULONG32 ExceptionFlags;
