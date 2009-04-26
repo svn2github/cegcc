@@ -46,32 +46,6 @@ typedef struct _MINIDUMP_LOCATION_DESCRIPTOR {
 } MINIDUMP_LOCATION_DESCRIPTOR;
 
 /*
- * This structure identifies and locates each stream type
- * found in an error report minidump.
- */
-typedef struct _MINIDUMP_DIRECTORY {
-	ULONG32 StreamType;
-	MINIDUMP_LOCATION_DESCRIPTOR Location;
-} MINIDUMP_DIRECTORY, *PMINIDUMP_DIRECTORY;
-
-/*
- * This structure contains information about a memory range
- * listed in _CEDUMP_MEMORY_LIST.
- */
-typedef struct _MINIDUMP_MEMORY_DESCRIPTOR {
-	ULONG64 StartOfMemoryRange;
-	MINIDUMP_LOCATION_DESCRIPTOR Memory;
-} MINIDUMP_MEMORY_DESCRIPTOR, *PMINIDUMP_MEMORY_DESCRIPTOR;
-
-/*
- * This structure describes the format of a string pointed to by an RVA pointer.
- */
-typedef struct _MINIDUMP_STRING {
-	ULONG32 Length;
-	WCHAR Buffer [0];
-} MINIDUMP_STRING, *PMINIDUMP_STRING;
-
-/*
  * This enumeration lists the valid kinds of Windows CE stream types.
  */
 typedef enum _MINIDUMP_STREAM_TYPE {
@@ -93,6 +67,32 @@ typedef enum _MINIDUMP_STREAM_TYPE {
 	LastReservedStream          = 0xffff
 
 } MINIDUMP_STREAM_TYPE;
+
+/*
+ * This structure identifies and locates each stream type
+ * found in an error report minidump.
+ */
+typedef struct _MINIDUMP_DIRECTORY {
+	MINIDUMP_STREAM_TYPE StreamType;
+	MINIDUMP_LOCATION_DESCRIPTOR Location;
+} MINIDUMP_DIRECTORY, *PMINIDUMP_DIRECTORY;
+
+/*
+ * This structure contains information about a memory range
+ * listed in _CEDUMP_MEMORY_LIST.
+ */
+typedef struct _MINIDUMP_MEMORY_DESCRIPTOR {
+	ULONG64 StartOfMemoryRange;
+	MINIDUMP_LOCATION_DESCRIPTOR Memory;
+} MINIDUMP_MEMORY_DESCRIPTOR, *PMINIDUMP_MEMORY_DESCRIPTOR;
+
+/*
+ * This structure describes the format of a string pointed to by an RVA pointer.
+ */
+typedef struct _MINIDUMP_STRING {
+	ULONG32 Length;
+	WCHAR Buffer [0];
+} MINIDUMP_STRING, *PMINIDUMP_STRING;
 
 /*
  * This structure defines the bucketing parameters used when
