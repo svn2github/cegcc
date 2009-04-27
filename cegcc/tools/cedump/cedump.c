@@ -1,13 +1,41 @@
+/*
+ * cedump
+ *
+ * Portable application that inspects a CE dump file and reports about
+ * its contents. This is type type of information that CE offers to send
+ * to Microsoft free of charge to you.
+ *
+ * LICENSE:
+ *
+ * Copyright (c) 2009, Danny Backx.
+ *
+ * This file is part of CeGCC.
+ *
+ * This is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This file is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this file; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <string.h>
 
 #include "DwCeDump.h"
 
 typedef void (*StreamHandler)(FILE *, int, int);
 
 void HandleSystemInfo(FILE *, int, int);
-void HandleField(FILE *, int, int);
+void HandleElementList(FILE *, int, int);
 void HandleException(FILE *, int, int);
 
 struct {
@@ -15,18 +43,18 @@ struct {
 	char				*name;
 	StreamHandler			handler;
 } StreamTypes[] = {
-	{ UnusedStream, "Unused Stream", NULL },
-	{ ceStreamNull,	"Stream Null",	NULL },
-	{ ceStreamSystemInfo,	"System info",	HandleSystemInfo },
-	{ ceStreamException,	"Exception",	HandleException },
-	{ ceStreamModuleList,	"Module",	HandleField },
-	{ ceStreamProcessList,	"Process",	HandleField },
-	{ ceStreamThreadList,	"Thread",	HandleField },
-	{ ceStreamThreadContextList,	"Thread Context", HandleField },
-	{ ceStreamThreadCallStackList,	"Thread Callstack", NULL },
-	{ ceStreamMemoryVirtualList,	"Memory virtual list", NULL },
-	{ ceStreamMemoryPhysicalList,	"Memory physical list", NULL },
-	{ ceStreamBucketParameters,	"Bucket parameters", NULL },
+	{ UnusedStream,			"Unused Stream",	NULL },
+	{ ceStreamNull,			"Stream Null",		NULL },
+	{ ceStreamSystemInfo,		"System info",		HandleSystemInfo },
+	{ ceStreamException,		"Exception",		HandleException },
+	{ ceStreamModuleList,		"Module",		HandleElementList },
+	{ ceStreamProcessList,		"Process",		HandleElementList },
+	{ ceStreamThreadList,		"Thread",		HandleElementList },
+	{ ceStreamThreadContextList,	"Thread Context",	HandleElementList },
+	{ ceStreamThreadCallStackList,	"Thread Callstack",	NULL },
+	{ ceStreamMemoryVirtualList,	"Memory virtual list",	NULL },
+	{ ceStreamMemoryPhysicalList,	"Memory physical list",	NULL },
+	{ ceStreamBucketParameters,	"Bucket parameters",	NULL },
 	/* The end */
 	{ LastReservedStream, NULL, NULL }
 };
@@ -42,7 +70,9 @@ main(int argc, char *argv[])
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: %s dumpfile\n", argv[0]);
-		fprintf(stderr, "Usual place : /windows/system/dumpfiles/ceMMDDYY-NN/ceMMDDYY-NN.kdmp\n");
+		fprintf(stderr,
+			"Usual place : "
+			"/windows/system/dumpfiles/ceMMDDYY-NN/ceMMDDYY-NN.kdmp\n");
 		exit(1);
 	}
 	if (!f) {
@@ -144,21 +174,166 @@ void HandleSystemInfo(FILE *f, int off, int len)
 	free(oem);
 }
 
-void HandleField(FILE *f, int off, int len)
+void PrintBitfield(char *buf, char *format)
 {
-#if 0
-	CEDUMP_FIELD_INFO	field;
+	char		*p, *q;
+	char		txt[64];
+	int		bit;
+	unsigned int	fld;
+	int		set;
+	int		first = 1;
+
+	fld = *(unsigned int *)buf;
+
+//	fprintf(stderr, "BitField(%u, %s) ", fld, format);
+
+	for (p = format+3; p && *p; p = q ? q+1 : 0) {
+		q = strchr(p, ',');
+		if (!q)
+			q = strchr(p, '}');
+
+		sscanf(p, "%d=%[^,}]", &bit, &txt);
+
+		if (bit < 32) {
+			set = fld & (1 << bit);
+			if (set) {
+				if (first)
+					fprintf(stderr, "%s", txt);
+				else
+					fprintf(stderr, ",%s", txt);
+				first = 0;
+			}
+		} else {
+			set = fld & (1 << (bit-32));
+			if (! set) {
+				if (first)
+					fprintf(stderr, "%s", txt);
+				else
+					fprintf(stderr, ",%s", txt);
+				first = 0;
+			}
+		}
+	}
+}
+
+void PrintEnumeration(char *buf, char *format)
+{
+	char		*p, *q;
+	char		txt[64];
+	int		bit;
+	unsigned int	fld;
+	int		set;
+
+	fld = *(unsigned int *)buf;
+
+	for (p = format+2; p && *p; p = q ? q+1 : 0) {
+		q = strchr(p, ',');
+		sscanf(p, "%d=%[^,}]", &bit, &txt);
+
+		if (bit == fld) {
+			fprintf(stderr, "%s", txt);
+//			fprintf(stderr, "Enumeration (%s)", txt);
+			return;
+		}
+	}
+}
+
+void HandleElementList(FILE *f, int off, int len)
+{
+	CEDUMP_ELEMENT_LIST	el;
+	CEDUMP_FIELD_INFO	*field;
 	char			*label, *format;
+	int			i, j, sz;
+	int			pos;
+	char			buf[256];
 
 	fseek(f, off, SEEK_SET);
-	fread(&field, sizeof(field), 1, f);
+	fread(&el, sizeof(el), 1, f);
+//	field = calloc(el.NumberOfFieldInfo, sizeof(CEDUMP_FIELD_INFO));
+	field = malloc(len);
+	fread(field, sizeof(CEDUMP_FIELD_INFO), el.NumberOfFieldInfo, f);
 
-	fprintf(stderr, "Field at off %x, totsize %d, size %d\n",
-			off, len, field.FieldSize);
-	label = ReadString(f, field.FieldLabel);
-//	format = ReadString(f, field.FieldFormat);
-	fprintf(stderr, "\tlabel (%s)\n", label);
-	free(label);
+	fprintf(stderr, "Element list : header size %d, field info sz %d\n"
+			"\t# field info %d, #elements %d\n"
+			"\tElements at 0x%X..0x%X\n",
+			el.SizeOfHeader,
+			el.SizeOfFieldInfo,
+			el.NumberOfFieldInfo,
+			el.NumberOfElements,
+			el.Elements, el.Elements + len);
+
+	/* Count sizes */
+	for (sz=i=0; i<el.NumberOfFieldInfo; i++) {
+		sz += field[i].FieldSize;
+	}
+	fprintf(stderr, "Field sizes add up to %d, so elements from 0x%X .. 0x%X\n",
+			sz,
+			el.Elements,
+			el.Elements + sz * el.NumberOfElements);
+
+	/* Start looking from el.Elements */
+	pos = el.Elements;
+	for (j=0; j < el.NumberOfElements; j++) {
+		for (i=0; i<el.NumberOfFieldInfo; i++) {
+			fseek(f, pos, SEEK_SET);
+			fread(buf, sizeof(char), field[i].FieldSize, f);
+
+			label = ReadString(f, field[i].FieldLabel);
+			format = ReadString(f, field[i].FieldFormat);
+
+#if 1
+			fprintf(stderr, "  Field %d : %s ", i, label);
+#else
+			fprintf(stderr, "  Field %d : %s (id %d, off %X, fmt %s, len %d) ",
+					i, label,
+					field[i].FieldId, pos,
+					format, field[i].FieldSize);
+#endif
+			pos += field[i].FieldSize;
+
+			if (strncmp(format, "%N", 2) == 0) {
+				PrintEnumeration(buf, format);
+			} else if (strncmp(format, "%T", 2) == 0) {
+				PrintBitfield(buf, format);
+			} else if (strcmp(format, "0x%08lX") == 0) {
+				fprintf(stderr, "0x%08X", *(int *)buf);
+			} else if (strcmp(format, "%s") == 0) {
+				fprintf(stderr, format, buf);
+			} else
+				fprintf(stderr, format, *(int *)buf);
+			fprintf(stderr, "\n");
+
+			free(label);
+			free(format);
+		}
+	}
+
+#if 0
+	fseek(f, pos, SEEK_SET);
+	fread(buf, 1, pos - el.Elements, f);
+
+	for (i=0; i<pos-el.Elements; i++)
+		if (i == 0)
+			fprintf(stderr, "\t%02X", 255 & buf[i]);
+		else if ((i % 16) == 0)
+			fprintf(stderr, "\n\t%02X", 255 & buf[i]);
+		else
+			fprintf(stderr, " %02X", 255 & buf[i]);
+	if ((pos - el.Elements) % 16 != 0)
+		fprintf(stderr, "\n");
+
+	for (i=0; i<pos-el.Elements; i++)
+		if (i == 0)
+			fprintf(stderr, "\t  %c",
+					isprint(buf[i]) ? 255 & buf[i] : '.');
+		else if ((i % 16) == 0)
+			fprintf(stderr, "\n\t  %c",
+					isprint(buf[i]) ? 255 & buf[i] : '.');
+		else
+			fprintf(stderr, "   %c",
+					isprint(buf[i]) ? 255 & buf[i] : '.');
+	if ((pos - el.Elements) % 16 != 0)
+		fprintf(stderr, "\n");
 #endif
 }
 
