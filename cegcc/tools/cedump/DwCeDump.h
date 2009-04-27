@@ -324,7 +324,7 @@ typedef struct _CEDUMP_THREAD_CALL_STACK {
 	ULONG32 ThreadId;
 	USHORT SizeOfFrame; 
 	USHORT NumberOfFrames;
-	RVA StackFramess;
+	RVA StackFrames;
 } CEDUMP_THREAD_CALL_STACK, *PCEDUMP_THREAD_CALL_STACK;
 
 /*

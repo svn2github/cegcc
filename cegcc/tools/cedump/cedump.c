@@ -32,29 +32,145 @@
 
 #include "DwCeDump.h"
 
-typedef void (*StreamHandler)(FILE *, int, int);
+/*
+ * Use this list to make the HandleElementList less verbose
+ */
+typedef struct {
+	char	*arg;
+} Arguments;
+typedef void (*StreamHandler)(FILE *, int, int, Arguments *);
 
-void HandleSystemInfo(FILE *, int, int);
-void HandleElementList(FILE *, int, int);
-void HandleException(FILE *, int, int);
+void HandleSystemInfo(FILE *, int, int, Arguments *);
+void HandleException(FILE *, int, int, Arguments *);
+void HandleThreadCallStack(FILE *, int, int, Arguments *);
+
+void HandleElementList(FILE *, int, int, Arguments *);
+
+/*
+ * The list of fields to report about for Modules
+ *
+ *   Name : NK.EXE
+ *   Base Ptr : 0x80001000
+ *   Size : 442368
+ *   RW Data Start : 0x802D6000
+ *   RW Data End : 0x80368FB3
+ *   Timestamp : 0x349ED8B6
+ *   PDB Format : RSDS
+ *   PDB Guid : %U
+ *   PDB Age : 1
+ *   hDll : 0x00000000
+ *   In Use : 0x00000001
+ *   Flags :
+ *   Trust Level : 2
+ *   RefCount :
+ *   Pointer : 0x%08kX
+ *   FileVersionMS : 0x00050002
+ *   FileVersionLS : 0x00000000
+ *   ProductVersionMS : 0x00050002
+ *   ProductVersionLS : 0x00000000
+ *   PDB Name : kernkitl.pdb
+ */
+Arguments ArgML[] = {
+	"Name",
+	"Base Ptr",
+	NULL
+};
+
+/*
+ * The list of fields to report about for Processes
+ * Pick your labels from this list :
+ *   ProcSlot# : 15
+ *   Name : wroadmap.exe
+ *   VMBase : 0x20000000
+ *   AccessKey : 0x00008000
+ *   TrustLevel : 
+ *   hProcess : 0xA0D26B72
+ *   BasePtr : 0x00010000
+ *   TlsUseL32b : 0x000000FF
+ *   TlsUseH32b : 0x00000000
+ *   CurZoneMask : 0x00000000
+ *   pProcess : 0x8034E070
+ *   CmdLine : 
+ */
+Arguments ArgPL[] = {
+	"ProcSlot#",
+	"Name",
+	"VMBase",
+	"pProcess",
+	"BasePtr",
+	NULL
+};
+
+/*
+ * The list of fields to report about for Threads
+ * Here's an example that you can pick labels from.
+ *  pThread : 0x851FA7C0
+ *  RunState : Awak,RunBlkd
+ *  InfoStatus : UMode,UsrBlkd
+ *  hThread : 0xE5E91CDA
+ *  WaitState : 
+ *  AccessKey : 0x00008011
+ *  hCurProcIn : 0xA718C392
+ *  hOwnerProc : 0xA0D26B72
+ *  CurPrio : 2698144763
+ *  BasePrio : 2698144763
+ *  KernelTime : 0
+ *  UserTime : 381
+ *  Quantum : 100
+ *  QuantuLeft : 100
+ *  SleepCount : 29489432
+ *  SuspendCount : 29489408
+ *  TlsPtr : 0x2064FF00
+ *  LastError : 0x00000000
+ *  StackBase : 0x20550000
+ *  StkLowBnd : 0x2064F000
+ *  CreatTimeH : 0x01C9BDA3
+ *  CreatTimeL : 0xC3DB0700
+ *  PC : 0x80016F08
+ *  NcrPtr : 0x00000000
+ *  StkRetAddr : 0x03F63AB0
+ *
+ */
+Arguments ArgTL[] = {
+	"pThread",
+	"RunState",
+	"hThread",
+	"LastError",
+	"PC",
+	"StkRetAddr",
+	NULL
+};
+
+/*
+ * The list of fields to report about for Thread Contexts
+ *
+ *   ThreadID : 0xa17a19a2
+ *   Arm Integer Context : 
+ *
+ */
+Arguments ArgTCL[] = {
+	"ThreadID",
+	NULL
+};
 
 struct {
 	enum _MINIDUMP_STREAM_TYPE	stream_type;
 	char				*name;
 	StreamHandler			handler;
+	Arguments			*arguments;
 } StreamTypes[] = {
-	{ UnusedStream,			"Unused Stream",	NULL },
-	{ ceStreamNull,			"Stream Null",		NULL },
-	{ ceStreamSystemInfo,		"System info",		HandleSystemInfo },
-	{ ceStreamException,		"Exception",		HandleException },
-	{ ceStreamModuleList,		"Module",		HandleElementList },
-	{ ceStreamProcessList,		"Process",		HandleElementList },
-	{ ceStreamThreadList,		"Thread",		HandleElementList },
-	{ ceStreamThreadContextList,	"Thread Context",	HandleElementList },
-	{ ceStreamThreadCallStackList,	"Thread Callstack",	NULL },
-	{ ceStreamMemoryVirtualList,	"Memory virtual list",	NULL },
-	{ ceStreamMemoryPhysicalList,	"Memory physical list",	NULL },
-	{ ceStreamBucketParameters,	"Bucket parameters",	NULL },
+	{ UnusedStream,			"Unused Stream",	NULL,			NULL },
+	{ ceStreamNull,			"Stream Null",		NULL,			NULL },
+	{ ceStreamSystemInfo,		"System info",		HandleSystemInfo,	NULL },
+	{ ceStreamException,		"Exception",		HandleException,	NULL },
+	{ ceStreamModuleList,		"Module",		HandleElementList,	ArgML },
+	{ ceStreamProcessList,		"Process",		HandleElementList,	ArgPL },
+	{ ceStreamThreadList,		"Thread",		HandleElementList,	ArgTL },
+	{ ceStreamThreadContextList,	"Thread Context",	HandleElementList,	ArgTCL },
+	{ ceStreamThreadCallStackList,	"Thread Callstack",	HandleThreadCallStack,	NULL },
+	{ ceStreamMemoryVirtualList,	"Memory virtual list",	NULL,			NULL },
+	{ ceStreamMemoryPhysicalList,	"Memory physical list",	NULL,			NULL },
+	{ ceStreamBucketParameters,	"Bucket parameters",	NULL,			NULL },
 	/* The end */
 	{ LastReservedStream, NULL, NULL }
 };
@@ -119,7 +235,8 @@ main(int argc, char *argv[])
 		if (StreamTypes[j].handler) {
 			(StreamTypes[j].handler)(f,
 					d[i].Location.Rva,
-					d[i].Location.DataSize);
+					d[i].Location.DataSize,
+					StreamTypes[j].arguments);
 		}
 	}
 
@@ -148,7 +265,7 @@ char *ReadString(FILE *f, int off)
 	return oem;
 }
 
-void HandleSystemInfo(FILE *f, int off, int len)
+void HandleSystemInfo(FILE *f, int off, int len, Arguments *arg)
 {
 	int			l;
 	CEDUMP_SYSTEM_INFO	si;
@@ -238,21 +355,21 @@ void PrintEnumeration(char *buf, char *format)
 	}
 }
 
-void HandleElementList(FILE *f, int off, int len)
+void HandleElementList(FILE *f, int off, int len, Arguments *arg)
 {
 	CEDUMP_ELEMENT_LIST	el;
 	CEDUMP_FIELD_INFO	*field;
 	char			*label, *format;
-	int			i, j, sz;
-	int			pos;
-	char			buf[256];
+	int			i, j, sz, k, pos;
+	int			bufsize = 0;
+	char			*buf = NULL;
 
 	fseek(f, off, SEEK_SET);
 	fread(&el, sizeof(el), 1, f);
 //	field = calloc(el.NumberOfFieldInfo, sizeof(CEDUMP_FIELD_INFO));
 	field = malloc(len);
 	fread(field, sizeof(CEDUMP_FIELD_INFO), el.NumberOfFieldInfo, f);
-
+#if 0
 	fprintf(stderr, "Element list : header size %d, field info sz %d\n"
 			"\t# field info %d, #elements %d\n"
 			"\tElements at 0x%X..0x%X\n",
@@ -261,35 +378,71 @@ void HandleElementList(FILE *f, int off, int len)
 			el.NumberOfFieldInfo,
 			el.NumberOfElements,
 			el.Elements, el.Elements + len);
-
+#endif
 	/* Count sizes */
 	for (sz=i=0; i<el.NumberOfFieldInfo; i++) {
 		sz += field[i].FieldSize;
 	}
+#if 0
 	fprintf(stderr, "Field sizes add up to %d, so elements from 0x%X .. 0x%X\n",
 			sz,
 			el.Elements,
 			el.Elements + sz * el.NumberOfElements);
-
+#endif
 	/* Start looking from el.Elements */
 	pos = el.Elements;
 	for (j=0; j < el.NumberOfElements; j++) {
+		fprintf(stderr, "  Element %d :\n", j);
 		for (i=0; i<el.NumberOfFieldInfo; i++) {
-			fseek(f, pos, SEEK_SET);
+			int	thispos;
+
+			/* Figure out whether we need to collect this */
+			label = ReadString(f, field[i].FieldLabel);
+
+			thispos = pos;
+			pos += field[i].FieldSize;
+#if 1
+			/* Make this program less verbose */
+			if (arg) {
+				int req = 0;
+				for (k=0; arg[k].arg && !req; k++)
+					if (strcmp(arg[k].arg, label) == 0)
+						req++;
+				if (req == 0)
+					continue;
+			}
+#endif
+
+			fseek(f, thispos, SEEK_SET);
+			if (bufsize < field[i].FieldSize) {
+				if (buf)
+					free(buf);
+				bufsize = field[i].FieldSize;
+				buf = malloc(bufsize);
+			}
+			memset(buf, 0, bufsize);
 			fread(buf, sizeof(char), field[i].FieldSize, f);
 
-			label = ReadString(f, field[i].FieldLabel);
 			format = ReadString(f, field[i].FieldFormat);
-
-#if 1
-			fprintf(stderr, "  Field %d : %s ", i, label);
-#else
+#if 0
+			if (strcmp(label, "ProcSlot#") == 0) {
+				int i;
+				for (i=0; i<4; i++)
+					fprintf(stderr, "%d ", 255 & buf[i]);
+				fprintf(stderr, "\n");
+			}
+#endif
+#if 0
 			fprintf(stderr, "  Field %d : %s (id %d, off %X, fmt %s, len %d) ",
 					i, label,
 					field[i].FieldId, pos,
 					format, field[i].FieldSize);
 #endif
-			pos += field[i].FieldSize;
+#if 0
+			fprintf(stderr, "  Field %d : %s ", i, label);
+#else
+			fprintf(stderr, "\t%s : ", label);
+#endif
 
 			if (strncmp(format, "%N", 2) == 0) {
 				PrintEnumeration(buf, format);
@@ -308,36 +461,9 @@ void HandleElementList(FILE *f, int off, int len)
 		}
 	}
 
-#if 0
-	fseek(f, pos, SEEK_SET);
-	fread(buf, 1, pos - el.Elements, f);
-
-	for (i=0; i<pos-el.Elements; i++)
-		if (i == 0)
-			fprintf(stderr, "\t%02X", 255 & buf[i]);
-		else if ((i % 16) == 0)
-			fprintf(stderr, "\n\t%02X", 255 & buf[i]);
-		else
-			fprintf(stderr, " %02X", 255 & buf[i]);
-	if ((pos - el.Elements) % 16 != 0)
-		fprintf(stderr, "\n");
-
-	for (i=0; i<pos-el.Elements; i++)
-		if (i == 0)
-			fprintf(stderr, "\t  %c",
-					isprint(buf[i]) ? 255 & buf[i] : '.');
-		else if ((i % 16) == 0)
-			fprintf(stderr, "\n\t  %c",
-					isprint(buf[i]) ? 255 & buf[i] : '.');
-		else
-			fprintf(stderr, "   %c",
-					isprint(buf[i]) ? 255 & buf[i] : '.');
-	if ((pos - el.Elements) % 16 != 0)
-		fprintf(stderr, "\n");
-#endif
 }
 
-void HandleException(FILE *f, int off, int len)
+void HandleException(FILE *f, int off, int len, Arguments *arg)
 {
 	CEDUMP_EXCEPTION_STREAM	exs;
 	CEDUMP_EXCEPTION	ex;
@@ -357,4 +483,49 @@ void HandleException(FILE *f, int off, int len)
 	for (i=0; i<ex.NumberParameters; i++)
 		fprintf(stderr, "Parameter %d : [%X]\n",
 				i, param[i]);
+}
+
+void HandleThreadCallStack(FILE *f, int off, int len, Arguments *arg)
+{
+	CEDUMP_THREAD_CALL_STACK_LIST	tcsl;
+	CEDUMP_THREAD_CALL_STACK	*tcs;
+	CEDUMP_THREAD_CALL_STACK_FRAME	frame;
+	char			*label, *format;
+	int			i, j, sz, k, pos;
+	int			bufsize = 0;
+	char			*buf = NULL;
+
+	fseek(f, off, SEEK_SET);
+	fread(&tcsl, sizeof(tcsl), 1, f);
+
+	tcs = calloc(tcsl.NumberOfEntries, sizeof(CEDUMP_THREAD_CALL_STACK));
+	fread(tcs, sizeof(CEDUMP_THREAD_CALL_STACK), tcsl.NumberOfEntries, f);
+
+	fprintf(stderr, "Thread Call Stack List : %d entries\n", tcsl.NumberOfEntries);
+	for (i=0; i<tcsl.NumberOfEntries; i++) {
+		fprintf(stderr, "  Process %08X thread %08X, %d frames\n",
+				tcs[i].ProcessId,
+				tcs[i].ThreadId,
+				tcs[i].NumberOfFrames);
+
+		for (j=0; j<tcs[i].NumberOfFrames; j++) {
+			fseek(f, tcs[i].StackFrames, SEEK_SET);
+			fread(&frame, sizeof(frame), 1, f);
+
+			fprintf(stderr, "    Frame %d : RetAddr 0x%08X FP 0x%08X\n",
+					j,
+					frame.ReturnAddr,
+					frame.FramePtr);
+		}
+	}
+
+	free(tcs);
+#if 0
+	frame = calloc(tcs.NumberOfFrames, sizeof(CEDUMP_THREAD_CALL_STACK_FRAME));
+	fread(frame, sizeof(CEDUMP_THREAD_CALL_STACK_FRAME), tcs.NumberOfFrames, f);
+
+	for (i=0; i<tcs.NumberOfFrames; i++) {
+		fprintf(stderr, "  Frame %d : ", i);
+	}
+#endif
 }
