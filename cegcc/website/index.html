@@ -7,13 +7,13 @@
 </head>
 <body>
 <p>
-<img src="images/banner1.png" alt="CeGCC cross compiler for PocketPC">
+<img src="images/banner2.png" alt="CeGCC cross compiler for Windows CE">
 <p>
 <table border="3">
 <tr><td width="66%">
 <p>
 <font size="+1">
-The CeGCC project implements cross-development tools for Windows CE (PocketPC).
+The CeGCC project implements a cross compiler for Windows CE.
 You can develop on a PC, and create apps that run on a PDA or a WinCE cell phone.
 </font>
 </td>
@@ -24,13 +24,27 @@ We're aiming at providing a consistent and working set of development tools that
 generate code for Windows CE devices such as PDA's and smart phones.
 Our intended development platforms are the usual GNU development workstations,
 e.g. <a href="http://www.linux.org">GNU/Linux</a>,
-<a href="http://www.freebsd.org">FreeBSD</a>, or 
+<a href="http://www.freebsd.org">FreeBSD</a>,
+<a href="http://www.apple.com/macosx/">MacOS X</a>, or 
 <a href="http://www.cygwin.com">cygwin</a>.
 <p>
-We have two products :
+Windows CE, Windows Mobile, Windows Embedded, PocketPC, SmartPhone, ..
+many of these names refer to variations on the same target platform.
+We currently see evolution to support not only the
+<A HREF="www.arm.com">ARM</A>
+<A HREF="http://en.wikipedia.org/wiki/ARM_architecture">processor family</A>
+but also Windows CE on
+<A HREF="http://en.wikipedia.org/wiki/X86">x86 processors</A>
+(e.g. <A HREF="http://www.compactpc.com.tw">eBox</A>)
+which includes the
+<A HREF="http://www.intel.com/technology/atom/index.htm">Intel Atom</A> processor
+(<A HREF="http://www.windowsfordevices.com/news/NS5466627119.html">CE on Atom</A>)
+<p>
+These are our current <i>products</i> :
 <ul>
 	<li>arm-mingw32ce : toolset to build native Windows CE applications
 	<li>arm-cegcc : toolset to port unix source to Windows CE
+	<li><font color="red"><i>(coming soon)</i> i386-mingw32ce</font> : toolset to build native Windows CE applications for x86 powered devices
 </ul>
 <i>In versions prior to 0.55, these were called <b>arm-wince-mingw32ce</b>
 and <b>arm-wince-cegcc</b> but we changed this in agreement with other projects,
@@ -55,7 +69,7 @@ Combine this with our development platforms, and you get four choices :
 		<td> Cygwin host </td>
 	</tr>
 	<tr>
-		<td> arm-mingw32ce </td>
+		<td> arm/i386-mingw32ce </td>
 		<td> Develop on Linux, create Windows CE native apps </td>
 		<td> Develop on Cygwin, create Windows CE native apps </td>
 	</tr>
