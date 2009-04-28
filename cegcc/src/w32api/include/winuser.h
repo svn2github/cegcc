@@ -3724,7 +3724,9 @@ WINUSERAPI int WINAPI GetKeyNameTextA(LONG,LPSTR,int);
 WINUSERAPI int WINAPI GetKeyNameTextW(LONG,LPWSTR,int);
 WINUSERAPI SHORT WINAPI GetKeyState(int);
 WINUSERAPI HWND WINAPI GetLastActivePopup(HWND);
+#ifndef _WIN32_WCE
 WINUSERAPI HMENU WINAPI GetMenu(HWND);
+#endif
 WINUSERAPI LONG WINAPI GetMenuCheckMarkDimensions(void);
 WINUSERAPI DWORD WINAPI GetMenuContextHelpId(HMENU);
 WINUSERAPI UINT WINAPI GetMenuDefaultItem(HMENU,UINT,UINT);
@@ -3996,8 +3998,12 @@ WINUSERAPI UINT WINAPI RegisterWindowMessageW(LPCWSTR);
 WINUSERAPI BOOL WINAPI ReleaseCapture(void);
 WINUSERAPI int WINAPI ReleaseDC(HWND,HDC);
 WINUSERAPI BOOL WINAPI RemoveMenu(HMENU,UINT,UINT);
+#ifdef _WIN32_WCE
+WINUSERAPI HANDLE WINAPI RemoveProp(HWND,LPCWSTR);
+#else
 WINUSERAPI HANDLE WINAPI RemovePropA(HWND,LPCSTR);
 WINUSERAPI HANDLE WINAPI RemovePropW(HWND,LPCWSTR);
+#endif
 WINUSERAPI BOOL WINAPI ReplyMessage(LRESULT);
 WINUSERAPI BOOL WINAPI ScreenToClient(HWND,LPPOINT);
 WINUSERAPI BOOL WINAPI ScrollDC(HDC,int,int,LPCRECT,LPCRECT,HRGN,LPRECT);
@@ -4056,8 +4062,12 @@ WINUSERAPI HWND WINAPI SetParent(HWND,HWND);
 WINUSERAPI BOOL WINAPI SetProcessDefaultLayout(DWORD);
 #endif /* (_WIN32_WINNT >= 0x0500) */
 WINUSERAPI BOOL WINAPI SetProcessWindowStation(HWINSTA);
+#ifdef _WIN32_WCE
+WINUSERAPI BOOL WINAPI SetProp(HWND,LPCSTR,HANDLE);
+#else
 WINUSERAPI BOOL WINAPI SetPropA(HWND,LPCSTR,HANDLE);
 WINUSERAPI BOOL WINAPI SetPropW(HWND,LPCWSTR,HANDLE);
+#endif
 WINUSERAPI BOOL WINAPI SetRect(LPRECT,int,int,int,int);
 WINUSERAPI BOOL WINAPI SetRectEmpty(LPRECT);
 WINUSERAPI int WINAPI SetScrollInfo(HWND,int,LPCSCROLLINFO,BOOL);
@@ -4309,7 +4319,9 @@ typedef MONITORINFOEXW MONITORINFOEX, *LPMONITORINFOEX;
 #define RegisterClipboardFormat RegisterClipboardFormatW
 #define RegisterDeviceNotification RegisterDeviceNotificationW
 #define RegisterWindowMessage RegisterWindowMessageW
+#ifndef _WIN32_WCE
 #define RemoveProp RemovePropW
+#endif
 #define SendDlgItemMessage SendDlgItemMessageW
 #define SendMessage SendMessageW
 #define SendMessageCallback SendMessageCallbackW
@@ -4319,7 +4331,9 @@ typedef MONITORINFOEXW MONITORINFOEX, *LPMONITORINFOEX;
 #define SetClassLongPtr SetClassLongPtrW
 #define SetDlgItemText SetDlgItemTextW
 #define SetMenuItemInfo SetMenuItemInfoW
+#ifndef _WIN32_WCE
 #define SetProp SetPropW
+#endif
 #define SetUserObjectInformation SetUserObjectInformationW
 #define SetWindowLong SetWindowLongW
 #define SetWindowLongPtr SetWindowLongPtrW

@@ -1,3 +1,9 @@
+2009-04-28  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/winuser.h(GetMenu) : Remove for CE.
+	* include/winuser.h(SetProp*,GetProp*,RemoveProp*) : Define only the
+	right ones for CE, see bug #2328033.
+
 2009-04-28  Ryan Raasch  <ryan.raasch@gmail.com>
 
 	* include/strmif.h (IEnumPins, IEnumMediaTypes) : Define.
