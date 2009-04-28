@@ -1,3 +1,12 @@
+2009-04-28  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* configure, configure.in : recognize more targets.
+
+2009-04-28  Ismail Khatib  <ikhatib@imail.de>
+
+	* configure, configure.in : Make it recognize newer versions of
+	texinfo (4.9 was recognized, 4.13 not).
+
 2008-10-09  Pawel Veselov  <pawel.veselov@gmail.com>
 
 	newlib/
