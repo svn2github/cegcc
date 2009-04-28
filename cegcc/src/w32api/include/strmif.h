@@ -1221,6 +1221,34 @@ DECLARE_INTERFACE_(IPin, IUnknown)
 };
 #undef INTERFACE
 
+EXTERN_C const IID IID_IEnumPins;
+#define INTERFACE IEnumPins
+DECLARE_INTERFACE_(IEnumPins, IUnknown)
+{
+    STDMETHOD(QueryInterface) (THIS_ REFIID,PVOID*) PURE;
+    STDMETHOD_(ULONG, AddRef) (THIS) PURE;
+    STDMETHOD_(ULONG, Release) (THIS) PURE;
+    STDMETHOD_(HRESULT, Clone) (THIS_ struct IEnumPins** ) PURE;
+    STDMETHOD_(HRESULT, Next) (THIS_ ULONG, struct IPin**, ULONG*) PURE;
+    STDMETHOD_(VOID, Reset) (THIS) PURE;
+    STDMETHOD_(HRESULT, Skip) (THIS_ ULONG) PURE;
+};
+#undef INTERFACE
+
+EXTERN_C const IID IID_IEnumMediaTypes;
+#define INTERFACE IEnumMediaTypes
+DECLARE_INTERFACE_(IEnumMediaTypes, IUnknown)
+{
+    STDMETHOD(QueryInterface) (THIS_ REFIID,PVOID*) PURE;
+    STDMETHOD_(ULONG, AddRef) (THIS) PURE;
+    STDMETHOD_(ULONG, Release) (THIS) PURE;
+    STDMETHOD_(HRESULT, Clone) (THIS_ struct IEnumMediaTypes** ) PURE;
+    STDMETHOD_(HRESULT, Next) (THIS_ ULONG, AM_MEDIA_TYPE**, ULONG) PURE;
+    STDMETHOD_(VOID, Reset) (THIS) PURE;
+    STDMETHOD_(HRESULT, Skip) (THIS_ ULONG) PURE;
+};
+#undef INTERFACE
+
 EXTERN_C const IID IID_IBaseFilter;
 #define INTERFACE IBaseFilter
 DECLARE_INTERFACE_(IBaseFilter, IUnknown)
