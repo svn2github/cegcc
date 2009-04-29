@@ -1,3 +1,7 @@
+2009-04-29  Ismail Khatib  <ikhatib@imail.de>
+
+	* config/rs6000/host-darwin.c : small changes for MacOS X 10.5.
+
 2009-04-14  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* config.gcc : Add new file gcc/config/i386/mingw32ce.h .
