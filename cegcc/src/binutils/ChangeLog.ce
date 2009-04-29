@@ -1,3 +1,10 @@
+2009-04-28 Alan Modra <amodra@bigpond.net.au>
+
+        * ld/deffilep.y (STACKSIZE_K): Rename from STACKSIZE.
+	Fix upstream, invoked by Ismail Khatib <ikhatib@imail.de>.
+	This should fix the problem.  We add _K for quite a few tokens in
+	ldgram.y, for exactly the same reason.  Committed.
+
 2009-02-08  Rikky <rikky@users.sourceforge.net>
 
 	* binutils/windres.c : Fix [ 2574606 ] "windres can't detect
