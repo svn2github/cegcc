@@ -42,8 +42,8 @@
  *
  * Each directory specifies the following:
  * 	* Data type
- *	*  Data size
- *	*  RVA to the location of the data in the dump file
+ *	* Data size
+ *	* RVA to the location of the data in the dump file
  *
  * Each file permits only one directory of a specific type.
  * The basic dump file format is a single MINIDUMP_HEADER followed
@@ -102,7 +102,7 @@
 
 typedef unsigned int RVA;	/* Offset from beginning of file */
 typedef	unsigned int ULONG32;
-typedef unsigned long ULONG64;
+typedef unsigned long long ULONG64;
 typedef wchar_t WCHAR;		/* beware : differs between host and target */
 typedef unsigned short USHORT;
 typedef unsigned long DWORD;
@@ -272,6 +272,8 @@ typedef struct _CEDUMP_SYSTEM_INFO {
 
 /*
  * This structure lists the memory dumps associated with the error report.
+ *
+ * This structure is followed by NumberOfEntries MINIDUMP_MEMORY_DESCRIPTOR fields.
  */
 typedef struct _CEDUMP_MEMORY_LIST {
 	USHORT SizeOfHeader;

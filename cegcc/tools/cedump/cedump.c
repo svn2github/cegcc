@@ -43,6 +43,8 @@ typedef void (*StreamHandler)(FILE *, int, int, Arguments *);
 void HandleSystemInfo(FILE *, int, int, Arguments *);
 void HandleException(FILE *, int, int, Arguments *);
 void HandleThreadCallStack(FILE *, int, int, Arguments *);
+void HandleMemoryList(FILE *, int, int, Arguments *);
+void HandleBucketParameters(FILE *, int, int, Arguments *);
 
 void HandleElementList(FILE *, int, int, Arguments *);
 
@@ -168,9 +170,9 @@ struct {
 	{ ceStreamThreadList,		"Thread",		HandleElementList,	ArgTL },
 	{ ceStreamThreadContextList,	"Thread Context",	HandleElementList,	ArgTCL },
 	{ ceStreamThreadCallStackList,	"Thread Callstack",	HandleThreadCallStack,	NULL },
-	{ ceStreamMemoryVirtualList,	"Memory virtual list",	NULL,			NULL },
-	{ ceStreamMemoryPhysicalList,	"Memory physical list",	NULL,			NULL },
-	{ ceStreamBucketParameters,	"Bucket parameters",	NULL,			NULL },
+	{ ceStreamMemoryVirtualList,	"Memory virtual list",	HandleMemoryList,	NULL },
+	{ ceStreamMemoryPhysicalList,	"Memory physical list",	HandleMemoryList,	NULL },
+	{ ceStreamBucketParameters,	"Bucket parameters",	HandleBucketParameters,	NULL },
 	/* The end */
 	{ LastReservedStream, NULL, NULL }
 };
@@ -528,4 +530,77 @@ void HandleThreadCallStack(FILE *f, int off, int len, Arguments *arg)
 		fprintf(stderr, "  Frame %d : ", i);
 	}
 #endif
+}
+
+void HandleMemoryList(FILE *f, int off, int len, Arguments *arg)
+{
+	CEDUMP_MEMORY_LIST		ml;
+	MINIDUMP_MEMORY_DESCRIPTOR	*md;
+	int				i, j;
+
+	fseek(f, off, SEEK_SET);
+	fread(&ml, sizeof(CEDUMP_MEMORY_LIST), 1, f);
+
+	fprintf(stderr, "  Memory list %d entries\n", ml.NumberOfEntries);
+
+	md = calloc(ml.NumberOfEntries, sizeof(MINIDUMP_MEMORY_DESCRIPTOR));
+	fread(md, sizeof(MINIDUMP_MEMORY_DESCRIPTOR), ml.NumberOfEntries, f);
+
+	for (i=0; i<ml.NumberOfEntries; i++) {
+		unsigned long	somr = md[i].StartOfMemoryRange;
+		unsigned long	len = md[i].Memory.DataSize;
+		unsigned long	rva = md[i].Memory.Rva;
+		char		*buf;
+
+		/*
+		 * Using variables here to avoid printf getting screwed up
+		 * with alignment of the long long field.
+		 */
+		fprintf(stderr, "    Entry %d start 0x%08X len %x Rva %04X\n",
+				i,
+				somr, len, rva);
+
+		buf = malloc(len);
+		fseek(f, rva, SEEK_SET);
+		fread(buf, len, 1, f);
+
+		int start = somr & 0xFFFFFFF0;
+		int the_end = (somr + len - 1) | 0x0F;
+		int p;
+		for (p=start; p<=the_end; p++) {
+			if (p < somr && ((p & 0x0F) == 0))
+				fprintf(stderr, "%08X    ", p);
+			else if (p < somr)
+				fprintf(stderr, "   ");
+			else if (p >= somr + len && ((p & 0x0F) == 0x0F))
+				fprintf(stderr, "\n");
+			else if (p >= somr + len)
+				fprintf(stderr, "   ");
+			else if ((p & 0x0F) == 0)
+				fprintf(stderr, "%08X  %02X", p,
+						255 & buf[p-somr]);
+			else if ((p & 0x0F) == 0x0F)
+				fprintf(stderr, " %02X\n", 255 & buf[p-somr]);
+			else
+				fprintf(stderr, " %02X", 255 & buf[p-somr]);
+		}
+		free(buf);
+	}
+}
+
+void HandleBucketParameters(FILE *f, int off, int len, Arguments *arg)
+{
+	CEDUMP_BUCKET_PARAMETERS	bp;
+	char				*app, *owner, *mod;
+
+	fseek(f, off, SEEK_SET);
+	fread(&bp, sizeof(CEDUMP_BUCKET_PARAMETERS), 1, f);
+
+	app = ReadString(f, bp.AppName);
+	owner = ReadString(f, bp.OwnerName);
+	mod = ReadString(f, bp.ModName);
+
+	fprintf(stderr, "  Bucket parameters :\n"
+			"\tAppName [%s]\n\tOwnerName [%s]\n\tModule [%s]\n",
+			app, owner, mod);
 }
