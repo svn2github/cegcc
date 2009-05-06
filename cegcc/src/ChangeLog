@@ -1,3 +1,7 @@
+2009-05-06  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* mingwdll/lib{gcc,stdc++,supc++}/Makefile : install the lib*.dll.a .
+
 2009-02-07  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	* scripts: New top-level directory.  Move build-mingw32ce.sh,

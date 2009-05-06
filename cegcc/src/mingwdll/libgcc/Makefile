@@ -37,3 +37,4 @@ install::
 	mkdir -p ${DLL_DIR}
 	cp ${BUILD_DIR}/${MYDIR}/${ME}.def ${DLL_DIR}
 	cp ${BUILD_DIR}/${MYDIR}/${ME}-${DLLVERSION}.dll ${DLL_DIR}
+	cp ${BUILD_DIR}/${MYDIR}/${ME}.dll.a ${DLL_DIR}/${ME}.dll.a

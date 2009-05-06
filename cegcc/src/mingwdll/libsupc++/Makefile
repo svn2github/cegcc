@@ -44,5 +44,10 @@ install::
 	mkdir -p ${DLL_DIR} ${DEVICE_DIR}
 	cp ${BUILD_DIR}/${MYDIR}/${ME}-${DLLVERSION}.dll ${DEVICE_DIR}
 	cp ${BUILD_DIR}/${MYDIR}/${ME}-${DLLVERSION}.dll.stripped ${DEVICE_DIR}
+	#
+	# Because of name conflict, remove the earlier *.la file
+	# that comes from the static library build in gcc/
+	#
 	rm -f ${DLL_DIR}/${ME}.la
 	cp ${BUILD_DIR}/${MYDIR}/${ME}.la ${DLL_DIR}/${ME}.la
+	cp ${BUILD_DIR}/${MYDIR}/${ME}.dll.a ${DLL_DIR}/${ME}.dll.a
