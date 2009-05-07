@@ -1,14 +1,14 @@
-Summary:	CeGCC offers cross-development to create Windows CE apps for ARM processors
-Name:		cegcc-mingw32ce
+Summary:	CeGCC offers cross-development to create Windows CE apps for ARM and x86 processors
+Name:		cegcc-mingw32ce-i386
 %define version VerSION
 Version:	VerSION
 Release:	1
 License:	open
 Packager:	Danny Backx <dannybackx@users.sourceforge.net>
 Group:		Development/Tools
-Prefix:		/opt/mingw32ce
+Prefix:		/opt/x86mingw32ce
 # Source:		http://sourceforge.net/project/showfiles.php?group_id=173455
-Source:		/tmp/cegcc-mingw32ce-src-%{version}.tar.gz
+Source:		/tmp/cegcc-mingw32ce-i386-src-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-buildroot
 
 %description
@@ -20,24 +20,24 @@ CeGCC
 
 %build
 rm -rf $RPM_BUILD_ROOT
-export PREFIX=/opt/mingw32ce
+export PREFIX=/opt/x86mingw32ce
 cd src || exit 1
-mkdir build-mingw32ce-arm || exit 1
-cd build-mingw32ce-arm || exit 1
+mkdir build-mingw32ce-i386 || exit 1
+cd build-mingw32ce-i386 || exit 1
 # sh build-cegcc.sh . $RPM_BUILD_ROOT $PREFIX all || exit 1
-sh ../scripts/build-mingw32ce.sh --components=all || exit 1
+sh ../scripts/build-x86.sh --components=all || exit 1
 
 %install
 cd /
 rm -rf $RPM_BUILD_ROOT
 mkdir $RPM_BUILD_ROOT
-tar cf - opt/mingw32ce | (cd $RPM_BUILD_ROOT; tar xf -)
+tar cf - opt/x86mingw32ce | (cd $RPM_BUILD_ROOT; tar xf -)
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files
-/opt/mingw32ce
+/opt/x86mingw32ce
 #/opt/cegcc/arm-wince-cegcc
 #%attr(755, root, root) /opt/cegcc/bin
 #/opt/cegcc/include

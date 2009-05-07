@@ -22,8 +22,10 @@ CeGCC
 rm -rf $RPM_BUILD_ROOT
 export PREFIX=/opt/cegcc
 cd src || exit 1
+mkdir build-cegcc || exit 1
+cd build-cegcc || exit 1
 # sh build-cegcc.sh . $RPM_BUILD_ROOT $PREFIX all || exit 1
-sh build-cegcc.sh all || exit 1
+sh ../scripts/build-cegcc.sh --components=all || exit 1
 
 %install
 cd /
