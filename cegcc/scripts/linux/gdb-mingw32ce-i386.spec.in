@@ -35,7 +35,7 @@ rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT || exit 1
 cd gdb/gdbserver || exit 1
 make install DESTDIR=$RPM_BUILD_ROOT || exit 1
-
+cd $RPM_BUILD_ROOT && tar cfz /tmp/gdb-mingw32ce-i386-VerSION.tar.gz .
 
 %clean
 rm -rf $RPM_BUILD_ROOT

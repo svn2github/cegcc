@@ -591,6 +591,8 @@ else
 	fi
 	echo "put ${PREFIX}cegcc-cegcc-$VERSION.tar.gz" >>$FTPFILE
 	echo "put ${PREFIX}cegcc-mingw32ce-$VERSION.tar.gz" >>$FTPFILE
+	echo "put gdb-mingw32ce-arm-$VERSION.tar.gz ${PREFIX}gdb-mingw32ce-arm-$VERSION.tar.gz" >>$FTPFILE
+	echo "put gdb-mingw32ce-i386-$VERSION.tar.gz ${PREFIX}gdb-mingw32ce-i386-$VERSION.tar.gz" >>$FTPFILE
 	echo "lcd /usr/src/rpm/SOURCES" >>$FTPFILE
 #
 # These are a bit big, commenting out.
