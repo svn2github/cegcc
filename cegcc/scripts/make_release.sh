@@ -434,6 +434,9 @@ then
 else
 	echo "Level 57 (Build Mingw32ce gdb)"
 	OK=no
+	#
+	# Note : tar.gz file is created on the fly duing rpmbuild
+	#
 	rpmbuild -tb /usr/src/rpm/SOURCES/gdb-mingw32ce-arm-$VERSION-src.tar.gz && OK=yes
 	if [ $OK = "no" ]; then
 		echo "Build of Mingw32ce gdb failed, exiting ..."
@@ -460,6 +463,9 @@ then
 else
 	echo "Level 58 (Build Mingw32ce/i386 gdb)"
 	OK=no
+	#
+	# Note : tar.gz file is created on the fly duing rpmbuild
+	#
 	rpmbuild -tb /usr/src/rpm/SOURCES/gdb-mingw32ce-i386-$VERSION-src.tar.gz && OK=yes
 	if [ $OK = "no" ]; then
 		echo "Build of Mingw32ce gdb failed, exiting ..."

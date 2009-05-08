@@ -29,8 +29,8 @@ echo 'cegcc-mingw32ce-'$CEGCC_RELEASE'/src/build-mingw32ce' >>/tmp/exclude-$$
 echo 'cegcc-mingw32ce-'$CEGCC_RELEASE'/src/build-mingw32ce/*' >>/tmp/exclude-$$
 echo '*~' >>/tmp/exclude-$$
 #
-cd $TOP_SRCDIR
-ln -s . cegcc-cegcc-$CEGCC_RELEASE
+cd $TOP_SRCDIR || exit 1
+ln -s . cegcc-cegcc-$CEGCC_RELEASE || exit 1
 tar --exclude-from=/tmp/exclude-$$ \
 	-cz -f /usr/src/rpm/SOURCES/cegcc-cegcc-src-$CEGCC_RELEASE.tar.gz \
 	cegcc-cegcc-$CEGCC_RELEASE/NEWS \
@@ -39,8 +39,8 @@ tar --exclude-from=/tmp/exclude-$$ \
 	cegcc-cegcc-$CEGCC_RELEASE/docs \
 	cegcc-cegcc-$CEGCC_RELEASE/website \
 	cegcc-cegcc-$CEGCC_RELEASE/test \
-	cegcc-cegcc-$CEGCC_RELEASE/src
-rm cegcc-cegcc-$CEGCC_RELEASE
+	cegcc-cegcc-$CEGCC_RELEASE/src || exit 1
+rm cegcc-cegcc-$CEGCC_RELEASE || exit 1
 #
 echo "Ready to build with"
 echo " "
@@ -48,7 +48,7 @@ echo "	rm -rf /opt/cegcc/*"
 echo "	rpmbuild -tb /usr/src/rpm/SOURCES/cegcc-cegcc-src-"$CEGCC_RELEASE".tar.gz"
 echo "Note : " `ls -l /usr/src/rpm/SOURCES/cegcc-cegcc-src-"$CEGCC_RELEASE".tar.gz`
 #
-ln -s . cegcc-mingw32ce-$CEGCC_RELEASE
+ln -s . cegcc-mingw32ce-$CEGCC_RELEASE || exit 1
 tar --exclude-from=/tmp/exclude-$$ \
 	-cz -f /usr/src/rpm/SOURCES/cegcc-mingw32ce-src-$CEGCC_RELEASE.tar.gz \
 	cegcc-mingw32ce-$CEGCC_RELEASE/NEWS \
@@ -57,8 +57,8 @@ tar --exclude-from=/tmp/exclude-$$ \
 	cegcc-mingw32ce-$CEGCC_RELEASE/docs \
 	cegcc-mingw32ce-$CEGCC_RELEASE/website \
 	cegcc-mingw32ce-$CEGCC_RELEASE/test \
-	cegcc-mingw32ce-$CEGCC_RELEASE/src
-rm cegcc-mingw32ce-$CEGCC_RELEASE
+	cegcc-mingw32ce-$CEGCC_RELEASE/src || exit 1
+rm cegcc-mingw32ce-$CEGCC_RELEASE || exit 1
 #
 # Remove temp file
 #
@@ -90,24 +90,24 @@ if [ ! -r $FTP_DIR/$GDB_VERSION$GDB_SUFFIX.ok ]; then
 fi
 #
 # Unpack gdb in /tmp
-mkdir /tmp/gdb-$$
-cd /tmp/gdb-$$
-tar xfj $FTP_DIR/$GDB_VERSION$GDB_SUFFIX
+mkdir /tmp/gdb-$$ || exit 1
+cd /tmp/gdb-$$ || exit 1
+tar xfj $FTP_DIR/$GDB_VERSION$GDB_SUFFIX || exit 1
 #
 # Apply our patch if it's there
 #
 if [ -r $FTP_DIR/gdb-6.8-i386gdbserver.patch ]; then
-	patch $FTP_DIR/gdb-6.8-i386gdbserver.patch
+	patch $FTP_DIR/gdb-6.8-i386gdbserver.patch || exit 1
 fi
 #
-cp $TOP_SRCDIR/scripts/linux/gdb-mingw32ce-arm.spec $GDB_VERSION
-ln -s $GDB_VERSION gdb-mingw32ce-arm-VerSION
-tar cfz /usr/src/rpm/SOURCES/gdb-mingw32ce-arm-VerSION-src.tar.gz gdb-mingw32ce-arm-VerSION/*
-rm -f $GDB_VERSION/gdb-mingw32ce-arm.spec
-cp $TOP_SRCDIR/scripts/linux/gdb-mingw32ce-i386.spec $GDB_VERSION
-ln -s $GDB_VERSION gdb-mingw32ce-i386-VerSION
-tar cfz /usr/src/rpm/SOURCES/gdb-mingw32ce-i386-VerSION-src.tar.gz gdb-mingw32ce-i386-VerSION/*
-cd $TOP_SRCDIR
+cp $TOP_SRCDIR/scripts/linux/gdb-mingw32ce-arm.spec $GDB_VERSION || exit 1
+ln -s $GDB_VERSION gdb-mingw32ce-arm-VerSION || exit 1
+tar cfz /usr/src/rpm/SOURCES/gdb-mingw32ce-arm-VerSION-src.tar.gz gdb-mingw32ce-arm-VerSION/* || exit 1
+rm -f $GDB_VERSION/gdb-mingw32ce-arm.spec || exit 1
+cp $TOP_SRCDIR/scripts/linux/gdb-mingw32ce-i386.spec $GDB_VERSION || exit 1
+ln -s $GDB_VERSION gdb-mingw32ce-i386-VerSION || exit 1
+tar cfz /usr/src/rpm/SOURCES/gdb-mingw32ce-i386-VerSION-src.tar.gz gdb-mingw32ce-i386-VerSION/* || exit 1
+cd $TOP_SRCDIR || exit 1
 rm -rf /tmp/gdb-$$
 #
 # All done
