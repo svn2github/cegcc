@@ -1,0 +1,74 @@
+Summary:	GDB for cross-debugging ARM targets
+Name:		gdb-mingw32ce-arm
+%define version VerSION
+Version:	VerSION
+Release:	1
+License:	open
+Packager:	Danny Backx <dannybackx@users.sourceforge.net>
+Group:		Development/Tools
+Prefix:		/opt/mingw32ce
+# Source:		http://sourceforge.net/project/showfiles.php?group_id=173455
+Source:		/tmp/gdb-mingw32ce-src-%{version}.tar.gz
+BuildRoot:	%{_tmppath}/%{name}-buildroot
+
+%description
+CeGCC has removed gdb from its source tree,
+but still wants to offer a binary version.
+
+%prep
+%setup -q
+
+%build
+rm -rf $RPM_BUILD_ROOT
+export PREFIX=/opt/mingw32ce
+./configure --target=arm-mingw32ce --prefix=$PREFIX || exit 1
+make || exit 1
+cd gdb/gdbserver || exit 1
+./configure --host=arm-mingw32ce --prefix=$PREFIX || exit 1
+
+%install
+# rm -rf $RPM_BUILD_ROOT
+# %makeinstall
+# rm -rf $RPM_BUILD_ROOT
+# make install || exit 1
+rm -rf $RPM_BUILD_ROOT
+make install DESTDIR=$RPM_BUILD_ROOT || exit 1
+cd gdb/gdbserver || exit 1
+make install DESTDIR=$RPM_BUILD_ROOT || exit 1
+
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+/opt/mingw32ce/lib/libarm-mingw32ce-sim.a
+/opt/mingw32ce/lib/libiberty.a
+/opt/mingw32ce/bin/arm-mingw32ce-gdbtui
+/opt/mingw32ce/bin/arm-mingw32ce-gdb
+/opt/mingw32ce/bin/arm-mingw32ce-run
+/opt/mingw32ce/bin/gdbserver.exe
+/opt/mingw32ce/info/dir
+/opt/mingw32ce/info/bfd.info
+/opt/mingw32ce/info/stabs.info
+/opt/mingw32ce/info/gdbint.info-2
+/opt/mingw32ce/info/gdb.info
+/opt/mingw32ce/info/annotate.info
+/opt/mingw32ce/info/gdb.info-4
+/opt/mingw32ce/info/configure.info
+/opt/mingw32ce/info/gdb.info-3
+/opt/mingw32ce/info/gdbint.info
+/opt/mingw32ce/info/standards.info
+/opt/mingw32ce/info/gdbint.info-1
+/opt/mingw32ce/info/gdb.info-1
+/opt/mingw32ce/info/gdb.info-2
+/opt/mingw32ce/man/man1/arm-mingw32ce-run.1
+/opt/mingw32ce/man/man1/arm-mingw32ce-gdb.1
+/opt/mingw32ce/man/man1/arm-mingw32ce-gdbtui.1
+/opt/mingw32ce/man/man1/gdbserver.1
+/opt/mingw32ce/share/locale/*/LC_MESSAGES/opcodes.mo
+/opt/mingw32ce/share/locale/*/LC_MESSAGES/bfd.mo
+
+%changelog
+* Thu Apr 07 2009 Danny Backx <dannybackx@users.sf.net>
+- Copy mingw32ce.spec.in into gdb-mingw32ce-arm.spec.in, change it to
+  build gdb.

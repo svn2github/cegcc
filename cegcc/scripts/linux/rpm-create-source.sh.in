@@ -72,6 +72,44 @@ echo "	rpmbuild -tb /usr/src/rpm/SOURCES/cegcc-mingw32ce-src-"$CEGCC_RELEASE".ta
 echo "Note : " `ls -l /usr/src/rpm/SOURCES/cegcc-mingw32ce-src-"$CEGCC_RELEASE".tar.gz`
 echo " "
 #
+# Gdb
+#
+FTP_DIR=$TOP_SRCDIR/src/ftp
+GDB_VERSION=gdb-6.8
+GDB_SUFFIX=.tar.bz2
+GDB_URL="ftp://ftp.gnu.org/pub/gnu/gdb"/$GDB_VERSION$GDB_SUFFIX
+#
+if [ ! -r $FTP_DIR/$GDB_VERSION$GDB_SUFFIX.ok ]; then
+	wget -O $FTP_DIR/$GDB_VERSION$GDB_SUFFIX -c $GDB_URL
+	if [ $? -eq 0 ]; then
+		touch $FTP_DIR/$GDB_VERSION$GDB_SUFFIX.ok
+	else
+		echo "Could not get $GDB_VERSION, exiting"
+		exit 1
+	fi
+fi
+#
+# Unpack gdb in /tmp
+mkdir /tmp/gdb-$$
+cd /tmp/gdb-$$
+tar xfj $FTP_DIR/$GDB_VERSION$GDB_SUFFIX
+#
+# Apply our patch if it's there
+#
+if [ -r $FTP_DIR/gdb-6.8-i386gdbserver.patch ]; then
+	patch $FTP_DIR/gdb-6.8-i386gdbserver.patch
+fi
+#
+cp $TOP_SRCDIR/scripts/linux/gdb-mingw32ce-arm.spec $GDB_VERSION
+ln -s $GDB_VERSION gdb-mingw32ce-arm-VerSION
+tar cfz /usr/src/rpm/SOURCES/gdb-mingw32ce-arm-VerSION-src.tar.gz gdb-mingw32ce-arm-VerSION/*
+rm -f $GDB_VERSION/gdb-mingw32ce-arm.spec
+cp $TOP_SRCDIR/scripts/linux/gdb-mingw32ce-i386.spec $GDB_VERSION
+ln -s $GDB_VERSION gdb-mingw32ce-i386-VerSION
+tar cfz /usr/src/rpm/SOURCES/gdb-mingw32ce-i386-VerSION-src.tar.gz gdb-mingw32ce-i386-VerSION/*
+cd $TOP_SRCDIR
+rm -rf /tmp/gdb-$$
+#
 # All done
 #
 exit 0

@@ -1,0 +1,74 @@
+Summary:	GDB for cross-debugging x86 targets
+Name:		gdb-mingw32ce-i386
+%define version VerSION
+Version:	VerSION
+Release:	1
+License:	open
+Packager:	Danny Backx <dannybackx@users.sourceforge.net>
+Group:		Development/Tools
+Prefix:		/opt/x86mingw32ce
+# Source:		http://sourceforge.net/project/showfiles.php?group_id=173455
+Source:		/tmp/gdb-mingw32ce-src-%{version}.tar.gz
+BuildRoot:	%{_tmppath}/%{name}-buildroot
+
+%description
+CeGCC has removed gdb from its source tree,
+but still wants to offer a binary version.
+
+%prep
+%setup -q
+
+%build
+rm -rf $RPM_BUILD_ROOT
+export PREFIX=/opt/x86mingw32ce
+./configure --target=i386-mingw32ce --prefix=$PREFIX || exit 1
+make || exit 1
+cd gdb/gdbserver || exit 1
+./configure --host=i386-mingw32ce --prefix=$PREFIX || exit 1
+
+%install
+# rm -rf $RPM_BUILD_ROOT
+# %makeinstall
+# rm -rf $RPM_BUILD_ROOT
+# make install || exit 1
+rm -rf $RPM_BUILD_ROOT
+make install DESTDIR=$RPM_BUILD_ROOT || exit 1
+cd gdb/gdbserver || exit 1
+make install DESTDIR=$RPM_BUILD_ROOT || exit 1
+
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+/opt/x86mingw32ce/lib/libi386-mingw32ce-sim.a
+/opt/x86mingw32ce/lib/libiberty.a
+/opt/x86mingw32ce/bin/i386-mingw32ce-gdbtui
+/opt/x86mingw32ce/bin/i386-mingw32ce-gdb
+/opt/x86mingw32ce/bin/i386-mingw32ce-run
+/opt/x86mingw32ce/bin/gdbserver.exe
+/opt/x86mingw32ce/info/dir
+/opt/x86mingw32ce/info/bfd.info
+/opt/x86mingw32ce/info/stabs.info
+/opt/x86mingw32ce/info/gdbint.info-2
+/opt/x86mingw32ce/info/gdb.info
+/opt/x86mingw32ce/info/annotate.info
+/opt/x86mingw32ce/info/gdb.info-4
+/opt/x86mingw32ce/info/configure.info
+/opt/x86mingw32ce/info/gdb.info-3
+/opt/x86mingw32ce/info/gdbint.info
+/opt/x86mingw32ce/info/standards.info
+/opt/x86mingw32ce/info/gdbint.info-1
+/opt/x86mingw32ce/info/gdb.info-1
+/opt/x86mingw32ce/info/gdb.info-2
+/opt/x86mingw32ce/man/man1/i386-mingw32ce-run.1
+/opt/x86mingw32ce/man/man1/i386-mingw32ce-gdb.1
+/opt/x86mingw32ce/man/man1/i386-mingw32ce-gdbtui.1
+/opt/x86mingw32ce/man/man1/gdbserver.1
+/opt/x86mingw32ce/share/locale/*/LC_MESSAGES/opcodes.mo
+/opt/x86mingw32ce/share/locale/*/LC_MESSAGES/bfd.mo
+
+%changelog
+* Fri May 08 2009 Danny Backx <dannybackx@users.sf.net>
+- Copy gdb-mingw32ce-arm.spec.in into gdb-mingw32ce-i386.spec.in,
+  change arm to i386.
