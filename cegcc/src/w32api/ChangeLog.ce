@@ -1,3 +1,9 @@
+2009-05-13  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/kfuncs.h (PUserKData) : Define as different values for
+	ARM and other processors. Add references to websites that have this
+	information.
+
 2009-04-28  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/winuser.h(GetMenu) : Remove for CE.

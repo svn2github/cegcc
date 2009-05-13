@@ -13,7 +13,20 @@
 #error "_WIN32_WCE is not defined."
 #endif
 
+/*
+ * http://hubpages.com/hub/hackingwindowsce :
+ *	"The value of PUserKData is fixed as 0xFFFFC800 on the ARM processor,
+ *	and 0x00005800 on other CPUs."
+ * http://www.ddj.com/architect/184405459
+ * http://andy-embed.blogspot.com/
+ * http://arsouyes.org/phrack/phrack63/phrack63_0x06.html
+ */
+#if defined(__arm__)
 #define	PUserKData		((LPBYTE)0xFFFFC800)
+#else
+#define	PUserKData		((LPBYTE)0x00005800)
+#endif
+
 #define	SYSHANDLE_OFFSET	0x004
 #define	SYS_HANDLE_BASE		64
 #define SH_WIN32                0
