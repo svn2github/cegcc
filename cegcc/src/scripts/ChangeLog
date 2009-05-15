@@ -1,3 +1,7 @@
+2009-05-15  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* build-cegcc.sh, build-x86.sh: Apply Geoffroys work on these scripts too.
+
 2009-05-15  Geoffroy Couprie  <geal@videolan.org>
 
 	* build-mingw32ce.sh: Add support for specifying --host.

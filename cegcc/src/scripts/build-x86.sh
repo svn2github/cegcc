@@ -41,6 +41,7 @@ Usage: $0 [OPTIONS] ...
   -h, --help              print this help, then exit
   --prefix=PREFIX         install toolchain in PREFIX
 			  [$ac_default_prefix]
+  --host=HOST             host on which the toolchain will run [BUILD]
   -j, --parallelism PARALLELISM  Pass PARALLELISM as -jPARALLELISM
                           to make invocations.
   --components=LIST       specify which components to build
@@ -93,6 +94,11 @@ do
       | --compone=* | --compon=* | --compo=* | --comp=* | --com=* \
       | --co=* | --c=*)
     components=$ac_optarg ;;
+
+  --host )
+    ac_prev=host ;;
+  --host=* )
+    host=$ac_optarg ;;
 
   -*) { echo "$as_me: error: unrecognized option: $ac_option
 Try \`$0 --help' for more information." >&2
@@ -181,6 +187,7 @@ build_binutils()
     cd binutils
     ${BASE_DIRECTORY}/binutils/configure \
 	--prefix=${PREFIX}      \
+	--host=${HOST}          \
 	--target=${TARGET}      \
 	--disable-nls
 
@@ -200,6 +207,8 @@ build_bootstrap_gcc()
 	--with-gnu-ld                  \
 	--with-gnu-as                  \
 	--target=${TARGET}             \
+	--build=${BUILD}               \
+	--host=${HOST}                 \
 	--prefix=${PREFIX}             \
 	--disable-threads              \
 	--disable-nls                  \
@@ -285,6 +294,8 @@ build_gcc()
 	--with-gnu-ld                  \
 	--with-gnu-as                  \
 	--target=${TARGET}             \
+	--build=${BUILD}               \
+	--host=${HOST}                 \
 	--prefix=${PREFIX}             \
 	--enable-threads=win32         \
 	--disable-nls                  \
@@ -472,6 +483,12 @@ export TARGET="i386-mingw32ce"
 
 export BUILD=`sh ${BASE_DIRECTORY}/gcc/config.guess`
 export PATH=${PREFIX}/bin:${PATH}
+
+if [ "x${host}" != "x" ]; then
+      export HOST="${host}"
+else
+      export HOST=${BUILD}
+fi
 
 echo "Building mingw32ce:"
 echo "source: ${BASE_DIRECTORY}"
