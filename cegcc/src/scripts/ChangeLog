@@ -1,3 +1,8 @@
+2009-05-15  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* build-mingw32ce.sh, build-cegcc.sh, build-x86.sh (build_w32api) :
+	Create a cegcc.h file.
+
 2009-02-07  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	* build-cegcc.sh (BASE_DIRECTORY): Step one level down.

@@ -246,6 +246,33 @@ build_w32api()
     make ${PARALLELISM}
     make install
 
+    #
+    # Create a cegcc.h file with some sensible input
+    # Code is copied from the scripts/make_release.sh script.
+    # This will probably always have "old" numbers
+    #
+    # CEGCC_VERSION_MAJOR=`echo $VERSION | awk -F. '{print $1}'`
+    # CEGCC_VERSION_MINOR=`echo $VERSION | awk -F. '{print $2}'`
+    # CEGCC_VERSION_PATCHLEVEL=`echo $VERSION | awk -F. '{print $3}'`
+    #
+    # Version patchlevel 999 refers to SVN from now on :-)
+    #
+    CEGCC_VERSION_MAJOR=0
+    CEGCC_VERSION_MINOR=55
+    CEGCC_VERSION_PATCHLEVEL=999
+    #
+    INCFILE=${BASE_DIRECTORY}/w32api/include/cegcc.h.in
+    DESTFILE=${PREFIX}/${TARGET}/include/cegcc.h
+    #
+    L1=`grep -s -n "Automatic changes below" ${INCFILE} | awk -F: '{print $1}'`
+    L2=`grep -s -n "Automatic changes above" ${INCFILE} | awk -F: '{print $1}'`
+    head -$L1 ${INCFILE} >${DESTFILE}
+    echo "#define   __CEGCC_VERSION_MAJOR__ " $CEGCC_VERSION_MAJOR >> ${DESTFILE}
+    echo "#define   __CEGCC_VERSION_MINOR__ " $CEGCC_VERSION_MINOR >> ${DESTFILE}
+    echo "#define   __CEGCC_VERSION_PATCHLEVEL__ " $CEGCC_VERSION_PATCHLEVEL >> ${DESTFILE}
+    echo "#define   __CEGCC_BUILD_DATE__" `date +%Y%m%d` >> ${DESTFILE}
+    tail +$L2 ${INCFILE} >>${DESTFILE}
+
     cd ${BUILD_DIR}
 }
 
