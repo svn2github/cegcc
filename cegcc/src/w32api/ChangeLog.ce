@@ -1,3 +1,8 @@
+2009-05-15  Pierre Ynard  <linkfanel@yahoo.fr>
+
+	* include/kfuncs.h (ResetEvent, SetEvent) : Fix definitions that got
+	mixed up in recent commit.
+
 2009-05-13  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/kfuncs.h (PUserKData) : Define as different values for

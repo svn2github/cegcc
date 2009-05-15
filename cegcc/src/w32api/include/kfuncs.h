@@ -73,12 +73,12 @@ static inline BOOL PulseEvent (HANDLE x)
 
 static inline BOOL ResetEvent (HANDLE x)
 {
-  return EventModify(x, EVENT_PULSE);
+  return EventModify(x, EVENT_RESET);
 }
 
 static inline BOOL SetEvent (HANDLE x)
 {
-  return EventModify(x, EVENT_PULSE);
+  return EventModify(x, EVENT_SET);
 }
 
 /* TLS Constants and Constructs */
