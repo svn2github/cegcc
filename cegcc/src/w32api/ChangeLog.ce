@@ -1,3 +1,7 @@
+2009-05-18  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/winbase.h (CRITICAL_SECTION) : Define differently for CE.
+
 2009-05-15  Pierre Ynard  <linkfanel@yahoo.fr>
 
 	* include/kfuncs.h (ResetEvent, SetEvent) : Fix definitions that got
