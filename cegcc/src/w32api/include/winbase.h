@@ -1415,8 +1415,16 @@ WINBASEAPI BOOL WINAPI EqualPrefixSid(PSID,PSID);
 WINBASEAPI BOOL WINAPI EqualSid(PSID,PSID);
 WINBASEAPI DWORD WINAPI EraseTape(HANDLE,DWORD,BOOL);
 WINBASEAPI BOOL WINAPI EscapeCommFunction(HANDLE,DWORD);
+
+WINBASEAPI BOOL WINAPI TerminateProcess(HANDLE,UINT);
+#include <kfuncs.h>
 #ifdef _WIN32_WCE
-#define ExitProcess(CODE) do { TerminateProcess(GetCurrentProcess(), CODE); while (1); } while (0)
+static inline void ExitProcess(int code)
+{
+	TerminateProcess(GetCurrentProcess(), code);
+	while (1);
+}
+// #define ExitProcess(CODE) do { TerminateProcess(GetCurrentProcess(), CODE); while (1); } while (0)
 #else
 DECLSPEC_NORETURN WINBASEAPI void WINAPI ExitProcess(UINT);
 #endif
@@ -2134,7 +2142,6 @@ WINBASEAPI void WINAPI SwitchToFiber(PVOID);
 WINBASEAPI BOOL WINAPI SwitchToThread(void);
 WINBASEAPI BOOL WINAPI SystemTimeToFileTime(const SYSTEMTIME*,LPFILETIME);
 WINBASEAPI BOOL WINAPI SystemTimeToTzSpecificLocalTime(LPTIME_ZONE_INFORMATION,LPSYSTEMTIME,LPSYSTEMTIME);
-WINBASEAPI BOOL WINAPI TerminateProcess(HANDLE,UINT);
 WINBASEAPI BOOL WINAPI TerminateThread(HANDLE,DWORD);
 #ifndef _WIN32_WCE
 /* In kfuncs.h */

@@ -1,6 +1,8 @@
 2009-05-18  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/winbase.h (CRITICAL_SECTION) : Define differently for CE.
+	* include/winbase.h (ExitProcess) : Define as an inline function, not
+	a macro.
 
 2009-05-15  Pierre Ynard  <linkfanel@yahoo.fr>
 
