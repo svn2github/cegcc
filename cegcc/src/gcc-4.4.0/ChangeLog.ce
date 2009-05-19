@@ -1,0 +1,4 @@
+2009-05-19  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* gcc-4.4.0/ChangeLog.ce : New file.
+	* gcc-4.4.0 : Fresh import from gcc-core-4.4.0 and gcc-g++-4.4.0 .
