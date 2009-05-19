@@ -1,3 +1,10 @@
+2009-05-19  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* gcc-4.4.0 : New import.
+	* VERSIONS : Updated to reflect gcc-4.4.0 .
+	* mingwdll : remove libgcc from the build, gcc 4.4 has native support
+	for a libgcc DLL.
+
 2009-05-06  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* mingwdll/lib{gcc,stdc++,supc++}/Makefile : install the lib*.dll.a .

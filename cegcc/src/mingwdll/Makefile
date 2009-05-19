@@ -1,4 +1,4 @@
-SUBDIRS=	libgcc libstdc++ libsupc++
+SUBDIRS=	libstdc++ libsupc++
 
 
 all::

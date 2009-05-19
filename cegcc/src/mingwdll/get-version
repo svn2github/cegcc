@@ -1,5 +1,7 @@
 #!/bin/sh
-#BASE_DIRECTORY=/home/danny/src/cegcc/svn.sf.net/cegcc/trunk/cegcc/src
+if [ "x$BASE_DIRECTORY" = "x" ]; then
+	BASE_DIRECTORY=/home/danny/src/cegcc/svn.sf.net/cegcc/trunk/cegcc/src
+fi
 LIBVER=$(grep libtool_VERSION= ${BASE_DIRECTORY}/gcc/libstdc++-v3/configure | sed -e 's/libtool_VERSION=//')
 LIBVER_c=$(echo $LIBVER | awk -F: '{print $1}')
 LIBVER_r=$(echo $LIBVER | awk -F: '{print $2}')
