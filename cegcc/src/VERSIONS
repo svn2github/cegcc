@@ -1,10 +1,10 @@
 Versions of the subdirectories below are:
 
-- gcc 4.1.0 from
+- gcc 4.4.0 (released April 2009) from
 
-	ftp://ftp.gnu.org/pub/gnu/gcc/gcc-4.1.0
-	gcc-core-4.1.0.tar.bz2
-	gcc-g++-4.1.0.tar.bz2
+	ftp://ftp.gnu.org/pub/gnu/gcc/gcc-4.4.0
+	gcc-core-4.4.0.tar.bz2
+	gcc-g++-4.4.0.tar.bz2
 
 - newlib 1.14.0
 
