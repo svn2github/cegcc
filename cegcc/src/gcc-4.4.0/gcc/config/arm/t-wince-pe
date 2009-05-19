@@ -1,0 +1,136 @@
+LIB1ASMSRC = arm/lib1funcs.asm
+
+LIB1ASMFUNCS = _udivsi3 _divsi3 _umodsi3 _modsi3 _dvmd_tls _call_via_rX _interwork_call_via_rX _clzsi2 _clzdi2 \
+	_bb_init_func _lshrdi3 _ashrdi3 _ashldi3 \
+	_negdf2 _addsubdf3 _muldivdf3 _cmpdf2 _unorddf2 _fixdfsi _fixunsdfsi \
+	_truncdfsf2 _negsf2 _addsubsf3 _muldivsf3 _cmpsf2 _unordsf2 \
+	_fixsfsi _fixunssfsi _floatdidf _floatdisf \
+	_arm_fixunsdfsi
+
+# For most CPUs we have an assembly soft-float implementations.
+# However this is not true for ARMv6M.  Here we want to use the soft-fp C
+# implementation.  The soft-fp code is only build for ARMv6M.  This pulls
+# in the asm implementation for other CPUs.
+#LIB1ASMFUNCS = _udivsi3 _divsi3 _umodsi3 _modsi3 _dvmd_tls _bb_init_func \
+#	_call_via_rX _interwork_call_via_rX \
+#	_lshrdi3 _ashrdi3 _ashldi3 \
+#	_arm_negdf2 _arm_addsubdf3 _arm_muldivdf3 _arm_cmpdf2 _arm_unorddf2 \
+#	_arm_fixdfsi _arm_fixunsdfsi \
+#	_arm_truncdfsf2 _arm_negsf2 _arm_addsubsf3 _arm_muldivsf3 \
+#	_arm_cmpsf2 _arm_unordsf2 _arm_fixsfsi _arm_fixunssfsi \
+#	_arm_floatdidf _arm_floatdisf _arm_floatundidf _arm_floatundisf \
+#	_clzsi2 _clzdi2
+
+# We want fine grained libraries, so use the new code to build the
+# floating point emulation libraries.
+FPBIT = fp-bit.c
+DPBIT = dp-bit.c
+
+fp-bit.c: $(srcdir)/config/fp-bit.c
+	echo '#define FLOAT' > fp-bit.c
+	echo '#ifndef __ARMEB__' >> fp-bit.c
+	echo '#define FLOAT_BIT_ORDER_MISMATCH' >> fp-bit.c
+	echo '#endif' >> fp-bit.c
+	cat $(srcdir)/config/fp-bit.c >> fp-bit.c
+
+dp-bit.c: $(srcdir)/config/fp-bit.c
+	echo '#ifndef __ARMEB__' > dp-bit.c
+	echo '#define FLOAT_BIT_ORDER_MISMATCH' >> dp-bit.c
+	echo '#define FLOAT_WORD_ORDER_MISMATCH' >> dp-bit.c
+	echo '#endif' >> dp-bit.c
+	cat $(srcdir)/config/fp-bit.c >> dp-bit.c
+
+pe.o: $(srcdir)/config/arm/pe.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
+  $(TM_H) $(RTL_H) $(REGS_H) hard-reg-set.h output.h $(TREE_H) flags.h \
+  $(TM_P_H) toplev.h $(HASHTAB_H) $(GGC_H)
+	$(CC) -c $(ALL_CFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) \
+	$(srcdir)/config/arm/pe.c
+
+pe-cxx.o: $(srcdir)/config/arm/pe-cxx.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
+  $(TM_H) $(RTL_H) $(REGS_H) hard-reg-set.h output.h $(TREE_H) flags.h \
+  $(TM_P_H) toplev.h $(HASHTAB_H) $(GGC_H)
+	$(CC) -c $(ALL_CFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) \
+	$(srcdir)/config/arm/pe-cxx.c
+
+pe-stubs.o: $(srcdir)/config/arm/pe-stubs.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
+  $(TM_H) $(RTL_H) $(REGS_H) hard-reg-set.h output.h $(TREE_H) flags.h \
+  $(TM_P_H) toplev.h $(HASHTAB_H) $(GGC_H)
+	$(CC) -c $(ALL_CFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) \
+	$(srcdir)/config/arm/pe-stubs.c
+
+#hack! using i386 file directly...
+msformat-c.o: $(srcdir)/config/i386/msformat-c.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
+  $(TM_H) $(RTL_H) $(REGS_H) hard-reg-set.h output.h $(TREE_H) flags.h \
+  $(TM_P_H) toplev.h $(HASHTAB_H) $(GGC_H)
+	$(CC) -c $(ALL_CFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) \
+	$(srcdir)/config/i386/msformat-c.c
+
+MULTILIB_OPTIONS =
+MULTILIB_DIRNAMES =
+
+# Note - Thumb multilib omitted because Thumb support for
+# arm-wince-pe target does not appear to be working in binutils
+# yet... 
+# MULTILIB_OPTIONS += thumb
+# MULTILIB_DIRNAMES += thumb
+
+LIBGCC = stmp-multilib
+INSTALL_LIBGCC = install-multilib
+# Currently there is a bug somewhere in GCC's alias analysis
+# or scheduling code that is breaking _fpmul_parts in fp-bit.c.
+# Disabling function inlining is a workaround for this problem.
+TARGET_LIBGCC2_CFLAGS = -fno-inline
+
+STMP_FIXINC=stmp-fixinc
+
+# Build a shared libgcc library for PECOFF with a DEF file
+# with the GNU linker.
+#
+# mkmap-flat.awk is used with the pe_dll option to produce a DEF instead
+# of an ELF map file.
+#
+# Warning: If SHLIB_SOVERSION or SHLIB_SONAME are updated, LIBGCC_SONAME
+# in mingw32.h and SHLIB_MKMAP_OPTS below must be updated also.
+
+SHLIB_EXT = .dll
+SHLIB_IMPLIB = @shlib_base_name@.a
+SHLIB_SOVERSION = 1
+SHLIB_SONAME = @shlib_base_name@_$(EH_MODEL)-$(SHLIB_SOVERSION)$(SHLIB_EXT)
+SHLIB_MAP = @shlib_map_file@
+SHLIB_OBJS = @shlib_objs@
+SHLIB_DIR = @multilib_dir@/shlib
+SHLIB_SLIBDIR_QUAL = @shlib_slibdir_qual@
+SHLIB_LC = -lmingw32 -lmingwex -lceoldname -lcoredll
+
+# This should go somewhere else.
+# We are using SjLj EH.
+EH_MODEL = sjlj
+
+SHLIB_LINK = $(LN_S) -f $(SHLIB_MAP) $(SHLIB_MAP).def && \
+	if [ ! -d $(SHLIB_DIR) ]; then \
+		mkdir $(SHLIB_DIR); \
+	else true; fi && \
+	$(GCC_FOR_TARGET) $(LIBGCC2_CFLAGS) -shared -nodefaultlibs \
+	$(SHLIB_MAP).def \
+	-Wl,--out-implib,$(SHLIB_DIR)/$(SHLIB_IMPLIB).tmp \
+	-o $(SHLIB_DIR)/$(SHLIB_SONAME).tmp @multilib_flags@ \
+	$(SHLIB_OBJS) $(SHLIB_LC) && \
+	if [ -f $(SHLIB_DIR)/$(SHLIB_SONAME) ]; then \
+	  mv -f $(SHLIB_DIR)/$(SHLIB_SONAME) \
+		$(SHLIB_DIR)/$(SHLIB_SONAME).backup; \
+	else true; fi && \
+	mv $(SHLIB_DIR)/$(SHLIB_SONAME).tmp $(SHLIB_DIR)/$(SHLIB_SONAME) && \
+	mv $(SHLIB_DIR)/$(SHLIB_IMPLIB).tmp $(SHLIB_DIR)/$(SHLIB_IMPLIB)
+# $(slibdir) double quoted to protect it from expansion while building
+# libgcc.mk.  We want this delayed until actual install time.
+SHLIB_INSTALL = \
+	$$(mkinstalldirs) $$(DESTDIR)$$(slibdir)$(SHLIB_SLIBDIR_QUAL); \
+	$(INSTALL_PROGRAM) $(SHLIB_DIR)/$(SHLIB_SONAME) \
+	  $$(DESTDIR)$$(bindir)/$(SHLIB_SONAME); \
+	$(INSTALL_DATA) $(SHLIB_DIR)/$(SHLIB_IMPLIB) \
+	  $$(DESTDIR)$$(slibdir)$(SHLIB_SLIBDIR_QUAL)/$(SHLIB_IMPLIB)
+SHLIB_MKMAP = $(srcdir)/mkmap-flat.awk
+# We'd like to use SHLIB_SONAME here too, but shlib_base_name
+# does not get substituted before mkmap-flat.awk is run.
+SHLIB_MKMAP_OPTS = -v pe_dll=libgcc_s_$(EH_MODEL)-$(SHLIB_SOVERSION)$(SHLIB_EXT)
+SHLIB_MAPFILES = $(srcdir)/libgcc-std.ver
