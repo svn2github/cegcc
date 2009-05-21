@@ -66,3 +66,299 @@
 
 	* gcc-4.4.0/ChangeLog.ce : New file.
 	* gcc-4.4.0 : Fresh import from gcc-core-4.4.0 and gcc-g++-4.4.0 .
+
+2006-12-03  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* gcc/config/arm/arm.c (arm_major_arch, arm_thumb_arch_p): New
+	functions.
+	* gcc/config/arm/arm-protos.h (arm_major_arch, arm_thumb_arch_p):
+	Declare.
+	* gcc/config/arm/wince-pe.h (TARGET_OS_CPP_BUILTINS): Add _M_ARM,
+	_M_ARMT and ARM.
+
+2006-11-27  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* gcc/config/arm/mingw32.h (STARTFILE_SPEC): Add crt3.o and dllcrt3.o
+	instead of crt2.o and dllcrt2.o.
+
+2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* gcc/config/arm/wince-pe.h (TARGET_OS_CPP_BUILTINS): Delete _M_ARM
+	and ARM.
+
+2006-11-08  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* gcc/config/arm/wince-pe.h (DEFAULT_SIGNED_CHAR): Define to 1.
+
+2006-11-04  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* gcc/config/arm/pe.h (PROFILE_HOOK): Remove, it looks like we don't need
+	it to get profiling to work.
+
+2006-10-30  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* gcc/target-def.h (TARGET_ATTRIBUTE_TABLE): Only define if not
+	defined before.
+	* gcc/config/arm/arm.c (arm_file_end): Give it external linkage.
+	(arm_handle_struct_attribute): New.
+	(arm_ms_bitfield_layout_p): New.
+	(TARGET_ATTRIBUTE_TABLE, TARGET_ASM_FILE_END,
+	TARGET_ENCODE_SECTION_INFO, TARGET_STRIP_NAME_ENCODING): Move
+	declarations to config/arm/arm.h.
+	(TARGET_MS_BITFIELD_LAYOUT_P): Define to
+	arm_ms_bitfield_layout_p.
+	(arm_return_in_memory): Replace #ifdef'ing on ARM_WINCE with
+	TARGET_RETURN_AGGREGATES_IN_MEMORY.
+	(arm_attribute_table): Add shared, ms_struct, gcc_struct
+	attributes.
+	Allow subtarget to add attributes using
+	SUBTARGET_ATTRIBUTE_TABLE.
+	(arm_elf_asm_constructor): Only compile on OBJECT_FORMAT_ELF.
+	(thumb_output_function_prologue): Call arm_pe_strip_name_encoding
+	instead of arm_strip_name_encoding.
+	(arm_handle_struct_attribute): New function.
+	(arm_ms_bitfield_layout_p): New function.
+	* gcc/config/arm/arm.h (TARGET_ASM_FILE_END, TARGET_ATTRIBUTE_TABLE,
+	TARGET_ENCODE_SECTION_INFO, TARGET_STRIP_NAME_ENCODING): Define.
+	* gcc/config/arm/t-wince-cegcc: Add cegcc1.o rule.
+	(TARGET_LIBGCC2_CFLAGS): Add -mwin32.
+	* gcc/config/arm/t-mingw32 (SYSTEM_INCLUDE_DIR): Delete.
+	(NATIVE_SYSTEM_HEADER_DIR): Likewise.
+	* gcc/config/arm/arm-protos.h (arm_file_end,
+	arm_pe_asm_named_section, arm_pe_section_type_flags,
+	arm_pe_strip_name_encoding, arm_pe_output_labelref,
+	arm_pe_handle_shared_attribute): Declare.
+	* gcc/config/arm/wince-pe.h:
+	(TARGET_VERSION): Set to "(arm Windows CE/Native SDK)".
+	(MULTILIB_DEFAULTS): Remove -mfpu=vfp.
+	(SUBTARGET_CPU_DEFAULT): Default to TARGET_CPU_arm8 (armv4).
+	(CPP_SPEC): Remove cegcc specifics.
+	(ASM_SPEC): Don't pass -cpu=iwmmxt to assembler when -mcpu=xscale
+	is used.
+	(SUBTARGET_EXTRA_SPECS, SUBTARGET_ASM_FLOAT_SPEC): Remove.
+	(TARGET_OS_CPP_BUILTINS): Add _stdcall, _fastcall and _cdecl.
+	(SUBTARGET_CPP_SPEC, HANDLE_SYSV_PRAGMA,
+	HANDLE_PRAGMA_PACK_PUSH_POP): Delete.
+	(STARTFILE_SPEC): Remove cegcc specifics.
+	(LIBGCC_SPEC): Likewise.
+	(LIB_SPEC): Likewise.
+	(COMMON_ASM_OP, ASM_OUTPUT_COMMON, ASM_DECLARE_OBJECT_NAME,
+	ASM_DECLARE_FUNCTION_NAME, ASM_OUTPUT_EXTERNAL,
+	ASM_OUTPUT_EXTERNAL_LIBCALL, ASM_OUTPUT_ALIGNED_BSS,
+	TARGET_ASM_FILE_END, SUPPORTS_ONE_ONLY, MULTIPLE_SYMBOL_SPACES):
+	Delete.
+	(ARM_MCOUNT_NAME): Define to _mcount to avoid conflicts.
+	(CHECK_STACK_LIMIT): Delete.
+	(TARGET_DEFAULT): Match Windows CE ABI with
+	MASK_MS_BITFIELD_LAYOUT and MASK_RETURN_AGGREGATES_IN_MEMORY.
+	(TARGET_SUBTARGET_DEFAULT): Delete.
+	(BIGGEST_FIELD_ALIGNMENT): Delete.
+	(SET_ASM_OP): Delete.
+	(DEFAULT_STRUCTURE_SIZE_BOUNDARY): Define to 8 as WinCE's ABI
+	requires.
+	(ASM_OUTPUT_DEF_FROM_DECLS, TARGET_USE_JCR_SECTION,
+	TARGET_USE_LOCAL_THUNK_ALIAS_P, SUBTARGET_ATTRIBUTE_TABLE):
+	Delete.
+	* gcc/config/arm/mingw32.h (STANDARD_INCLUDE_DIR,
+	STANDARD_INCLUDE_COMPONENT): Delete.
+	* gcc/config/arm/arm.opt: New option -mreturn-aggregates-in-memory.
+	* gcc/config/arm/pe.opt: New option -mms-bitfields.
+	* gcc/config/arm/pe.c (arm_pe_handle_shared_attribute): New.
+	(arm_pe_strip_name_encoding): New.
+	(arm_pe_output_labelref): Call arm_pe_strip_name_encoding instead
+	of arm_strip_name_encoding.
+	(arm_pe_unique_section): Likewise.
+	(arm_pe_section_type_flags): New.
+	(arm_pe_asm_named_section ): New.
+	(arm_pe_file_end): Call arm_file_end.
+	* gcc/config/arm/pe.h (HANDLE_SYSV_PRAGMA): New.
+	(HANDLE_PRAGMA_PACK_PUSH_POP): New.
+	(SUBTARGET_OVERRIDE_OPTIONS): New.
+	(TARGET_ASM_NAMED_SECTION): Set to arm_pe_asm_named_section
+	specialized version.
+	(TARGET_SECTION_TYPE_FLAGS): New.
+	(ASM_DECLARE_FUNCTION_NAME): Don't output -export to .drectve
+	directly.
+	Use arm_pe_record_exported_symbol instead.
+	(TARGET_ASM_FILE_END): Set to arm_pe_file_end.
+	(TARGET_ENCODE_SECTION_INFO): Set to arm_pe_encode_section_info.
+	(TARGET_STRIP_NAME_ENCODING): Set to arm_pe_strip_name_encoding.
+	(COMMON_ASM_OP): New.
+	(ASM_OUTPUT_COMMON): Don't output -export to .drectve directly.
+	Use arm_pe_record_exported_symbol instead.
+	(ASM_DECLARE_OBJECT_NAME): Likewise.
+	(ASM_OUTPUT_EXTERNAL): New.
+	(ASM_OUTPUT_EXTERNAL_LIBCALL): New.
+	(PROFILE_HOOK): New.
+	(ASM_OUTPUT_DEF_FROM_DECLS): New.
+	(SUPPORTS_ONE_ONLY).
+	(SUBTARGET_ATTRIBUTE_TABLE): New.
+	(TARGET_USE_LOCAL_THUNK_ALIAS_P): New.
+	(TARGET_USE_JCR_SECTION): New.
+	(SUBTARGET_ENCODE_SECTION_INFO): New.
+	(TARGET_STRIP_NAME_ENCODING): New.
+	* gcc/config/arm/wince-cegcc.h (SUBTARGET_EXTRA_SPECS,
+	EXTRA_OS_CPP_BUILTINS, TARGET_OS_CPP_BUILTINS,
+	SUBTARGET_CPP_SPEC): Delete.
+	* gcc/config/arm/t-wince-pe (pe.o): Add expr.h to dependencies.
+	(cegcc1.o): Delete build rule.
+	(MULTILIB_OPTIONS): Remove -mfpu=vfp.
+	(TARGET_LIBGCC2_CFLAGS): Remove unneeded options.
+
+2006-10-30  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* gcc/config/arm/pe-cxx.c: Fix indenting to match the original
+	config/i386/winnt-cxx.c.
+
+2006-10-17  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* gcc/config/arm/wince-cegcc.h (STARTFILE_SPEC) : Add gcrt3.o instead
+	of gcrt2.o.
+	* gcc/config/arm/mingw32.h: Likewise.
+
+2006-10-16  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* gcc/config/arm/wince-cegcc.h (LIB_SPEC) : Link -lgmon when called
+	with -pg.
+	(STARTFILE_SPEC): Add gcrt2.o when called with -pg.
+
+2006-10-12  Danny Backx <dannybackx@users.sourceforge.net>
+
+	* gcc/config/arm/wince-cegcc.h (mno-cegcc): Remove option.
+	Use the arm-wince-mingw32ce target instead.
+
+2006-10-10  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* gcc/config/arm/cegcc.c: Delete. We use the originals instead.
+	This code is generic PE code, and will hopefully get
+	pushed down to a more general place in GCC 4.3 stage1.
+	* gcc/cegcc-cxx.c: Likewise.
+	* gcc/cegcc-stubs.c: Likewise.
+	* gcc/config.gcc: Use the originals instead of the new copies for the
+	arm*-wince-cegcc case.
+	* gcc/config/arm/t-wince-cegcc: Make it empty, we now inherit the
+	generic t-wince-pe.
+	* gcc/ChangeLog.ce: New file.
+Index: libstdc++-v3/ChangeLog.ce
+===================================================================
+--- libstdc++-v3/ChangeLog.ce	(revisão 0)
+++ libstdc++-v3/ChangeLog.ce	(revisão 0)
+@@ -0,0 +1,118 @@
+2007-02-04  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* libstdc++-v3/acinclude.m4 (GLIBCXX_ENABLE_C99]): Remove wcscoll and wcsxfrm.
+	Check for wcscoll, wcsxfrm, strcoll and strxfrm.
+	* libstdc++-v3/configure: Regenerate.
+	* libstdc++-v3/include/c_std/std_cwchar.h: Use _GLIBCXX_HAVE_WCSCOLL, and
+	_GLIBCXX_HAVE_WCSXFRM.
+	* libstdc++-v3/config/locale/generic/collate_members.cc
+	(collate<char>::_M_compare): Use _GLIBCXX_HAVE_STRCOLL.
+	Use strcmp as alternative.
+	(collate<char>::_M_transform): Use _GLIBCXX_HAVE_STRXFRM.
+	Use strncpy as alternative.
+	(collate<wchar_t>::_M_compare): Use _GLIBCXX_HAVE_WCSCOLL.
+	Use wcscmp as alternative.
+	(collate<wchar_t>::_M_transform): Use _GLIBCXX_HAVE_WCSXFRM.
+	Use wcsncpy as alternative.
+
+2006-11-12  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* libstdc++-v3/config/io/basic_file_stdio.cc (__gnu_internal::read,
+	__gnu_internal::write, __gnu_internal::lseek,
+	__gnu_internal::fdopen): Delete.
+	(__basic_file<char>::sys_open): Fix typo.
+
+2006-10-22  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* libstdc++-v3/config/locale/generic/time_members.cc :
+	(__timepunct<char>::_M_put): Enable on __MINGW32CE__.
+	(__timepunct<char>::_M_initialize_timepunct) : Likewise.
+	(__timepunct<wchar_t>::_M_put) : Likewise.
+	(__timepunct<wchar_t>::_M_initialize_timepunct) : Likewise.
+
+2006-10-18  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* libstdc++-v3/config/io/basic_file_stdio.cc : Include <windows.h> on mingw32ce.
+	(__gnu_internal::read) : New.
+	(__gnu_internal::write) : New.
+	(__gnu_internal::lseek) : New.
+	(__gnu_internal::fdopen) : New.
+	(__gnu_internal::xwrite): Revert to always using file
+	descriptors (handles on CE).
+	(__basic_file<char>::sys_open) : Enable on mingw32ce too. Don't
+	special case __fd == 0.
+	(__basic_file<char>::fd) : Enable on mingw32ce too.
+	(__basic_file<char>::xsgetn) : Use file descriptors on mingw32ce too.
+	(__basic_file<char>::xsputn) : Likewise.
+	(__basic_file<char>::xsputn_2) : Likewise.
+	(__basic_file<char>::seekoff) : Likewise, using __gnu_internal::lseek.
+ 	(__basic_file<char>::showmanyc) : Implement for mingw32ce using Win32 api.
+
+2006-10-17  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* libstdc++-v3/crossconfig.m4 (cegcc*, mingw32*): Add fnctl.h to AC_CHECK_HEADERS.
+	* libstdc++-v3/configure : Regenerate.
+	* libstdc++-v3/config.h.in : Regenerate.
+	* libstdc++-v3/config/io/basic_file_stdio.cc : Wrap fnctl.h inclusion
+	on _GLIBCXX_HAVE_FCNTL_H.
+
+2006-10-16  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* libstdc++-v3/include/ext/pool_allocator.h : Include runtimeopts.h.
+	(allocate) : Use runtimeopts::force_new_p.
+	* libstdc++-v3/include/ext/stdio_filebuf.h (stdio_filebuf) : Don't build
+	fildes constructor version on mingw32ce.
+	(fd) : Don't build on mingw32ce.
+	* libstdc++-v3/include/ext/stdio_sync_filebuf.h : Wrap unistd.h inclusion
+	on _GLIBCXX_HAVE_UNISTD_H.
+	* libstdc++-v3/include/ext/mt_allocator.h : Include runtimeopts.h.
+	(_Tune) : Use runtimeopts::force_new_p.
+	(_S_tune) : Likewise.
+	* libstdc++-v3/include/Makefile.am (host_headers) : Add runtimeopts.h
+	* libstdc++-v3/include/Makefile.in : Regenerate.
+	* libstdc++-v3/include/stdc++.h : Include <bits/c++config.h>.
+	Wrap errno.h inclusion with _GLIBCXX_HAVE_ERRNO_H.
+	Wrap clocale.h inclusion with _GLIBCXX_HAVE_LOCALE_H.
+	Wrap csignal.h inclusion with _GLIBCXX_HAVE_SIGNAL_H.
+	* libstdc++-v3/include/c_std/std_cstdlib.h (bsearch, calloc, getenv,
+	mblen, mbstowcs, mbtowc, system, freopen, perror,
+	remove, rename, rewind, setbuf, tmpfile, tmpnam,
+	clock, mktime, time, asctime, ctime, gmtime,
+	localtime, strftime) : These function on exist on coredll. Wrap with
+	ifndef __MINGW32CE__.
+	* libstdc++-v3/include/c_std/std_cstring.h (strcoll, strxfrm, strerror): Likewise.
+	* libstdc++-v3/src/localename.cc : Wrap clocale.h inclusion with
+	_GLIBCXX_HAVE_LOCALE_H.
+	(locale) : No locale support on coredll, Always use _S_classic.
+	* libstdc++-v3/src/locale_init.cc : Wrap clocale.h inclusion with
+	_GLIBCXX_HAVE_LOCALE_H.
+	(global) : No setlocale on coredll. Wrap with ifndef __MINGW32CE__.
+	* libstdc++-v3/src/locale.cc : Wrap clocale.h inclusion with
+	_GLIBCXX_HAVE_LOCALE_H.
+	(_S_normalize_category) : Always return __cat on mingw32ce.
+	* libstdc++-v3/crossconfig.m4 (cegcc): Add errno.h, signal.h and unistd.h
+	to AC_CHECK_HEADERS. Call GLIBCXX_CHECK_STDLIB_SUPPORT.
+	* libstdc++-v3/config/locale/generic/collate_members.cc (_M_compare) :
+	No strcoll on coredll. Call strcmp instead.
+	(_M_transform) : No strxfrm on coredll. Call strncpy + strlen instead.
+	* libstdc++-v3/config/locale/generic/c_locale.cc: Include <bits/c++config.h>.
+	Wrap errno.h inclusion with _GLIBCXX_HAVE_ERRNO_H.
+	Provice a default ERANGE for mingw32ce.
+	(__convert_to_v) Adapt to lack of errno and setlocale.
+	* libstdc++-v3/config/locale/generic/c_locale.h :
+	Wrap clocale.h inclusion with _GLIBCXX_HAVE_LOCALE_H.
+	(__convert_from_v) : Don't handle locale on mingw32ce.
+	* libstdc++-v3/config/locale/generic/time_members.cc (_M_put) : Don't build on
+	mingw32ce.
+	* libstdc++-v3/config/io/basic_file_stdio.cc :
+	Wrap errno.h inclusion with _GLIBCXX_HAVE_ERRNO_H.
+	Use FILE* instead of file descriptors on mingw32ce throughout.
+	Adapt to lack of errno.
+	* libstdc++-v3/configure: Regenerate.
+	* libstdc++-v3/config.h.in : Regenerate.
+
+2006-10-10  Pedro Alves  <pedro_alves@portugalmail.pt>
+
+	* libstdc++-v3/config/os/generic/runtimeopts.h : New file.
+	* libstdc++-v3/configure: Regenerate with autoconf 2.59.
+	* libstdc++-v3/ChangeLog.ce : New file.
