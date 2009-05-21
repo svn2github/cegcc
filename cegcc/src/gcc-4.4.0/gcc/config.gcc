@@ -1336,6 +1336,7 @@ i[34567]86-*-mingw* | x86_64-*-mingw*)
 		*-mingw32ce*)
 			tm_file="${tm_file} i386/mingw32ce.h"
 			tmake_file="${tmake_file} i386/t-wince"
+			extra_parts="crtbegin.o crtend.o crtfastmath.o"
 			;;
  		*mingw32crt*)
  			tm_file="${tm_file} i386/crtdll.h"

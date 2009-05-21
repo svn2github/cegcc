@@ -1,3 +1,11 @@
+2009-05-21  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* libgcc/config.host, gcc/config.gcc : Define i?86*-mingw32ce as a
+	separate target, with extra files crtbegin.o and crtend.o . Apparently
+	both places must have an identical list here.
+	* gcc/config/i386/t-wince : Add include files from the source tree to
+	get libgcc2 and crtbegin.c and crtend.c to compile.
+
 2009-05-19  Danny Backx  <dannybackx@users.sourceforge.net>
 	* gcc/config/arm/cygming.opt, mingw32.h, pe-cxx.h, pe-stubs.c : Copy
 	from older mingw32ce gcc port. Mostly Pedro's work.

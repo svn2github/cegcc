@@ -14,7 +14,7 @@ export BUILD_DIR=`pwd`
 
 ac_default_prefix="/opt/mingw32ce"
 
-gcc_src=gcc
+export gcc_src=gcc-4.4.0
 
 # The list of components, in build order.  There's a build_FOO
 # function for each of these components
@@ -218,10 +218,14 @@ build_bootstrap_gcc()
 	--disable-shared               \
 	--disable-interwork            \
 	--without-newlib               \
-	--enable-checking
+	--enable-checking	|| exit 1
     
-    make ${PARALLELISM} all-gcc
-    make install-gcc
+    make ${PARALLELISM} all-gcc	|| exit 1
+    make configure-target-libgcc || exit 1
+    make install-gcc	|| exit 1
+    cd ${TARGET}/libgcc	|| exit 1
+    make ${PARALLELLISM} libgcc.a	|| exit 1
+    /usr/bin/install -c -m 644 libgcc.a ${PREFIX}/lib/gcc/${TARGET}/4.4.0 || exit 1
 
     cd ${BUILD_DIR}
 }
@@ -305,15 +309,20 @@ build_gcc()
 	--disable-interwork            \
 	--without-newlib               \
 	--enable-checking              \
-	--with-headers
+	--with-headers			\
+	--disable-__cxa_atexit
 
 # we build libstdc++ as dll, so we don't need this.    
 #  --enable-fully-dynamic-string  \
-
+#	--enable-sjlj-exceptions	\
 #  --disable-clocale              \
 
     make ${PARALLELISM}
     make install
+
+    #
+    # Clean up one file
+    #
 
     cd ${BUILD_DIR}
 }
@@ -481,7 +490,7 @@ done
 
 export TARGET="arm-mingw32ce"
 #export TARGET="arm-wince-mingw32ce"
-export BUILD=`sh ${BASE_DIRECTORY}/gcc/config.guess`
+export BUILD=`sh ${BASE_DIRECTORY}/${gcc_src}/config.guess`
 if [ "x${host}" != "x" ]; then
     export HOST="${host}"
 else

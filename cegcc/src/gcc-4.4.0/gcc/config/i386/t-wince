@@ -1,1 +1,19 @@
 SHLIB_LC = -lmingw32 -lmingwex -lceoldname -lcoredll
+
+LIBGCC2_INCLUDES += \
+	-I$(srcdir)/../../mingw/include \
+	-I$(srcdir)/../../w32api/include
+
+CRTSTUFF_CFLAGS += \
+	-I$(srcdir)/../../mingw/include \
+	-I$(srcdir)/../../w32api/include
+
+# LIBGCC2_INCLUDES += -I$(srcdir)/../winsup/include \
+# 	-I$(srcdir)/../winsup/cygwin/include \
+# 	-I$(srcdir)/yow -I$(srcdir)/../../mingw/include \
+# 	-I$(srcdir)/../../w32api/include
+# 
+# CRTSTUFF_CFLAGS += -I$(srcdir)/../winsup/include \
+# 	-I$(srcdir)/../winsup/cygwin/include \
+# 	-I$(srcdir)/yow -I$(srcdir)/../../mingw/include \
+# 	-I$(srcdir)/../../w32api/include

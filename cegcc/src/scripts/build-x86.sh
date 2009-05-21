@@ -14,7 +14,7 @@ export BUILD_DIR=`pwd`
 
 ac_default_prefix="/opt/x86mingw32ce"
 
-gcc_src=gcc
+export gcc_src=gcc-4.4.0
 
 # The list of components, in build order.  There's a build_FOO
 # function for each of these components
@@ -220,10 +220,18 @@ build_bootstrap_gcc()
 	--without-newlib               \
 	--enable-checking
     
-    make ${PARALLELISM} all-gcc
-    make install-gcc
+    make ${PARALLELISM} all-gcc || exit 1
+    make install-gcc || exit 1
+    make configure-target-libgcc || exit 1
+    cd ${TARGET}/libgcc || exit 1
+    make ${PARALLELLISM} libgcc.a crtbegin.o crtend.o crtfastmath.o || exit 1
+    /usr/bin/install -c -m 644 libgcc.a ${PREFIX}/lib/gcc/${TARGET}/4.4.0 || exit 1
+    /usr/bin/install -c -m 644 crtbegin.o ${PREFIX}/lib/gcc/${TARGET}/4.4.0 || exit 1
+    /usr/bin/install -c -m 644 crtend.o ${PREFIX}/lib/gcc/${TARGET}/4.4.0 || exit 1
+    /usr/bin/install -c -m 644 crtfastmath.o ${PREFIX}/lib/gcc/${TARGET}/4.4.0 || exit 1
 
     cd ${BUILD_DIR}
+#      HOST_LIBGCC2_CFLAGS="-I${BASE_DIRECTORY}/mingw/include -I${BASE_DIRECTORY}/w32api/include"
 }
 
 build_w32api()
@@ -397,6 +405,14 @@ build_profile()
 {
     echo ""
     echo "BUILDING profiling libraries --------------------------"
+    echo "  temporarily disabled"
+    echo ""
+}
+
+notyet_build_profile()
+{
+    echo ""
+    echo "BUILDING profiling libraries --------------------------"
     echo ""
     echo ""
 
@@ -481,7 +497,7 @@ done
 
 export TARGET="i386-mingw32ce"
 
-export BUILD=`sh ${BASE_DIRECTORY}/gcc/config.guess`
+export BUILD=`sh ${BASE_DIRECTORY}/${gcc_src}/config.guess`
 export PATH=${PREFIX}/bin:${PATH}
 
 if [ "x${host}" != "x" ]; then
