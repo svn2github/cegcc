@@ -61,6 +61,10 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 # include <syslog.h>
 #endif
 
+#ifdef __MINGW32__
+#include <malloc.h>
+#endif
+
 void *__stack_chk_guard = 0;
 
 static void __attribute__ ((constructor))

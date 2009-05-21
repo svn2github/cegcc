@@ -113,14 +113,20 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
   using ::div;
   using ::exit;
   using ::free;
+#ifndef __MINGW32CE__
   using ::getenv;
+#endif
   using ::labs;
   using ::ldiv;
   using ::malloc;
 #ifdef _GLIBCXX_HAVE_MBSTATE_T
+#ifndef __MINGW32CE__
   using ::mblen;
+#endif
   using ::mbstowcs;
+#ifndef __MINGW32CE__
   using ::mbtowc;
+#endif
 #endif // _GLIBCXX_HAVE_MBSTATE_T
   using ::qsort;
   using ::rand;
@@ -129,10 +135,14 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
   using ::strtod;
   using ::strtol;
   using ::strtoul;
+#ifndef __MINGW32CE__
   using ::system;
+#endif
 #ifdef _GLIBCXX_USE_WCHAR_T
   using ::wcstombs;
+#ifndef __MINGW32CE__
   using ::wctomb;
+#endif
 #endif // _GLIBCXX_USE_WCHAR_T
 
   inline long

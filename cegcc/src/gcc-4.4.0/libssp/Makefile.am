@@ -32,7 +32,8 @@ libssp_la_SOURCES = \
 	memset-chk.c snprintf-chk.c sprintf-chk.c stpcpy-chk.c \
 	strcat-chk.c strcpy-chk.c strncat-chk.c strncpy-chk.c \
 	vsnprintf-chk.c vsprintf-chk.c
-libssp_la_LIBADD = 
+# libssp_la_LIBADD = ${prefix}/${target_alias}/lib/libc.a
+libssp_la_LIBADD =
 libssp_la_DEPENDENCIES = $(version_dep) $(libssp_la_LIBADD)
 libssp_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version` \
 		    $(version_arg) -no-undefined

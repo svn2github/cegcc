@@ -33,22 +33,20 @@
 
 namespace __gnu_cxx
 {
-	namespace runtime_opts
-	{
-		inline bool force_new_p()
-		{
-#if 1
-			return 0;
-#else
-			return getenv ("GLIBCXX_FORCE_NEW") != 0;
-#endif
-		}
+  namespace runtime_opts
+  {
+    inline bool force_new_p()
+    {
+      // Perhaps read key from registry.
+      return 0;
+    }
 
-		inline int debug_message_length()
-		{
-			return 128;
-		}
-	} // namespace runtime_opts
+    inline int debug_message_length()
+    {
+	// Perhaps read key from registry.
+    	return 0;
+    }
+  } // namespace runtime_opts
 } // namespace __gnu_cxx
 
 #endif

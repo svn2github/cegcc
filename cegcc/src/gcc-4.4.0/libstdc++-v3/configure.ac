@@ -161,6 +161,9 @@ strings.h sys/ipc.h sys/isa_defs.h sys/machine.h sys/param.h \
 sys/resource.h sys/sem.h sys/stat.h sys/time.h sys/types.h unistd.h \
 wchar.h wctype.h])
 
+# For WinCE
+AC_CHECK_HEADERS([errno.h signal.h fcntl.h])
+
 # Only do link tests if native. Else, hardcode.
 if $GLIBCXX_IS_NATIVE; then
 

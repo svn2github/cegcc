@@ -1,4 +1,56 @@
 2009-05-19  Danny Backx  <dannybackx@users.sourceforge.net>
+	* gcc/config/arm/cegcc.opt, wince-cegcc.h, cegcc1.c, t-wince-cegcc :
+	Copy from older cegcc/gcc port.
+	* gcc/config.gcc : Change arm*-wince-cegcc* to arm*-*-cegcc*.
+	* libgcc/config.host : Add arm*-*-cegcc*, arm*-*-mingw32ce* targets.
+	* libgcc/config/arm/t-wince-pe : New file, part of Pedro's work for
+	gcc-trunk.
+	* libstdc++-v3/configure.host : Add cegcc*, mingw32ce*.
+	* libstdc++-v3/crossconfig.m4 : Add *-cegcc*.
+	* libstdc++-v3/config/os/mingw/runtimeopts.h : New file, part of
+	Pedro's work for gcc-trunk.
+	* libstdc++-v3/config/os/mingw/runtimeopts.h(force_new_p) : Remove
+	getenv() call.
+	* libstdc++-v3/config/os/mingw/runtimeopts.h(debug_message_length) :
+	Add.
+	* libstdc++-v3/configure.ac: Add some checks, part of Pedro's work.
+	* libstdc++-v3/acinclude.m4 : Likewise.
+	* libstdc++-v3/linkage.m4(GLIBCXX_CHECK_STDLIB_DECL_AND_LINKAGE_1) :
+	Add checks, part of Pedro's work.
+	* libstdc++-v3/src/debug.cc(_M_get_max_length) : Replace a getenv
+	based implementation by use of runtimeopts, part of Pedro's work.
+	* libstdc++-v3/include/ext/pool_allocator.h : Likewise.
+	* libstdc++-v3/include/ext/mt_allocator.h : Likewise.
+	* libstdc++-v3/include/ext/stdio_filebuf.h : Add some conditional
+	compilation, part of Pedro's work.
+	* libstdc++-v3/include/ext/stdio_sync_filebuf.h : Likewise.
+	* libstdc++-v3/include/c_global/cstdlib : Likewise.
+	* libstdc++-v3/include/c_global/cstdio : Likewise.
+	* libstdc++-v3/include/c_global/ctime : Likewise.
+	* libstdc++-v3/include/c_global/cwchar : Likewise.
+	* libstdc++-v3/include/c_global/cstring : Likewise.
+	* libstdc++-v3/include/precompiled/stdc++.h : Likewise.
+	* libstdc++-v3/config/locale/generic/collate_members.cc : Likewise.
+	* libstdc++-v3/config/locale/generic/c_locale.cc : Likewise.
+	* libstdc++-v3/config/locale/generic/c_locale.h : Likewise.
+	* libstdc++-v3/config/locale/generic/time_members.cc : Likewise.
+	* libstdc++-v3/config/os/newlib/os_defines.h : Likewise.
+	* libstdc++-v3/config/io/basic_file_stdio.cc : Likewise.
+	* libssp/ssp.c : Likewise.
+	* libstdc++-v3/config/os/mingw32/error_constants.h : Add POSIX error
+	code macros, part of Pedro's work.
+	* libstdc++-v3/config/os/mingw32ce/ctype_noninline.h : New file, part
+	of Pedro's work.
+	* libstdc++-v3/config/os/mingw32ce/os_defines.h : Likewise.
+	* libstdc++-v3/config/os/mingw32ce/ctype_inline.h : Likewise.
+	* libstdc++-v3/config/os/mingw32ce/ctype_base.h : Likewise.
+	* libstdc++-v3/config/os/mingw32ce/error_constants.h : Likewise.
+	* libstdc++-v3/config/os/generic/runtimeopts.h : Likewise.
+	* libstdc++-v3/config.h.in (HAVE_ERRNO_H, HAVE_FCNTL_H, HAVE_GETENV,
+	HAVE_SIGNAL_H) : Add.
+
+
+2009-05-19  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* gcc-4.4.0/ChangeLog.ce : New file.
 	* gcc-4.4.0 : Fresh import from gcc-core-4.4.0 and gcc-g++-4.4.0 .

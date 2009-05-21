@@ -61,6 +61,7 @@ _GLIBCXX_BEGIN_NAMESPACE(__gnu_cxx)
       */
       stdio_filebuf() : std::basic_filebuf<_CharT, _Traits>() {}
 
+#ifndef __MINGW32CE__
       /**
        *  @param  fd  An open file descriptor.
        *  @param  mode  Same meaning as in a standard filebuf.
@@ -72,6 +73,7 @@ _GLIBCXX_BEGIN_NAMESPACE(__gnu_cxx)
       */
       stdio_filebuf(int __fd, std::ios_base::openmode __mode,
 		    size_t __size = static_cast<size_t>(BUFSIZ));
+#endif
 
       /**
        *  @param  f  An open @c FILE*.
@@ -93,6 +95,7 @@ _GLIBCXX_BEGIN_NAMESPACE(__gnu_cxx)
       virtual
       ~stdio_filebuf();
 
+#ifndef __MINGW32CE__
       /**
        *  @return  The underlying file descriptor.
        *
@@ -103,6 +106,7 @@ _GLIBCXX_BEGIN_NAMESPACE(__gnu_cxx)
       */
       int
       fd() { return this->_M_file.fd(); }
+#endif
 
       /**
        *  @return  The underlying FILE*.
@@ -119,6 +123,7 @@ _GLIBCXX_BEGIN_NAMESPACE(__gnu_cxx)
     stdio_filebuf<_CharT, _Traits>::~stdio_filebuf()
     { }
 
+#ifndef __MINGW32CE__
   template<typename _CharT, typename _Traits>
     stdio_filebuf<_CharT, _Traits>::
     stdio_filebuf(int __fd, std::ios_base::openmode __mode, size_t __size)
@@ -134,6 +139,7 @@ _GLIBCXX_BEGIN_NAMESPACE(__gnu_cxx)
 	  this->_M_set_buffer(-1);
 	}
     }
+#endif
 
   template<typename _CharT, typename _Traits>
     stdio_filebuf<_CharT, _Traits>::

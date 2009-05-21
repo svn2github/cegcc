@@ -251,6 +251,10 @@ case "${host_os}" in
     atomicity_dir=os/irix
     atomic_word_dir=os/irix
     ;;
+  cegcc* | mingw32ce*)
+    os_include_dir="os/mingw32"
+    error_constants_dir="os/mingw32"
+    ;;
   mingw32*)
     os_include_dir="os/mingw32"
     error_constants_dir="os/mingw32"

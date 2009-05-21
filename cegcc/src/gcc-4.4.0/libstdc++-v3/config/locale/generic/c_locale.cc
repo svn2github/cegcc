@@ -29,7 +29,20 @@
 
 // Written by Benjamin Kosnik <bkoz@redhat.com>
 
+#include <bits/c++config.h>
+
+#ifdef _GLIBCXX_HAVE_ERRNO_H
 #include <cerrno>  // For errno
+#endif
+
+#ifdef __MINGW32CE__
+/* Provide a fake ERANGE to keep the
+   sources as clean as possible.  */
+# ifndef ERANGE
+#  define ERANGE 1
+# endif
+#endif
+
 #include <cmath>  // For isinf, finite, finitef, fabs
 #include <cstdlib>  // For strof, strtold
 #include <cstring>
@@ -50,11 +63,13 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
 		   const __c_locale&) 	      
     {
       // Assumes __s formatted for "C" locale.
+#ifndef __MINGW32CE__
       char* __old = setlocale(LC_ALL, NULL);
       const size_t __len = strlen(__old) + 1;
       char* __sav = new char[__len];
       memcpy(__sav, __old, __len);
       setlocale(LC_ALL, "C");
+#endif
       char* __sanity;
       bool __overflow = false;
 
@@ -104,9 +119,10 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
 	    __v = -numeric_limits<float>::max();
 	  __err = ios_base::failbit;
 	}
-
+#ifndef __MINGW32CE__
       setlocale(LC_ALL, __sav);
       delete [] __sav;
+#endif
     }
 
   template<>
@@ -115,11 +131,13 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
 		   const __c_locale&) 
     {
       // Assumes __s formatted for "C" locale.
+#ifndef __MINGW32CE__
       char* __old = setlocale(LC_ALL, NULL);
       const size_t __len = strlen(__old) + 1;
       char* __sav = new char[__len];
       memcpy(__sav, __old, __len);
       setlocale(LC_ALL, "C");
+#endif
       char* __sanity;
 
 #if !__DBL_HAS_INFINITY__
@@ -150,8 +168,10 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
 	  __err = ios_base::failbit;
 	}
 
+#ifndef __MINGW32CE__
       setlocale(LC_ALL, __sav);
       delete [] __sav;
+#endif
     }
 
   template<>
@@ -160,11 +180,13 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
 		   ios_base::iostate& __err, const __c_locale&) 
     {
       // Assumes __s formatted for "C" locale.
+#ifndef __MINGW32CE__
       char* __old = setlocale(LC_ALL, NULL);
       const size_t __len = strlen(__old) + 1;
       char* __sav = new char[__len];
       memcpy(__sav, __old, __len);
       setlocale(LC_ALL, "C");
+#endif
 
 #if !__LDBL_HAS_INFINITY__
       errno = 0;
@@ -202,8 +224,10 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
 	  __err = ios_base::failbit;
 	}
 
+#ifndef __MINGW32CE__
       setlocale(LC_ALL, __sav);
       delete [] __sav;
+#endif
     }
 
   void

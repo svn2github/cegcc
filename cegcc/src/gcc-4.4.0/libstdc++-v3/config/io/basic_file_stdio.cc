@@ -28,9 +28,12 @@
 //
 
 #include <bits/basic_file.h>
+#ifdef _GLIBCXX_HAVE_FNCTL_H
 #include <fcntl.h>
+#endif
+#ifdef _GLIBCXX_HAVE_ERRNO_H
 #include <errno.h>
-
+#endif
 #ifdef _GLIBCXX_HAVE_POLL
 #include <poll.h>
 #endif
@@ -65,6 +68,10 @@
 #endif
 
 #include <limits> // For <off_t>::max() and min() and <streamsize>::max()
+
+#ifdef __MINGW32CE__
+#include <windows.h>
+#endif
 
 namespace 
 {
@@ -113,14 +120,17 @@ namespace
   // Wrapper handling partial write.
   static std::streamsize
   xwrite(int __fd, const char* __s, std::streamsize __n)
+
   {
     std::streamsize __nleft = __n;
 
     for (;;)
       {
 	const std::streamsize __ret = write(__fd, __s, __nleft);
+#ifndef __MINGW32CE__
 	if (__ret == -1L && errno == EINTR)
 	  continue;
+#endif
 	if (__ret == -1L)
 	  break;
 
@@ -153,8 +163,10 @@ namespace
 	__iov[0].iov_len = __n1_left;
 
 	const std::streamsize __ret = writev(__fd, __iov, 2);
+#ifndef __MINGW32CE__
 	if (__ret == -1L && errno == EINTR)
 	  continue;
+#endif
 	if (__ret == -1L)
 	  break;
 
@@ -178,7 +190,6 @@ namespace
 #endif
 } // anonymous namespace
 
-
 _GLIBCXX_BEGIN_NAMESPACE(std)
 
   // Definitions for __basic_file<char>.
@@ -195,10 +206,14 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
     if (!this->is_open() && __file)
       {
 	int __err;
+#ifndef __MINGW32CE__
 	errno = 0;	
 	do
 	  __err = this->sync();
 	while (__err && errno == EINTR);
+#else
+	__err = this->sync();
+#endif
 	if (!__err)
 	  {
 	    _M_cfile = __file;
@@ -216,10 +231,15 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
     const char* __c_mode = fopen_mode(__mode);
     if (__c_mode && !this->is_open() && (_M_cfile = fdopen(__fd, __c_mode)))
       {
-	char* __buf = NULL;
 	_M_cfile_created = true;
-	if (__fd == 0)
+#ifndef __MINGW32CE__
+	char* __buf = NULL;
+	/* Fildes on WinCE are handles, and HANDLE == 0 is not stdin.  */
+        /* if (__fd == 0) */
+	if (__fd == (int)fileno(stdin))
 	  setvbuf(_M_cfile, __buf, _IONBF, 0);
+#endif
+
 	__ret = this;
       }
     return __ret;
@@ -252,7 +272,11 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
   
   int 
   __basic_file<char>::fd() 
+#ifdef __MINGW32CE__
+  { return (int)fileno(_M_cfile); }
+#else
   { return fileno(_M_cfile); }
+#endif
   
   __c_file*
   __basic_file<char>::file() 
@@ -271,10 +295,14 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
 	    // for error first. However, C89/C99 (at variance with IEEE
 	    // 1003.1, f.i.) do not mandate that fclose must set errno
 	    // upon error.
+#ifndef __MINGW32CE__
 	    errno = 0;
 	    do
 	      __err = fclose(_M_cfile);
 	    while (__err && errno == EINTR);
+#else
+	    __err = fclose(_M_cfile);
+#endif
 	  }
 	_M_cfile = 0;
 	if (!__err)
@@ -289,7 +317,11 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
     streamsize __ret;
     do
       __ret = read(this->fd(), __s, __n);
+#ifndef __MINGW32CE__
     while (__ret == -1L && errno == EINTR);
+#else
+    while (0);
+#endif
     return __ret;
   }
 
@@ -334,6 +366,11 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
   streamsize
   __basic_file<char>::showmanyc()
   {
+#ifdef __MINGW32CE__
+    BY_HANDLE_FILE_INFORMATION finfo;
+    if (GetFileInformationByHandle((HANDLE)this->fd(), &finfo))
+      return finfo.nFileSizeLow - SetFilePointer((HANDLE)this->fd(), 0, NULL, FILE_CURRENT);
+#else
 #ifdef FIONREAD
     // Pipes and sockets.    
 #ifdef _GLIBCXX_FIONREAD_TAKES_OFF_T
@@ -373,6 +410,7 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
       return __buffer.st_size - lseek(this->fd(), 0, ios_base::cur);
 #endif
 #endif
+#endif /* __MINGW32CE__ */
     return 0;
   }
 

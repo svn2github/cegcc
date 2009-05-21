@@ -31,7 +31,45 @@
 #  define _GLIBCXX_ERROR_CONSTANTS
 
 #include <bits/c++config.h>
+
+#ifndef __COREDLL__
 #include <cerrno>
+#else
+#define E2BIG 1
+#define EDOM 2
+#define EFAULT 3
+#define EBADF 4
+#define EPIPE 5
+#define EBUSY 6
+#define ENOTEMPTY 7
+#define ENOEXEC 8
+#define EEXIST 9
+#define EFBIG 10
+#define ENAMETOOLONG 11
+#define ENOSYS 12
+#define EILSEQ 13
+#define ENOTTY 14
+#define EINTR 15
+#define EINVAL 16
+#define ESPIPE 17
+#define EIO 18
+#define EISDIR 19
+#define ENOLCK 20
+#define ENXIO 21
+#define ENODEV 22
+#define ENOENT 23
+#define ESRCH 24
+#define ENOTDIR 25
+#define ENOMEM 26
+#define EACCES 27
+#define EROFS 28
+#define EDEADLK 29
+#define EAGAIN 30
+#define ERANGE 31
+#define ENFILE 32
+#define EMFILE 33
+#define EMLINK 34
+#endif
 
 
 _GLIBCXX_BEGIN_NAMESPACE(std)

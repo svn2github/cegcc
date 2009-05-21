@@ -140,7 +140,7 @@ case "${host}" in
     GCC_CHECK_TLS
     AM_ICONV
     ;;
-  *-mingw32*)
+  *-mingw32*|*-cegcc*)
     GLIBCXX_CHECK_LINKER_FEATURES
     GLIBCXX_CHECK_MATH_SUPPORT
     GLIBCXX_CHECK_STDLIB_SUPPORT

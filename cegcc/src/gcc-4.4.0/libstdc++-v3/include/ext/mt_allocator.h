@@ -35,6 +35,7 @@
 #include <bits/functexcept.h>
 #include <ext/atomicity.h>
 #include <bits/move.h>
+#include <bits/runtimeopts.h>
 
 _GLIBCXX_BEGIN_NAMESPACE(__gnu_cxx)
 
@@ -111,7 +112,7 @@ _GLIBCXX_BEGIN_NAMESPACE(__gnu_cxx)
       : _M_align(_S_align), _M_max_bytes(_S_max_bytes), _M_min_bin(_S_min_bin),
       _M_chunk_size(_S_chunk_size), _M_max_threads(_S_max_threads), 
       _M_freelist_headroom(_S_freelist_headroom), 
-      _M_force_new(std::getenv("GLIBCXX_FORCE_NEW") ? true : false)
+      _M_force_new(runtime_opts::force_new_p() ? true : false)
       { }
 
       explicit
@@ -485,7 +486,7 @@ _GLIBCXX_BEGIN_NAMESPACE(__gnu_cxx)
 			     sizeof(_Tp) * size_t(_Tune::_S_chunk_size),
 			     _Tune::_S_max_threads,
 			     _Tune::_S_freelist_headroom,
-			     std::getenv("GLIBCXX_FORCE_NEW") ? true : false);
+			     runtime_opts::force_new_p() ? true : false);
 	static pool_type _S_pool(_S_tune);
 	return _S_pool;
       }

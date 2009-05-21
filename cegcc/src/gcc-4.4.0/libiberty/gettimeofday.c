@@ -19,7 +19,7 @@ that @var{tz} be NULL.  Returns 0 on success, -1 on failure.
 */ 
 
 int
-gettimeofday (struct timeval *tp, void *tz)
+gettimeofday (struct timeval *tp, struct timezone *tz)
 {
   if (tz)
     abort ();

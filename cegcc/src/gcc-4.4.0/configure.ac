@@ -553,6 +553,13 @@ case "${target}" in
     esac
     libgloss_dir=wince
     ;;
+#  arm*-*-mingw32ce* | arm*-*-cegcc*)
+#    noconfigdirs="$noconfigdirs ${libgcj}"
+#    noconfigdirs="$noconfigdirs target-examples"
+#    noconfigdirs="$noconfigdirs target-libiberty texinfo send-pr"
+#    noconfigdirs="$noconfigdirs tcl tk itcl libgui sim"
+#    noconfigdirs="$noconfigdirs expect dejagnu"
+#    ;;
   arc-*-*)
     noconfigdirs="$noconfigdirs target-libgloss ${libgcj}"
     ;;
@@ -716,6 +723,11 @@ case "${target}" in
     # Note however, that newlib will only be configured in this situation
     # if the --with-newlib option has been given, because otherwise
     # 'target-newlib' will appear in skipdirs.
+    ;;
+  *-mingw32ce*)
+    target_configdirs="$target_configdirs target-winsup"
+    noconfigdirs="$noconfigdirs expect target-libgloss target-newlib ${libgcj}"
+    noconfigdirs="$noconfigdirs target-libiberty"
     ;;
   i[[3456789]]86-*-mingw32*)
     target_configdirs="$target_configdirs target-winsup"
@@ -2052,7 +2064,7 @@ case "${target}" in
     # ranlib from Darwin requires the -c flag to look at common symbols.
     extra_ranlibflags_for_target=" -c"
     ;;
-  mips*-*-pe | sh*-*-pe | *arm-wince-pe)
+  mips*-*-pe | sh*-*-pe | arm*-wince-pe | arm*-*-mingw32ce* | arm*-*-cegcc*)
     target_makefile_frag="config/mt-wince"
     ;;
 esac
@@ -2546,6 +2558,8 @@ case " $target_configdirs " in
    case "$target" in
    *-cygwin*)
      FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -L$$r/$(TARGET_SUBDIR)/winsup -L$$r/$(TARGET_SUBDIR)/winsup/cygwin -L$$r/$(TARGET_SUBDIR)/winsup/w32api/lib -isystem $$s/winsup/include -isystem $$s/winsup/cygwin/include -isystem $$s/winsup/w32api/include' ;;
+   arm*-*-mingw32ce* | arm*-*-cegcc*)
+     FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -mwin32 -static -idirafter ${prefix}/${target_alias}/include/w32api' ;;
    esac
 
    # If we're not building GCC, don't discard standard headers.

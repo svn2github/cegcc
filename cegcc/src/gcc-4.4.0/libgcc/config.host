@@ -216,6 +216,10 @@ arm*-*-elf)
 	;;
 arm*-wince-pe*)
 	;;
+arm*-*-mingw32ce* | arm*-*-cegcc*)
+	extra_parts="crtbegin.o crtend.o"
+	tmake_file="arm/t-wince-pe"
+	;;
 arm-*-pe*)
 	;;
 avr-*-rtems*)

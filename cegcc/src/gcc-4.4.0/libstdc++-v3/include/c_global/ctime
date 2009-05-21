@@ -63,7 +63,9 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
   using ::time_t;
   using ::tm;
 
+#ifndef __MINGW32CE__
   using ::clock;
+#endif
   using ::difftime;
   using ::mktime;
   using ::time;

@@ -29,17 +29,25 @@
 
 // 17.4.1.2 Headers
 
+#include <bits/c++config.h>
+
 // C
 #include <cassert>
 #include <cctype>
+#if _GLIBCXX_HAVE_ERRNO_H
 #include <cerrno>
+#endif
 #include <cfloat>
 #include <ciso646>
 #include <climits>
+#if _GLIBCXX_HAVE_LOCALE_H
 #include <clocale>
+#endif
 #include <cmath>
 #include <csetjmp>
+#if _GLIBCXX_HAVE_SIGNAL_H
 #include <csignal>
+#endif
 #include <cstdarg>
 #include <cstddef>
 #include <cstdio>

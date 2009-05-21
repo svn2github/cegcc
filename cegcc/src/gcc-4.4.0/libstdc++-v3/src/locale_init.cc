@@ -22,7 +22,9 @@
 // see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 // <http://www.gnu.org/licenses/>.
 
+#ifdef _GLIBCXX_HAVE_LOCALE_H
 #include <clocale>
+#endif
 #include <cstring>
 #include <cstdlib>     // For getenv, free.
 #include <cctype>
@@ -223,9 +225,11 @@ _GLIBCXX_BEGIN_NAMESPACE(std)
       __old = _S_global;
       __other._M_impl->_M_add_reference();
       _S_global = __other._M_impl;
+#ifndef __MINGW32CE__
       const string __other_name = __other.name();
       if (__other_name != "*")
 	setlocale(LC_ALL, __other_name.c_str());
+#endif
     }
 
     // Reference count sanity check: one reference removed for the

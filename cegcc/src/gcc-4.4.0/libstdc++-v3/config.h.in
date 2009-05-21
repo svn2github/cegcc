@@ -93,6 +93,9 @@
 /* Define if EPROTO exists. */
 #undef HAVE_EPROTO
 
+/* Define to 1 if you have the <errno.h> header file. */
+#undef HAVE_ERRNO_H
+
 /* Define if ETIME exists. */
 #undef HAVE_ETIME
 
@@ -110,6 +113,9 @@
 
 /* Define to 1 if you have the `fabsl' function. */
 #undef HAVE_FABSL
+
+/* Define to 1 if you have the <fcntl.h> header file. */
+#undef HAVE_FCNTL_H
 
 /* Define to 1 if you have the <fenv.h> header file. */
 #undef HAVE_FENV_H
@@ -149,6 +155,9 @@
 
 /* Define to 1 if you have the `frexpl' function. */
 #undef HAVE_FREXPL
+
+/* Define to 1 if you have the `getenv' function. */
+#undef HAVE_GETENV
 
 /* Define if _Unwind_GetIPInfo is available. */
 #undef HAVE_GETIPINFO
@@ -289,6 +298,9 @@
 /* Define to 1 if you have the `setenv' function. */
 #undef HAVE_SETENV
 
+/* Define to 1 if you have the <signal.h> header file. */
+#undef HAVE_SIGNAL_H
+
 /* Define to 1 if you have the `sincos' function. */
 #undef HAVE_SINCOS
 
@@ -325,6 +337,9 @@
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
 
+/* Defined if strcoll exists. */
+#undef HAVE_STRCOLL
+
 /* Define if strerror_l is available in <string.h>. */
 #undef HAVE_STRERROR_L
 
@@ -342,6 +357,9 @@
 
 /* Define to 1 if you have the `strtold' function. */
 #undef HAVE_STRTOLD
+
+/* Defined if strxfrm exists. */
+#undef HAVE_STRXFRM
 
 /* Define if strxfrm_l is available in <string.h>. */
 #undef HAVE_STRXFRM_L
@@ -421,8 +439,14 @@
 /* Define to 1 if you have the <wchar.h> header file. */
 #undef HAVE_WCHAR_H
 
+/* Defined if wcscoll exists. */
+#undef HAVE_WCSCOLL
+
 /* Defined if wcstof exists. */
 #undef HAVE_WCSTOF
+
+/* Defined if wcsxfrm exists. */
+#undef HAVE_WCSXFRM
 
 /* Define to 1 if you have the <wctype.h> header file. */
 #undef HAVE_WCTYPE_H
@@ -929,6 +953,11 @@
 #if defined (HAVE__FREXPL) && ! defined (HAVE_FREXPL)
 # define HAVE_FREXPL 1
 # define frexpl _frexpl
+#endif
+
+#if defined (HAVE__GETENV) && ! defined (HAVE_GETENV)
+# define HAVE_GETENV 1
+# define getenv _getenv
 #endif
 
 #if defined (HAVE__HYPOT) && ! defined (HAVE_HYPOT)
