@@ -78,7 +78,7 @@ register_frame_ctor (void)
 }
 
 #if !DEFAULT_USE_CXA_ATEXIT
-static void deregister_frame_dtor (void) __attribute__ ((destructor (0)));
+// static void deregister_frame_dtor (void) __attribute__ ((destructor (0)));
 
 static void
 deregister_frame_dtor (void)

@@ -100,7 +100,11 @@ SHLIB_MAP = @shlib_map_file@
 SHLIB_OBJS = @shlib_objs@
 SHLIB_DIR = @multilib_dir@/shlib
 SHLIB_SLIBDIR_QUAL = @shlib_slibdir_qual@
+
+# Version for mingw32ce
 SHLIB_LC = -lmingw32 -lmingwex -lceoldname -lcoredll
+# Version for cegcc
+#SHLIB_LC = -lc -lcoredll
 
 # This should go somewhere else.
 # We are using SjLj EH.
