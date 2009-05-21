@@ -1,4 +1,8 @@
 2009-05-19  Danny Backx  <dannybackx@users.sourceforge.net>
+	* gcc/config/arm/cygming.opt, mingw32.h, pe-cxx.h, pe-stubs.c : Copy
+	from older mingw32ce gcc port. Mostly Pedro's work.
+	* gcc/config/i386/mingw32ce.h, t-wince.h : Likewise, but now in the
+	i386 directory for better integration.
 	* gcc/config/arm/cegcc.opt, wince-cegcc.h, cegcc1.c, t-wince-cegcc :
 	Copy from older cegcc/gcc port.
 	* gcc/config.gcc : Change arm*-wince-cegcc* to arm*-*-cegcc*.
