@@ -345,6 +345,7 @@ typedef WSADATA *LPWSADATA;
 #define AF_IRDA     26
 #endif
 #define	AF_BTH	32
+#define	AF_BT	32
 #define AF_NETDES   28
 #if !(defined (__INSIDE_CYGWIN__) || defined (__INSIDE_MSYS__))
 #define AF_MAX	33
@@ -1312,6 +1313,19 @@ typedef DWORD (WINAPI *LPFN_WSAWAITFORMULTIPLEEVENTS)(DWORD, const WSAEVENT *, B
 #define WSASocket WSASocketA
 #define WSAStringToAddress WSAStringToAddressA
 #define WSASetService WSASetServiceA
+#endif
+
+#if defined(_WIN32_WCE) && (_WIN32_WCE >= 0x0500)
+typedef enum _DSCP_TRAFFIC_TYPE {
+	DSCPTypeNotSet        = 0,
+	DSCPBestEffort        = 1,
+	DSCPBackground        = 2,
+	DSCPExcellentEffort   = 3,
+	DSCPVideo             = 4,
+	DSCPAudio             = 5,
+	DSCPControl           = 6,
+	NumDSCPTrafficTypes   = 6
+} DSCP_TRAFFIC_TYPE;
 #endif
 
 #ifdef __cplusplus
