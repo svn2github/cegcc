@@ -37,7 +37,6 @@ extern "C" {
 /* This is also defined in winsock.h; value hasn't changed */
 #define	IP_OPTIONS  1
 
-#define	IP_HDRINCL  2
 /*
  * These are also be defined in winsock.h,
  * but values have changed for WinSock2 interface
@@ -52,6 +51,7 @@ extern "C" {
 #define IP_ADD_MEMBERSHIP	5
 #define IP_DROP_MEMBERSHIP	6
 #define IP_DONTFRAGMENT		9
+#define	IP_HDRINCL  		9
 #else
 #define IP_TOS			3   /* old (winsock 1.1) value 8 */
 #define IP_TTL			4   /* old value 7 */
@@ -61,6 +61,7 @@ extern "C" {
 #define IP_ADD_MEMBERSHIP	12  /* old value 5 */
 #define IP_DROP_MEMBERSHIP	13  /* old value 6 */
 #define IP_DONTFRAGMENT		14  /* old value 9 */
+#define	IP_HDRINCL  2
 #endif
 #define IP_ADD_SOURCE_MEMBERSHIP	15
 #define IP_DROP_SOURCE_MEMBERSHIP	16
