@@ -2,6 +2,8 @@
 
 	* include/winsock2.h (DSCP_TRAFFIC_TYPE) : Add typedef for enum.
 	* include/winsock2.h (AF_BT) : Add, copy of AF_BTH.
+	* include/ws2tcpip.h : Define some macros using "old" winsock 1.1
+	values for CE.
 
 2009-05-18  Danny Backx  <dannybackx@users.sourceforge.net>
 
