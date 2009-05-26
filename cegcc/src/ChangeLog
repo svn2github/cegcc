@@ -1,3 +1,7 @@
+2009-05-26  Vincent Richomme  <forumer@smartmobili.com>
+
+	* scripts/build-*.sh : Change syntax of tail command.
+
 2009-05-19  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* gcc-4.4.0 : New import.
