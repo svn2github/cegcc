@@ -3752,8 +3752,12 @@ WINUSERAPI HWND WINAPI GetNextDlgTabItem(HWND,HWND,BOOL);
 WINUSERAPI HWND WINAPI GetOpenClipboardWindow(void);
 WINUSERAPI HWND WINAPI GetParent(HWND);
 WINUSERAPI int WINAPI GetPriorityClipboardFormat(UINT*,int);
+#ifdef _WIN32_WCE
+WINUSERAPI HANDLE WINAPI GetProp(HWND, LPCWSTR);
+#else
 WINUSERAPI HANDLE WINAPI GetPropA(HWND,LPCSTR);
 WINUSERAPI HANDLE WINAPI GetPropW(HWND,LPCWSTR);
+#endif
 #if (_WIN32_WINNT >= 0x0501)
 WINUSERAPI UINT WINAPI GetRawInputBuffer(PRAWINPUT,PUINT,UINT);
 WINUSERAPI UINT WINAPI GetRawInputData(HRAWINPUT,UINT,LPVOID,PUINT,UINT);
@@ -4271,7 +4275,9 @@ typedef MONITORINFOEXW MONITORINFOEX, *LPMONITORINFOEX;
 #define GetMenuString GetMenuStringW
 #define GetMessage GetMessageW
 #define GetMonitorInfo GetMonitorInfoW
+#ifndef _WIN32_WCE
 #define GetProp GetPropW
+#endif
 #define GetRawInputDeviceInfo GetRawInputDeviceInfoW
 #define GetTabbedTextExtent GetTabbedTextExtentW
 #define GetUserObjectInformation GetUserObjectInformationW

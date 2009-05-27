@@ -1,3 +1,8 @@
+2009-05-27  Stefan Klug  <Klug.Stefan@gmx.de>
+
+	* include/winuser.h : Define the right GetProp function, this was
+	omitted in the 2009-04-28 fix.
+
 2009-05-22  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/winsock2.h (DSCP_TRAFFIC_TYPE) : Add typedef for enum.
