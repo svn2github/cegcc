@@ -14,7 +14,9 @@ export BUILD_DIR=`pwd`
 
 ac_default_prefix="/opt/mingw32ce"
 
-export gcc_src=gcc-4.4.0
+if test -z "${gcc_src}"; then
+    export gcc_src=gcc-4.4.0
+fi
 
 # The list of components, in build order.  There's a build_FOO
 # function for each of these components
@@ -220,13 +222,21 @@ build_bootstrap_gcc()
 	--without-newlib               \
 	--enable-checking	|| exit 1
     
-    make ${PARALLELISM} all-gcc	|| exit 1
-    make configure-target-libgcc || exit 1
-    make install-gcc	|| exit 1
-    cd ${TARGET}/libgcc	|| exit 1
-    make ${PARALLELLISM} libgcc.a	|| exit 1
-    /usr/bin/install -c -m 644 libgcc.a ${PREFIX}/lib/gcc/${TARGET}/4.4.0 || exit 1
-
+    case ${gcc_src} in
+        gcc)
+            make ${PARALLELISM} all-gcc	|| exit 1
+            make install-gcc	|| exit 1
+        ;;
+        gcc-*)   
+            make ${PARALLELISM} all-gcc	|| exit 1
+            make configure-target-libgcc || exit 1
+            make install-gcc	|| exit 1
+            cd ${TARGET}/libgcc	|| exit 1
+            make ${PARALLELLISM} libgcc.a	|| exit 1
+            /usr/bin/install -c -m 644 libgcc.a ${PREFIX}/lib/gcc/${TARGET}/4.4.0 || exit 1
+        ;;
+    esac
+    
     cd ${BUILD_DIR}
 }
 
@@ -293,24 +303,48 @@ build_gcc()
     mkdir -p gcc
     cd gcc
 
-    ${BASE_DIRECTORY}/${gcc_src}/configure	\
-	--with-gcc                     \
-	--with-gnu-ld                  \
-	--with-gnu-as                  \
-	--build=${BUILD}               \
-	--target=${TARGET}             \
-	--host=${HOST}                 \
-	--prefix=${PREFIX}             \
-	--enable-threads=win32         \
-	--disable-nls                  \
-	--enable-languages=c,c++       \
-	--disable-win32-registry       \
-	--disable-multilib             \
-	--disable-interwork            \
-	--without-newlib               \
-	--enable-checking              \
-	--with-headers			\
-	--disable-__cxa_atexit
+    case ${gcc_src} in
+        gcc)
+            ${BASE_DIRECTORY}/${gcc_src}/configure	\
+            --with-gcc                     \
+            --with-gnu-ld                  \
+            --with-gnu-as                  \
+            --build=${BUILD}               \
+            --target=${TARGET}             \
+            --host=${HOST}                 \
+            --prefix=${PREFIX}             \
+            --enable-threads=win32         \
+            --disable-nls                  \
+            --enable-languages=c,c++       \
+            --disable-win32-registry       \
+            --disable-multilib             \
+            --disable-interwork            \
+            --without-newlib               \
+            --enable-checking              \
+            --with-headers
+        ;;
+        gcc-*)   
+           ${BASE_DIRECTORY}/${gcc_src}/configure	\
+            --with-gcc                     \
+            --with-gnu-ld                  \
+            --with-gnu-as                  \
+            --build=${BUILD}               \
+            --target=${TARGET}             \
+            --host=${HOST}                 \
+            --prefix=${PREFIX}             \
+            --enable-threads=win32         \
+            --disable-nls                  \
+            --enable-languages=c,c++       \
+            --disable-win32-registry       \
+            --disable-multilib             \
+            --disable-interwork            \
+            --without-newlib               \
+            --enable-checking              \
+            --with-headers			\
+            --disable-__cxa_atexit
+        ;;
+    esac
+    
 
 # we build libstdc++ as dll, so we don't need this.    
 #  --enable-fully-dynamic-string  \

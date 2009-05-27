@@ -1,3 +1,8 @@
+2009-05-27  Stefan Klug  <Klug.Stefan@gmx.de>
+
+	* build-mingw32ce.sh : Get the old gcc to build if gcc_src=gcc is
+	supplied.
+
 2009-05-15  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* build-cegcc.sh, build-x86.sh: Apply Geoffroys work on these scripts too.
