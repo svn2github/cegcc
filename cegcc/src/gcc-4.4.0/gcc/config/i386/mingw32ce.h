@@ -75,7 +75,7 @@ Boston, MA 02110-1301, USA.  */
   %{shared: %{mdll: %eshared and mdll are not compatible}} \
   %{shared: --shared} %{mdll:--dll} \
   %{static:-Bstatic} %{!static:-Bdynamic} \
-  %{shared|mdll: -e DllMainCRTStartup} \
+  %{shared|mdll: -e _DllMainCRTStartup} \
   "
 
 /* in mingw32.h :

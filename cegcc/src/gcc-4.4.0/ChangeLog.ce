@@ -1,3 +1,7 @@
+2009-05-30  Danny Backx  <dannybackx@users.sourceforge.net>
+
+        * gcc/config/i386/mingw32ce.h : Use _DllMainCRTStartup with underscore.
+
 2009-05-21  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* libgcc/config.host, gcc/config.gcc : Define i?86*-mingw32ce as a

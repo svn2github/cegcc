@@ -75,7 +75,7 @@ Boston, MA 02110-1301, USA.  */
   %{shared: %{mdll: %eshared and mdll are not compatible}} \
   %{shared: --shared} %{mdll:--dll} \
   %{static:-Bstatic} %{!static:-Bdynamic} \
-  %{shared|mdll: -e DllMainCRTStartup} \
+  %{shared|mdll: -e _DllMainCRTStartup} \
   "
 
 #undef STARTFILE_SPEC
@@ -87,3 +87,77 @@ Boston, MA 02110-1301, USA.  */
 #undef LIBGCC_SPEC
 #define LIBGCC_SPEC \
   "%{mthreads:-lmingwthrd} -lmingw32 -lgcc -lceoldname -lmingwex"
+
+#if 0
+/* One entry from cygming.h, the other one is cegcc exception handling */
+#ifdef SUBTARGET_ATTRIBUTE_TABLE
+#undef SUBTARGET_ATTRIBUTE_TABLE
+#endif
+#define SUBTARGET_ATTRIBUTE_TABLE \
+  /* { name, min_len, max_len, decl_req, type_req, fn_type_req, handler } */ \
+  { "selectany", 0, 0, true, false, false, ix86_handle_selectany_attribute }, \
+  { "exception_handler", 1, 2, true,  false, false, i386_handle_exception_handler_attribute }, \
+  { "dft_exception_handler", 1, 2, true,  false, false, i386_dft_handle_exception_handler_attribute }
+
+/* Write the extra assembler code needed to declare a function
+   properly.  If we are generating SDB debugging information, this
+   will happen automatically, so we only need to handle other cases.  */
+
+/*
+ * Note this is the structure of the PDATA entry created :
+ * Offset 	Size 	Field 			Description
+ * 0 		4 	Begin Address 		Virtual address of the corresponding function.
+ * 4	 	4 	End Address 		Virtual address of the end of the function.
+ * 8	 	4 	Exception Handler 	Pointer to the exception handler to be executed.
+ * 12	 	4 	Handler Data 		Pointer to additional information to be passed to the handler.
+ * 16	 	4 	Prolog End Address 	Virtual address of the end of the function prolog.
+ */
+#undef ASM_DECLARE_FUNCTION_NAME
+#define ASM_DECLARE_FUNCTION_NAME(FILE, NAME, DECL)				\
+  do										\
+    {										\
+      char *eh;									\
+      if (i386_pe_dllexport_name_p (NAME))					\
+	i386_pe_record_exported_symbol (NAME, 0);				\
+      eh = i386_exception_handler(FILE, NAME, DECL);				\
+      if (eh) {									\
+	asm_fprintf (FILE, "# %s has exception hander %s\n",			\
+			NAME, eh);						\
+	asm_fprintf (FILE, "\t.section .pdata\n");				\
+        asm_fprintf (FILE, "\t.long _%s\n", NAME);				\
+        asm_fprintf (FILE, "\t.long .L%s_end\n", NAME);				\
+        asm_fprintf (FILE, "\t.long _%s\n", eh);				\
+        asm_fprintf (FILE, "\t.long 0 /* .L%s_handler_data */\n", NAME);	\
+        asm_fprintf (FILE, "\t.long 0 /* .L%s_prolog_end */\n", NAME);		\
+	asm_fprintf (FILE, "\t.text\n");					\
+	asm_fprintf (FILE, "\t.L%s_data:\n", NAME);				\
+      }										\
+      /* UWIN binutils bug workaround.  */					\
+      if (0 && write_symbols != SDB_DEBUG)					\
+	i386_pe_declare_function_type (FILE, NAME, TREE_PUBLIC (DECL));		\
+      ASM_OUTPUT_LABEL (FILE, NAME);						\
+    }										\
+  while (0)
+
+/*
+ * An ARM specific trailer for function declarations.
+ *
+ * This one is needed for exception handlers : the entry in the pdata section
+ * needs to know the size of the function for which we handle exceptions.
+ */
+#undef  ASM_DECLARE_FUNCTION_SIZE
+#define ASM_DECLARE_FUNCTION_SIZE(STREAM, NAME, DECL)			\
+    {									\
+	if (i386_exception_handler(STREAM, NAME, DECL))		\
+		asm_fprintf (STREAM, ".L%s_end:\n", NAME);		\
+    }
+
+/*
+ * New macro to denote prologue end
+ */
+#undef ASM_X86_PROLOGUE_END
+#define ASM_X86_PROLOGUE_END(FILE, NAME)				\
+  {									\
+    asm_fprintf (FILE, "# End of prologue\n");				\
+  }
+#endif
