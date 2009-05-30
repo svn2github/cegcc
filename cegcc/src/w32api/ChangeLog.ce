@@ -1,3 +1,8 @@
+2009-05-39  Danny Backx  <dannybackx@users.sourceforge.net>
+	
+	* include/winnt.h (DLL_PROCESS_EXITING, DLL_SYSTEM_STARTED,
+	FILE_ATTRIBUTE_ROMMODULE, FILE_ATTRIBUTE_INROM) : Define.
+
 2009-05-27  Stefan Klug  <Klug.Stefan@gmx.de>
 
 	* include/winuser.h : Define the right GetProp function, this was
