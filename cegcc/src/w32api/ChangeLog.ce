@@ -2,6 +2,10 @@
 	
 	* include/winnt.h (DLL_PROCESS_EXITING, DLL_SYSTEM_STARTED,
 	FILE_ATTRIBUTE_ROMMODULE, FILE_ATTRIBUTE_INROM) : Define.
+	* include/dbgapi.h : New file.
+	* include/dbgapi (DEBUGREGISTER, RETAILREGISTERZONES, DEBUGCHK,
+	RETAILMSG, ASSERT) : Define.
+	* include/windows.h (dbgapi.h) : Include.
 
 2009-05-27  Stefan Klug  <Klug.Stefan@gmx.de>
 

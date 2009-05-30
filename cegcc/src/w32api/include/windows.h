@@ -71,6 +71,8 @@
 #include <winsvc.h>
 #endif
 
+#include <dbgapi.h>
+
 #ifndef WIN32_LEAN_AND_MEAN
 #include <cderr.h>
 #include <dde.h>
