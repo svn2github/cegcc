@@ -22,6 +22,8 @@ along with GCC; see the file COPYING.  If not, write to
 the Free Software Foundation, 51 Franklin Street, Fifth Floor,
 Boston, MA 02110-1301, USA.  */
 
+#if 0
+/* This appears to be obsolete */
 /* Same as for cygwin but without the MSVCRT */
 #undef EXTRA_OS_CPP_BUILTINS
 #define EXTRA_OS_CPP_BUILTINS()					\
@@ -33,10 +35,12 @@ Boston, MA 02110-1301, USA.  */
       builtin_define_std ("WINNT");				\
     }								\
   while (0)
+#endif
 
 #undef CPP_SPEC
 #define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{mthreads:-D_MT} \
 -D__COREDLL__ -D__MINGW32__ -D__MINGW32CE__ -D__CEGCC_VERSION__ \
+-D_WIN32 -DWIN32 -DWINNT \
 %{!nostdinc: -idirafter ../include/w32api%s -idirafter ../../include/w32api%s }"
 
 #undef TARGET_OS_CPP_BUILTINS

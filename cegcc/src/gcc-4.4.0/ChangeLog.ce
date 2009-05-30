@@ -1,6 +1,8 @@
 2009-05-30  Danny Backx  <dannybackx@users.sourceforge.net>
 
         * gcc/config/i386/mingw32ce.h : Use _DllMainCRTStartup with underscore.
+	* gcc/config/i386/mingw32ce.h (_WIN32,WIN32,WINNT) : Define in
+	CPP_SPEC instead of EXTRA_OS_CPP_BUILTINS.
 
 2009-05-21  Danny Backx  <dannybackx@users.sourceforge.net>
 
