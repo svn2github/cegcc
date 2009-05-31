@@ -326,6 +326,7 @@ build_gcc()
 		--without-newlib               \
 		--enable-checking              \
 		--with-headers
+		;;
       gcc-*)
 	${BASE_DIRECTORY}/${gcc_src}/configure	\
 		--with-gcc			\
