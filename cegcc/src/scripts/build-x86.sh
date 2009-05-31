@@ -14,7 +14,9 @@ export BUILD_DIR=`pwd`
 
 ac_default_prefix="/opt/x86mingw32ce"
 
-export gcc_src=gcc-4.4.0
+if [ -z "${gcc_src}" ]; then
+	export gcc_src=gcc-4.4.0
+fi
 
 # The list of components, in build order.  There's a build_FOO
 # function for each of these components
@@ -220,18 +222,26 @@ build_bootstrap_gcc()
 	--without-newlib               \
 	--enable-checking
     
-    make ${PARALLELISM} all-gcc || exit 1
-    make install-gcc || exit 1
-    make configure-target-libgcc || exit 1
-    cd ${TARGET}/libgcc || exit 1
-    make ${PARALLELLISM} libgcc.a crtbegin.o crtend.o crtfastmath.o || exit 1
-    /usr/bin/install -c -m 644 libgcc.a ${PREFIX}/lib/gcc/${TARGET}/4.4.0 || exit 1
-    /usr/bin/install -c -m 644 crtbegin.o ${PREFIX}/lib/gcc/${TARGET}/4.4.0 || exit 1
-    /usr/bin/install -c -m 644 crtend.o ${PREFIX}/lib/gcc/${TARGET}/4.4.0 || exit 1
-    /usr/bin/install -c -m 644 crtfastmath.o ${PREFIX}/lib/gcc/${TARGET}/4.4.0 || exit 1
+    case ${gcc_src} in
+      gcc)
+	make ${PARALLELISM} all-gcc || exit 1
+	make install-gcc   || exit 1
+	;;
+      gcc-*)
+	make ${PARALLELISM} all-gcc || exit 1
+	make install-gcc || exit 1
+	make configure-target-libgcc || exit 1
+	cd ${TARGET}/libgcc || exit 1
+	make ${PARALLELLISM} libgcc.a crtbegin.o crtend.o crtfastmath.o || exit 1
+	/usr/bin/install -c -m 644 libgcc.a ${PREFIX}/lib/gcc/${TARGET}/4.4.0 || exit 1
+	/usr/bin/install -c -m 644 crtbegin.o ${PREFIX}/lib/gcc/${TARGET}/4.4.0 || exit 1
+	/usr/bin/install -c -m 644 crtend.o ${PREFIX}/lib/gcc/${TARGET}/4.4.0 || exit 1
+	/usr/bin/install -c -m 644 crtfastmath.o ${PREFIX}/lib/gcc/${TARGET}/4.4.0 || exit 1
+	;;
+    esac
+
 
     cd ${BUILD_DIR}
-#      HOST_LIBGCC2_CFLAGS="-I${BASE_DIRECTORY}/mingw/include -I${BASE_DIRECTORY}/w32api/include"
 }
 
 build_w32api()
@@ -297,23 +307,46 @@ build_gcc()
     mkdir -p gcc
     cd gcc
 
-    ${BASE_DIRECTORY}/${gcc_src}/configure	\
-	--with-gcc                     \
-	--with-gnu-ld                  \
-	--with-gnu-as                  \
-	--target=${TARGET}             \
-	--build=${BUILD}               \
-	--host=${HOST}                 \
-	--prefix=${PREFIX}             \
-	--enable-threads=win32         \
-	--disable-nls                  \
-	--enable-languages=c,c++       \
-	--disable-win32-registry       \
-	--disable-multilib             \
-	--disable-interwork            \
-	--without-newlib               \
-	--enable-checking              \
-	--with-headers
+    case ${gcc_src} in
+      gcc)
+	${BASE_DIRECTORY}/${gcc_src}/configure	\
+		--with-gcc                     \
+		--with-gnu-ld                  \
+		--with-gnu-as                  \
+		--target=${TARGET}             \
+		--build=${BUILD}               \
+		--host=${HOST}                 \
+		--prefix=${PREFIX}             \
+		--enable-threads=win32         \
+		--disable-nls                  \
+		--enable-languages=c,c++       \
+		--disable-win32-registry       \
+		--disable-multilib             \
+		--disable-interwork            \
+		--without-newlib               \
+		--enable-checking              \
+		--with-headers
+      gcc-*)
+	${BASE_DIRECTORY}/${gcc_src}/configure	\
+		--with-gcc			\
+		--with-gnu-ld			\
+		--with-gnu-as			\
+		--target=${TARGET}		\
+		--build=${BUILD}		\
+		--host=${HOST}			\
+		--prefix=${PREFIX}		\
+		--enable-threads=win32		\
+		--disable-nls			\
+		--enable-languages=c,c++	\
+		--disable-win32-registry	\
+		--disable-multilib		\
+		--disable-interwork		\
+		--without-newlib		\
+		--enable-checking		\
+		--with-headers			\
+		--disable-__cxa_atexit
+		;;
+    esac
 
 # we build libstdc++ as dll, so we don't need this.    
 #  --enable-fully-dynamic-string  \

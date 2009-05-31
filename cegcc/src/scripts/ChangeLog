@@ -1,3 +1,7 @@
+2009-05-31  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* build-x86.sh : Copy Stefans patch to this script.
+
 2009-05-27  Stefan Klug  <Klug.Stefan@gmx.de>
 
 	* build-mingw32ce.sh : Get the old gcc to build if gcc_src=gcc is
