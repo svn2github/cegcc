@@ -1,4 +1,5 @@
-SUBDIRS=	libstdc++ libsupc++
+#SUBDIRS=	libstdc++ libsupc++
+SUBDIRS=	libstdc++
 
 
 all::

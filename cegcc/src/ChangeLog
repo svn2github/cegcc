@@ -3,6 +3,7 @@
 	* mingwdll/get-version : Deal with other directory than src/gcc .
 	* mingwdll/libstdc++/Makefile : Fix typo in variable name, use the
 	right compiler, use the right set of libraries.
+	* mingwdll/Makefile : Don't build anything in libsupc++
 
 2009-05-26  Vincent Richomme  <forumer@smartmobili.com>
 
