@@ -15,7 +15,7 @@ DEVICE_DIR=	${PREFIX}/${TARGET}/lib/device
 
 DLLVERSION=	`${BASE_DIRECTORY}/mingwdll/get-version`
 
-DLL_LIBS=	# -lws2
+DLL_LIBS=	-lgcc -lgcc_s # -lws2
 
 GCC_VERSION=	`${TARGET}-gcc --version | head -1 | awk '{print $$3;}'`
 
@@ -23,10 +23,10 @@ all::
 	mkdir -p ${BUILD_DIR}/${MYDIR}
 	${TARGET}-dlltool --output-def ${BUILD_DIR}/${MYDIR}/${ME}.def \
 		--export-all ${PREFIX}/${TARGET}/lib/${ME}.a
-	cd ${BUILD_DIR}/${MYDIR}; ${TARGET}-gcc --shared \
+	cd ${BUILD_DIR}/${MYDIR}; ${TARGET}-g++ --shared \
 		-o ${BUILD_DIR}/${MYDIR}/${ME}-${DLLVERSION}.dll \
 	 	-Wl,--out-implib,${ME}.dll.a ${BUILD_DIR}/${MYDIR}/${ME}.def \
-		${PREFIX}/${TARGET}/lib/${ME}.a ${DLL-LIBS}
+		${PREFIX}/${TARGET}/lib/${ME}.a ${DLL_LIBS}
 	-rm -f ${BUILD_DIR}/${MYDIR}/${ME}-${DLLVERSION}.dll.stripped
 	cp ${BUILD_DIR}/${MYDIR}/${ME}-${DLLVERSION}.dll ${BUILD_DIR}/${MYDIR}/${ME}-${DLLVERSION}.dll.stripped
 	${TARGET}-strip ${BUILD_DIR}/${MYDIR}/${ME}-${DLLVERSION}.dll.stripped

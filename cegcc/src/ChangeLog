@@ -1,3 +1,9 @@
+2009-05-31  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* mingwdll/get-version : Deal with other directory than src/gcc .
+	* mingwdll/libstdc++/Makefile : Fix typo in variable name, use the
+	right compiler, use the right set of libraries.
+
 2009-05-26  Vincent Richomme  <forumer@smartmobili.com>
 
 	* scripts/build-*.sh : Change syntax of tail command.

@@ -2,7 +2,10 @@
 if [ "x$BASE_DIRECTORY" = "x" ]; then
 	BASE_DIRECTORY=/home/danny/src/cegcc/svn.sf.net/cegcc/trunk/cegcc/src
 fi
-LIBVER=$(grep libtool_VERSION= ${BASE_DIRECTORY}/gcc/libstdc++-v3/configure | sed -e 's/libtool_VERSION=//')
+if [ "x$gcc_src" = "x" ]; then
+	gcc_src=gcc-4.4.0
+fi
+LIBVER=$(grep libtool_VERSION= ${BASE_DIRECTORY}/${gcc_src}/libstdc++-v3/configure | sed -e 's/libtool_VERSION=//')
 LIBVER_c=$(echo $LIBVER | awk -F: '{print $1}')
 LIBVER_r=$(echo $LIBVER | awk -F: '{print $2}')
 LIBVER_a=$(echo $LIBVER | awk -F: '{print $3}')
