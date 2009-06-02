@@ -43,10 +43,6 @@
   %{pg: gcrt3%O%s} \
   "
 
-#undef LIBGCC_SPEC
-#define LIBGCC_SPEC \
-  "%{mthreads:-lcegccthrd} %{!static: -lcegcc } -lgcc"
-
 /* We have to dynamic link to get to the system DLLs.  All of libc, libm,
    the Unix stuff is in cegcc.dll.  The import library is called
    'libcegcc.dll.a'. For Windows applications, include more libraries, but
@@ -65,3 +61,39 @@
   %{static:-Bstatic} %{!static:-Bdynamic} \
   %{shared|mdll: -e DllMainCRTStartup} \
   "
+
+
+/*
+ * See the message from Dave Korn dated 2009/06/01 15:44 on the cegcc mailing
+ * list, and the gcc ChangeLog entry dated 2009-01-21, also by Dave.
+ *
+ * Based on that, we're replacing LIBGCC_SPEC by SHARED_LIBGCC_SPEC and
+ * REAL_GCC_SPEC. This is based on cygwin's definition, which we extend
+ * with the other libraries we need.
+ *
+ * The old definition :
+ * "%{mthreads:-lcegccthrd} %{!static: -lcegcc } -lgcc"
+ */
+#undef LIBGCC_SPEC
+
+#undef SHARED_LIBGCC_SPEC
+#ifdef ENABLE_SHARED_LIBGCC
+#define SHARED_LIBGCC_SPEC " \
+ %{mthreads:-lcegccthrd} \
+ %{!static: -lcegcc } \
+ %{static|static-libgcc:-lgcc -lgcc_eh} \
+ %{!static: \
+   %{!static-libgcc: \
+     %{!shared: \
+       %{!shared-libgcc:-lgcc -lgcc_eh} \
+       %{shared-libgcc:-lgcc_s -lgcc} \
+      } \
+     %{shared:-lgcc_s -lgcc} \
+    } \
+  } "
+#else
+#define SHARED_LIBGCC_SPEC "%{mthreads:-lcegccthrd} %{!static: -lcegcc } -lgcc"
+#endif
+
+#undef REAL_LIBGCC_SPEC
+#define REAL_LIBGCC_SPEC SHARED_LIBGCC_SPEC
