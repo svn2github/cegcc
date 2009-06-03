@@ -15,7 +15,7 @@ DEVICE_DIR=	${PREFIX}/${TARGET}/lib/device
 
 DLLVERSION=	`${BASE_DIRECTORY}/mingwdll/get-version`
 
-DLL_LIBS=	-lgcc -lgcc_s # -lws2
+DLL_LIBS=	-lgcc
 
 GCC_VERSION=	`${TARGET}-gcc --version | head -1 | awk '{print $$3;}'`
 

@@ -1,3 +1,8 @@
+2009-06-03  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* mingwdll/libstdc++/Makefile : Remove -lgcc_s flag. No longer
+	required with the recent gcc-4.4.0 fix inspired by Dave Korn.
+
 2009-05-31  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* mingwdll/get-version : Deal with other directory than src/gcc .
