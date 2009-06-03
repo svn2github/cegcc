@@ -12,7 +12,7 @@ export BUILD_DIR=`pwd`
 ac_default_prefix="/opt/cegcc"
 ac_default_destdir="${BUILD_DIR}/install"
 
-gcc_src=gcc
+export gcc_src=gcc-4.4.0
 
 # The list of components, in build order.  There's a build_FOO
 # function for each of these components
@@ -280,7 +280,7 @@ build_w32api()
     echo "#define   __CEGCC_VERSION_MINOR__ " $CEGCC_VERSION_MINOR >> ${DESTFILE}
     echo "#define   __CEGCC_VERSION_PATCHLEVEL__ " $CEGCC_VERSION_PATCHLEVEL >> ${DESTFILE}
     echo "#define   __CEGCC_BUILD_DATE__" `date +%Y%m%d` >> ${DESTFILE}
-    tail +$L2 ${INCFILE} >>${DESTFILE}
+    tail -n +$L2 ${INCFILE} >>${DESTFILE}
 
     cd ${BUILD_DIR}
 }
@@ -457,7 +457,7 @@ while [ -n "$1" ]; do
 done
 
 export TARGET="arm-cegcc"
-export BUILD=`sh ${BASE_DIRECTORY}/gcc/config.guess`
+export BUILD=`sh ${BASE_DIRECTORY}/${gcc_src}/config.guess`
 export PATH=${PREFIX}/bin:${PATH}
 
 if [ "x${host}" != "x" ]; then

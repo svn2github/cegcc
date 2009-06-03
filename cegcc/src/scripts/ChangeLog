@@ -1,3 +1,8 @@
+2009-06-03  Vincent Richomme <forumer@smartmobili.com>
+
+	* build-{mingw32ce,cegcc,x86}.sh : Replace tail --lines=+$L2 by tail
+	-n $L2. This is said to be more portable.
+
 2009-05-31  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* build-x86.sh : Copy Stefans patch to this script.

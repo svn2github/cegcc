@@ -281,7 +281,7 @@ build_w32api()
     echo "#define   __CEGCC_VERSION_MINOR__ " $CEGCC_VERSION_MINOR >> ${DESTFILE}
     echo "#define   __CEGCC_VERSION_PATCHLEVEL__ " $CEGCC_VERSION_PATCHLEVEL >> ${DESTFILE}
     echo "#define   __CEGCC_BUILD_DATE__" `date +%Y%m%d` >> ${DESTFILE}
-    tail --lines=+$L2 ${INCFILE} >>${DESTFILE}
+    tail -n +$L2 ${INCFILE} >>${DESTFILE}
 
     cd ${BUILD_DIR}
 }
