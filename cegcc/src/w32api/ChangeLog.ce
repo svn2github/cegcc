@@ -1,4 +1,10 @@
-2009-05-39  Danny Backx  <dannybackx@users.sourceforge.net>
+2009-06-06  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/winbase.h (ExitProcess) : Change type of parameter to UINT.
+	* include/winbase.h (STACK_SIZE_PARAM_IS_A_RESERVATION) : Define with
+	the value found on MSDN.
+
+2009-05-29  Danny Backx  <dannybackx@users.sourceforge.net>
 	
 	* include/winnt.h (DLL_PROCESS_EXITING, DLL_SYSTEM_STARTED,
 	FILE_ATTRIBUTE_ROMMODULE, FILE_ATTRIBUTE_INROM) : Define.
