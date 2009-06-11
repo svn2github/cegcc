@@ -1,3 +1,8 @@
+2009-06-11  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/shellapi.h (struct _SHELLEXECUTEINFO) : Define instead of
+	its struct _SHELLEXECUTEINFO(A|W) brothers.
+
 2009-06-11  Vincent Richomme  <forumer@smartmobili.com>
 
 	* include/mapidefs.h, include/pimstore.h : New files.

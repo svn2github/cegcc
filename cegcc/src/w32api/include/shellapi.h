@@ -213,24 +213,8 @@ typedef struct _NOTIFYICONDATAW {
 #endif
 } NOTIFYICONDATAW,*PNOTIFYICONDATAW;
 
-typedef struct _SHELLEXECUTEINFOA {
-	DWORD cbSize;
-	ULONG fMask;
-	HWND hwnd;
-	LPCSTR lpVerb;
-	LPCSTR lpFile;
-	LPCSTR lpParameters;
-	LPCSTR lpDirectory;
-	int nShow;
-	HINSTANCE hInstApp;
-	PVOID lpIDList;
-	LPCSTR lpClass;
-	HKEY hkeyClass;
-	DWORD dwHotKey;
-	HANDLE hIcon;
-	HANDLE hProcess;
-} SHELLEXECUTEINFOA,*LPSHELLEXECUTEINFOA;
-typedef struct _SHELLEXECUTEINFOW {
+#ifdef UNICODE
+typedef struct _SHELLEXECUTEINFO {
 	DWORD cbSize;
 	ULONG fMask;
 	HWND hwnd;
@@ -247,6 +231,25 @@ typedef struct _SHELLEXECUTEINFOW {
 	HANDLE hIcon;
 	HANDLE hProcess;
 } SHELLEXECUTEINFOW,*LPSHELLEXECUTEINFOW;
+#else
+typedef struct _SHELLEXECUTEINFO {
+	DWORD cbSize;
+	ULONG fMask;
+	HWND hwnd;
+	LPCSTR lpVerb;
+	LPCSTR lpFile;
+	LPCSTR lpParameters;
+	LPCSTR lpDirectory;
+	int nShow;
+	HINSTANCE hInstApp;
+	PVOID lpIDList;
+	LPCSTR lpClass;
+	HKEY hkeyClass;
+	DWORD dwHotKey;
+	HANDLE hIcon;
+	HANDLE hProcess;
+} SHELLEXECUTEINFOA,*LPSHELLEXECUTEINFOA;
+#endif
 typedef struct _SHFILEOPSTRUCTA {
 	HWND hwnd;
 	UINT wFunc;
