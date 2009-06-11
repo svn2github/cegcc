@@ -1,3 +1,7 @@
+2009-06-11  Vincent Richomme  <forumer@smartmobili.com>
+
+	* include/mapidefs.h, include/pimstore.h : New files.
+
 2009-06-06  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/winbase.h (ExitProcess) : Change type of parameter to UINT.
