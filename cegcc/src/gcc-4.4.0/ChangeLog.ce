@@ -1,3 +1,8 @@
+2009-06-14  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* configure.ac : Replace entries referencing winsup by ones that match
+	the cegcc directory structure.
+
 2009-06-02  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* gcc/config/i386/mingw32ce.h, gcc/config/arm/wince-cegcc.h,

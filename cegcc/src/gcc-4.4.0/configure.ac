@@ -2616,6 +2616,9 @@ case " $target_configdirs " in
   ;;
 esac
 case "$target" in
+*-mingw32ce*)
+  # Special case for building for CE - no winsup
+  FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -L$$r/$(TARGET_SUBDIR)/winsup/mingw -L$$r/$(TARGET_SUBDIR)/winsup/w32api/lib -isystem $$s/../mingw/include -isystem $$s/../w32api/include' ;;
 *-mingw*)
   # Can't be handled as Cygwin above since Mingw does not use newlib.
   FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -L$$r/$(TARGET_SUBDIR)/winsup/mingw -L$$r/$(TARGET_SUBDIR)/winsup/w32api/lib -isystem $$s/winsup/mingw/include -isystem $$s/winsup/w32api/include' ;;
