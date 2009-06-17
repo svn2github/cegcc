@@ -203,3 +203,14 @@ Boston, MA 02110-1301, USA.  */
 
 #undef REAL_LIBGCC_SPEC
 #define REAL_LIBGCC_SPEC SHARED_LIBGCC_SPEC
+
+/* Emit code to check the stack when allocating more than 4000
+   bytes in one go.  */
+#ifdef CHECK_STACK_LIMIT
+#warning CHECK_STACK_LIMIT
+#undef CHECK_STACK_LIMIT
+#endif
+
+/* Define these to be in sync with the arm-mingw32ce and arm-cegcc world */
+#define NAME__MAIN  "__gccmain"
+#define SYMBOL__MAIN __gccmain

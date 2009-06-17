@@ -1,3 +1,8 @@
+2009-06-17  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* gcc/config/i386/mingw32ce.h (NAME__MAIN, SYMBOL__MAIN): Define like
+	in the ARM world.
+
 2009-06-15  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* configure : Regenerate.
