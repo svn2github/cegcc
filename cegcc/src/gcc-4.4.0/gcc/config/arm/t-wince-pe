@@ -1,11 +1,36 @@
 LIB1ASMSRC = arm/lib1funcs.asm
 
-LIB1ASMFUNCS = _udivsi3 _divsi3 _umodsi3 _modsi3 _dvmd_tls _call_via_rX _interwork_call_via_rX _clzsi2 _clzdi2 \
+LIB1ASMFUNCS = _udivsi3 _divsi3 _umodsi3 _modsi3 _dvmd_tls _call_via_rX _interwork_call_via_rX \
 	_bb_init_func _lshrdi3 _ashrdi3 _ashldi3 \
-	_negdf2 _addsubdf3 _muldivdf3 _cmpdf2 _unorddf2 _fixdfsi _fixunsdfsi \
-	_truncdfsf2 _negsf2 _addsubsf3 _muldivsf3 _cmpsf2 _unordsf2 \
-	_fixsfsi _fixunssfsi _floatdidf _floatdisf \
-	_arm_fixunsdfsi
+	_negdf2 _arm_addsubdf3 _arm_muldivdf3 _arm_cmpdf2 _arm_unorddf2 \
+	_arm_fixdfsi _arm_fixunsdfsi \
+	_arm_truncdfsf2 _arm_negsf2 _arm_addsubsf3 _arm_muldivsf3 _arm_cmpsf2 _arm_unordsf2 \
+	_arm_fixsfsi _arm_fixunssfsi _arm_floatdidf _arm_floatdisf \
+	_arm_fixunsdfsi \
+	_clzsi2 _clzdi2
+
+#
+# Filter out functions from dp-bit.c that are already in lib1funcs.asm
+#
+DPBIT_FUNCS := $(filter-out _mul_df _div_df _addsub_df _compare_df \
+	_eq_df _ne_df _gt_df _ge_df _lt_df _le_df \
+	_negate_df _unord_df \
+	_df_to_sf _si_to_df _df_to_si _usi_to_df, $(DPBIT_FUNCS))
+FPBIT_FUNCS := $(filter-out _mul_sf _div_sf _addsub_sf _compare_sf \
+	_eq_sf _ne_sf _gt_sf _ge_sf _lt_sf _le_sf \
+	_negate_sf _unord_sf \
+	_sf_to_df _si_to_sf _sf_to_si _usi_to_sf, $(FPBIT_FUNCS))
+
+LIB2FUNCS_EXCLUDE = _floatundisf _floatundidf
+
+#LIB1ASMFUNCS = _udivsi3 _divsi3 _umodsi3 _modsi3 _dvmd_tls _call_via_rX _interwork_call_via_rX \
+#	_bb_init_func _lshrdi3 _ashrdi3 _ashldi3 \
+#	_arm_negdf2 _arm_addsubdf3 _arm_muldivdf3 _arm_cmpdf2 _arm_unorddf2 \
+#	_arm_fixdfsi _arm_fixunsdfsi \
+#	_arm_truncdfsf2 _arm_negsf2 _arm_addsubsf3 _arm_muldivsf3 _arm_cmpsf2 _arm_unordsf2 \
+#	_arm_fixsfsi _arm_fixunssfsi _arm_floatdidf _arm_floatdisf \
+#	_arm_fixunsdfsi \
+#	_clzsi2 _clzdi2
 
 # For most CPUs we have an assembly soft-float implementations.
 # However this is not true for ARMv6M.  Here we want to use the soft-fp C
