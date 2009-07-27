@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 		mbstowcs(wapi, argv[i], 64);
 		*(FARPROC *)&fun = GetProcAddress(dll, wapi);
 		if (fun) {
-			printf("\t%s implements %s\n", argv[1], argv[i]);
+			printf("\t%s implements %s (0x%08X)\n", argv[1], argv[i], fun);
 		} else {
 			DWORD	e = GetLastError();
 			printf("%s doesn't know about %s\n", argv[1], argv[i]);
