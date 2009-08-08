@@ -137,7 +137,7 @@ Boston, MA 02110-1301, USA.  */
 	asm_fprintf (FILE, "\t.L%s_data:\n", NAME);				\
       }										\
       /* UWIN binutils bug workaround.  */					\
-      if (0 && write_symbols != SDB_DEBUG)					\
+      if (write_symbols != SDB_DEBUG)						\
 	i386_pe_declare_function_type (FILE, NAME, TREE_PUBLIC (DECL));		\
       ASM_OUTPUT_LABEL (FILE, NAME);						\
     }										\
@@ -203,13 +203,6 @@ Boston, MA 02110-1301, USA.  */
 
 #undef REAL_LIBGCC_SPEC
 #define REAL_LIBGCC_SPEC SHARED_LIBGCC_SPEC
-
-/* Emit code to check the stack when allocating more than 4000
-   bytes in one go.  */
-#ifdef CHECK_STACK_LIMIT
-#warning CHECK_STACK_LIMIT
-#undef CHECK_STACK_LIMIT
-#endif
 
 /* Define these to be in sync with the arm-mingw32ce and arm-cegcc world */
 #define NAME__MAIN  "__gccmain"

@@ -1,3 +1,9 @@
+2009-08-08  Danny Backx  dannybackx@users.sourceforge.net>
+
+	* gcc/config/i386/mingw32ce.h (ASM_DECLARE_FUNCTION_NAME) : Fix the
+	silly bug that keeps the compiler from omitting the right directives
+	for functions.
+
 2009-06-17  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* gcc/config/i386/mingw32ce.h (NAME__MAIN, SYMBOL__MAIN): Define like
