@@ -1,6 +1,8 @@
 2009-08-08  Danny Backx  dannybackx@users.sourceforge.net>
 
 	* gcc/config.gcc : Add soft-fp configuration files to our build.
+	* gcc/config/arm/t-wince-pe : Add more symbols to ignore from
+	libgcc2.c .
 
 2009-08-08  Danny Backx  dannybackx@users.sourceforge.net>
 

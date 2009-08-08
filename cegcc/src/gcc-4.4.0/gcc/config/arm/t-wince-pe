@@ -6,7 +6,6 @@ LIB1ASMFUNCS = _udivsi3 _divsi3 _umodsi3 _modsi3 _dvmd_tls _call_via_rX _interwo
 	_arm_fixdfsi _arm_fixunsdfsi \
 	_arm_truncdfsf2 _arm_negsf2 _arm_addsubsf3 _arm_muldivsf3 _arm_cmpsf2 _arm_unordsf2 \
 	_arm_fixsfsi _arm_fixunssfsi _arm_floatdidf _arm_floatdisf \
-	_arm_fixunsdfsi \
 	_clzsi2 _clzdi2
 
 #
@@ -21,7 +20,8 @@ FPBIT_FUNCS := $(filter-out _mul_sf _div_sf _addsub_sf _compare_sf \
 	_negate_sf _unord_sf \
 	_sf_to_df _si_to_sf _sf_to_si _usi_to_sf, $(FPBIT_FUNCS))
 
-LIB2FUNCS_EXCLUDE = _floatundisf _floatundidf
+LIB2FUNCS_EXCLUDE = _floatundisf _floatundidf _floatdidf _floatdisf \
+	_fixunssfsi _fixunsdfsi
 
 #LIB1ASMFUNCS = _udivsi3 _divsi3 _umodsi3 _modsi3 _dvmd_tls _call_via_rX _interwork_call_via_rX \
 #	_bb_init_func _lshrdi3 _ashrdi3 _ashldi3 \
