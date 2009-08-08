@@ -1302,6 +1302,7 @@ arm-*-mingw32*)
 	  tmake_file="${tmake_file} i386/t-gthr-win32"
  	  ;;
  	esac
+	tmake_file="${tmake_file} arm/t-arm-softfp soft-fp/t-softfp"
  	;;
 i[34567]86-*-mingw* | x86_64-*-mingw*)
 	tm_file="${tm_file} i386/unix.h i386/bsd.h i386/gas.h dbxcoff.h i386/cygming.h i386/mingw32.h"
