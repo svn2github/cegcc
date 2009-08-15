@@ -9,7 +9,7 @@ SRCDIR=${TOP_SRCDIR}/src/cegcc/libstdc++
 
 DLLNAME=libstdc++.dll
 IMPLIB=$(DLLNAME).a
-TARGET?=arm-wince-cegcc
+TARGET?=arm-cegcc
 
 AR=$(TARGET)-ar
 CC=$(TARGET)-gcc
@@ -61,7 +61,9 @@ ${MY_DIR}/stripped/$(DLLNAME):
 ${MY_DIR}/$(DLLNAME).a \
 ${MY_DIR}/$(DLLNAME).def \
 ${MY_DIR}/$(DLLNAME):
-	$(CC) $(LDFLAGS) -shared \
+	$(CC) $(LDFLAGS) -shared -nostdlib \
+		-e DllMainCRTStartup \
+		${PREFIX}/${TARGET}/lib/dllcrt1.o \
 		-Wl,--enable-auto-import \
 		-Wl,--enable-runtime-pseudo-reloc \
 		-Wl,--export-all-symbols \
@@ -69,7 +71,12 @@ ${MY_DIR}/$(DLLNAME):
 		-Wl,--out-implib,${MY_DIR}/$(DLLNAME).a \
 		-Wl,--output-def,${MY_DIR}/$(DLLNAME).def \
 		-Wl,--whole-archive ${MY_DIR}/_tmp/*.o \
-		-Wl,-no-whole-archive -lcegcc -lcoredll
+		-Wl,-no-whole-archive \
+		-lcegcc -lcoredll \
+		-lcegcc -lcoredll \
+		-lcegcc -lcoredll \
+		${MY_DIR}/../gcc/arm-cegcc/libgcc/unwind-sjlj_s.o
+
 
 installdll: ${MY_DIR}/stripped/$(DLLNAME)
 	pput.exe -v -v -f ${MY_DIR}/stripped/$(DLLNAME) "\Windows\$(DLLNAME)"
