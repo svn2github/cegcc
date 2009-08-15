@@ -306,7 +306,8 @@ build_gcc()
 	--disable-interwork            \
 	--without-newlib               \
 	--enable-checking              \
-	--with-headers
+	--with-headers			\
+	--disable-libssp
 
 # we build libstdc++ as dll, so we don't need this.    
 #  --enable-fully-dynamic-string  \

@@ -1,3 +1,7 @@
+2009-08-15  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* build-cegcc.sh : Disable building libssp.
+
 2009-06-03  Vincent Richomme <forumer@smartmobili.com>
 
 	* build-{mingw32ce,cegcc,x86}.sh : Replace tail --lines=+$L2 by tail
