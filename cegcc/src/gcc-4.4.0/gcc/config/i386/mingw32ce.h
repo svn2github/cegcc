@@ -64,8 +64,7 @@ Boston, MA 02110-1301, USA.  */
         }								\
       /* Even though linkonce works with static libs, this is needed 	\
           to compare typeinfo symbols across dll boundaries.  */	\
-      builtin_define ("__GXX_MERGED_TYPEINFO_NAMES=1");		\
-  }                                                           \
+  }                                                           		\
   while (0)
 
 /* Link with coredll, the main libc in the native SDK, 
