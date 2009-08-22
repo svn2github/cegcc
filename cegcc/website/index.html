@@ -22,7 +22,7 @@ You can develop on a PC, and create apps that run on a PDA or a WinCE cell phone
 <p>
 We're aiming at providing a consistent and working set of development tools that
 generate code for Windows CE devices such as PDA's and smart phones.
-Our intended development platforms are the usual GNU development workstations,
+Our intended development platforms are the usual development workstations,
 e.g. <a href="http://www.linux.org">GNU/Linux</a>,
 <a href="http://www.freebsd.org">FreeBSD</a>,
 <a href="http://www.apple.com/macosx/">MacOS X</a>, or 
@@ -44,14 +44,18 @@ These are our current <i>products</i> :
 <ul>
 	<li>arm-mingw32ce : toolset to build native Windows CE applications
 	<li>arm-cegcc : toolset to port unix source to Windows CE
-	<li><font color="red"><i>(coming soon)</i> i386-mingw32ce</font> : toolset to build native Windows CE applications for x86 powered devices
+	<li>i386-mingw32ce : toolset to build native Windows CE applications for x86 powered devices
 </ul>
-<i>In versions prior to 0.55, these were called <b>arm-wince-mingw32ce</b>
-and <b>arm-wince-cegcc</b> but we changed this in agreement with other projects,
-to facilitate feedback of patches.</i>
-<p>
+<P>
+<font size="+4" color="red"><b> The new 0.59.1 release is based on gcc 4.4.0 .</b></font>
+<br>
+The latest official release (0.55) is based on gcc 4.1.0.
+<P>
 Both toolsets allow you to develop on a PC,
-and create apps that run on a PDA or a WinCE cell phone.
+and create apps that run on a PDA,
+a cell phone,
+a netbook,
+or an embedded device.
 <p>
 What's the meaning of <b>arm-cegcc</b> and <b>arm-mingw32ce</b> ?
 They both describe the target platform :
@@ -60,24 +64,91 @@ running the Windows CE operating system,
 on unknown hardware (could be any brand of PDA or smart phone).
 In the <b>cegcc</b> case, there's a portability layer;
 in the <b>mingw32ce</b> case there isn't.
+Similarly, <b>i386-mingw32ce</b> means we're targetting
+<A HREF="http://en.wikipedia.org/wiki/X86">x86 processors</A>
+or clones, running Windows CE, Windows CE Embedded, etc. .
 <p>
-Combine this with our development platforms, and you get four choices :
+This project delivers source code (best taken from SVN),
+and also binary versions of the development tools.
+The availability of binary versions depends somewhat on volunteers
+creating the packages.
+<P>
 <table border="1">
+	<tr><td align=center colspan=5><font color="blue" size=+2><b><a href="http://sourceforge.net/projects/cegcc/files/cegcc/0.59.1/">Availability of 0.59.1</a></b></font></td></tr>
 	<tr>
-		<td> </td>
-		<td> GNU/Linux host </td>
-		<td> Cygwin host </td>
+		<td>platform</td>
+		<td>arm-mingw32ce</td>
+		<td>arm-cegcc</td>
+		<td>i386-mingw32ce (includes gdb)</td>
+		<td>gdb (for arm)</td>
 	</tr>
 	<tr>
-		<td> arm/i386-mingw32ce </td>
-		<td> Develop on Linux, create Windows CE native apps </td>
-		<td> Develop on Cygwin, create Windows CE native apps </td>
+		<td>generic linux (.tar.gz)</td>
+		<td><a href="http://sourceforge.net/projects/cegcc/files/cegcc/0.59.1/mingw32ce-0.59.1.tar.bz2/download">yes</a></td>
+		<td><a href="http://sourceforge.net/projects/cegcc/files/cegcc/0.59.1/cegcc-0.59.1.tar.bz2/download">yes</a></td>
+		<td><a href="http://sourceforge.net/projects/cegcc/files/cegcc/0.59.1/x86mingw32ce-0.59.1.tar.bz2/download">yes</a></td>
+		<td><a href="http://sourceforge.net/projects/cegcc/files/cegcc/0.59.1/gdb-arm-0.59.1.tar.bz2/download">yes</a></td>
 	</tr>
 	<tr>
-		<td> arm-cegcc</td>
-		<td> Develop on Linux, port *nix sources to Windows CE </td>
-		<td> Develop on Cygwin, port *nix sources to Windows CE </td>
+		<td>RPM</td>
+		<td>no</td>
+		<td>no</td>
+		<td>no</td>
+		<td>no</td>
 	</tr>
+	<tr>
+		<td>Cygwin</td>
+		<td>not yet</td>
+		<td>not yet</td>
+		<td>?</td>
+		<td>not yet</td>
+	</tr>
+	<tr>
+		<td>MacOS X</td>
+		<td>not yet</td>
+		<td>not yet</td>
+		<td>?</td>
+		<td>not yet</td>
+	</tr>
+	<!--
+	<tr>
+		<td>platform</td>
+		<td>arm-mingw32ce</td>
+		<td>arm-cegcc</td>
+		<td>i386-mingw32ce</td>
+		<td>gdb</td>
+	</tr>
+	-->
+</table>
+<p>
+<table border="1">
+	<tr><td align=center colspan=5><font color="blue" size=+2><b><a href="http://sourceforge.net/projects/cegcc/files/cegcc/0.55/">Availability of 0.55</a></b></font></td></tr>
+	<tr>
+		<td>platform</td>
+		<td>arm-mingw32ce</td>
+		<td>arm-cegcc</td>
+		<td>gdb (for arm)</td>
+	</tr>
+	<tr>
+		<td>generic linux (.tar.gz)</td>
+		<td><a href="http://sourceforge.net/projects/cegcc/files/cegcc/0.55/mandriva-cegcc-mingw32ce-0.55.tar.gz/download">yes</a></td>
+		<td><a href="http://sourceforge.net/projects/cegcc/files/cegcc/0.55/mandriva-cegcc-cegcc-0.55.tar.gz/download">yes</a></td>
+		<td><a href="http://sourceforge.net/projects/cegcc/files/cegcc/0.55/mandriva-gdb-mingw32ce-arm-0.55.tar.gz/download">yes</a></td>
+	</tr>
+	<tr>
+		<td>RPM</td>
+		<td><a href="http://sourceforge.net/projects/cegcc/files/cegcc/0.55/mandriva-cegcc-mingw32ce-0.55-1.i586.rpm/download">yes</a></td>
+		<td><a href="http://sourceforge.net/projects/cegcc/files/cegcc/0.55/mandriva-cegcc-cegcc-0.55-1.i586.rpm/download">yes</a></td>
+		<td><a href="http://sourceforge.net/projects/cegcc/files/cegcc/0.55/mandriva-gdb-mingw32ce-arm-0.55-1.i586.rpm/download">yes</a></td>
+	</tr>
+	<!--
+	<tr>
+		<td>platform</td>
+		<td>arm-mingw32ce</td>
+		<td>arm-cegcc</td>
+		<td>gdb</td>
+	</tr>
+	-->
 </table>
 <p>
 Our project is based on a collection of (mostly GNU) software :
