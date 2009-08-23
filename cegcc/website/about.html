@@ -1,0 +1,74 @@
+<head>
+<link href="cegcc.css" rel="stylesheet" type="text/css" />
+<title>CeGCC's web page</title>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+</head>
+<body>
+<p>
+<table border="3">
+<tr><td width="66%">
+<p>
+<font size="+1">
+The CeGCC project implements a cross compiler for Windows CE.
+You can develop on a PC, and create apps that run on a PDA or a WinCE cell phone.
+</font>
+</td>
+</tr>
+</table>
+<p>
+We're aiming at providing a consistent and working set of development tools that
+generate code for Windows CE devices such as PDA's and smart phones.
+Our intended development platforms are the usual development workstations,
+e.g. <a href="http://www.linux.org">GNU/Linux</a>,
+<a href="http://www.freebsd.org">FreeBSD</a>,
+<a href="http://www.apple.com/macosx/">MacOS X</a>, or 
+<a href="http://www.cygwin.com">cygwin</a>.
+<p>
+Windows CE, Windows Mobile, Windows Embedded, PocketPC, SmartPhone, ..
+many of these names refer to variations on the same target platform.
+We currently see evolution to support not only the
+<A HREF="www.arm.com">ARM</A>
+<A HREF="http://en.wikipedia.org/wiki/ARM_architecture">processor family</A>
+but also Windows CE on
+<A HREF="http://en.wikipedia.org/wiki/X86">x86 processors</A>
+(e.g. <A HREF="http://www.compactpc.com.tw">eBox</A>)
+which includes the
+<A HREF="http://www.intel.com/technology/atom/index.htm">Intel Atom</A> processor
+(<A HREF="http://www.windowsfordevices.com/news/NS5466627119.html">CE on Atom</A>)
+<p>
+These are our current <i>products</i> :
+<ul>
+	<li>arm-mingw32ce : toolset to build native Windows CE applications
+	<li>arm-cegcc : toolset to port unix source to Windows CE
+	<li>i386-mingw32ce : toolset to build native Windows CE applications for x86 powered devices
+</ul>
+<P>
+<font size="+4" color="red"><b>CeGCC 0.59.1 uses gcc 4.4.0</b></font>
+<br>
+The latest official release (0.55) is based on gcc 4.1.0.
+<P>
+What's the meaning of <b>arm-cegcc</b> and <b>arm-mingw32ce</b> ?
+They both describe the target platform :
+we're building for an <b>ARM</b> processor,
+running the Windows CE operating system,
+on unknown hardware (could be any brand of PDA or smart phone).
+In the <b>cegcc</b> case, there's a portability layer;
+in the <b>mingw32ce</b> case there isn't.
+Similarly, <b>i386-mingw32ce</b> means we're targetting
+<A HREF="http://en.wikipedia.org/wiki/X86">x86 processors</A>
+or clones, running Windows CE, Windows CE Embedded, etc. .
+<p>
+This project delivers source code (best taken from SVN),
+and also binary versions of the development tools.
+The availability of binary versions depends somewhat on volunteers
+creating the packages.
+<P>
+You can contact us via the
+<a href="mailto:cegcc-devel@lists.sourceforge.net">mailing list</a>.
+<p>
+<a href="http://sourceforge.net"><img src="http://images.sourceforge.net/sfx/logo.gif" alt="Powered by Sourceforge.net"></a>
+<a href="http://validator.w3.org/check?uri=referer">
+	<img src="http://www.w3.org/Icons/valid-html401"
+	    alt="Valid HTML 4.01 Transitional" height="31" width="88"></a>
+</p>
+</body>

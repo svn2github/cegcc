@@ -1,0 +1,36 @@
+<head>
+<link href="cegcc.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<p>
+<font size="+4" color="red"><b> CeGCC 0.59.1 uses gcc 4.4.0</b></font>
+<br>
+The latest official release (0.55) is based on gcc 4.1.0.
+<p>
+The list of software contained in cegcc :
+<ul>
+	<li><a href="http://gcc.gnu.org">gcc</a>
+	<ul>
+		<li> CeGCC &gt; 0.59 : use gcc 4.4.0
+		<li> previous versions : gcc 4.1.0
+	</ul>
+	<li><a href="http://sourceware.org/binutils">binutils</a> :
+	CVS snapshot taken on 4 February 2009, this is around the binutils 2.19.1 timeframe
+	<li><a href="http://sources.redhat.com/newlib">newlib</a> : 1.14.0 (released December 2005)
+	<li><a href="http://www.mingw.org">mingw</a> :
+	CVS snapshot taken on 6 February 2009
+	<li><a href="http://www.cygwin.com">w32api</a> :
+	CVS snapshot taken on 6 February 2009
+	<li><a href="http://www.sourceware.org/gdb">gdb</a></li>
+	<ul>
+		<li> gdb-6.8 works well for ARM.
+		<li> For Windows CE Embedded on x86, a number of issues need to be resolved.
+	       	Work is progressing on this, but this is not in a released version of gdb yet.
+	</ul>
+</ul>
+<p>
+Note that <b>arm-cegcc</b> contains newlib,
+the <b>arm-mingw32ce</b> and <b>i386-mingw32ce</b> packages do not,
+they contain a <a href="http://mingw.org">mingw</a>-based library instead.
+</body>
+</html>

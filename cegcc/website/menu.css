@@ -1,0 +1,24 @@
+#menu {
+	background : #080;
+	color : #fff;
+	text-align : center;
+}
+
+#menu table {
+	margin-left : auto;
+	margin-right : auto;
+}
+
+#menu td {
+	padding-left : 0.5em;
+	padding-right : 0.5em;
+}
+
+a {
+	color : yellow;
+}
+
+a:hover {
+	color : red;
+	background : yellow;
+}

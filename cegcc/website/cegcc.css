@@ -1,0 +1,33 @@
+body {
+    color : black;
+    background : #d0d0cb;
+    width : 60em;
+    margin : 0 auto;
+    font-family : sans-serif;
+    color: black;
+}
+
+#menu {
+	background : #080;
+	color : #fff;
+	text-align : center;
+}
+
+#menu table {
+	margin-left : auto;
+	margin-right : auto;
+}
+
+#menu td {
+	padding-left : 0.5em;
+	padding-right : 0.5em;
+}
+
+a {
+	color : blue;
+}
+
+a:hover {
+	color : red;
+	background : yellow;
+}
