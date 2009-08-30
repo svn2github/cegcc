@@ -1,3 +1,7 @@
+2009-08-30  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/shlobj.h (IShellExecuteHookA) : Guard with UNDER_CE.
+
 2009-06-11  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/shellapi.h (struct _SHELLEXECUTEINFO) : Define instead of

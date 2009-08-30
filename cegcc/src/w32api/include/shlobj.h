@@ -1262,6 +1262,7 @@ DECLARE_INTERFACE_(IShellView2,IShellView)
 };
 #undef INTERFACE
 
+#ifndef UNDER_CE
 #define INTERFACE IShellExecuteHookA
 DECLARE_INTERFACE_(IShellExecuteHookA,IUnknown)
 {
@@ -1271,6 +1272,7 @@ DECLARE_INTERFACE_(IShellExecuteHookA,IUnknown)
 	STDMETHOD(Execute)(THIS_ LPSHELLEXECUTEINFOA) PURE;
 };
 #undef INTERFACE
+#endif
 
 #define INTERFACE IShellExecuteHookW
 DECLARE_INTERFACE_(IShellExecuteHookW,IUnknown)
