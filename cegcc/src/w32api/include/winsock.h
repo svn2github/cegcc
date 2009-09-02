@@ -327,6 +327,7 @@ struct ip_mreq {
 #define AF_IRDA     26
 #endif
 #define	AF_BTH	32
+#define	AF_BT	32
 #if !(defined (__INSIDE_CYGWIN__) || defined (__INSIDE_MSYS__))
 #define AF_MAX	33
 struct sockaddr {

@@ -1,5 +1,10 @@
 2009-08-30  Danny Backx  <dannybackx@users.sourceforge.net>
 
+	* include/errorrep.h : Provide with WinCE > 5 too.
+	* include/winsock.h (AF_BT) : Copy from AF_BTH.
+
+2009-08-30  Danny Backx  <dannybackx@users.sourceforge.net>
+
 	* include/shlobj.h (IShellExecuteHookA) : Guard with UNDER_CE.
 
 2009-06-11  Danny Backx  <dannybackx@users.sourceforge.net>
