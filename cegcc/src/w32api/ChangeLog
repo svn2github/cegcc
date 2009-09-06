@@ -1,3 +1,84 @@
+2009-08-30  Chris Sutcliffe  <ir0nh34d@users.sourceforge.net>
+
+	* include/wtsapi32.h (WTSQuerySessionInformationA,
+	WTSQuerySessionInformationW, WTSQuerySessionInformation, WTSFreeMemory):
+	Moved to (_WIN32_WINNT >= 0x0500) guard.
+	(thanks to Pierre Ossman)
+
+2009-08-09  Andy Koppe  <andy.koppe@gmail.com>
+
+	* include/winnls.h (IS_HIGH_SURROGATE, IS_LOW_SURROGATE,
+	IS_SURROGATE_PAIR): Define.
+
+2009-07-27  Corinna Vinschen  <corinna@vinschen.de>
+
+	* include/winnt.h (FILE_SUPPORTS_HARD_LINKS,
+	FILE_SUPPORTS_EXTENDED_ATTRIBUTES, FILE_SUPPORTS_OPEN_BY_FILE_ID,
+	FILE_SUPPORTS_USN_JOURNALS): Define.  Add comment.
+	* include/ddk/ntifs.h: Ditto.
+	(FILE_SEQUENTIAL_WRITE_ONCE, FILE_SUPPORTS_TRANSACTIONS): Define.
+
+2009-07-21  Corinna Vinschen  <corinna@vinschen.de>
+
+	* lib/msimg32.def (GetDCBrushColor, GetDCPenColor): Move entry points
+	from here...
+	* lib/gdo32.dll: ...to here.
+
+2009-07-01  Corinna Vinschen  <corinna@vinschen.de>
+
+	* lib/comctl32.def (StrCSpnA@8, StrCSpnIA@8, StrCSpnW@8, StrChrA@8,
+	StrChrIA@8, StrChrIW@8, StrChrW@8, StrCmpNA@12, StrCmpNIA@12,
+	StrCmpNIW@12, StrCmpNW@12, StrRChrA@12, StrRChrIA@12, StrRChrW@12,
+	StrRStrIA@12, StrRStrIW@12, StrStrA@8, StrStrIA@8, StrStrIW@8,
+	StrStrW@8, StrToIntA@4, StrToIntW@4): Remove erroneously defined
+	entry points.
+
+2009-06-24  Corinna Vinschen  <corinna@vinschen.de>
+
+	* include/wtsapi32.h (WTSQueryUserToken, WTSEnumerateSessionsW,
+	WTSEnumerateSessionsA): Add function prototypes.
+	(struct _WTS_SESSION_INFOW, struct _WTS_SESSION_INFOA): Add typedefs.
+	(WTS_SESSION_INFO, PWTS_SESSION_INFO, WTSEnumerateSessions): Add
+	defines dependent on UNICODE setting.
+
+2009-06-07  Corinna Vinschen  <corinna@vinschen.de>
+
+	* include/ddk/ntapi.h: Add NtXxx equivalent to ZwXxx where missing
+	and vice versa.
+	* include/ddk/ntifs.h: Ditto.
+	* include/ddk/winddk.h: Ditto.
+	* lib/ntdll.def (NtPlugPlayControl, NtQueryInstallUILanguage,
+	ZwPlugPlayControl, ZwQueryInstallUILanguage): Add entry points defined
+	in header, but missing in lib.  Omit NT4-only entry points.
+
+2009-05-01  Chris Sutcliffe  <ir0nh34d@users.sourceforge.net>
+
+	* include/shellapi.h (SHIL_LARGE, SHIL_SMALL, SHIL_EXTRALARGE,
+	SHIL_SYSSMALL, SHIL_JUMBO, SHIL_LAST SHIL_JUMBO, SHGetImageList): Define.
+	* lib/shell32.def (SHGetImageList): Define.
+
+2009-02-18  Corinna Vinschen  <corinna@vinschen.de>
+
+	* winnt.h: Add Vista token security extensions.
+	(SID_HASH_SIZE): Define.
+	(TOKEN_MANDATORY_POLICY_OFF, TOKEN_MANDATORY_POLICY_NO_WRITE_UP,
+	TOKEN_MANDATORY_POLICY_NEW_PROCESS_MIN,
+	TOKEN_MANDATORY_POLICY_VALID_MASK): Define.
+	(SID_HASH_ENTRY): Define.
+	(struct _SID_AND_ATTRIBUTES_HASH): Define.
+	(struct _TOKEN_LINKED_TOKEN): Define.
+	(struct _TOKEN_MANDATORY_LABEL): Define.
+	(struct _TOKEN_MANDATORY_POLICY): Define.
+	(struct _TOKEN_ELEVATION): Define.
+	(struct _TOKEN_ACCESS_INFORMATION): Define.
+	(enum _TOKEN_INFORMATION_CLASS): Conditionally define new Vista token
+	information enumeration values.
+
+2009-02-09  Corinna Vinschen  <corinna@vinschen.de>
+
+	* include/winioctl.h (FSCTL_ALLOW_EXTENDED_DASD_IO): Copy definition
+	from ddk/ntifs.h.
+
 2009-02-06  Linton Miller  <Linton.Miller@trivininc.com>
 
 	* include/wtsapi32.h (WTS_CURRENT_SESSION): Fix definition.

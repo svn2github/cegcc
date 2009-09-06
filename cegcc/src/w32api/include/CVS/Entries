@@ -4,7 +4,6 @@
 /secext.h/1.3/Wed Apr 12 08:04:42 2006//
 /tlhelp32.h/1.2/Sat Mar  9 09:04:10 2002//
 /windows.h/1.17/Tue Jul 25 00:22:20 2006/-ko/
-/winioctl.h/1.15/Mon Feb  7 20:40:32 2005/-ko/
 /winsock.h/1.16/Thu Apr  6 12:16:50 2006/-ko/
 /winsock2.h/1.29/Sun Jan 29 00:52:36 2006/-ko/
 D/GL////
@@ -175,7 +174,6 @@ D/directx////
 /security.h/1.3/Fri Feb  8 14:20:11 2008//
 /servprov.h/1.3/Fri Feb  8 14:20:11 2008//
 /setupapi.h/1.8/Sat Feb  7 18:25:32 2009//
-/shellapi.h/1.20/Result of merge/-ko/
 /shldisp.h/1.3/Fri Feb  8 14:20:11 2008//
 /shlguid.h/1.8/Fri Feb  8 14:20:11 2008/-ko/
 /shlobj.h/1.47/Result of merge/-ko/
@@ -214,8 +212,6 @@ D/directx////
 /wininet.h/1.15/Fri Feb  8 14:20:11 2008/-ko/
 /winldap.h/1.3/Fri Feb  8 14:20:11 2008//
 /winnetwk.h/1.7/Fri Feb  8 14:20:11 2008/-ko/
-/winnls.h/1.9/Fri Feb  8 14:20:11 2008/-ko/
-/winnt.h/1.126/Result of merge/-ko/
 /winperf.h/1.2/Fri Feb  8 14:20:11 2008/-ko/
 /winreg.h/1.7/Sat Feb  7 18:25:33 2009/-ko/
 /winresrc.h/1.2/Fri Feb  8 14:20:11 2008/-ko/
@@ -229,7 +225,11 @@ D/directx////
 /wsahelp.h/1.4/Fri Feb  8 14:20:11 2008//
 /wsipx.h/1.2/Fri Feb  8 14:20:11 2008//
 /wsnetbs.h/1.2/Fri Feb  8 14:20:11 2008//
-/wtsapi32.h/1.4/Sat Feb  7 04:34:27 2009//
 /wtypes.h/1.15/Sat Feb  7 18:25:33 2009/-ko/
 /xprtdefs.h/1.1/Fri Feb  8 14:20:11 2008//
 /zmouse.h/1.3/Fri Feb  8 14:20:11 2008/-ko/
+/shellapi.h/1.21/Result of merge+Sun Sep  6 23:36:02 2009/-ko/
+/winioctl.h/1.16/Result of merge/-ko/
+/winnls.h/1.10/Sun Sep  6 23:36:02 2009/-ko/
+/winnt.h/1.128/Result of merge/-ko/
+/wtsapi32.h/1.6/Sun Sep  6 23:36:03 2009//

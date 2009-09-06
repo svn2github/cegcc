@@ -384,6 +384,13 @@ typedef DWORD FLONG;
 #define FILE_READ_ONLY_VOLUME           0x00080000
 #define FILE_SEQUENTIAL_WRITE_ONCE      0x00100000
 #define FILE_SUPPORTS_TRANSACTIONS      0x00200000
+/* Note: These flags only have a meaning starting with Windows 7/2008 R2.
+   Their absence on older OSes does NOT mean that a filesystem is missing
+   that property. */
+#define FILE_SUPPORTS_HARD_LINKS        0x00400000
+#define FILE_SUPPORTS_EXTENDED_ATTRIBUTES 0x00800000
+#define FILE_SUPPORTS_OPEN_BY_FILE_ID   0x01000000
+#define FILE_SUPPORTS_USN_JOURNAL       0x02000000
 
 
 #define IO_COMPLETION_QUERY_STATE       0x0001
@@ -469,6 +476,9 @@ typedef DWORD FLONG;
 #define SECURITY_RESTRICTED_CODE_RID 0xC
 #define SECURITY_NT_NON_UNIQUE_RID 0x15
 #define SID_REVISION 1
+#if (_WIN32_WINNT >= 0x0600)
+#define SID_HASH_SIZE 32
+#endif
 #define DOMAIN_USER_RID_ADMIN 0x1F4L
 #define DOMAIN_USER_RID_GUEST 0x1F5L
 #define DOMAIN_GROUP_RID_ADMINS	0x200L
@@ -1581,6 +1591,12 @@ typedef DWORD FLONG;
 
 #define TOKEN_EXECUTE    (STANDARD_RIGHTS_EXECUTE)
 #define TOKEN_SOURCE_LENGTH 8
+#if (_WIN32_WINNT >= 0x0600)
+#define TOKEN_MANDATORY_POLICY_OFF 0
+#define TOKEN_MANDATORY_POLICY_NO_WRITE_UP 1
+#define TOKEN_MANDATORY_POLICY_NEW_PROCESS_MIN 2
+#define TOKEN_MANDATORY_POLICY_VALID_MASK 3
+#endif
 /* end ddk/ntifs.h */
 #define DLL_PROCESS_DETACH	0
 #define DLL_PROCESS_ATTACH	1
@@ -2483,6 +2499,14 @@ typedef struct _SID_AND_ATTRIBUTES {
 } SID_AND_ATTRIBUTES, *PSID_AND_ATTRIBUTES;
 typedef SID_AND_ATTRIBUTES SID_AND_ATTRIBUTES_ARRAY[ANYSIZE_ARRAY];
 typedef SID_AND_ATTRIBUTES_ARRAY *PSID_AND_ATTRIBUTES_ARRAY;
+#if (_WIN32_WINNT >= 0x0600)
+typedef ULONG_PTR SID_HASH_ENTRY, *PSID_HASH_ENTRY;
+typedef struct _SID_AND_ATTRIBUTES_HASH {
+	DWORD SidCount;
+	PSID_AND_ATTRIBUTES SidAttr;
+	SID_HASH_ENTRY Hash[SID_HASH_SIZE];
+} SID_AND_ATTRIBUTES_HASH, *PSID_AND_ATTRIBUTES_HASH;
+#endif
 typedef struct _TOKEN_SOURCE {
 	CHAR SourceName[TOKEN_SOURCE_LENGTH];
 	LUID SourceIdentifier;
@@ -2529,6 +2553,30 @@ typedef struct _TOKEN_STATISTICS {
 typedef struct _TOKEN_USER {
 	SID_AND_ATTRIBUTES User;
 } TOKEN_USER, *PTOKEN_USER;
+#if (_WIN32_WINNT >= 0x0600)
+typedef struct _TOKEN_LINKED_TOKEN {
+	HANDLE LinkedToken;
+} TOKEN_LINKED_TOKEN, *PTOKEN_LINKED_TOKEN;
+typedef struct _TOKEN_MANDATORY_LABEL {
+	SID_AND_ATTRIBUTES Label;
+} TOKEN_MANDATORY_LABEL, *PTOKEN_MANDATORY_LABEL;
+typedef struct _TOKEN_MANDATORY_POLICY {
+	DWORD Policy;
+} TOKEN_MANDATORY_POLICY, *PTOKEN_MANDATORY_POLICY;
+typedef struct _TOKEN_ELEVATION {
+	DWORD TokenIsElevated;
+} TOKEN_ELEVATION, *PTOKEN_ELEVATION;
+typedef struct _TOKEN_ACCESS_INFORMATION {
+	PSID_AND_ATTRIBUTES_HASH SidHash;
+	PSID_AND_ATTRIBUTES_HASH RestrictedSidHash;
+	PTOKEN_PRIVILEGES Privileges;
+	LUID AuthenticationId;
+	TOKEN_TYPE TokenType;
+	SECURITY_IMPERSONATION_LEVEL ImpersonationLevel;
+	TOKEN_MANDATORY_POLICY MandatoryPolicy;
+	DWORD Flags;
+} TOKEN_ACCESS_INFORMATION, *PTOKEN_ACCESS_INFORMATION;
+#endif
 typedef DWORD SECURITY_INFORMATION,*PSECURITY_INFORMATION;
 typedef WORD SECURITY_DESCRIPTOR_CONTROL,*PSECURITY_DESCRIPTOR_CONTROL;
 typedef struct _SECURITY_DESCRIPTOR {
@@ -2557,7 +2605,21 @@ typedef enum _TOKEN_INFORMATION_CLASS {
 	TokenSessionReference,
 	TokenSandBoxInert,
 	TokenAuditPolicy,
-	TokenOrigin  
+	TokenOrigin,
+#if (_WIN32_WINNT >= 0x0600)
+	TokenElevationType,
+	TokenLinkedToken,
+	TokenElevation,
+	TokenHasRestrictions,
+	TokenAccessInformation,
+	TokenVirtualizationAllowed,
+	TokenVirtualizationEnabled,
+	TokenIntegrityLevel,
+	TokenUIAccess,
+	TokenMandatoryPolicy,
+	TokenLogonSid,
+#endif
+	MaxTokenInfoClass
 } TOKEN_INFORMATION_CLASS;
 typedef enum _SID_NAME_USE {
 	SidTypeUser=1,

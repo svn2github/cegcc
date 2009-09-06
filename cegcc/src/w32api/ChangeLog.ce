@@ -1,5 +1,9 @@
 2009-09-07  Pedro Alves  <pedroalves@users.sourceforge.net>
 
+	Merge from upstream.  Now at 3.13 + patches.
+
+2009-09-07  Pedro Alves  <pedroalves@users.sourceforge.net>
+
 	* Makefile.in (install-headers): New rule.
 
 2009-08-30  Danny Backx  <dannybackx@users.sourceforge.net>

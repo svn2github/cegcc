@@ -22,7 +22,6 @@
 /netevent.h/1.3/Fri Feb  8 14:20:09 2008//
 /netpnp.h/1.4/Fri Feb  8 14:20:09 2008//
 /newdev.h/1.5/Fri Feb  8 14:20:08 2008//
-/ntapi.h/1.11/Fri Feb  8 14:20:09 2008//
 /ntdd8042.h/1.5/Fri Feb  8 14:20:08 2008//
 /ntddbeep.h/1.4/Fri Feb  8 14:20:09 2008//
 /ntddcdrm.h/1.5/Fri Feb  8 14:20:09 2008//
@@ -42,7 +41,6 @@
 /ntddtdi.h/1.4/Fri Feb  8 14:20:08 2008//
 /ntddvdeo.h/1.4/Fri Feb  8 14:20:09 2008//
 /ntddvol.h/1.4/Fri Feb  8 14:20:09 2008//
-/ntifs.h/1.14/Sat Feb  7 18:25:34 2009//
 /ntpoapi.h/1.7/Fri Feb  8 14:20:09 2008//
 /ntstatus.h/1.3/Fri Feb  8 14:20:09 2008//
 /parallel.h/1.5/Fri Feb  8 14:20:08 2008//
@@ -72,9 +70,11 @@
 /videoagp.h/1.6/Fri Feb  8 14:20:08 2008//
 /win2k.h/1.5/Fri Feb  8 14:20:08 2008//
 /winddi.h/1.7/Fri Feb  8 14:20:09 2008//
-/winddk.h/1.32/Sat Feb  7 18:25:34 2009//
 /winnt4.h/1.8/Fri Feb  8 14:20:09 2008//
 /winxp.h/1.3/Fri Feb  8 14:20:09 2008//
 /ws2san.h/1.6/Fri Feb  8 14:20:09 2008//
 /xfilter.h/1.4/Fri Feb  8 14:20:09 2008//
+/ntapi.h/1.12/Sun Sep  6 23:36:03 2009//
+/ntifs.h/1.16/Sun Sep  6 23:36:03 2009//
+/winddk.h/1.33/Result of merge//
 D
