@@ -1,35 +1,35 @@
 2009-08-30  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* include/errorrep.h : Provide with WinCE > 5 too.
-	* include/winsock.h (AF_BT) : Copy from AF_BTH.
+	* include/errorrep.h: Provide with WinCE > 5 too.
+	* include/winsock.h (AF_BT): Copy from AF_BTH.
 
 2009-08-30  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* include/shlobj.h (IShellExecuteHookA) : Guard with UNDER_CE.
+	* include/shlobj.h (IShellExecuteHookA): Guard with UNDER_CE.
 
 2009-06-11  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* include/shellapi.h (struct _SHELLEXECUTEINFO) : Define instead of
+	* include/shellapi.h (struct _SHELLEXECUTEINFO): Define instead of
 	its struct _SHELLEXECUTEINFO(A|W) brothers.
 
 2009-06-11  Vincent Richomme  <forumer@smartmobili.com>
 
-	* include/mapidefs.h, include/pimstore.h : New files.
+	* include/mapidefs.h, include/pimstore.h: New files.
 
 2009-06-06  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* include/winbase.h (ExitProcess) : Change type of parameter to UINT.
-	* include/winbase.h (STACK_SIZE_PARAM_IS_A_RESERVATION) : Define with
+	* include/winbase.h (ExitProcess): Change type of parameter to UINT.
+	* include/winbase.h (STACK_SIZE_PARAM_IS_A_RESERVATION): Define with
 	the value found on MSDN.
 
 2009-05-29  Danny Backx  <dannybackx@users.sourceforge.net>
 	
-	* include/winnt.h (DLL_PROCESS_EXITING, DLL_SYSTEM_STARTED,
-	FILE_ATTRIBUTE_ROMMODULE, FILE_ATTRIBUTE_INROM) : Define.
-	* include/dbgapi.h : New file.
-	* include/dbgapi (DEBUGREGISTER, RETAILREGISTERZONES, DEBUGCHK,
-	RETAILMSG, ASSERT) : Define.
-	* include/windows.h (dbgapi.h) : Include.
+	* include/winnt.h (DLL_PROCESS_EXITING, DLL_SYSTEM_STARTED)
+	(FILE_ATTRIBUTE_ROMMODULE, FILE_ATTRIBUTE_INROM): Define.
+	* include/dbgapi.h: New file.
+	* include/dbgapi (DEBUGREGISTER, RETAILREGISTERZONES, DEBUGCHK)
+	(RETAILMSG, ASSERT): Define.
+	* include/windows.h (dbgapi.h): Include.
 
 2009-05-27  Stefan Klug  <Klug.Stefan@gmx.de>
 
@@ -38,59 +38,61 @@
 
 2009-05-22  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* include/winsock2.h (DSCP_TRAFFIC_TYPE) : Add typedef for enum.
-	* include/winsock2.h (AF_BT) : Add, copy of AF_BTH.
-	* include/ws2tcpip.h : Define some macros using "old" winsock 1.1
+	* include/winsock2.h (DSCP_TRAFFIC_TYPE): Add typedef for enum.
+	* include/winsock2.h (AF_BT): Add, copy of AF_BTH.
+	* include/ws2tcpip.h: Define some macros using "old" winsock 1.1
 	values for CE.
 
 2009-05-18  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* include/winbase.h (CRITICAL_SECTION) : Define differently for CE.
-	* include/winbase.h (ExitProcess) : Define as an inline function, not
+	* include/winbase.h (CRITICAL_SECTION): Define differently for CE.
+	* include/winbase.h (ExitProcess): Define as an inline function, not
 	a macro.
 
 2009-05-15  Pierre Ynard  <linkfanel@yahoo.fr>
 
-	* include/kfuncs.h (ResetEvent, SetEvent) : Fix definitions that got
+	* include/kfuncs.h (ResetEvent, SetEvent): Fix definitions that got
 	mixed up in recent commit.
 
 2009-05-13  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* include/kfuncs.h (PUserKData) : Define as different values for
-	ARM and other processors. Add references to websites that have this
-	information.
+	* include/kfuncs.h (PUserKData): Define as different values for
+	ARM and other processors.  Add references to websites that have
+	this information.
 
 2009-04-28  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* include/winuser.h(GetMenu) : Remove for CE.
-	* include/winuser.h(SetProp*,GetProp*,RemoveProp*) : Define only the
-	right ones for CE, see bug #2328033.
+	* include/winuser.h (GetMenu): Remove for CE.
+	* include/winuser.h (SetProp*, GetProp*, RemoveProp*): Define only
+	the right ones for CE, see bug #2328033.
 
 2009-04-28  Ryan Raasch  <ryan.raasch@gmail.com>
 
-	* include/strmif.h (IEnumPins, IEnumMediaTypes) : Define.
+	* include/strmif.h (IEnumPins, IEnumMediaTypes): Define.
 
-2009-04-20  Johnny Willemsen <jwillemsen@remedy.nl>
+2009-04-20  Johnny Willemsen  <jwillemsen@remedy.nl>
 
-	* include/winbase.h (CeSetThreadPriority, CeGetThreadPriority) :
+	* include/winbase.h (CeSetThreadPriority, CeGetThreadPriority):
 	Declare.
 
 2009-04-15  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* include/winbase.h : Include inlined functions only from one file.
+	* include/winbase.h: Include inlined functions only from one file.
 
 2009-04-11  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* include/windefs.h, include/kfuncs.h : change inlined functions to
+	* include/windefs.h, include/kfuncs.h: change inlined functions to
 	static, include them only from one file.
 
 2009-04-10  Marcel Smit  <msmit@remedy.nl>
 
-	* include/cegcc.h.in (__CEGCC_VERSION__) : Add backslashes at the end
-	of lines to allow line continuation.
-	* include/kfuncs.h (TlsAlloc, TlsFree, PulseEvent, ResetEvent,
-	SetEvent, GetCurrentThread, GetCurrentProcess, GetCurrentThreadId,
-	GetCurrentProcessId) : Change them from macros to inline functions.
+	* include/cegcc.h.in (__CEGCC_VERSION__): Add backslashes at the
+	end of lines to allow line continuation.
+	
+	* include/kfuncs.h (TlsAlloc, TlsFree, PulseEvent, ResetEvent)
+	(SetEvent, GetCurrentThread, GetCurrentProcess)
+	(GetCurrentThreadId, GetCurrentProcessId): Change them from macros
+	to inline functions.
 
 2009-02-07  Pedro Alves  <pedroalves@users.sourceforge.net>
 
@@ -98,21 +100,21 @@
 
 2009-02-01  Ryan Raasch  <ryan.raasch@gmail.com>
 
-	* libce/directx/strmiids.c : New file, copy from src/lib/directx.
-	* include/bdatypes.h, include/dshow.h, include/strmif.h : Make the
+	* libce/directx/strmiids.c: New file, copy from src/lib/directx.
+	* include/bdatypes.h, include/dshow.h, include/strmif.h: Make the
 	UUIDs extern so executables can link.
 
 2009-01-28  Ryan Raasch  <ryan.raasch@gmail.com>
 
-	* libce/coredll.def, include/winbase.h : Add various definitions to
+	* libce/coredll.def, include/winbase.h: Add various definitions to
 	support EnumDeviceInterfaces, EnumDevices, FindFirstDevice,
 	FindNextDevice, GetDeviceInformationByDeviceHandle,
 	GetDeviceInformationByFileHandle.
 
 2009-01-27  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* include/winsock.h, include/winsock2.h: Add various macros to define
-	constants used for Bluetooth.
+	* include/winsock.h, include/winsock2.h: Add various macros to
+	define constants used for Bluetooth.
 
 2009-01-25  Danny Backx  <dannybackx@users.sourceforge.net>
 
