@@ -123,7 +123,7 @@ libce:
 test:
 	$(MAKE) -C lib test $(FLAGS_TO_PASS)
 
-install uninstall:
+install install-headers uninstall:
 	for i in $(SUBDIRS); do \
 		(cd $$i; $(MAKE) $@); \
 	done

@@ -1,3 +1,7 @@
+2009-09-07  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	* Makefile.in (install-headers): New rule.
+
 2009-08-30  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/errorrep.h: Provide with WinCE > 5 too.
