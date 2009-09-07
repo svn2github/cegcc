@@ -1262,7 +1262,7 @@ DECLARE_INTERFACE_(IShellView2,IShellView)
 };
 #undef INTERFACE
 
-#ifndef UNDER_CE
+#ifndef _WIN32_WCE
 #define INTERFACE IShellExecuteHookA
 DECLARE_INTERFACE_(IShellExecuteHookA,IUnknown)
 {
