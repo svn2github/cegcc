@@ -328,8 +328,8 @@ FindFirstChangeNotificationW
 FindFirstFileExW
 FindFirstFileW
 FindFirstDevice
-FindNextDevice
 FindNextChangeNotification
+FindNextDevice
 FindNextFileW
 FindResource
 FindResourceW
