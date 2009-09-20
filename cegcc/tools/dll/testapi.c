@@ -1,3 +1,12 @@
+/*
+ * Test whether a DLL offers one or more APIs mentioned on the command line.
+ * This version of the program is meant to be used from the command line,
+ * e.g. via a remote shell connection.
+ *
+ * Success or failure are reported via the standard output.
+ *
+ * Copyright (c) 2009 by Danny Backx.
+ */
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
