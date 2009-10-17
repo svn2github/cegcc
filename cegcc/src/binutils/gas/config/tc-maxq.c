@@ -1,6 +1,6 @@
 /* tc-maxq.c -- assembler code for a MAXQ chip.
 
-   Copyright 2004, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
+   Copyright 2004, 2005, 2006, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    Contributed by HCL Technologies Pvt. Ltd.
 
@@ -276,7 +276,7 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS *fixp)
 
       /* Set howto to a garbage value so that we can keep going.  */
       rel->howto = bfd_reloc_type_lookup (stdoutput, BFD_RELOC_32);
-      assert (rel->howto != NULL);
+      gas_assert (rel->howto != NULL);
     }
 
   return rel;

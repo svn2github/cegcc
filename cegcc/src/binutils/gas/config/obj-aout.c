@@ -1,6 +1,6 @@
 /* a.out object file format
    Copyright 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005, 2007 Free Software Foundation, Inc.
+   2001, 2002, 2003, 2004, 2005, 2007, 2009 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -132,7 +132,7 @@ obj_aout_frob_file_before_fix (void)
     x = bfd_set_section_contents (stdoutput, data_section, &b, (file_ptr) 0,
 				  (bfd_size_type) 1);
 
-  assert (x);
+  gas_assert (x);
 }
 
 static void

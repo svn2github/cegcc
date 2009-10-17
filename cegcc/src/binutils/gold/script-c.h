@@ -211,6 +211,12 @@ yylex(YYSTYPE*, void* closure);
 extern void
 yyerror(void* closure, const char*);
 
+/* Called by the bison parser to add an external symbol (a symbol in
+   an EXTERN declaration) to the link.  */
+
+extern void
+script_add_extern(void* closure, const char*, size_t);
+
 /* Called by the bison parser to add a file to the link.  */
 
 extern void
@@ -244,6 +250,17 @@ script_set_common_allocation(void* closure, int);
 
 extern void
 script_parse_option(void* closure, const char*, size_t);
+
+/* Called by the bison parser to handle OUTPUT_FORMAT.  This return 0
+   if the parse should be aborted.  */
+
+extern int
+script_check_output_format(void* closure, const char*, size_t,
+			   const char*, size_t, const char*, size_t);
+
+/* Called by the bison parser to handle TARGET.  */
+extern void
+script_set_target(void* closure, const char*, size_t);
 
 /* Called by the bison parser to handle SEARCH_DIR.  */
 
@@ -371,6 +388,11 @@ script_data_segment_align(void* closure);
 
 extern void
 script_data_segment_relro_end(void* closure);
+
+/* Record the fact that a SEGMENT_START expression is seen.  */
+
+extern void
+script_saw_segment_start_expression(void* closure);
 
 /* Called by the bison parser for expressions.  */
 

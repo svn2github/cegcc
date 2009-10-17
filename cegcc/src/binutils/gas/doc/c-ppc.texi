@@ -1,4 +1,4 @@
-@c Copyright 2001, 2002, 2003, 2005, 2006
+@c Copyright 2001, 2002, 2003, 2005, 2006, 2007, 2008
 @c Free Software Foundation, Inc.
 @c This is part of the GAS manual.
 @c For copying conditions, see the file as.texinfo.
@@ -52,6 +52,9 @@ Generate code for PowerPC 403/405.
 @item -m440
 Generate code for PowerPC 440.  BookE and some 405 instructions.
 
+@item -m476
+Generate code for PowerPC 476.
+
 @item -m7400, -m7410, -m7450, -m7455
 Generate code for PowerPC 7400/7410/7450/7455.
 
@@ -72,6 +75,9 @@ Generate code for PowerPC 64, including bridge insns.
 
 @item -mbooke
 Generate code for 32-bit BookE.
+
+@item -ma2
+Generate code for A2 architecture.
 
 @item -me300
 Generate code for PowerPC e300 family.

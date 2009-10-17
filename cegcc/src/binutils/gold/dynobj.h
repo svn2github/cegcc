@@ -161,9 +161,9 @@ class Sized_dynobj : public Dynobj
   Sized_dynobj(const std::string& name, Input_file* input_file, off_t offset,
 	       const typename elfcpp::Ehdr<size, big_endian>&);
 
-  // Set up the object file based on the ELF header.
+  // Set up the object file based on TARGET.
   void
-  setup(const typename elfcpp::Ehdr<size, big_endian>&);
+  setup();
 
   // Read the symbols.
   void
@@ -175,7 +175,7 @@ class Sized_dynobj : public Dynobj
 
   // Add the symbols to the symbol table.
   void
-  do_add_symbols(Symbol_table*, Read_symbols_data*);
+  do_add_symbols(Symbol_table*, Read_symbols_data*, Layout*);
 
   // Get the size of a section.
   uint64_t
@@ -197,6 +197,11 @@ class Sized_dynobj : public Dynobj
   uint64_t
   do_section_flags(unsigned int shndx)
   { return this->elf_file_.section_flags(shndx); }
+
+  // Not used for dynobj.
+  uint64_t
+  do_section_entsize(unsigned int )
+  { gold_unreachable(); }
 
   // Return section address.
   uint64_t
@@ -579,6 +584,10 @@ class Versions
   version_index(const Symbol_table*, const Stringpool*,
 		const Symbol* sym) const;
 
+  // Define the base version of a shared library.
+  void
+  define_base_version(Stringpool* dynpool);
+
   // We keep a hash table mapping canonicalized name/version pairs to
   // a version base.
   typedef std::pair<Stringpool::Key, Stringpool::Key> Key;
@@ -611,6 +620,9 @@ class Versions
   bool is_finalized_;
   // Contents of --version-script, if passed, or NULL.
   const Version_script_info& version_script_;
+  // Whether we need to insert a base version.  This is only used for
+  // shared libaries and is cleared when the base version is defined.
+  bool needs_base_version_;
 };
 
 } // End namespace gold.

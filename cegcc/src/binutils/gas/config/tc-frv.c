@@ -1,5 +1,5 @@
 /* tc-frv.c -- Assembler for the Fujitsu FRV.
-   Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008
+   Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation. Inc.
 
    This file is part of GAS, the GNU Assembler.
@@ -28,6 +28,7 @@
 #include "libbfd.h"
 #include "elf/common.h"
 #include "elf/frv.h"
+#include "dwarf2dbg.h"
 
 /* Structure to hold all of the different components describing
    an individual instruction.  */
@@ -1107,7 +1108,7 @@ md_assemble (char *str)
   
   if (!insn.insn)
     {
-      as_bad (errmsg);
+      as_bad ("%s", errmsg);
       return;
     }
   
@@ -1801,6 +1802,7 @@ frv_frob_label (symbolS *this_label)
 {
   struct vliw_insn_list *vliw_insn_list_entry;
 
+  dwarf2_emit_label (this_label);
   if (frv_mach != bfd_mach_frvtomcat)
     return;
 

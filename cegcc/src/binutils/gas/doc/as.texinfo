@@ -1,6 +1,6 @@
 \input texinfo @c                               -*-Texinfo-*-
 @c  Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-@c  2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
+@c  2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
 @c  Free Software Foundation, Inc.
 @c UPDATE!!  On future updates--
 @c   (1)   check for new machine-dep cmdline options in
@@ -101,7 +101,7 @@ This file documents the GNU Assembler "@value{AS}".
 
 @c man begin COPYRIGHT
 Copyright @copyright{} 1991, 92, 93, 94, 95, 96, 97, 98, 99, 2000, 2001, 2002,
-2006, 2007, 2008 Free Software Foundation, Inc.
+2006, 2007, 2008, 2009 Free Software Foundation, Inc.
 
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3
@@ -151,7 +151,7 @@ done.
 
 @vskip 0pt plus 1filll
 Copyright @copyright{} 1991, 92, 93, 94, 95, 96, 97, 98, 99, 2000, 2001, 2002,
-2006, 2007, 2008 Free Software Foundation, Inc.
+2006, 2007, 2008, 2009 Free Software Foundation, Inc.
 
       Permission is granted to copy, distribute and/or modify this document
       under the terms of the GNU Free Documentation License, Version 1.3
@@ -248,6 +248,7 @@ gcc(1), ld(1), and the Info entries for @file{binutils} and @file{ld}.
 @emph{Target Alpha options:}
    [@b{-m@var{cpu}}]
    [@b{-mdebug} | @b{-no-mdebug}]
+   [@b{-replace} | @b{-noreplace}]
    [@b{-relax}] [@b{-g}] [@b{-G@var{size}}]
    [@b{-F}] [@b{-32addr}]
 @end ifset
@@ -304,7 +305,7 @@ gcc(1), ld(1), and the Info entries for @file{binutils} and @file{ld}.
 
 @emph{Target i386 options:}
    [@b{--32}|@b{--64}] [@b{-n}]
-   [@b{-march}=@var{CPU}[+@var{EXTENSION}@dots{}]] [@b{-mtune}=@var{CPU}] 
+   [@b{-march}=@var{CPU}[+@var{EXTENSION}@dots{}]] [@b{-mtune}=@var{CPU}]
 @end ifset
 @ifset I960
 
@@ -362,6 +363,10 @@ gcc(1), ld(1), and the Info entries for @file{binutils} and @file{ld}.
    [@b{-jsri2bsr}] [@b{-sifilter}] [@b{-relax}]
    [@b{-mcpu=[210|340]}]
 @end ifset
+@ifset MICROBLAZE
+@emph{Target MICROBLAZE options:}
+@c MicroBlaze has no machine-dependent assembler options.
+@end ifset
 @ifset MIPS
 
 @emph{Target MIPS options:}
@@ -415,6 +420,28 @@ gcc(1), ld(1), and the Info entries for @file{binutils} and @file{ld}.
    [@b{-mrelocatable}|@b{-mrelocatable-lib}]
    [@b{-mlittle}|@b{-mlittle-endian}|@b{-mbig}|@b{-mbig-endian}]
    [@b{-msolaris}|@b{-mno-solaris}]
+@end ifset
+@ifset RX
+
+@emph{Target RX options:}
+   [@b{-mlittle-endian}|@b{-mbig-endian}]
+   [@b{-m32bit-ints}|@b{-m16bit-ints}]
+   [@b{-m32bit-doubles}|@b{-m64bit-doubles}]
+@end ifset
+@ifset S390
+
+@emph{Target s390 options:}
+   [@b{-m31}|@b{-m64}] [@b{-mesa}|@b{-mzarch}] [@b{-march}=@var{CPU}]
+   [@b{-mregnames}|@b{-mno-regnames}]
+   [@b{-mwarn-areg-zero}]
+@end ifset
+@ifset SCORE
+
+@emph{Target SCORE options:}
+   [@b{-EB}][@b{-EL}][@b{-FIXDD}][@b{-NWARN}]
+   [@b{-SCORE5}][@b{-SCORE5U}][@b{-SCORE7}][@b{-SCORE3}]
+   [@b{-march=score7}][@b{-march=score3}]
+   [@b{-USE_R1}][@b{-KPIC}][@b{-O0}][@b{-G} @var{num}][@b{-V}]
 @end ifset
 @ifset SPARC
 
@@ -1160,6 +1187,30 @@ Assemble for a little endian target.
 
 @ifset MMIX
 See the info pages for documentation of the MMIX-specific options.
+@end ifset
+
+@ifset S390
+The following options are available when @value{AS} is configured for the s390
+processor family.
+
+@table @gcctabopt
+@item -m31
+@itemx -m64
+Select the word size, either 31/32 bits or 64 bits.
+@item -mesa
+@item -mzarch
+Select the architecture mode, either the Enterprise System
+Architecture (esa) or the z/Architecture mode (zarch).
+@item -march=@var{processor}
+Specify which s390 processor variant is the target, @samp{g6}, @samp{g6},
+@samp{z900}, @samp{z990}, @samp{z9-109}, @samp{z9-ec}, or @samp{z10}.
+@item -mregnames
+@itemx -mno-regnames
+Allow or disallow symbolic names for registers.
+@item -mwarn-areg-zero
+Warn whenever the operand for a base or index register has been specified
+but evaluates to zero.
+@end table
 @end ifset
 
 @ifset XTENSA
@@ -2202,6 +2253,12 @@ is considered a comment and is ignored.  The line comment character is
 @ifset PPC
 @samp{#} for Motorola PowerPC;
 @end ifset
+@ifset S390
+@samp{#} for IBM S/390;
+@end ifset
+@ifset SCORE
+@samp{#} for the Sunplus SCORE;
+@end ifset
 @ifset SH
 @samp{!} for the Renesas / SuperH SH;
 @end ifset
@@ -3222,6 +3279,10 @@ directive.  @xref{Set,,@code{.set}}.  In the same way, using a double
 equals sign @samp{=}@samp{=} here represents an equivalent of the
 @code{.eqv} directive.  @xref{Eqv,,@code{.eqv}}.
 
+@ifset Blackfin
+Blackfin does not support symbol assignment with @samp{=}.
+@end ifset
+
 @node Symbol Names
 @section Symbol Names
 
@@ -4136,6 +4197,15 @@ undefined.
 Each expression is assembled into the next byte.
 
 @node CFI directives
+@section @code{.cfi_sections @var{section_list}}
+@cindex @code{cfi_sections} directive
+@code{.cfi_sections} may be used to specify whether CFI directives
+should emit @code{.eh_frame} section and/or @code{.debug_frame} section.
+If @var{section_list} is @code{.eh_frame}, @code{.eh_frame} is emitted,
+if @var{section_list} is @code{.debug_frame}, @code{.debug_frame} is emitted.
+To emit both use @code{.eh_frame, .debug_frame}.  The default if this
+directive is not used is @code{.cfi_sections .eh_frame}.
+
 @section @code{.cfi_startproc [simple]}
 @cindex @code{cfi_startproc} directive
 @code{.cfi_startproc} is used at the beginning of each function that
@@ -4262,16 +4332,23 @@ absolute expression.  If @code{@value{LD}} sees multiple common symbols with
 the same name, and they do not all have the same size, it will allocate space
 using the largest size.
 
-@ifset ELF
-When using ELF, the @code{.comm} directive takes an optional third argument.
-This is the desired alignment of the symbol, specified as a byte boundary (for
-example, an alignment of 16 means that the least significant 4 bits of the
-address should be zero).  The alignment must be an absolute expression, and it
-must be a power of two.  If @code{@value{LD}} allocates uninitialized memory
-for the common symbol, it will use the alignment when placing the symbol.  If
-no alignment is specified, @command{@value{AS}} will set the alignment to the
+@ifset COFF-ELF
+When using ELF or (as a GNU extension) PE, the @code{.comm} directive takes
+an optional third argument.  This is the desired alignment of the symbol, 
+specified for ELF as a byte boundary (for example, an alignment of 16 means
+that the least significant 4 bits of the address should be zero), and for PE
+as a power of two (for example, an alignment of 5 means aligned to a 32-byte
+boundary).  The alignment must be an absolute expression, and it must be a 
+power of two.  If @code{@value{LD}} allocates uninitialized memory for the
+common symbol, it will use the alignment when placing the symbol.  If no 
+alignment is specified, @command{@value{AS}} will set the alignment to the
 largest power of two less than or equal to the size of the symbol, up to a
-maximum of 16.
+maximum of 16 on ELF, or the default section alignment of 4 on PE@footnote{This
+is not the same as the executable image file alignment controlled by @code{@value{LD}}'s
+@samp{--section-alignment} option; image file sections in PE are aligned to
+multiples of 4096, which is far too large an alignment for ordinary variables.
+It is rather the default alignment for (non-debug) sections within object
+(@samp{*.o}) files, which are less strictly aligned.}.
 @end ifset
 
 @ifset HPPA
@@ -5062,6 +5139,10 @@ either 0 or 1.
 This directive will set the @code{isa} register in the @code{.debug_line}
 state machine to @var{value}, which must be an unsigned integer.
 
+@item discriminator @var{value}
+This directive will set the @code{discriminator} register in the @code{.debug_line}
+state machine to @var{value}, which must be an unsigned integer.
+
 @end table
 
 @node Loc_mark_labels
@@ -5676,6 +5757,8 @@ executable section
 shared section (meaningful for PE targets)
 @item a
 ignored.  (For compatibility with the ELF version)
+@item y
+section is not readable (meaningful for PE targets)
 @end table
 
 If no flags are specified, the default flags depend upon the section name.  If
@@ -5760,7 +5843,10 @@ constants, each @var{entsize} octets long. Sections with both @code{M} and
 @code{S} must contain zero terminated strings where each character is
 @var{entsize} bytes long. The linker may remove duplicates within sections with
 the same name, same entity size and same flags.  @var{entsize} must be an
-absolute expression.
+absolute expression.  For sections with both @code{M} and @code{S}, a string
+which is a suffix of a larger string is considered a duplicate.  Thus
+@code{"def"} will be merged with @code{"abcdef"};  A reference to the first
+@code{"def"} will be changed to a reference to @code{"abcdef"+3}.
 
 If @var{flags} contains the @code{G} symbol then the @var{type} argument must
 be present along with an additional field like this:
@@ -6277,6 +6363,11 @@ The types supported are:
 @itemx function
 Mark the symbol as being a function name.
 
+@item STT_GNU_IFUNC
+@itemx gnu_indirect_function
+Mark the symbol as an indirect function when evaluated during reloc
+processing.  (This is only supported on Linux targeted assemblers).
+
 @item STT_OBJECT
 @itemx object
 Mark the symbol as being a data object.
@@ -6292,6 +6383,11 @@ Mark the symbol as being a common data object.
 @item STT_NOTYPE
 @itemx notype
 Does not mark the symbol in any way.  It is supported just for completeness.
+
+@item gnu_unique_object
+Marks the symbol as being a globally unique data object.  The dynamic linker
+will make sure that in the entire process there is just one symbol with this
+name and type in use.  (This is only supported on Linux targeted assemblers).
 
 @end table
 
@@ -6640,8 +6736,8 @@ subject, see the hardware manufacturer's manual.
 @ifset AVR
 * AVR-Dependent::               AVR Dependent Features
 @end ifset
-@ifset BFIN
-* BFIN-Dependent::		BFIN Dependent Features
+@ifset Blackfin
+* Blackfin-Dependent::		Blackfin Dependent Features
 @end ifset
 @ifset CR16
 * CR16-Dependent::              CR16 Dependent Features
@@ -6694,6 +6790,9 @@ subject, see the hardware manufacturer's manual.
 @ifset M68HC11
 * M68HC11-Dependent::           M68HC11 and 68HC12 Dependent Features
 @end ifset
+@ifset MICROBLAZE
+* MicroBlaze-Dependent::	MICROBLAZE Dependent Features
+@end ifset
 @ifset MIPS
 * MIPS-Dependent::              MIPS Dependent Features
 @end ifset
@@ -6715,6 +6814,12 @@ subject, see the hardware manufacturer's manual.
 @end ifset
 @ifset PPC
 * PPC-Dependent::               PowerPC Dependent Features
+@end ifset
+@ifset S390
+* S/390-Dependent::             IBM S/390 Dependent Features
+@end ifset
+@ifset SCORE
+* SCORE-Dependent::             SCORE Dependent Features
 @end ifset
 @ifset SPARC
 * Sparc-Dependent::             SPARC Dependent Features
@@ -6766,7 +6871,7 @@ subject, see the hardware manufacturer's manual.
 @include c-avr.texi
 @end ifset
 
-@ifset BFIN
+@ifset Blackfin
 @include c-bfin.texi
 @end ifset
 
@@ -6856,6 +6961,10 @@ family.
 @include c-m68hc11.texi
 @end ifset
 
+@ifset MICROBLAZE 
+@include c-microblaze.texi
+@end ifset
+
 @ifset MIPS
 @include c-mips.texi
 @end ifset
@@ -6882,6 +6991,14 @@ family.
 
 @ifset PPC
 @include c-ppc.texi
+@end ifset
+
+@ifset S390
+@include c-s390.texi
+@end ifset
+
+@ifset SCORE
+@include c-score.texi
 @end ifset
 
 @ifset SH

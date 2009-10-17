@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/uio.h>
+#include <sys/stat.h>
 #include "filenames.h"
 
 #include "debug.h"
@@ -38,6 +39,15 @@
 #include "binary.h"
 #include "descriptors.h"
 #include "fileread.h"
+
+#ifndef HAVE_READV
+struct iovec { void* iov_base; size_t iov_len };
+ssize_t
+readv(int, const iovec*, int)
+{
+  gold_unreachable();
+}
+#endif
 
 namespace gold
 {
@@ -716,9 +726,9 @@ Input_file::Input_file(const Task* task, const char* name,
   : file_()
 {
   this->input_argument_ =
-    new Input_file_argument(name, false, "", false,
-			    Position_dependent_options());
-  bool ok = file_.open(task, name, contents, size);
+    new Input_file_argument(name, Input_file_argument::INPUT_FILE_TYPE_FILE,
+                            "", false, Position_dependent_options());
+  bool ok = this->file_.open(task, name, contents, size);
   gold_assert(ok);
 }
 
@@ -738,6 +748,16 @@ Input_file::name() const
   return this->input_argument_->name();
 }
 
+// Return whether this file is in a system directory.
+
+bool
+Input_file::is_in_system_directory() const
+{
+  if (this->is_in_sysroot())
+    return true;
+  return parameters->options().is_in_system_directory(this->filename());
+}
+
 // Return whether we are only reading symbols.
 
 bool
@@ -746,51 +766,88 @@ Input_file::just_symbols() const
   return this->input_argument_->just_symbols();
 }
 
+// Return whether this is a file that we will search for in the list
+// of directories.
+
+bool
+Input_file::will_search_for() const
+{
+  return (!IS_ABSOLUTE_PATH(this->input_argument_->name())
+	  && (this->input_argument_->is_lib()
+	      || this->input_argument_->is_searched_file()
+	      || this->input_argument_->extra_search_path() != NULL));
+}
+
+// Return the file last modification time.  Calls gold_fatal if the stat
+// system call failed.
+
+Timespec
+File_read::get_mtime()
+{
+  struct stat file_stat;
+  this->reopen_descriptor();
+  
+  if (fstat(this->descriptor_, &file_stat) < 0)
+    gold_fatal(_("%s: stat failed: %s"), this->name_.c_str(),
+	       strerror(errno));
+  // TODO: do a configure check if st_mtim is present and get the
+  // nanoseconds part if it is.
+  return Timespec(file_stat.st_mtime, 0);
+}
+
 // Open the file.
 
 // If the filename is not absolute, we assume it is in the current
 // directory *except* when:
-//    A) input_argument_->is_lib() is true; or
-//    B) input_argument_->extra_search_path() is not empty.
-// In both cases, we look in extra_search_path + library_path to find
+//    A) input_argument_->is_lib() is true;
+//    B) input_argument_->is_searched_file() is true; or
+//    C) input_argument_->extra_search_path() is not empty.
+// In each, we look in extra_search_path + library_path to find
 // the file location, rather than the current directory.
 
 bool
-Input_file::open(const General_options& options, const Dirsearch& dirpath,
-		 const Task* task)
+Input_file::open(const Dirsearch& dirpath, const Task* task, int *pindex)
 {
   std::string name;
 
   // Case 1: name is an absolute file, just try to open it
-  // Case 2: name is relative but is_lib is false and extra_search_path
-  //         is empty
-  if (IS_ABSOLUTE_PATH (this->input_argument_->name())
+  // Case 2: name is relative but is_lib is false, is_searched_file is false,
+  //         and extra_search_path is empty
+  if (IS_ABSOLUTE_PATH(this->input_argument_->name())
       || (!this->input_argument_->is_lib()
+	  && !this->input_argument_->is_searched_file()
 	  && this->input_argument_->extra_search_path() == NULL))
     {
       name = this->input_argument_->name();
       this->found_name_ = name;
     }
-  // Case 3: is_lib is true
-  else if (this->input_argument_->is_lib())
+  // Case 3: is_lib is true or is_searched_file is true
+  else if (this->input_argument_->is_lib()
+	   || this->input_argument_->is_searched_file())
     {
       // We don't yet support extra_search_path with -l.
       gold_assert(this->input_argument_->extra_search_path() == NULL);
-      std::string n1("lib");
-      n1 += this->input_argument_->name();
-      std::string n2;
-      if (options.is_static()
-	  || !this->input_argument_->options().Bdynamic())
-	n1 += ".a";
-      else
+      std::string n1, n2;
+      if (this->input_argument_->is_lib())
 	{
-	  n2 = n1 + ".a";
-	  n1 += ".so";
+	  n1 = "lib";
+	  n1 += this->input_argument_->name();
+	  if (parameters->options().is_static()
+	      || !this->input_argument_->options().Bdynamic())
+	    n1 += ".a";
+	  else
+	    {
+	      n2 = n1 + ".a";
+	      n1 += ".so";
+	    }
 	}
-      name = dirpath.find(n1, n2, &this->is_in_sysroot_);
+      else
+	n1 = this->input_argument_->name();
+      name = dirpath.find(n1, n2, &this->is_in_sysroot_, pindex);
       if (name.empty())
 	{
-	  gold_error(_("cannot find -l%s"),
+	  gold_error(_("cannot find %s%s"),
+	             this->input_argument_->is_lib() ? "-l" : "",
 		     this->input_argument_->name());
 	  return false;
 	}
@@ -810,17 +867,21 @@ Input_file::open(const General_options& options, const Dirsearch& dirpath,
         name += '/';
       name += this->input_argument_->name();
       struct stat dummy_stat;
-      if (::stat(name.c_str(), &dummy_stat) < 0)
+      if (*pindex > 0 || ::stat(name.c_str(), &dummy_stat) < 0)
         {
           // extra_search_path failed, so check the normal search-path.
+	  int index = *pindex;
+	  if (index > 0)
+	    --index;
           name = dirpath.find(this->input_argument_->name(), "",
-			      &this->is_in_sysroot_);
+			      &this->is_in_sysroot_, &index);
           if (name.empty())
             {
               gold_error(_("cannot find %s"),
 			 this->input_argument_->name());
 	      return false;
             }
+	  *pindex = index + 1;
         }
       this->found_name_ = this->input_argument_->name();
     }
@@ -835,7 +896,7 @@ Input_file::open(const General_options& options, const Dirsearch& dirpath,
   else
     {
       gold_assert(format == General_options::OBJECT_FORMAT_BINARY);
-      ok = this->open_binary(options, task, name);
+      ok = this->open_binary(task, name);
     }
 
   if (!ok)
@@ -851,21 +912,17 @@ Input_file::open(const General_options& options, const Dirsearch& dirpath,
 // Open a file for --format binary.
 
 bool
-Input_file::open_binary(const General_options&,
-			const Task* task, const std::string& name)
+Input_file::open_binary(const Task* task, const std::string& name)
 {
   // In order to open a binary file, we need machine code, size, and
   // endianness.  We may not have a valid target at this point, in
   // which case we use the default target.
-  const Target* target;
-  if (parameters->target_valid())
-    target = &parameters->target();
-  else
-    target = &parameters->default_target();
+  parameters_force_valid_target();
+  const Target& target(parameters->target());
 
-  Binary_to_elf binary_to_elf(target->machine_code(),
-			      target->get_size(),
-			      target->is_big_endian(),
+  Binary_to_elf binary_to_elf(target.machine_code(),
+			      target.get_size(),
+			      target.is_big_endian(),
 			      name);
   if (!binary_to_elf.convert(task))
     return false;

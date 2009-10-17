@@ -1,6 +1,6 @@
 /* ELF object file format
    Copyright 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2009
+   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
@@ -260,9 +260,20 @@ elf_file_symbol (const char *s, int appfile)
       || (symbol_rootP->bsym->flags & BSF_FILE) == 0)
     {
       symbolS *sym;
+      unsigned int name_length;
 
       sym = symbol_new (s, absolute_section, 0, NULL);
       symbol_set_frag (sym, &zero_address_frag);
+
+      name_length = strlen (s);
+      if (name_length > strlen (S_GET_NAME (sym)))
+	{
+	  obstack_grow (&notes, s, name_length + 1);
+	  S_SET_NAME (sym, (const char *) obstack_finish (&notes));
+	}
+      else
+	strcpy ((char *) S_GET_NAME (sym), s);
+
       symbol_get_bfdsym (sym)->flags |= BSF_FILE;
 
       if (symbol_rootP != sym)
@@ -459,7 +470,7 @@ obj_elf_visibility (int visibility)
       bfdsym = symbol_get_bfdsym (symbolP);
       elfsym = elf_symbol_from (bfd_asymbol_bfd (bfdsym), bfdsym);
 
-      assert (elfsym);
+      gas_assert (elfsym);
 
       elfsym->internal_elf_sym.st_other &= ~3;
       elfsym->internal_elf_sym.st_other |= visibility;
@@ -494,9 +505,9 @@ static struct section_stack *section_stack;
 static bfd_boolean
 get_section (bfd *abfd ATTRIBUTE_UNUSED, asection *sec, void *inf)
 {
-  const char *gname = inf;
+  const char *gname = (const char *) inf;
   const char *group_name = elf_group_name (sec);
-  
+
   return (group_name == gname
 	  || (group_name != NULL
 	      && gname != NULL
@@ -544,7 +555,7 @@ obj_elf_change_section (const char *name,
   if (push)
     {
       struct section_stack *elt;
-      elt = xmalloc (sizeof (struct section_stack));
+      elt = (struct section_stack *) xmalloc (sizeof (struct section_stack));
       elt->next = section_stack;
       elt->seg = now_seg;
       elt->prev_seg = previous_section;
@@ -674,6 +685,8 @@ obj_elf_change_section (const char *name,
     {
       symbolS *secsym;
 
+      if (type == SHT_NULL)
+	type = bfd_elf_get_default_section_type (flags);
       elf_section_type (sec) = type;
       elf_section_flags (sec) = attr;
 
@@ -872,7 +885,7 @@ obj_elf_section_name (void)
 	  return NULL;
 	}
 
-      name = xmalloc (end - input_line_pointer + 1);
+      name = (char *) xmalloc (end - input_line_pointer + 1);
       memcpy (name, input_line_pointer, end - input_line_pointer);
       name[end - input_line_pointer] = '\0';
 #ifdef tc_canonicalize_section_name
@@ -1346,7 +1359,7 @@ obj_elf_vtable_inherit (int ignore ATTRIBUTE_UNUSED)
   if (bad)
     return NULL;
 
-  assert (symbol_get_value_expression (csym)->X_op == O_constant);
+  gas_assert (symbol_get_value_expression (csym)->X_op == O_constant);
   return fix_new (symbol_get_frag (csym),
 		  symbol_get_value_expression (csym)->X_add_number,
 		  0, psym, 0, 0, BFD_RELOC_VTABLE_INHERIT);
@@ -1428,7 +1441,7 @@ elf_copy_symbol_attributes (symbolS *dest, symbolS *src)
   if (srcelf->size)
     {
       if (destelf->size == NULL)
-	destelf->size = xmalloc (sizeof (expressionS));
+	destelf->size = (expressionS *) xmalloc (sizeof (expressionS));
       *destelf->size = *srcelf->size;
     }
   else
@@ -1545,7 +1558,8 @@ obj_elf_size (int ignore ATTRIBUTE_UNUSED)
     }
   else
     {
-      symbol_get_obj (sym)->size = xmalloc (sizeof (expressionS));
+      symbol_get_obj (sym)->size =
+          (expressionS *) xmalloc (sizeof (expressionS));
       *symbol_get_obj (sym)->size = exp;
     }
   demand_empty_rest_of_line ();
@@ -1596,7 +1610,7 @@ obj_elf_type (int ignore ATTRIBUTE_UNUSED)
   char *name;
   char c;
   int type;
-  const char *typename;
+  const char *type_name;
   symbolS *sym;
   elf_symbol_type *elfsym;
 
@@ -1617,28 +1631,28 @@ obj_elf_type (int ignore ATTRIBUTE_UNUSED)
       || *input_line_pointer == '%')
     ++input_line_pointer;
 
-  typename = obj_elf_type_name (& c);
+  type_name = obj_elf_type_name (& c);
 
   type = 0;
-  if (strcmp (typename, "function") == 0
-      || strcmp (typename, "2") == 0
-      || strcmp (typename, "STT_FUNC") == 0)
+  if (strcmp (type_name, "function") == 0
+      || strcmp (type_name, "2") == 0
+      || strcmp (type_name, "STT_FUNC") == 0)
     type = BSF_FUNCTION;
-  else if (strcmp (typename, "object") == 0
-	   || strcmp (typename, "1") == 0
-	   || strcmp (typename, "STT_OBJECT") == 0)
+  else if (strcmp (type_name, "object") == 0
+	   || strcmp (type_name, "1") == 0
+	   || strcmp (type_name, "STT_OBJECT") == 0)
     type = BSF_OBJECT;
-  else if (strcmp (typename, "tls_object") == 0
-	   || strcmp (typename, "6") == 0
-	   || strcmp (typename, "STT_TLS") == 0)
+  else if (strcmp (type_name, "tls_object") == 0
+	   || strcmp (type_name, "6") == 0
+	   || strcmp (type_name, "STT_TLS") == 0)
     type = BSF_OBJECT | BSF_THREAD_LOCAL;
-  else if (strcmp (typename, "notype") == 0
-	   || strcmp (typename, "0") == 0
-	   || strcmp (typename, "STT_NOTYPE") == 0)
+  else if (strcmp (type_name, "notype") == 0
+	   || strcmp (type_name, "0") == 0
+	   || strcmp (type_name, "STT_NOTYPE") == 0)
     ;
-  else if (strcmp (typename, "common") == 0
-	   || strcmp (typename, "5") == 0
-	   || strcmp (typename, "STT_COMMON") == 0)
+  else if (strcmp (type_name, "common") == 0
+	   || strcmp (type_name, "5") == 0
+	   || strcmp (type_name, "STT_COMMON") == 0)
     {
       type = BSF_OBJECT;
 
@@ -1664,12 +1678,40 @@ obj_elf_type (int ignore ATTRIBUTE_UNUSED)
 	    }
 	}
     }
+  else if (strcmp (type_name, "gnu_indirect_function") == 0
+	   || strcmp (type_name, "10") == 0
+	   || strcmp (type_name, "STT_GNU_IFUNC") == 0)
+    {
+      const struct elf_backend_data *bed;
+
+      bed = get_elf_backend_data (stdoutput);
+      if (!(bed->elf_osabi == ELFOSABI_LINUX
+	    /* GNU/Linux is still using the default value 0.  */
+	    || bed->elf_osabi == ELFOSABI_NONE))
+	as_bad (_("symbol type \"%s\" is supported only by GNU targets"),
+		type_name);
+      type = BSF_FUNCTION | BSF_GNU_INDIRECT_FUNCTION;
+    }
+  else if (strcmp (type_name, "gnu_unique_object") == 0)
+    {
+      struct elf_backend_data *bed;
+
+      bed = (struct elf_backend_data *) get_elf_backend_data (stdoutput);
+      if (!(bed->elf_osabi == ELFOSABI_LINUX
+	    /* GNU/Linux is still using the default value 0.  */
+	    || bed->elf_osabi == ELFOSABI_NONE))
+	as_bad (_("symbol type \"%s\" is supported only by GNU targets"),
+		type_name);
+      type = BSF_OBJECT | BSF_GNU_UNIQUE;
+      /* PR 10549: Always set OSABI field to LINUX for objects containing unique symbols.  */
+      bed->elf_osabi = ELFOSABI_LINUX;
+    }
 #ifdef md_elf_symbol_type
-  else if ((type = md_elf_symbol_type (typename, sym, elfsym)) != -1)
+  else if ((type = md_elf_symbol_type (type_name, sym, elfsym)) != -1)
     ;
 #endif
   else
-    as_bad (_("unrecognized symbol type \"%s\""), typename);
+    as_bad (_("unrecognized symbol type \"%s\""), type_name);
 
   *input_line_pointer = c;
 
@@ -1697,7 +1739,12 @@ obj_elf_ident (int ignore ATTRIBUTE_UNUSED)
       char *p;
       comment_section = subseg_new (".comment", 0);
       bfd_set_section_flags (stdoutput, comment_section,
-			     SEC_READONLY | SEC_HAS_CONTENTS);
+			     SEC_READONLY | SEC_HAS_CONTENTS
+			     | SEC_MERGE | SEC_STRINGS);
+      comment_section->entsize = 1;
+#ifdef md_elf_section_change_hook
+      md_elf_section_change_hook ();
+#endif
       p = frag_more (1);
       *p = 0;
     }
@@ -1728,7 +1775,7 @@ obj_elf_init_stab_section (segT seg)
   /* Zero it out.  */
   memset (p, 0, 12);
   as_where (&file, NULL);
-  stabstr_name = xmalloc (strlen (segment_name (seg)) + 4);
+  stabstr_name = (char *) xmalloc (strlen (segment_name (seg)) + 4);
   strcpy (stabstr_name, segment_name (seg));
   strcat (stabstr_name, "str");
   stroff = get_stab_string_offset (file, stabstr_name);
@@ -1754,7 +1801,7 @@ adjust_stab_sections (bfd *abfd, asection *sec, void *xxx ATTRIBUTE_UNUSED)
   if (!strcmp ("str", sec->name + strlen (sec->name) - 3))
     return;
 
-  name = alloca (strlen (sec->name) + 4);
+  name = (char *) alloca (strlen (sec->name) + 4);
   strcpy (name, sec->name);
   strcat (name, "str");
   strsec = bfd_get_section_by_name (abfd, name);
@@ -1765,7 +1812,7 @@ adjust_stab_sections (bfd *abfd, asection *sec, void *xxx ATTRIBUTE_UNUSED)
   nsyms = bfd_section_size (abfd, sec) / 12 - 1;
 
   p = seg_info (sec)->stabu.p;
-  assert (p != 0);
+  gas_assert (p != 0);
 
   bfd_h_put_16 (abfd, nsyms, p + 6);
   bfd_h_put_32 (abfd, strsz, p + 8);
@@ -1960,6 +2007,7 @@ struct group_list
   asection **head;		/* Section lists.  */
   unsigned int *elt_count;	/* Number of sections in each list.  */
   unsigned int num_group;	/* Number of lists.  */
+  struct hash_control *indexes; /* Maps group name to index in head array.  */
 };
 
 /* Called via bfd_map_over_sections.  If SEC is a member of a group,
@@ -1970,24 +2018,24 @@ struct group_list
 static void
 build_group_lists (bfd *abfd ATTRIBUTE_UNUSED, asection *sec, void *inf)
 {
-  struct group_list *list = inf;
+  struct group_list *list = (struct group_list *) inf;
   const char *group_name = elf_group_name (sec);
   unsigned int i;
+  unsigned int *elem_idx;
+  unsigned int *idx_ptr;
 
   if (group_name == NULL)
     return;
 
   /* If this group already has a list, add the section to the head of
      the list.  */
-  for (i = 0; i < list->num_group; i++)
+  elem_idx = (unsigned int *) hash_find (list->indexes, group_name);
+  if (elem_idx != NULL)
     {
-      if (strcmp (group_name, elf_group_name (list->head[i])) == 0)
-	{
-	  elf_next_in_group (sec) = list->head[i];
-	  list->head[i] = sec;
-	  list->elt_count[i] += 1;
-	  return;
-	}
+      elf_next_in_group (sec) = list->head[*elem_idx];
+      list->head[*elem_idx] = sec;
+      list->elt_count[*elem_idx] += 1;
+      return;
     }
 
   /* New group.  Make the arrays bigger in chunks to minimize calls to
@@ -1996,13 +2044,24 @@ build_group_lists (bfd *abfd ATTRIBUTE_UNUSED, asection *sec, void *inf)
   if ((i & 127) == 0)
     {
       unsigned int newsize = i + 128;
-      list->head = xrealloc (list->head, newsize * sizeof (*list->head));
-      list->elt_count = xrealloc (list->elt_count,
-				  newsize * sizeof (*list->elt_count));
+      list->head = (asection **) xrealloc (list->head,
+                                           newsize * sizeof (*list->head));
+      list->elt_count = (unsigned int *)
+          xrealloc (list->elt_count, newsize * sizeof (*list->elt_count));
     }
   list->head[i] = sec;
   list->elt_count[i] = 1;
   list->num_group += 1;
+
+  /* Add index to hash.  */
+  idx_ptr = (unsigned int *) xmalloc (sizeof (unsigned int));
+  *idx_ptr = i;
+  hash_insert (list->indexes, group_name, idx_ptr);
+}
+
+static void free_section_idx (const char *key ATTRIBUTE_UNUSED, void *val)
+{
+  free ((unsigned int *) val);
 }
 
 void
@@ -2017,6 +2076,7 @@ elf_frob_file (void)
   list.num_group = 0;
   list.head = NULL;
   list.elt_count = NULL;
+  list.indexes  = hash_new ();
   bfd_map_over_sections (stdoutput, build_group_lists, &list);
 
   /* Make the SHT_GROUP sections that describe each section group.  We
@@ -2082,6 +2142,10 @@ elf_frob_file (void)
 #ifdef elf_tc_final_processing
   elf_tc_final_processing ();
 #endif
+
+  /* Cleanup hash.  */
+  hash_traverse (list.indexes, free_section_idx);
+  hash_die (list.indexes);
 }
 
 /* It removes any unneeded versioned symbols from the symbol table.  */
@@ -2176,7 +2240,7 @@ elf_frob_file_after_relocs (void)
 		  bfd_errmsg (bfd_get_error ()));
 
       sec = bfd_get_section_by_name (stdoutput, ".mdebug");
-      assert (sec != NULL);
+      gas_assert (sec != NULL);
 
       know (!stdoutput->output_has_begun);
 

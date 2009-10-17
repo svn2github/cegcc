@@ -1,6 +1,6 @@
 /* tc-d30v.c -- Assembler code for the Mitsubishi D30V
-   Copyright 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2005, 2006, 2007, 2008
-   Free Software Foundation, Inc.
+   Copyright 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2005, 2006, 2007, 2008,
+   2009 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -23,6 +23,7 @@
 #include "safe-ctype.h"
 #include "subsegs.h"
 #include "opcode/d30v.h"
+#include "dwarf2dbg.h"
 
 const char comment_chars[]        = ";";
 const char line_comment_chars[]   = "#";
@@ -593,6 +594,7 @@ write_long (struct d30v_insn *opcode ATTRIBUTE_UNUSED,
   int i, where;
   char *f = frag_more (8);
 
+  dwarf2_emit_insn (8);
   insn |= FM11;
   d30v_number_to_chars (f, insn, 8);
 
@@ -620,6 +622,7 @@ write_1_short (struct d30v_insn *opcode,
   char *f = frag_more (8);
   int i, where;
 
+  dwarf2_emit_insn (8);
   if (warn_nops == NOP_ALL)
     as_warn (_("%s NOP inserted"), use_sequential ?
 	     _("sequential") : _("parallel"));
@@ -1087,6 +1090,7 @@ write_2_short (struct d30v_insn *opcode1,
     }
 
   f = frag_more (8);
+  dwarf2_emit_insn (8);
   d30v_number_to_chars (f, insn, 8);
 
   /* If the previous instruction was a 32-bit multiply but it is put into a
@@ -1516,7 +1520,7 @@ d30v_align (int n, char *pfill, symbolS *label)
       valueT       old_value;
       valueT       new_value;
 
-      assert (S_GET_SEGMENT (label) == now_seg);
+      gas_assert (S_GET_SEGMENT (label) == now_seg);
 
       old_frag  = symbol_get_frag (label);
       old_value = S_GET_VALUE (label);
@@ -1684,6 +1688,7 @@ md_assemble (char *str)
 	      else
 		{
 		  f = frag_more (8);
+		  dwarf2_emit_insn (8);
 		  d30v_number_to_chars (f, NOP2, 8);
 
 		  if (warn_nops == NOP_ALL || warn_nops == NOP_MULTIPLY)
@@ -1868,6 +1873,8 @@ d30v_frob_label (symbolS *lab)
   /* Record this label for future adjustment after we find out what
      kind of data it references, and the required alignment therewith.  */
   d30v_last_label = lab;
+
+  dwarf2_emit_label (lab);
 }
 
 /* Hook into cons for capturing alignment changes.  */
@@ -2113,4 +2120,3 @@ const pseudo_typeS md_pseudo_table[] =
   { "sect.s", s_d30v_section, 0 },
   { NULL, NULL, 0 }
 };
-

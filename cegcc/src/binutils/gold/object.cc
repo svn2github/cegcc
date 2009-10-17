@@ -132,19 +132,6 @@ Xindex::sym_xindex_to_shndx(Object* object, unsigned int symndx)
 
 // Class Object.
 
-// Set the target based on fields in the ELF file header.
-
-void
-Object::set_target(int machine, int size, bool big_endian, int osabi,
-		   int abiversion)
-{
-  Target* target = select_target(machine, size, big_endian, osabi, abiversion);
-  if (target == NULL)
-    gold_fatal(_("%s: unsupported ELF machine number %d"),
-	       this->name().c_str(), machine);
-  this->target_ = target;
-}
-
 // Report an error for this object file.  This is used by the
 // elfcpp::Elf_file interface, and also called by the Object code
 // itself.
@@ -170,6 +157,11 @@ Object::section_contents(unsigned int shndx, section_size_type* plen,
 {
   Location loc(this->do_section_contents(shndx));
   *plen = convert_to_section_size_type(loc.data_size);
+  if (*plen == 0)
+    {
+      static const unsigned char empty[1] = { '\0' };
+      return empty;
+    }
   return this->get_view(loc.file_offset, *plen, true, cache);
 }
 
@@ -226,8 +218,33 @@ Object::handle_gnu_warning_section(const char* name, unsigned int shndx,
       section_size_type len;
       const unsigned char* contents = this->section_contents(shndx, &len,
 							     false);
+      if (len == 0)
+	{
+	  const char* warning = name + warn_prefix_len;
+	  contents = reinterpret_cast<const unsigned char*>(warning);
+	  len = strlen(warning);
+	}
       std::string warning(reinterpret_cast<const char*>(contents), len);
       symtab->add_warning(name + warn_prefix_len, this, warning);
+      return true;
+    }
+  return false;
+}
+
+// If NAME is the name of the special section which indicates that
+// this object was compiled with -fstack-split, mark it accordingly.
+
+bool
+Object::handle_split_stack_section(const char* name)
+{
+  if (strcmp(name, ".note.GNU-split-stack") == 0)
+    {
+      this->uses_split_stack_ = true;
+      return true;
+    }
+  if (strcmp(name, ".note.GNU-no-split-stack") == 0)
+    {
+      this->has_no_split_stack_ = true;
       return true;
     }
   return false;
@@ -327,8 +344,8 @@ Sized_relobj<size, big_endian>::Sized_relobj(
     local_values_(),
     local_got_offsets_(),
     kept_comdat_sections_(),
-    comdat_groups_(),
-    has_eh_frame_(false)
+    has_eh_frame_(false),
+    discarded_eh_frame_shndx_(-1U)
 {
 }
 
@@ -338,17 +355,12 @@ Sized_relobj<size, big_endian>::~Sized_relobj()
 }
 
 // Set up an object file based on the file header.  This sets up the
-// target and reads the section information.
+// section information.
 
 template<int size, bool big_endian>
 void
-Sized_relobj<size, big_endian>::setup(
-    const elfcpp::Ehdr<size, big_endian>& ehdr)
+Sized_relobj<size, big_endian>::do_setup()
 {
-  this->set_target(ehdr.get_e_machine(), size, big_endian,
-		   ehdr.get_e_ident()[elfcpp::EI_OSABI],
-		   ehdr.get_e_ident()[elfcpp::EI_ABIVERSION]);
-
   const unsigned int shnum = this->elf_file_.shnum();
   this->set_shnum(shnum);
 }
@@ -674,29 +686,21 @@ Sized_relobj<size, big_endian>::include_section_group(
 
   // Record this section group in the layout, and see whether we've already
   // seen one with the same signature.
-  bool include_group = ((flags & elfcpp::GRP_COMDAT) == 0
-                        || layout->add_comdat(this, index, signature, true));
+  bool include_group;
+  bool is_comdat;
+  Kept_section* kept_section = NULL;
 
-  Sized_relobj<size, big_endian>* kept_object = NULL;
-  Comdat_group* kept_group = NULL;
-
-  if (!include_group)
+  if ((flags & elfcpp::GRP_COMDAT) == 0)
     {
-      // This group is being discarded.  Find the object and group
-      // that was kept in its place.
-      unsigned int kept_group_index = 0;
-      Relobj* kept_relobj = layout->find_kept_object(signature,
-                                                     &kept_group_index);
-      kept_object = static_cast<Sized_relobj<size, big_endian>*>(kept_relobj);
-      if (kept_object != NULL)
-        kept_group = kept_object->find_comdat_group(kept_group_index);
+      include_group = true;
+      is_comdat = false;
     }
-  else if (flags & elfcpp::GRP_COMDAT)
+  else
     {
-      // This group is being kept.  Create the table to map section names
-      // to section indexes and add it to the table of groups.
-      kept_group = new Comdat_group();
-      this->add_comdat_group(index, kept_group);
+      include_group = layout->find_or_add_kept_section(signature,
+						       this, index, true,
+						       true, &kept_section);
+      is_comdat = true;
     }
 
   size_t count = shdr.get_sh_size() / sizeof(elfcpp::Elf_Word);
@@ -708,27 +712,27 @@ Sized_relobj<size, big_endian>::include_section_group(
 
   for (size_t i = 1; i < count; ++i)
     {
-      elfcpp::Elf_Word secnum =
+      elfcpp::Elf_Word shndx =
 	this->adjust_shndx(elfcpp::Swap<32, big_endian>::readval(pword + i));
 
       if (relocate_group)
-	shndxes.push_back(secnum);
+	shndxes.push_back(shndx);
 
-      if (secnum >= this->shnum())
+      if (shndx >= this->shnum())
 	{
 	  this->error(_("section %u in section group %u out of range"),
-		      secnum, index);
+		      shndx, index);
 	  continue;
 	}
 
       // Check for an earlier section number, since we're going to get
       // it wrong--we may have already decided to include the section.
-      if (secnum < index)
+      if (shndx < index)
         this->error(_("invalid section group %u refers to earlier section %u"),
-                    index, secnum);
+                    index, shndx);
 
       // Get the name of the member section.
-      typename This::Shdr member_shdr(shdrs + secnum * This::shdr_size);
+      typename This::Shdr member_shdr(shdrs + shndx * This::shdr_size);
       if (member_shdr.get_sh_name() >= section_names_size)
         {
           // This is an error, but it will be diagnosed eventually
@@ -738,27 +742,52 @@ Sized_relobj<size, big_endian>::include_section_group(
         }
       std::string mname(section_names + member_shdr.get_sh_name());
 
-      if (!include_group)
+      if (include_group)
+	{
+	  if (is_comdat)
+	    kept_section->add_comdat_section(mname, shndx,
+					     member_shdr.get_sh_size());
+	}
+      else
         {
-          (*omit)[secnum] = true;
-          if (kept_group != NULL)
+          (*omit)[shndx] = true;
+
+	  if (is_comdat)
             {
-              // Find the corresponding kept section, and store that info
-              // in the discarded section table.
-              Comdat_group::const_iterator p = kept_group->find(mname);
-              if (p != kept_group->end())
-                {
-                  Kept_comdat_section* kept =
-                    new Kept_comdat_section(kept_object, p->second);
-                  this->set_kept_comdat_section(secnum, kept);
-                }
+	      Relobj* kept_object = kept_section->object();
+	      if (kept_section->is_comdat())
+		{
+		  // Find the corresponding kept section, and store
+		  // that info in the discarded section table.
+		  unsigned int kept_shndx;
+		  uint64_t kept_size;
+		  if (kept_section->find_comdat_section(mname, &kept_shndx,
+							&kept_size))
+		    {
+		      // We don't keep a mapping for this section if
+		      // it has a different size.  The mapping is only
+		      // used for relocation processing, and we don't
+		      // want to treat the sections as similar if the
+		      // sizes are different.  Checking the section
+		      // size is the approach used by the GNU linker.
+		      if (kept_size == member_shdr.get_sh_size())
+			this->set_kept_comdat_section(shndx, kept_object,
+						      kept_shndx);
+		    }
+		}
+	      else
+		{
+		  // The existing section is a linkonce section.  Add
+		  // a mapping if there is exactly one section in the
+		  // group (which is true when COUNT == 2) and if it
+		  // is the same size.
+		  if (count == 2
+		      && (kept_section->linkonce_size()
+			  == member_shdr.get_sh_size()))
+		    this->set_kept_comdat_section(shndx, kept_object,
+						  kept_section->shndx());
+		}
             }
-        }
-      else if (flags & elfcpp::GRP_COMDAT)
-        {
-          // Add the section to the kept group table.
-          gold_assert(kept_group != NULL);
-          kept_group->insert(std::make_pair(mname, secnum));
         }
     }
 
@@ -790,8 +819,9 @@ Sized_relobj<size, big_endian>::include_linkonce_section(
     Layout* layout,
     unsigned int index,
     const char* name,
-    const elfcpp::Shdr<size, big_endian>&)
+    const elfcpp::Shdr<size, big_endian>& shdr)
 {
+  typename elfcpp::Elf_types<size>::Elf_WXword sh_size = shdr.get_sh_size();
   // In general the symbol name we want will be the string following
   // the last '.'.  However, we have to handle the case of
   // .gnu.linkonce.t.__i686.get_pc_thunk.bx, which was generated by
@@ -808,25 +838,24 @@ Sized_relobj<size, big_endian>::include_linkonce_section(
     symname = strrchr(name, '.') + 1;
   std::string sig1(symname);
   std::string sig2(name);
-  bool include1 = layout->add_comdat(this, index, sig1, false);
-  bool include2 = layout->add_comdat(this, index, sig2, true);
+  Kept_section* kept1;
+  Kept_section* kept2;
+  bool include1 = layout->find_or_add_kept_section(sig1, this, index, false,
+						   false, &kept1);
+  bool include2 = layout->find_or_add_kept_section(sig2, this, index, false,
+						   true, &kept2);
 
   if (!include2)
     {
-      // The section is being discarded on the basis of its section
-      // name (i.e., the kept section was also a linkonce section).
-      // In this case, the section index stored with the layout object
-      // is the linkonce section that was kept.
-      unsigned int kept_group_index = 0;
-      Relobj* kept_relobj = layout->find_kept_object(sig2, &kept_group_index);
-      if (kept_relobj != NULL)
-        {
-          Sized_relobj<size, big_endian>* kept_object
-              = static_cast<Sized_relobj<size, big_endian>*>(kept_relobj);
-          Kept_comdat_section* kept =
-            new Kept_comdat_section(kept_object, kept_group_index);
-          this->set_kept_comdat_section(index, kept);
-        }
+      // We are not including this section because we already saw the
+      // name of the section as a signature.  This normally implies
+      // that the kept section is another linkonce section.  If it is
+      // the same size, record it as the section which corresponds to
+      // this one.
+      if (kept2->object() != NULL
+	  && !kept2->is_comdat()
+	  && kept2->linkonce_size() == sh_size)
+	this->set_kept_comdat_section(index, kept2->object(), kept2->shndx());
     }
   else if (!include1)
     {
@@ -837,23 +866,18 @@ Sized_relobj<size, big_endian>::include_linkonce_section(
       // this linkonce section.  We'll handle the simple case where
       // the group has only one member section.  Otherwise, it's not
       // worth the effort.
-      unsigned int kept_group_index = 0;
-      Relobj* kept_relobj = layout->find_kept_object(sig1, &kept_group_index);
-      if (kept_relobj != NULL)
-        {
-          Sized_relobj<size, big_endian>* kept_object =
-              static_cast<Sized_relobj<size, big_endian>*>(kept_relobj);
-          Comdat_group* kept_group =
-            kept_object->find_comdat_group(kept_group_index);
-          if (kept_group != NULL && kept_group->size() == 1)
-            {
-              Comdat_group::const_iterator p = kept_group->begin();
-              gold_assert(p != kept_group->end());
-              Kept_comdat_section* kept =
-                new Kept_comdat_section(kept_object, p->second);
-              this->set_kept_comdat_section(index, kept);
-            }
-        }
+      unsigned int kept_shndx;
+      uint64_t kept_size;
+      if (kept1->object() != NULL
+	  && kept1->is_comdat()
+	  && kept1->find_single_comdat_section(&kept_shndx, &kept_size)
+	  && kept_size == sh_size)
+	this->set_kept_comdat_section(index, kept1->object(), kept_shndx);
+    }
+  else
+    {
+      kept1->set_linkonce_size(sh_size);
+      kept2->set_linkonce_size(sh_size);
     }
 
   return include1 && include2;
@@ -891,14 +915,15 @@ Sized_relobj<size, big_endian>::layout_section(Layout* layout,
 // whether they should be included in the link.  If they should, we
 // pass them to the Layout object, which will return an output section
 // and an offset.  
-// During garbage collection (gc-sections), this function is called
-// twice.  When it is called the first time, it is for setting up some
-// sections as roots to a work-list and to do comdat processing.  Actual
-// layout happens the second time around after all the relevant sections
-// have been determined.  The first time, is_worklist_ready is false.  
-// It is then set to true after the worklist is processed and the relevant 
-// sections are determined.  Then, this function is called again to 
-// layout the sections.
+// During garbage collection (--gc-sections) and identical code folding 
+// (--icf), this function is called twice.  When it is called the first 
+// time, it is for setting up some sections as roots to a work-list for
+// --gc-sections and to do comdat processing.  Actual layout happens the 
+// second time around after all the relevant sections have been determined.  
+// The first time, is_worklist_ready or is_icf_ready is false. It is then 
+// set to true after the garbage collection worklist or identical code 
+// folding is processed and the relevant sections to be kept are 
+// determined.  Then, this function is called again to layout the sections.
 
 template<int size, bool big_endian>
 void
@@ -907,10 +932,22 @@ Sized_relobj<size, big_endian>::do_layout(Symbol_table* symtab,
 					  Read_symbols_data* sd)
 {
   const unsigned int shnum = this->shnum();
-  bool is_gc_pass_one = (parameters->options().gc_sections() 
-                         && !symtab->gc()->is_worklist_ready());
-  bool is_gc_pass_two = (parameters->options().gc_sections() 
-                         && symtab->gc()->is_worklist_ready());
+  bool is_gc_pass_one = ((parameters->options().gc_sections() 
+                          && !symtab->gc()->is_worklist_ready())
+                         || (parameters->options().icf_enabled()
+                             && !symtab->icf()->is_icf_ready()));
+ 
+  bool is_gc_pass_two = ((parameters->options().gc_sections() 
+                          && symtab->gc()->is_worklist_ready())
+                         || (parameters->options().icf_enabled()
+                             && symtab->icf()->is_icf_ready()));
+
+  bool is_gc_or_icf = (parameters->options().gc_sections()
+                       || parameters->options().icf_enabled()); 
+
+  // Both is_gc_pass_one and is_gc_pass_two should not be true.
+  gold_assert(!(is_gc_pass_one  && is_gc_pass_two));
+
   if (shnum == 0)
     return;
   Symbols_data* gc_sd = NULL;
@@ -935,7 +972,7 @@ Sized_relobj<size, big_endian>::do_layout(Symbol_table* symtab,
   const unsigned char* symbol_names_data = NULL;
   section_size_type symbol_names_size;
  
-  if (parameters->options().gc_sections())
+  if (is_gc_or_icf)
     {
       section_headers_data = gc_sd->section_headers_data;
       section_names_size = gc_sd->section_names_size;
@@ -963,9 +1000,10 @@ Sized_relobj<size, big_endian>::do_layout(Symbol_table* symtab,
   const unsigned char* pshdrs;
 
   // Get the section names.
-  const unsigned char* pnamesu = parameters->options().gc_sections() ?
-                                 gc_sd->section_names_data :
-                                 sd->section_names->data();
+  const unsigned char* pnamesu = (is_gc_or_icf) 
+                                 ? gc_sd->section_names_data
+                                 : sd->section_names->data();
+
   const char* pnames = reinterpret_cast<const char*>(pnamesu);
 
   // If any input files have been claimed by plugins, we need to defer
@@ -1090,6 +1128,16 @@ Sized_relobj<size, big_endian>::do_layout(Symbol_table* symtab,
 	      omit[i] = true;
             }
 
+	  // The .note.GNU-split-stack section is also special.  It
+	  // indicates that the object was compiled with
+	  // -fsplit-stack.
+	  if (this->handle_split_stack_section(name))
+	    {
+	      if (!parameters->options().relocatable()
+		  && !parameters->options().shared())
+		omit[i] = true;
+	    }
+
           bool discard = omit[i];
           if (!discard)
             {
@@ -1118,7 +1166,7 @@ Sized_relobj<size, big_endian>::do_layout(Symbol_table* symtab,
             }
         }
  
-      if (is_gc_pass_one)
+      if (is_gc_pass_one && parameters->options().gc_sections())
         {
           if (is_section_name_included(name)
               || shdr.get_sh_type() == elfcpp::SHT_INIT_ARRAY 
@@ -1165,7 +1213,7 @@ Sized_relobj<size, big_endian>::do_layout(Symbol_table* symtab,
           continue;
         }
 
-      if (is_gc_pass_two)
+      if (is_gc_pass_two && parameters->options().gc_sections())
         {
           // This is executed during the second pass of garbage 
           // collection. do_layout has been called before and some 
@@ -1176,13 +1224,12 @@ Sized_relobj<size, big_endian>::do_layout(Symbol_table* symtab,
               gold_assert(out_section_offsets[i] == invalid_address);
               continue; 
             }
-          if ((shdr.get_sh_flags() & elfcpp::SHF_ALLOC) != 0)
-            if (symtab->gc()->referenced_list().find(Section_id(this,i)) 
-                == symtab->gc()->referenced_list().end())
+          if (((shdr.get_sh_flags() & elfcpp::SHF_ALLOC) != 0)
+              && symtab->gc()->is_section_garbage(this, i))
               {
                 if (parameters->options().print_gc_sections())
-                  gold_info(_("%s: Removing unused section from '%s'" 
-                              " in file '%s"),
+                  gold_info(_("%s: removing unused section from '%s'" 
+                              " in file '%s'"),
                             program_name, this->section_name(i).c_str(), 
                             this->name().c_str());
                 out_sections[i] = NULL;
@@ -1190,6 +1237,36 @@ Sized_relobj<size, big_endian>::do_layout(Symbol_table* symtab,
                 continue;
               }
         }
+
+      if (is_gc_pass_two && parameters->options().icf_enabled())
+        {
+          if (out_sections[i] == NULL)
+            {
+              gold_assert(out_section_offsets[i] == invalid_address);
+              continue;
+            }
+          if (((shdr.get_sh_flags() & elfcpp::SHF_ALLOC) != 0)
+              && symtab->icf()->is_section_folded(this, i))
+              {
+                if (parameters->options().print_icf_sections())
+                  {
+                    Section_id folded =
+                                symtab->icf()->get_folded_section(this, i);
+                    Relobj* folded_obj =
+                                reinterpret_cast<Relobj*>(folded.first);
+                    gold_info(_("%s: ICF folding section '%s' in file '%s'"
+                                "into '%s' in file '%s'"),
+                              program_name, this->section_name(i).c_str(),
+                              this->name().c_str(),
+                              folded_obj->section_name(folded.second).c_str(),
+                              folded_obj->name().c_str());
+                  }
+                out_sections[i] = NULL;
+                out_section_offsets[i] = invalid_address;
+                continue;
+              }
+        }
+
       // Defer layout here if input files are claimed by plugins.  When gc
       // is turned on this function is called twice.  For the second call
       // should_defer_layout should be false.
@@ -1205,7 +1282,8 @@ Sized_relobj<size, big_endian>::do_layout(Symbol_table* symtab,
           out_sections[i] = reinterpret_cast<Output_section*>(2);
           out_section_offsets[i] = invalid_address;
           continue;
-              }
+        }
+
       // During gc_pass_two if a section that was previously deferred is
       // found, do not layout the section as layout_deferred_sections will
       // do it later from gold.cc.
@@ -1233,10 +1311,13 @@ Sized_relobj<size, big_endian>::do_layout(Symbol_table* symtab,
     layout->layout_gnu_stack(seen_gnu_stack, gnu_stack_flags);
 
   // When doing a relocatable link handle the reloc sections at the
-  // end.  Garbage collection is not turned on for relocatable code. 
+  // end.  Garbage collection  and Identical Code Folding is not 
+  // turned on for relocatable code. 
   if (emit_relocs)
     this->size_relocatable_relocs();
-  gold_assert(!parameters->options().gc_sections() || reloc_sections.empty());
+
+  gold_assert(!(is_gc_or_icf) || reloc_sections.empty());
+
   for (std::vector<unsigned int>::const_iterator p = reloc_sections.begin();
        p != reloc_sections.end();
        ++p)
@@ -1296,7 +1377,13 @@ Sized_relobj<size, big_endian>::do_layout(Symbol_table* symtab,
 						   &offset);
       out_sections[i] = os;
       if (offset == -1)
-        out_section_offsets[i] = invalid_address;
+	{
+	  // An object can contain at most one section holding exception
+	  // frame information.
+	  gold_assert(this->discarded_eh_frame_shndx_ == -1U);
+	  this->discarded_eh_frame_shndx_ = i;
+	  out_section_offsets[i] = invalid_address;
+	}
       else
         out_section_offsets[i] = convert_types<Address, off_t>(offset);
 
@@ -1313,6 +1400,7 @@ Sized_relobj<size, big_endian>::do_layout(Symbol_table* symtab,
       delete[] gc_sd->section_names_data;
       delete[] gc_sd->symbols_data;
       delete[] gc_sd->symbol_names_data;
+      this->set_symbols_data(NULL);
     }
   else
     {
@@ -1349,7 +1437,8 @@ Sized_relobj<size, big_endian>::do_layout_deferred_sections(Layout* layout)
 template<int size, bool big_endian>
 void
 Sized_relobj<size, big_endian>::do_add_symbols(Symbol_table* symtab,
-					       Read_symbols_data* sd)
+					       Read_symbols_data* sd,
+					       Layout*)
 {
   if (sd->symbols == NULL)
     {
@@ -1432,6 +1521,7 @@ Sized_relobj<size, big_endian>::do_count_local_symbols(Stringpool* pool,
   unsigned int dyncount = 0;
   // Skip the first, dummy, symbol.
   psyms += sym_size;
+  bool discard_locals = parameters->options().discard_locals();
   for (unsigned int i = 1; i < loccount; ++i, psyms += sym_size)
     {
       elfcpp::Sym<size, big_endian> sym(psyms);
@@ -1453,7 +1543,8 @@ Sized_relobj<size, big_endian>::do_count_local_symbols(Stringpool* pool,
 
       // Decide whether this symbol should go into the output file.
 
-      if (shndx < shnum && out_sections[shndx] == NULL)
+      if ((shndx < shnum && out_sections[shndx] == NULL)
+	  || (shndx == this->discarded_eh_frame_shndx_))
         {
 	  lv.set_no_output_symtab_entry();
           gold_assert(!lv.needs_output_dynsym_entry());
@@ -1476,8 +1567,37 @@ Sized_relobj<size, big_endian>::do_count_local_symbols(Stringpool* pool,
 	  continue;
 	}
 
-      // Add the symbol to the symbol table string pool.
+      // If --discard-locals option is used, discard all temporary local
+      // symbols.  These symbols start with system-specific local label
+      // prefixes, typically .L for ELF system.  We want to be compatible
+      // with GNU ld so here we essentially use the same check in
+      // bfd_is_local_label().  The code is different because we already
+      // know that:
+      //
+      //   - the symbol is local and thus cannot have global or weak binding.
+      //   - the symbol is not a section symbol.
+      //   - the symbol has a name.
+      //
+      // We do not discard a symbol if it needs a dynamic symbol entry.
       const char* name = pnames + sym.get_st_name();
+      if (discard_locals
+	  && sym.get_st_type() != elfcpp::STT_FILE
+	  && !lv.needs_output_dynsym_entry()
+	  && parameters->target().is_local_label_name(name))
+	{
+	  lv.set_no_output_symtab_entry();
+	  continue;
+	}
+
+      // Discard the local symbol if -retain_symbols_file is specified
+      // and the local symbol is not in that file.
+      if (!parameters->options().should_retain_symbol(name))
+        {
+          lv.set_no_output_symtab_entry();
+          continue;
+        }
+
+      // Add the symbol to the symbol table string pool.
       pool->add(name, true, NULL);
       ++count;
 
@@ -1501,13 +1621,15 @@ Sized_relobj<size, big_endian>::do_count_local_symbols(Stringpool* pool,
 template<int size, bool big_endian>
 unsigned int
 Sized_relobj<size, big_endian>::do_finalize_local_symbols(unsigned int index,
-							  off_t off)
+							  off_t off,
+                                                          Symbol_table* symtab)
 {
   gold_assert(off == static_cast<off_t>(align_address(off, size >> 3)));
 
   const unsigned int loccount = this->local_symbol_count_;
   this->local_symbol_offset_ = off;
 
+  const bool relocatable = parameters->options().relocatable();
   const Output_sections& out_sections(this->output_sections());
   const std::vector<Address>& out_offsets(this->section_offsets_);
   unsigned int shnum = this->shnum();
@@ -1523,7 +1645,7 @@ Sized_relobj<size, big_endian>::do_finalize_local_symbols(unsigned int index,
 
       if (!is_ordinary)
 	{
-	  if (shndx == elfcpp::SHN_ABS || shndx == elfcpp::SHN_COMMON)
+	  if (shndx == elfcpp::SHN_ABS || Symbol::is_common_shndx(shndx))
 	    lv.set_output_value(lv.input_value());
 	  else
 	    {
@@ -1542,6 +1664,21 @@ Sized_relobj<size, big_endian>::do_finalize_local_symbols(unsigned int index,
 	    }
 
 	  Output_section* os = out_sections[shndx];
+          Address secoffset = out_offsets[shndx];
+          if (symtab->is_section_folded(this, shndx))
+            {
+              gold_assert (os == NULL && secoffset == invalid_address);
+              // Get the os of the section it is folded onto.
+              Section_id folded = symtab->icf()->get_folded_section(this,
+                                                                    shndx);
+              gold_assert(folded.first != NULL);
+              Sized_relobj<size, big_endian>* folded_obj = reinterpret_cast
+                <Sized_relobj<size, big_endian>*>(folded.first);
+              os = folded_obj->output_section(folded.second);
+              gold_assert(os != NULL);
+              secoffset = folded_obj->get_output_section_offset(folded.second);
+              gold_assert(secoffset != invalid_address);
+            }
 
 	  if (os == NULL)
 	    {
@@ -1551,22 +1688,41 @@ Sized_relobj<size, big_endian>::do_finalize_local_symbols(unsigned int index,
               // so we leave the input value unchanged here.
 	      continue;
 	    }
-	  else if (out_offsets[shndx] == invalid_address)
+	  else if (secoffset == invalid_address)
 	    {
+	      uint64_t start;
+
 	      // This is a SHF_MERGE section or one which otherwise
-	      // requires special handling.  We get the output address
-	      // of the start of the merged section.  If this is not a
-	      // section symbol, we can then determine the final
-	      // value.  If it is a section symbol, we can not, as in
-	      // that case we have to consider the addend to determine
-	      // the value to use in a relocation.
-	      if (!lv.is_section_symbol())
-		lv.set_output_value(os->output_address(this, shndx,
-                                                       lv.input_value()));
+	      // requires special handling.
+	      if (shndx == this->discarded_eh_frame_shndx_)
+		{
+		  // This local symbol belongs to a discarded .eh_frame
+		  // section.  Just treat it like the case in which
+		  // os == NULL above.
+		  gold_assert(this->has_eh_frame_);
+		  continue;
+		}
+	      else if (!lv.is_section_symbol())
+		{
+		  // This is not a section symbol.  We can determine
+		  // the final value now.
+		  lv.set_output_value(os->output_address(this, shndx,
+							 lv.input_value()));
+		}
+	      else if (!os->find_starting_output_address(this, shndx, &start))
+		{
+		  // This is a section symbol, but apparently not one
+		  // in a merged section.  Just use the start of the
+		  // output section.  This happens with relocatable
+		  // links when the input object has section symbols
+		  // for arbitrary non-merge sections.
+		  lv.set_output_value(os->address());
+		}
 	      else
 		{
-                  section_offset_type start =
-                    os->starting_output_address(this, shndx);
+		  // We have to consider the addend to determine the
+		  // value to use in a relocation.  START is the start
+		  // of this input section.
 		  Merged_symbol_value<size>* msv =
 		    new Merged_symbol_value<size>(lv.input_value(), start);
 		  lv.set_merged_symbol_value(msv);
@@ -1574,11 +1730,11 @@ Sized_relobj<size, big_endian>::do_finalize_local_symbols(unsigned int index,
 	    }
           else if (lv.is_tls_symbol())
 	    lv.set_output_value(os->tls_offset()
-				+ out_offsets[shndx]
+				+ secoffset
 				+ lv.input_value());
 	  else
-	    lv.set_output_value(os->address()
-				+ out_offsets[shndx]
+	    lv.set_output_value((relocatable ? 0 : os->address())
+				+ secoffset
 				+ lv.input_value());
 	}
 
@@ -1622,6 +1778,42 @@ Sized_relobj<size, big_endian>::do_set_local_dynsym_offset(off_t off)
   this->local_dynsym_offset_ = off;
   return this->output_local_dynsym_count_;
 }
+
+// If Symbols_data is not NULL get the section flags from here otherwise
+// get it from the file.
+
+template<int size, bool big_endian>
+uint64_t
+Sized_relobj<size, big_endian>::do_section_flags(unsigned int shndx)
+{
+  Symbols_data* sd = this->get_symbols_data();
+  if (sd != NULL)
+    {
+      const unsigned char* pshdrs = sd->section_headers_data
+                                    + This::shdr_size * shndx;
+      typename This::Shdr shdr(pshdrs);
+      return shdr.get_sh_flags(); 
+    }
+  // If sd is NULL, read the section header from the file.
+  return this->elf_file_.section_flags(shndx); 
+}
+
+// Get the section's ent size from Symbols_data.  Called by get_section_contents
+// in icf.cc
+
+template<int size, bool big_endian>
+uint64_t
+Sized_relobj<size, big_endian>::do_section_entsize(unsigned int shndx)
+{
+  Symbols_data* sd = this->get_symbols_data();
+  gold_assert (sd != NULL);
+
+  const unsigned char* pshdrs = sd->section_headers_data
+                                + This::shdr_size * shndx;
+  typename This::Shdr shdr(pshdrs);
+  return shdr.get_sh_entsize(); 
+}
+
 
 // Write out the local symbols.
 
@@ -1854,15 +2046,19 @@ Sized_relobj<size, big_endian>::map_to_kept_section(
     unsigned int shndx,
     bool* found) const
 {
-  Kept_comdat_section *kept = this->get_kept_comdat_section(shndx);
-  if (kept != NULL)
+  Relobj* kept_object;
+  unsigned int kept_shndx;
+  if (this->get_kept_comdat_section(shndx, &kept_object, &kept_shndx))
     {
-      gold_assert(kept->object_ != NULL);
-      *found = true;
-      Output_section* os = kept->object_->output_section(kept->shndx_);
-      Address offset = kept->object_->get_output_section_offset(kept->shndx_);
-      gold_assert(os != NULL && offset != invalid_address);
-      return os->address() + offset;
+      Sized_relobj<size, big_endian>* kept_relobj =
+	static_cast<Sized_relobj<size, big_endian>*>(kept_object);
+      Output_section* os = kept_relobj->output_section(kept_shndx);
+      Address offset = kept_relobj->get_output_section_offset(kept_shndx);
+      if (os != NULL && offset != invalid_address)
+	{
+	  *found = true;
+	  return os->address() + offset;
+	}
     }
   *found = false;
   return 0;
@@ -1898,16 +2094,6 @@ Sized_relobj<size, big_endian>::do_get_global_symbol_counts(
 bool
 Input_objects::add_object(Object* obj)
 {
-  // Set the global target from the first object file we recognize.
-  Target* target = obj->target();
-  if (!parameters->target_valid())
-    set_parameters_target(target);
-  else if (target != &parameters->target())
-    {
-      obj->error(_("incompatible target"));
-      return false;
-    }
-
   // Print the filename if the -t/--trace option is selected.
   if (parameters->options().trace())
     gold_info("%s", obj->name().c_str());
@@ -1929,19 +2115,6 @@ Input_objects::add_object(Object* obj)
 	}
 
       this->dynobj_list_.push_back(dynobj);
-
-      // If this is -lc, remember the directory in which we found it.
-      // We use this when issuing warnings about undefined symbols: as
-      // a heuristic, we don't warn about system libraries found in
-      // the same directory as -lc.
-      if (strncmp(soname, "libc.so", 7) == 0)
-	{
-	  const char* object_name = dynobj->name().c_str();
-	  const char* base = lbasename(object_name);
-	  if (base != object_name)
-	    this->system_library_directory_.assign(object_name,
-						   base - 1 - object_name);
-	}
     }
 
   // Add this object to the cross-referencer if requested.
@@ -1953,17 +2126,6 @@ Input_objects::add_object(Object* obj)
     }
 
   return true;
-}
-
-// Return whether an object was found in the system library directory.
-
-bool
-Input_objects::found_in_system_library_directory(const Object* object) const
-{
-  return (!this->system_library_directory_.empty()
-	  && object->name().compare(0,
-				    this->system_library_directory_.size(),
-				    this->system_library_directory_) == 0);
 }
 
 // For each dynamic object, record whether we've seen all of its
@@ -2082,29 +2244,29 @@ using namespace gold;
 template<int size, bool big_endian>
 Object*
 make_elf_sized_object(const std::string& name, Input_file* input_file,
-		      off_t offset, const elfcpp::Ehdr<size, big_endian>& ehdr)
+		      off_t offset, const elfcpp::Ehdr<size, big_endian>& ehdr,
+		      bool* punconfigured)
 {
-  int et = ehdr.get_e_type();
-  if (et == elfcpp::ET_REL)
+  Target* target = select_target(ehdr.get_e_machine(), size, big_endian,
+				 ehdr.get_e_ident()[elfcpp::EI_OSABI],
+				 ehdr.get_e_ident()[elfcpp::EI_ABIVERSION]);
+  if (target == NULL)
+    gold_fatal(_("%s: unsupported ELF machine number %d"),
+	       name.c_str(), ehdr.get_e_machine());
+
+  if (!parameters->target_valid())
+    set_parameters_target(target);
+  else if (target != &parameters->target())
     {
-      Sized_relobj<size, big_endian>* obj =
-	new Sized_relobj<size, big_endian>(name, input_file, offset, ehdr);
-      obj->setup(ehdr);
-      return obj;
-    }
-  else if (et == elfcpp::ET_DYN)
-    {
-      Sized_dynobj<size, big_endian>* obj =
-	new Sized_dynobj<size, big_endian>(name, input_file, offset, ehdr);
-      obj->setup(ehdr);
-      return obj;
-    }
-  else
-    {
-      gold_error(_("%s: unsupported ELF file type %d"),
-		 name.c_str(), et);
+      if (punconfigured != NULL)
+	*punconfigured = true;
+      else
+	gold_error(_("%s: incompatible target"), name.c_str());
       return NULL;
     }
+
+  return target->make_elf_object<size, big_endian>(name, input_file, offset,
+						   ehdr);
 }
 
 } // End anonymous namespace.
@@ -2112,73 +2274,60 @@ make_elf_sized_object(const std::string& name, Input_file* input_file,
 namespace gold
 {
 
+// Return whether INPUT_FILE is an ELF object.
+
+bool
+is_elf_object(Input_file* input_file, off_t offset,
+	      const unsigned char** start, int *read_size)
+{
+  off_t filesize = input_file->file().filesize();
+  int want = elfcpp::Elf_recognizer::max_header_size;
+  if (filesize - offset < want)
+    want = filesize - offset;
+
+  const unsigned char* p = input_file->file().get_view(offset, 0, want,
+						       true, false);
+  *start = p;
+  *read_size = want;
+
+  return elfcpp::Elf_recognizer::is_elf_file(p, want);
+}
+
 // Read an ELF file and return the appropriate instance of Object.
 
 Object*
 make_elf_object(const std::string& name, Input_file* input_file, off_t offset,
-		const unsigned char* p, section_offset_type bytes)
+		const unsigned char* p, section_offset_type bytes,
+		bool* punconfigured)
 {
-  if (bytes < elfcpp::EI_NIDENT)
+  if (punconfigured != NULL)
+    *punconfigured = false;
+
+  std::string error;
+  bool big_endian;
+  int size;
+  if (!elfcpp::Elf_recognizer::is_valid_header(p, bytes, &size,
+                                               &big_endian, &error))
     {
-      gold_error(_("%s: ELF file too short"), name.c_str());
+      gold_error(_("%s: %s"), name.c_str(), error.c_str());
       return NULL;
     }
 
-  int v = p[elfcpp::EI_VERSION];
-  if (v != elfcpp::EV_CURRENT)
+  if (size == 32)
     {
-      if (v == elfcpp::EV_NONE)
-	gold_error(_("%s: invalid ELF version 0"), name.c_str());
-      else
-	gold_error(_("%s: unsupported ELF version %d"), name.c_str(), v);
-      return NULL;
-    }
-
-  int c = p[elfcpp::EI_CLASS];
-  if (c == elfcpp::ELFCLASSNONE)
-    {
-      gold_error(_("%s: invalid ELF class 0"), name.c_str());
-      return NULL;
-    }
-  else if (c != elfcpp::ELFCLASS32
-	   && c != elfcpp::ELFCLASS64)
-    {
-      gold_error(_("%s: unsupported ELF class %d"), name.c_str(), c);
-      return NULL;
-    }
-
-  int d = p[elfcpp::EI_DATA];
-  if (d == elfcpp::ELFDATANONE)
-    {
-      gold_error(_("%s: invalid ELF data encoding"), name.c_str());
-      return NULL;
-    }
-  else if (d != elfcpp::ELFDATA2LSB
-	   && d != elfcpp::ELFDATA2MSB)
-    {
-      gold_error(_("%s: unsupported ELF data encoding %d"), name.c_str(), d);
-      return NULL;
-    }
-
-  bool big_endian = d == elfcpp::ELFDATA2MSB;
-
-  if (c == elfcpp::ELFCLASS32)
-    {
-      if (bytes < elfcpp::Elf_sizes<32>::ehdr_size)
-	{
-	  gold_error(_("%s: ELF file too short"), name.c_str());
-	  return NULL;
-	}
       if (big_endian)
 	{
 #ifdef HAVE_TARGET_32_BIG
 	  elfcpp::Ehdr<32, true> ehdr(p);
 	  return make_elf_sized_object<32, true>(name, input_file,
-						 offset, ehdr);
+						 offset, ehdr, punconfigured);
 #else
-          gold_error(_("%s: not configured to support "
-		       "32-bit big-endian object"),
-		     name.c_str());
+	  if (punconfigured != NULL)
+	    *punconfigured = true;
+	  else
+	    gold_error(_("%s: not configured to support "
+			 "32-bit big-endian object"),
+		       name.c_str());
 	  return NULL;
 #endif
 	}
@@ -2187,32 +2336,33 @@ make_elf_object(const std::string& name, Input_file* input_file, off_t offset,
 #ifdef HAVE_TARGET_32_LITTLE
 	  elfcpp::Ehdr<32, false> ehdr(p);
 	  return make_elf_sized_object<32, false>(name, input_file,
-						  offset, ehdr);
+						  offset, ehdr, punconfigured);
 #else
-          gold_error(_("%s: not configured to support "
-		       "32-bit little-endian object"),
-		     name.c_str());
+	  if (punconfigured != NULL)
+	    *punconfigured = true;
+	  else
+	    gold_error(_("%s: not configured to support "
+			 "32-bit little-endian object"),
+		       name.c_str());
 	  return NULL;
 #endif
 	}
     }
-  else
+  else if (size == 64)
     {
-      if (bytes < elfcpp::Elf_sizes<64>::ehdr_size)
-	{
-	  gold_error(_("%s: ELF file too short"), name.c_str());
-	  return NULL;
-	}
       if (big_endian)
 	{
 #ifdef HAVE_TARGET_64_BIG
 	  elfcpp::Ehdr<64, true> ehdr(p);
 	  return make_elf_sized_object<64, true>(name, input_file,
-						 offset, ehdr);
+						 offset, ehdr, punconfigured);
 #else
-          gold_error(_("%s: not configured to support "
-		       "64-bit big-endian object"),
-		     name.c_str());
+	  if (punconfigured != NULL)
+	    *punconfigured = true;
+	  else
+	    gold_error(_("%s: not configured to support "
+			 "64-bit big-endian object"),
+		       name.c_str());
 	  return NULL;
 #endif
 	}
@@ -2221,15 +2371,20 @@ make_elf_object(const std::string& name, Input_file* input_file, off_t offset,
 #ifdef HAVE_TARGET_64_LITTLE
 	  elfcpp::Ehdr<64, false> ehdr(p);
 	  return make_elf_sized_object<64, false>(name, input_file,
-						  offset, ehdr);
+						  offset, ehdr, punconfigured);
 #else
-          gold_error(_("%s: not configured to support "
-		       "64-bit little-endian object"),
-		     name.c_str());
+	  if (punconfigured != NULL)
+	    *punconfigured = true;
+	  else
+	    gold_error(_("%s: not configured to support "
+			 "64-bit little-endian object"),
+		       name.c_str());
 	  return NULL;
 #endif
 	}
     }
+  else
+    gold_unreachable();
 }
 
 // Instantiate the templates we need.

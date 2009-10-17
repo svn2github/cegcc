@@ -1,6 +1,6 @@
 /* tc-tic54x.c -- Assembly code for the Texas Instruments TMS320C54X
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
-   Free Software Foundation, Inc.
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,
+   2009  Free Software Foundation, Inc.
    Contributed by Timothy Wall (twall@cygnus.com)
 
    This file is part of GAS, the GNU Assembler.
@@ -81,7 +81,7 @@ static struct stag
 
 typedef struct _tic54x_insn
 {
-  const template *tm;		/* Opcode template.  */
+  const insn_template *tm;	/* Opcode template.  */
 
   char mnemonic[MAX_LINE];	/* Opcode name/mnemonic.  */
   char parmnemonic[MAX_LINE];   /* 2nd mnemonic of parallel insn.  */
@@ -356,7 +356,7 @@ tic54x_asg (int x ATTRIBUTE_UNUSED)
   c = get_symbol_end ();	/* Get terminator.  */
   if (!ISALPHA (*name))
     {
-      as_bad ("symbols assigned with .asg must begin with a letter");
+      as_bad (_("symbols assigned with .asg must begin with a letter"));
       ignore_rest_of_line ();
       return;
     }
@@ -476,7 +476,7 @@ tic54x_bss (int x ATTRIBUTE_UNUSED)
   c = get_symbol_end ();	/* Get terminator.  */
   if (c != ',')
     {
-      as_bad (".bss size argument missing\n");
+      as_bad (_(".bss size argument missing\n"));
       ignore_rest_of_line ();
       return;
     }
@@ -485,7 +485,7 @@ tic54x_bss (int x ATTRIBUTE_UNUSED)
   words = get_absolute_expression ();
   if (words < 0)
     {
-      as_bad (".bss size %d < 0!", words);
+      as_bad (_(".bss size %d < 0!"), words);
       ignore_rest_of_line ();
       return;
     }
@@ -1030,12 +1030,12 @@ tic54x_cons (int type)
 		case 1:
 		  if ((value > 0 && value > 0xFF)
 		      || (value < 0 && value < - 0x100))
-		    as_warn ("Overflow in expression, truncated to 8 bits");
+		    as_warn (_("Overflow in expression, truncated to 8 bits"));
 		  break;
 		case 2:
 		  if ((value > 0 && value > 0xFFFF)
 		      || (value < 0 && value < - 0x10000))
-		    as_warn ("Overflow in expression, truncated to 16 bits");
+		    as_warn (_("Overflow in expression, truncated to 16 bits"));
 		  break;
 		}
 	    }
@@ -1439,7 +1439,7 @@ tic54x_usect (int x ATTRIBUTE_UNUSED)
     flags |= SEC_TIC54X_BLOCK;
 
   if (!bfd_set_section_flags (stdoutput, seg, flags))
-    as_warn ("Error setting flags for \"%s\": %s", name,
+    as_warn (_("Error setting flags for \"%s\": %s"), name,
 	     bfd_errmsg (bfd_get_error ()));
 
   subseg_set (current_seg, current_subseg);	/* Restore current seg.  */
@@ -2989,7 +2989,7 @@ static const math_proc_entry math_procs[] =
 void
 md_begin (void)
 {
-  template *tm;
+  insn_template *tm;
   symbol *sym;
   const subsym_proc_entry *subsym_proc;
   const math_proc_entry *math_proc;
@@ -3018,7 +3018,7 @@ md_begin (void)
     }
 
   op_hash = hash_new ();
-  for (tm = (template *) tic54x_optab; tm->name; tm++)
+  for (tm = (insn_template *) tic54x_optab; tm->name; tm++)
     {
       if (hash_find (op_hash, tm->name))
 	continue;
@@ -3028,7 +3028,7 @@ md_begin (void)
 		  tm->name, hash_err);
     }
   parop_hash = hash_new ();
-  for (tm = (template *) tic54x_paroptab; tm->name; tm++)
+  for (tm = (insn_template *) tic54x_paroptab; tm->name; tm++)
     {
       if (hash_find (parop_hash, tm->name))
 	continue;
@@ -3128,7 +3128,7 @@ get_operands (struct opstruct operands[], char *line)
 	    {
 	      if (paren_not_balanced)
 		{
-		  as_bad ("Unbalanced parenthesis in operand %d", numexp);
+		  as_bad (_("Unbalanced parenthesis in operand %d"), numexp);
 		  return -1;
 		}
 	      else
@@ -3159,7 +3159,7 @@ get_operands (struct opstruct operands[], char *line)
 	{
 	  if (expecting_operand || *lptr == ',')
 	    {
-	      as_bad ("Expecting operand after ','");
+	      as_bad (_("Expecting operand after ','"));
 	      return -1;
 	    }
 	}
@@ -3167,7 +3167,7 @@ get_operands (struct opstruct operands[], char *line)
 	{
 	  if (*++lptr == '\0')
 	    {
-	      as_bad ("Expecting operand after ','");
+	      as_bad (_("Expecting operand after ','"));
 	      return -1;
 	    }
 	  expecting_operand = 1;
@@ -3178,7 +3178,7 @@ get_operands (struct opstruct operands[], char *line)
     ;
   if (!is_end_of_line[(int) *lptr])
     {
-      as_bad ("Extra junk on line");
+      as_bad (_("Extra junk on line"));
       return -1;
     }
 
@@ -4179,7 +4179,7 @@ optimize_insn (tic54x_insn *insn)
 static int
 tic54x_parse_insn (tic54x_insn *insn, char *line)
 {
-  insn->tm = (template *) hash_find (op_hash, insn->mnemonic);
+  insn->tm = (insn_template *) hash_find (op_hash, insn->mnemonic);
   if (!insn->tm)
     {
       as_bad (_("Unrecognized instruction \"%s\""), insn->mnemonic);
@@ -4202,8 +4202,8 @@ tic54x_parse_insn (tic54x_insn *insn, char *line)
 	  /* SUCCESS! now try some optimizations.  */
 	  if (optimize_insn (insn))
 	    {
-	      insn->tm = (template *) hash_find (op_hash,
-						 insn->mnemonic);
+	      insn->tm = (insn_template *) hash_find (op_hash,
+                                                      insn->mnemonic);
 	      continue;
 	    }
 
@@ -4237,7 +4237,7 @@ next_line_shows_parallel (char *next_line)
 static int
 tic54x_parse_parallel_insn_firstline (tic54x_insn *insn, char *line)
 {
-  insn->tm = (template *) hash_find (parop_hash, insn->mnemonic);
+  insn->tm = (insn_template *) hash_find (parop_hash, insn->mnemonic);
   if (!insn->tm)
     {
       as_bad (_("Unrecognized parallel instruction \"%s\""),

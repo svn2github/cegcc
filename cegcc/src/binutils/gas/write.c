@@ -1,6 +1,6 @@
 /* write.c - emit .o file
    Copyright 1986, 1987, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997,
-   1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
+   1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
@@ -156,7 +156,7 @@ fix_new_internal (fragS *frag,		/* Which frag?  */
 
   n_fixups++;
 
-  fixP = obstack_alloc (&notes, sizeof (fixS));
+  fixP = (fixS *) obstack_alloc (&notes, sizeof (fixS));
 
   fixP->fx_frag = frag;
   fixP->fx_where = where;
@@ -386,7 +386,7 @@ chain_frchains_together_1 (segT section, struct frchain *frchp)
     {
       prev_frag->fr_next = frchp->frch_root;
       prev_frag = frchp->frch_last;
-      assert (prev_frag->fr_type != 0);
+      gas_assert (prev_frag->fr_type != 0);
       if (frchp->fix_root != (fixS *) NULL)
 	{
 	  if (seg_info (section)->fix_root == (fixS *) NULL)
@@ -396,8 +396,8 @@ chain_frchains_together_1 (segT section, struct frchain *frchp)
 	  prev_fix = frchp->fix_tail;
 	}
     }
-  assert (prev_frag->fr_type != 0);
-  assert (prev_frag != &dummy);
+  gas_assert (prev_frag->fr_type != 0);
+  gas_assert (prev_frag != &dummy);
   prev_frag->fr_next = 0;
   return prev_frag;
 }
@@ -478,7 +478,7 @@ cvt_frag_to_fill (segT sec ATTRIBUTE_UNUSED, fragS *fragP)
     case rs_machine_dependent:
       md_convert_frag (stdoutput, sec, fragP);
 
-      assert (fragP->fr_next == NULL
+      gas_assert (fragP->fr_next == NULL
 	      || ((offsetT) (fragP->fr_next->fr_address - fragP->fr_address)
 		  == fragP->fr_fix));
 
@@ -560,21 +560,24 @@ size_seg (bfd *abfd, asection *sec, void *xxx ATTRIBUTE_UNUSED)
     size = 0;
 
   flags = bfd_get_section_flags (abfd, sec);
+  if (size == 0 && bfd_get_section_size (sec) != 0 &&
+    (flags & SEC_HAS_CONTENTS) != 0)
+    return;
 
   if (size > 0 && ! seginfo->bss)
     flags |= SEC_HAS_CONTENTS;
 
   flags &= ~SEC_RELOC;
   x = bfd_set_section_flags (abfd, sec, flags);
-  assert (x);
+  gas_assert (x);
 
   newsize = md_section_align (sec, size);
   x = bfd_set_section_size (abfd, sec, newsize);
-  assert (x);
+  gas_assert (x);
 
   /* If the size had to be rounded up, add some padding in the last
      non-empty frag.  */
-  assert (newsize >= size);
+  gas_assert (newsize >= size);
   if (size != newsize)
     {
       fragS *last = seginfo->frchainP->frch_last;
@@ -1167,7 +1170,7 @@ write_relocs (bfd *abfd, asection *sec, void *xxx ATTRIBUTE_UNUSED)
 	rp = &r->next;
     }
 
-  relocs = xcalloc (n, sizeof (arelent *));
+  relocs = (arelent **) xcalloc (n, sizeof (arelent *));
 
   i = 0;
   for (fixp = seginfo->fix_root; fixp != (fixS *) NULL; fixp = fixp->fx_next)
@@ -1299,7 +1302,7 @@ write_contents (bfd *abfd ATTRIBUTE_UNUSED,
       char *fill_literal;
       offsetT count;
 
-      assert (f->fr_type == rs_fill);
+      gas_assert (f->fr_type == rs_fill);
       if (f->fr_fix)
 	{
 	  x = bfd_set_section_contents (stdoutput, sec,
@@ -1313,7 +1316,7 @@ write_contents (bfd *abfd ATTRIBUTE_UNUSED,
       fill_literal = f->fr_literal + f->fr_fix;
       fill_size = f->fr_var;
       count = f->fr_offset;
-      assert (count >= 0);
+      gas_assert (count >= 0);
       if (fill_size && count)
 	{
 	  char buf[256];
@@ -1395,7 +1398,7 @@ set_symtab (void)
       int i;
       bfd_size_type amt = (bfd_size_type) nsyms * sizeof (asymbol *);
 
-      asympp = bfd_alloc (stdoutput, amt);
+      asympp = (asymbol **) bfd_alloc (stdoutput, amt);
       symp = symbol_rootP;
       for (i = 0; i < nsyms; i++, symp = symbol_next (symp))
 	{
@@ -1410,7 +1413,7 @@ set_symtab (void)
   else
     asympp = 0;
   result = bfd_set_symtab (stdoutput, asympp, nsyms);
-  assert (result);
+  gas_assert (result);
   symbol_table_frozen = 1;
 }
 
@@ -1671,18 +1674,22 @@ write_object_file (void)
 	    if (lie->added == 2)
 	      continue;
 	    /* Patch the jump table.  */
-	    /* This is the offset from ??? to table_ptr+0.  */
-	    to_addr = table_addr - S_GET_VALUE (lie->sub);
-#ifdef TC_CHECK_ADJUSTED_BROKEN_DOT_WORD
-	    TC_CHECK_ADJUSTED_BROKEN_DOT_WORD (to_addr, lie);
-#endif
-	    md_number_to_chars (lie->word_goes_here, to_addr, 2);
-	    for (untruth = lie->next_broken_word;
+	    for (untruth = (struct broken_word *) (fragP->fr_symbol);
 		 untruth && untruth->dispfrag == fragP;
 		 untruth = untruth->next_broken_word)
 	      {
 		if (untruth->use_jump == lie)
-		  md_number_to_chars (untruth->word_goes_here, to_addr, 2);
+		  {
+		    /* This is the offset from ??? to table_ptr+0.
+		       The target is the same for all users of this
+		       md_long_jump, but the "sub" bases (and hence the
+		       offsets) may be different.  */
+		    addressT to_word = table_addr - S_GET_VALUE (untruth->sub);
+#ifdef TC_CHECK_ADJUSTED_BROKEN_DOT_WORD
+		    TC_CHECK_ADJUSTED_BROKEN_DOT_WORD (to_word, untruth);
+#endif
+		    md_number_to_chars (untruth->word_goes_here, to_word, 2);
+		  }
 	      }
 
 	    /* Install the long jump.  */
@@ -1882,7 +1889,9 @@ write_object_file (void)
 #ifdef obj_frob_file
   obj_frob_file ();
 #endif
-
+#ifdef obj_coff_generate_pdata
+  obj_coff_generate_pdata ();
+#endif
   bfd_map_over_sections (stdoutput, write_relocs, (char *) 0);
 
 #ifdef tc_frob_file_after_relocs
@@ -2226,13 +2235,17 @@ relax_segment (struct frag *segment_frag_root, segT segment, int pass)
 					     S_GET_NAME (lie->sub),
 					     buf);
 			    }
-			  lie->added = 1;
 			  if (fragP->fr_subtype == 0)
 			    {
 			      fragP->fr_subtype++;
 			      growth += md_short_jump_size;
 			    }
-			  for (untruth = lie->next_broken_word;
+
+			  /* Redirect *all* words of this table with the same
+			     target, lest we have to handle the case where the
+			     same target but with a offset that fits on this
+			     round overflows at the next relaxation round.  */
+			  for (untruth = (struct broken_word *) (fragP->fr_symbol);
 			       untruth && untruth->dispfrag == lie->dispfrag;
 			       untruth = untruth->next_broken_word)
 			    if ((symbol_get_frag (untruth->add)
@@ -2243,6 +2256,8 @@ relax_segment (struct frag *segment_frag_root, segT segment, int pass)
 				untruth->added = 2;
 				untruth->use_jump = lie;
 			      }
+
+			  lie->added = 1;
 			  growth += md_long_jump_size;
 			}
 		    }

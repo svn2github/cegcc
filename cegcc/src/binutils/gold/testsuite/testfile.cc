@@ -61,7 +61,7 @@ class Target_test : public Sized_target<size, big_endian>
   relocate_section(const Relocate_info<size, big_endian>*, unsigned int,
 		   const unsigned char*, size_t, Output_section*, bool,
 		   unsigned char*, typename elfcpp::Elf_types<size>::Elf_Addr,
-		   section_size_type)
+		   section_size_type, const Reloc_symbol_changes*)
   { ERROR("call to Target_test::relocate_section"); }
 
   void
@@ -99,7 +99,11 @@ const Target::Target_info Target_test<size, big_endian>::test_target_info =
   "/dummy",				// dynamic_linker
   0x08000000,				// default_text_segment_address
   0x1000,				// abi_pagesize
-  0x1000				// common_pagesize
+  0x1000,				// common_pagesize
+  elfcpp::SHN_UNDEF,			// small_common_shndx
+  elfcpp::SHN_UNDEF,			// large_common_shndx
+  0,					// small_common_section_flags
+  0					// large_common_section_flags
 };
 
 // The test targets.

@@ -25,6 +25,7 @@
 
 #include "elfcpp.h"
 #include "symtab.h"
+#include "object.h"
 #include "reloc.h"
 #include "reloc-types.h"
 
@@ -163,6 +164,12 @@ get_comdat_behavior(const char* name)
 // NEEDS_SPECIAL_OFFSET_HANDLING is true, in which case they refer to
 // the output section.
 
+// RELOC_SYMBOL_CHANGES is used for -fsplit-stack support.  If it is
+// not NULL, it is a vector indexed by relocation index.  If that
+// entry is not NULL, it points to a global symbol which used as the
+// symbol for the relocation, ignoring the symbol index in the
+// relocation.
+
 template<int size, bool big_endian, typename Target_type, int sh_type,
 	 typename Relocate>
 inline void
@@ -175,7 +182,8 @@ relocate_section(
     bool needs_special_offset_handling,
     unsigned char* view,
     typename elfcpp::Elf_types<size>::Elf_Addr view_address,
-    section_size_type view_size)
+    section_size_type view_size,
+    const Reloc_symbol_changes* reloc_symbol_changes)
 {
   typedef typename Reloc_types<sh_type, size, big_endian>::Reloc Reltype;
   const int reloc_size = Reloc_types<sh_type, size, big_endian>::reloc_size;
@@ -210,7 +218,9 @@ relocate_section(
 
       Symbol_value<size> symval;
       const Symbol_value<size> *psymval;
-      if (r_sym < local_count)
+      if (r_sym < local_count
+	  && (reloc_symbol_changes == NULL
+	      || (*reloc_symbol_changes)[i] == NULL))
 	{
 	  sym = NULL;
 	  psymval = object->local_symbol(r_sym);
@@ -218,12 +228,14 @@ relocate_section(
           // If the local symbol belongs to a section we are discarding,
           // and that section is a debug section, try to find the
           // corresponding kept section and map this symbol to its
-          // counterpart in the kept section.
+          // counterpart in the kept section.  The symbol must not 
+          // correspond to a section we are folding.
 	  bool is_ordinary;
 	  unsigned int shndx = psymval->input_shndx(&is_ordinary);
 	  if (is_ordinary
 	      && shndx != elfcpp::SHN_UNDEF
-	      && !object->is_section_included(shndx))
+	      && !object->is_section_included(shndx) 
+              && !(relinfo->symtab->is_section_folded(object, shndx)))
 	    {
 	      if (comdat_behavior == CB_UNDETERMINED)
 	        {
@@ -244,7 +256,7 @@ relocate_section(
 	        {
 	          if (comdat_behavior == CB_WARNING)
                     gold_warning_at_location(relinfo, i, offset,
-                                             _("Relocation refers to discarded "
+                                             _("relocation refers to discarded "
                                                "comdat section"));
                   symval.set_output_value(0);
 	        }
@@ -254,10 +266,17 @@ relocate_section(
 	}
       else
 	{
-	  const Symbol* gsym = object->global_symbol(r_sym);
-	  gold_assert(gsym != NULL);
-	  if (gsym->is_forwarder())
-	    gsym = relinfo->symtab->resolve_forwards(gsym);
+	  const Symbol* gsym;
+	  if (reloc_symbol_changes != NULL
+	      && (*reloc_symbol_changes)[i] != NULL)
+	    gsym = (*reloc_symbol_changes)[i];
+	  else
+	    {
+	      gsym = object->global_symbol(r_sym);
+	      gold_assert(gsym != NULL);
+	      if (gsym->is_forwarder())
+		gsym = relinfo->symtab->resolve_forwards(gsym);
+	    }
 
 	  sym = static_cast<const Sized_symbol<size>*>(gsym);
 	  if (sym->has_symtab_index())
@@ -268,8 +287,9 @@ relocate_section(
 	  psymval = &symval;
 	}
 
-      if (!relocate.relocate(relinfo, target, i, reloc, r_type, sym, psymval,
-			     view + offset, view_address + offset, view_size))
+      if (!relocate.relocate(relinfo, target, output_section, i, reloc,
+			     r_type, sym, psymval, view + offset,
+			     view_address + offset, view_size))
 	continue;
 
       if (offset < 0 || static_cast<section_size_type>(offset) >= view_size)
@@ -286,7 +306,7 @@ relocate_section(
           && !target->is_defined_by_abi(sym)
 	  && (!parameters->options().shared()       // -shared
               || parameters->options().defs()))     // -z defs
-	gold_undefined_symbol(sym, relinfo, i, offset);
+	gold_undefined_symbol_at_location(sym, relinfo, i, offset);
 
       if (sym != NULL && sym->has_warning())
 	relinfo->symtab->issue_warning(sym, relinfo, i, offset);

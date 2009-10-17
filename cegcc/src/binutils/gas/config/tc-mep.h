@@ -34,7 +34,7 @@
 #define TARGET_FORMAT (target_big_endian ? "elf32-mep" : "elf32-mep-little")
 
 /* This is the default.  */
-#define TARGET_BYTES_BIG_ENDIAN 1
+#define TARGET_BYTES_BIG_ENDIAN 0
 
 /* Permit temporary numeric labels. */
 #define LOCAL_LABELS_FB 1
@@ -80,6 +80,9 @@ extern int mep_flush_pending_output(void);
 extern const struct relax_type md_relax_table[];
 #define TC_GENERIC_RELAX_TABLE md_relax_table
 
+extern long mep_relax_frag (segT, fragS *, long);
+#define md_relax_frag mep_relax_frag
+
 /* Account for inserting a jmp after the insn.  */
 #define TC_CGEN_MAX_RELAX(insn, len) ((len) + 4)
 
@@ -94,7 +97,7 @@ extern void mep_prepare_relax_scan (fragS *, offsetT *, relax_substateT);
 #define VTEXT_SECTION_NAME ".vtext"
 
 /* Needed to process pending instructions when a label is encountered.  */
-#define TC_START_LABEL(ch, ptr)    ((ch == ':') && mep_flush_pending_output ())
+#define TC_START_LABEL(ch, s, ptr)    ((ch == ':') && mep_flush_pending_output ())
 
 #define tc_unrecognized_line(c) mep_unrecognized_line (c)
 extern int mep_unrecognized_line (int);

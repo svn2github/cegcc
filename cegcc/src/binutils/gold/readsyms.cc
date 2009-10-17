@@ -33,6 +33,8 @@
 #include "script.h"
 #include "readsyms.h"
 #include "plugin.h"
+#include "layout.h"
+#include "incremental.h"
 
 namespace gold
 {
@@ -90,6 +92,44 @@ Read_symbols::~Read_symbols()
   // Add_symbols task.
 }
 
+// If appropriate, issue a warning about skipping an incompatible
+// file.
+
+void
+Read_symbols::incompatible_warning(const Input_argument* input_argument,
+				   const Input_file* input_file)
+{
+  if (parameters->options().warn_search_mismatch())
+    gold_warning("skipping incompatible %s while searching for %s",
+		 input_file->filename().c_str(),
+		 input_argument->file().name());
+}
+
+// Requeue a Read_symbols task to search for the next object with the
+// same name.
+
+void
+Read_symbols::requeue(Workqueue* workqueue, Input_objects* input_objects,
+		      Symbol_table* symtab, Layout* layout, Dirsearch* dirpath,
+		      int dirindex, Mapfile* mapfile,
+		      const Input_argument* input_argument,
+		      Input_group* input_group, Task_token* next_blocker)
+{
+  // Bump the directory search index.
+  ++dirindex;
+
+  // We don't need to worry about this_blocker, since we already
+  // reached it.  However, we are removing the blocker on next_blocker
+  // because the calling task is completing.  So we need to add a new
+  // blocker.  Since next_blocker may be shared by several tasks, we
+  // need to increment the count with the workqueue lock held.
+  workqueue->add_blocker(next_blocker);
+
+  workqueue->queue(new Read_symbols(input_objects, symtab, layout, dirpath,
+				    dirindex, mapfile, input_argument,
+				    input_group, NULL, next_blocker));
+}
+
 // Return whether a Read_symbols task is runnable.  We can read an
 // ordinary input file immediately.  For an archive specified using
 // -l, we have to wait until the search path is complete.
@@ -139,7 +179,7 @@ Read_symbols::do_read_symbols(Workqueue* workqueue)
     }
 
   Input_file* input_file = new Input_file(&this->input_argument_->file());
-  if (!input_file->open(this->options_, *this->dirpath_, this))
+  if (!input_file->open(*this->dirpath_, this, &this->dirindex_))
     return false;
 
   // Read enough of the file to pick up the entire ELF header.
@@ -153,33 +193,39 @@ Read_symbols::do_read_symbols(Workqueue* workqueue)
       return false;
     }
 
-  int read_size = elfcpp::Elf_sizes<64>::ehdr_size;
-  if (filesize < read_size)
-    read_size = filesize;
-
-  const unsigned char* ehdr = input_file->file().get_view(0, 0, read_size,
-							  true, false);
+  const unsigned char* ehdr;
+  int read_size;
+  bool is_elf = is_elf_object(input_file, 0, &ehdr, &read_size);
 
   if (read_size >= Archive::sarmag)
     {
       bool is_thin_archive
           = memcmp(ehdr, Archive::armagt, Archive::sarmag) == 0;
-      if (is_thin_archive 
+      if (is_thin_archive
           || memcmp(ehdr, Archive::armag, Archive::sarmag) == 0)
 	{
 	  // This is an archive.
 	  Archive* arch = new Archive(this->input_argument_->file().name(),
 				      input_file, is_thin_archive,
 				      this->dirpath_, this);
-	  arch->setup(this->input_objects_);
-	  
+	  arch->setup();
+
+	  if (this->layout_->incremental_inputs())
+	    {
+	      const Input_argument* ia = this->input_argument_;	      
+	      this->layout_->incremental_inputs()->report_archive(ia, arch);
+	    }
+
 	  // Unlock the archive so it can be used in the next task.
 	  arch->unlock(this);
 
 	  workqueue->queue_next(new Add_archive_symbols(this->symtab_,
 							this->layout_,
 							this->input_objects_,
+							this->dirpath_,
+							this->dirindex_,
 							this->mapfile_,
+							this->input_argument_,
 							arch,
 							this->input_group_,
 							this->this_blocker_,
@@ -200,55 +246,83 @@ Read_symbols::do_read_symbols(Workqueue* workqueue)
           // We are done with the file at this point, so unlock it.
           obj->unlock(this);
 
-          workqueue->queue_next(new Add_plugin_symbols(this->symtab_,
-                                                       this->layout_,
-                                                       obj,
-                                                       this->this_blocker_,
-                                                       this->next_blocker_));
+          workqueue->queue_next(new Add_symbols(this->input_objects_,
+                                                this->symtab_,
+                                                this->layout_,
+						this->dirpath_,
+						this->dirindex_,
+						this->mapfile_,
+						this->input_argument_,
+						this->input_group_,
+                                                obj,
+						NULL,
+                                                this->this_blocker_,
+                                                this->next_blocker_));
           return true;
         }
     }
 
-  if (read_size >= 4)
+  if (is_elf)
     {
-      static unsigned char elfmagic[4] =
+      // This is an ELF object.
+
+      bool unconfigured = false;
+      bool* punconfigured = (input_file->will_search_for()
+			     ? &unconfigured
+			     : NULL);
+      Object* obj = make_elf_object(input_file->filename(),
+				    input_file, 0, ehdr, read_size,
+				    punconfigured);
+      if (obj == NULL)
 	{
-	  elfcpp::ELFMAG0, elfcpp::ELFMAG1,
-	  elfcpp::ELFMAG2, elfcpp::ELFMAG3
-	};
-      if (memcmp(ehdr, elfmagic, 4) == 0)
-	{
-	  // This is an ELF object.
-
-	  Object* obj = make_elf_object(input_file->filename(),
-					input_file, 0, ehdr, read_size);
-	  if (obj == NULL)
-	    return false;
-
-	  Read_symbols_data* sd = new Read_symbols_data;
-	  obj->read_symbols(sd);
-
-	  // Opening the file locked it, so now we need to unlock it.
-	  // We need to unlock it before queuing the Add_symbols task,
-	  // because the workqueue doesn't know about our lock on the
-	  // file.  If we queue the Add_symbols task first, it will be
-	  // stuck on the end of the file lock, but since the
-	  // workqueue doesn't know about that lock, it will never
-	  // release the Add_symbols task.
-
-	  input_file->file().unlock(this);
-
-	  // We use queue_next because everything is cached for this
-	  // task to run right away if possible.
-
-	  workqueue->queue_next(new Add_symbols(this->input_objects_,
-						this->symtab_, this->layout_,
-						obj, sd,
-						this->this_blocker_,
-						this->next_blocker_));
-
-	  return true;
+	  if (unconfigured)
+	    {
+	      Read_symbols::incompatible_warning(this->input_argument_,
+						 input_file);
+	      input_file->file().release();
+	      input_file->file().unlock(this);
+	      delete input_file;
+	      ++this->dirindex_;
+	      return this->do_read_symbols(workqueue);
+	    }
+	  return false;
 	}
+
+      Read_symbols_data* sd = new Read_symbols_data;
+      obj->read_symbols(sd);
+
+      if (this->layout_->incremental_inputs())
+	{
+	  const Input_argument* ia = this->input_argument_;
+	  this->layout_->incremental_inputs()->report_object(ia, obj);
+	}
+
+      // Opening the file locked it, so now we need to unlock it.  We
+      // need to unlock it before queuing the Add_symbols task,
+      // because the workqueue doesn't know about our lock on the
+      // file.  If we queue the Add_symbols task first, it will be
+      // stuck on the end of the file lock, but since the workqueue
+      // doesn't know about that lock, it will never release the
+      // Add_symbols task.
+
+      input_file->file().unlock(this);
+
+      // We use queue_next because everything is cached for this
+      // task to run right away if possible.
+
+      workqueue->queue_next(new Add_symbols(this->input_objects_,
+					    this->symtab_, this->layout_,
+					    this->dirpath_,
+					    this->dirindex_,
+					    this->mapfile_,
+					    this->input_argument_,
+					    this->input_group_,
+					    obj,
+					    sd,
+					    this->this_blocker_,
+					    this->next_blocker_));
+
+      return true;
     }
 
   // Queue up a task to try to parse this file as a script.  We use a
@@ -257,10 +331,10 @@ Read_symbols::do_read_symbols(Workqueue* workqueue)
   // read multiple scripts simultaneously, which could lead to
   // unpredictable changes to the General_options structure.
 
-  workqueue->queue_soon(new Read_script(this->options_,
-					this->symtab_,
+  workqueue->queue_soon(new Read_script(this->symtab_,
 					this->layout_,
 					this->dirpath_,
+					this->dirindex_,
 					this->input_objects_,
 					this->mapfile_,
 					this->input_group_,
@@ -295,11 +369,10 @@ Read_symbols::do_group(Workqueue* workqueue)
 
       Task_token* next_blocker = new Task_token(true);
       next_blocker->add_blocker();
-      workqueue->queue_soon(new Read_symbols(this->options_,
-					     this->input_objects_,
+      workqueue->queue_soon(new Read_symbols(this->input_objects_,
 					     this->symtab_, this->layout_,
-					     this->dirpath_, this->mapfile_,
-					     arg, input_group,
+					     this->dirpath_, this->dirindex_,
+					     this->mapfile_, arg, input_group,
 					     this_blocker, next_blocker));
       this_blocker = next_blocker;
     }
@@ -325,6 +398,8 @@ Read_symbols::get_name() const
       std::string ret("Read_symbols ");
       if (this->input_argument_->file().is_lib())
 	ret += "-l";
+      else if (this->input_argument_->file().is_searched_file())
+	ret += "-l:";
       ret += this->input_argument_->file().name();
       return ret;
     }
@@ -379,15 +454,22 @@ Add_symbols::locks(Task_locker* tl)
 void
 Add_symbols::run(Workqueue*)
 {
+  Pluginobj* pluginobj = this->object_->pluginobj();
+  if (pluginobj != NULL)
+    {
+      this->object_->add_symbols(this->symtab_, this->sd_, this->layout_);
+      return;
+    }
+
   if (!this->input_objects_->add_object(this->object_))
     {
-      // FIXME: We need to close the descriptor here.
+      this->object_->release();
       delete this->object_;
     }
   else
     {
       this->object_->layout(this->symtab_, this->layout_, this->sd_);
-      this->object_->add_symbols(this->symtab_, this->sd_);
+      this->object_->add_symbols(this->symtab_, this->sd_, this->layout_);
       this->object_->release();
     }
   delete this->sd_;
@@ -483,8 +565,8 @@ void
 Read_script::run(Workqueue* workqueue)
 {
   bool used_next_blocker;
-  if (!read_input_script(workqueue, this->options_, this->symtab_,
-			 this->layout_, this->dirpath_, this->input_objects_,
+  if (!read_input_script(workqueue, this->symtab_, this->layout_,
+			 this->dirpath_, this->dirindex_, this->input_objects_,
 			 this->mapfile_, this->input_group_,
 			 this->input_argument_, this->input_file_,
 			 this->next_blocker_, &used_next_blocker))
@@ -510,6 +592,8 @@ Read_script::get_name() const
   std::string ret("Read_script ");
   if (this->input_argument_->file().is_lib())
     ret += "-l";
+  else if (this->input_argument_->file().is_searched_file())
+    ret += "-l:";
   ret += this->input_argument_->file().name();
   return ret;
 }

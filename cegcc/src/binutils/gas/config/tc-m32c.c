@@ -1,5 +1,5 @@
 /* tc-m32c.c -- Assembler for the Renesas M32C.
-   Copyright (C) 2005, 2006, 2007, 2008 Free Software Foundation.
+   Copyright (C) 2005, 2006, 2007, 2008, 2009 Free Software Foundation.
    Contributed by RedHat.
 
    This file is part of GAS, the GNU Assembler.
@@ -913,7 +913,7 @@ md_convert_frag (bfd *   abfd ATTRIBUTE_UNUSED,
 			 && operand != M32C_OPERAND_LAB32_JMP_S)))
     {
       fixS *fixP;
-      assert (fragP->fr_cgen.insn != 0);
+      gas_assert (fragP->fr_cgen.insn != 0);
       fixP = gas_cgen_record_fixup (fragP,
 				    where,
 				    fragP->fr_cgen.insn,

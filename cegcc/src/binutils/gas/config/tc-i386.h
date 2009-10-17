@@ -1,6 +1,6 @@
 /* tc-i386.h -- Header file for tc-i386.c
    Copyright 1989, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
+   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
@@ -29,8 +29,9 @@ struct fix;
 
 #define TARGET_BYTES_BIG_ENDIAN	0
 
-#define TARGET_ARCH		bfd_arch_i386
+#define TARGET_ARCH		(i386_arch ())
 #define TARGET_MACH		(i386_mach ())
+extern enum bfd_architecture i386_arch (void);
 extern unsigned long i386_mach (void);
 
 #ifdef TE_FreeBSD
@@ -70,13 +71,18 @@ extern unsigned long i386_mach (void);
 #define ELF_TARGET_FORMAT64	"elf64-x86-64"
 #endif
 
+#ifndef ELF_TARGET_L1OM_FORMAT
+#define ELF_TARGET_L1OM_FORMAT	"elf64-l1om"
+#endif
+
 #if ((defined (OBJ_MAYBE_COFF) && defined (OBJ_MAYBE_AOUT)) \
-     || defined (OBJ_ELF) || defined (OBJ_MAYBE_ELF))
+     || defined (OBJ_ELF) || defined (OBJ_MAYBE_ELF) \
+     || defined (TE_PE) || defined (TE_PEP) || defined (OBJ_MACH_O))
 extern const char *i386_target_format (void);
 #define TARGET_FORMAT i386_target_format ()
 #else
-#ifdef OBJ_ELF
-#define TARGET_FORMAT		ELF_TARGET_FORMAT
+#ifdef TE_GO32
+#define TARGET_FORMAT		"coff-go32"
 #endif
 #ifdef OBJ_AOUT
 #define TARGET_FORMAT		AOUT_TARGET_FORMAT
@@ -90,6 +96,10 @@ extern void i386_elf_emit_arch_note (void);
 
 #define SUB_SEGMENT_ALIGN(SEG, FRCHAIN) 0
 
+/* '$' may be used as immediate prefix.  */
+#undef LOCAL_LABELS_DOLLAR
+#define LOCAL_LABELS_DOLLAR 0
+#undef LOCAL_LABELS_FB
 #define LOCAL_LABELS_FB 1
 
 extern const char extra_symbol_chars[];
@@ -139,19 +149,24 @@ extern int tc_i386_fix_adjustable (struct fix *);
 /* This expression evaluates to true if the relocation is for a local
    object for which we still want to do the relocation at runtime.
    False if we are willing to perform this relocation while building
-   the .o file.  GOTOFF does not need to be checked here because it is
-   not pcrel.  I am not sure if some of the others are ever used with
-   pcrel, but it is easier to be safe than sorry.  */
+   the .o file.  GOTOFF and GOT32 do not need to be checked here because 
+   they are not pcrel.  .*/
 
 #define TC_FORCE_RELOCATION_LOCAL(FIX)			\
   (!(FIX)->fx_pcrel					\
    || (FIX)->fx_r_type == BFD_RELOC_386_PLT32		\
-   || (FIX)->fx_r_type == BFD_RELOC_386_GOT32		\
    || (FIX)->fx_r_type == BFD_RELOC_386_GOTPC		\
+   || (FIX)->fx_r_type == BFD_RELOC_X86_64_GOTPCREL	\
    || TC_FORCE_RELOCATION (FIX))
 
 extern int i386_parse_name (char *, expressionS *, char *);
 #define md_parse_name(s, e, m, c) i386_parse_name (s, e, c)
+
+extern operatorT i386_operator (const char *name, unsigned int operands, char *);
+#define md_operator i386_operator
+
+extern int i386_need_index_operator (void);
+#define md_need_index_operator i386_need_index_operator
 
 #define md_register_arithmetic 0
 
@@ -199,6 +214,7 @@ enum processor_type
   PROCESSOR_CORE,
   PROCESSOR_CORE2,
   PROCESSOR_COREI7,
+  PROCESSOR_L1OM,
   PROCESSOR_K6,
   PROCESSOR_ATHLON,
   PROCESSOR_K8,
@@ -276,5 +292,8 @@ extern bfd_vma x86_64_section_letter (int, char **);
 void tc_pe_dwarf2_emit_offset (symbolS *, unsigned int);
 
 #endif /* TE_PE */
+
+/* X_add_symbol:X_op_symbol (Intel mode only) */
+#define O_full_ptr O_md2
 
 #endif /* TC_I386 */

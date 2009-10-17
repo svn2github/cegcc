@@ -1,6 +1,6 @@
 /* tc-mn10300.c -- Assembler code for the Matsushita 10300
    Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-   2006, 2007 Free Software Foundation, Inc.
+   2006, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -2322,7 +2322,7 @@ md_apply_fix (fixS * fixP, valueT * valP, segT seg)
   int size = 0;
   int value = (int) * valP;
 
-  assert (fixP->fx_r_type < BFD_RELOC_UNUSED);
+  gas_assert (fixP->fx_r_type < BFD_RELOC_UNUSED);
 
   /* This should never happen.  */
   if (seg->flags & SEC_ALLOC)

@@ -25,6 +25,8 @@
 
 #include <vector>
 
+#include "gold-threads.h"
+
 namespace gold
 {
 
@@ -106,10 +108,10 @@ class Target_selector
   virtual Target*
   do_instantiate_target() = 0;
 
-  // Recognize an object file given a machine code, size, and
-  // endianness.  When this is called we already know that they match
-  // the machine_, size_, and is_big_endian_ fields.  The child class
-  // may implement a different version of this to do additional
+  // Recognize an object file given a machine code, OSABI code, and
+  // ELF version value.  When this is called we already know that they
+  // match the machine_, size_, and is_big_endian_ fields.  The child
+  // class may implement a different version of this to do additional
   // checks, or to check for multiple machine codes if the machine_
   // field is EM_NONE.
   virtual Target*
@@ -134,16 +136,11 @@ class Target_selector
     names->push_back(this->bfd_name_);
   }
 
- private:
   // Instantiate the target and return it.
   Target*
-  instantiate_target()
-  {
-    if (this->instantiated_target_ == NULL)
-      this->instantiated_target_ = this->do_instantiate_target();
-    return this->instantiated_target_;
-  }
+  instantiate_target();
 
+ private:
   // ELF machine code.
   const int machine_;
   // Target size--32 or 64.
@@ -157,6 +154,11 @@ class Target_selector
   // The singleton Target structure--this points to an instance of the
   // real implementation.
   Target* instantiated_target_;
+  // Lock to make sure that we don't instantiate the target more than
+  // once.
+  Lock* lock_;
+  // We only want to initialize the lock_ pointer once.
+  Initialize_lock initialize_lock_;
 };
 
 // Select the target for an ELF file.

@@ -35,6 +35,23 @@
 namespace gold
 {
 
+// Since not all system supports stat.st_mtim and struct timespec,
+// we define our own structure and fill the nanoseconds if we can.
+
+struct Timespec
+{
+  Timespec()
+    : seconds(0), nanoseconds(0)
+  { }
+
+  Timespec(time_t a_seconds, int a_nanoseconds)
+    : seconds(a_seconds), nanoseconds(a_nanoseconds)
+  { }
+
+  time_t seconds;
+  int nanoseconds;
+};
+
 class Position_dependent_options;
 class Input_file_argument;
 class Dirsearch;
@@ -190,6 +207,11 @@ class File_read
     this->reopen_descriptor();
     return this->descriptor_;
   }
+  
+  // Return the file last modification time.  Calls gold_fatal if the stat
+  // system call failed.
+  Timespec
+  get_mtime();
 
  private:
   // This class may not be copied.
@@ -348,7 +370,13 @@ class File_read
   { return (file_size + (page_size - 1)) & ~ (page_size - 1); }
 
   // The maximum number of entries we will pass to ::readv.
+#ifdef HAVE_READV
   static const size_t max_readv_entries = 128;
+#else
+  // On targets that don't have readv set the max to 1 so readv is not
+  // used.
+  static const size_t max_readv_entries = 1;
+#endif
 
   // Use readv to read data.
   void
@@ -431,10 +459,23 @@ class Input_file
   Input_file(const Task*, const char* name, const unsigned char* contents,
 	     off_t size);
 
-  // Open the file.  If the open fails, this will report an error and
-  // return false.
+  // Return the command line argument.
+  const Input_file_argument*
+  input_file_argument() const
+  { return this->input_argument_; }
+
+  // Return whether this is a file that we will search for in the list
+  // of directories.
   bool
-  open(const General_options&, const Dirsearch&, const Task*);
+  will_search_for() const;
+
+  // Open the file.  If the open fails, this will report an error and
+  // return false.  If there is a search, it starts at directory
+  // *PINDEX.  *PINDEX should be initialized to zero.  It may be
+  // restarted to find the next file with a matching name by
+  // incrementing the result and calling this again.
+  bool
+  open(const Dirsearch&, const Task*, int *pindex);
 
   // Return the name given by the user.  For -lc this will return "c".
   const char*
@@ -471,6 +512,10 @@ class Input_file
   is_in_sysroot() const
   { return this->is_in_sysroot_; }
 
+  // Whether this file is in a system directory.
+  bool
+  is_in_system_directory() const;
+
   // Return whether this file is to be read only for its symbols.
   bool
   just_symbols() const;
@@ -481,8 +526,7 @@ class Input_file
 
   // Open a binary file.
   bool
-  open_binary(const General_options&, const Task* task,
-	      const std::string& name);
+  open_binary(const Task* task, const std::string& name);
 
   // The argument from the command line.
   const Input_file_argument* input_argument_;

@@ -44,6 +44,8 @@
 #include "layout.h"
 #include "plugin.h"
 #include "gc.h"
+#include "icf.h"
+#include "incremental.h"
 
 using namespace gold;
 
@@ -202,8 +204,11 @@ main(int argc, char** argv)
   // The list of input objects.
   Input_objects input_objects;
 
-  // The Garbage Collection Object.
+  // The Garbage Collection (GC, --gc-sections) Object.
   Garbage_collection gc;
+
+  // The Identical Code Folding (ICF, --icf) Object.
+  Icf icf;
 
   // The symbol table.  We're going to guess here how many symbols
   // we're going to see based on the number of input files.  Even when
@@ -215,8 +220,18 @@ main(int argc, char** argv)
   if (parameters->options().gc_sections())
     symtab.set_gc(&gc);
 
+  if (parameters->options().icf_enabled())
+    symtab.set_icf(&icf);
+
   // The layout object.
-  Layout layout(command_line.options(), &command_line.script_options());
+  Layout layout(command_line.number_of_input_files(),
+		&command_line.script_options());
+
+  if (layout.incremental_inputs() != NULL)
+    {
+      layout.incremental_inputs()->report_command_line(argc, argv);
+      layout.incremental_inputs()->report_inputs(command_line.inputs());
+    }
 
   // Get the search path from the -L options.
   Dirsearch search_path;

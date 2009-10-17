@@ -76,6 +76,10 @@
 [^:]*:[0-9]+: Error: r15 not allowed here -- `cmn.w r0,r15'
 [^:]*:[0-9]+: Error: r15 not allowed here -- `cmp.w r15,#1'
 [^:]*:[0-9]+: Error: r15 not allowed here -- `cmp r15,r0'
+[^:]*:[0-9]+: Warning: use of r13 is deprecated
+[^:]*:[0-9]+: Error: r15 not allowed here -- `cmp r0,r15'
+[^:]*:[0-9]+: Warning: use of r13 is deprecated
+[^:]*:[0-9]+: Error: r15 not allowed here -- `cmp.n r0,r15'
 [^:]*:[0-9]+: Error: r15 not allowed here -- `cmp.w r15,r0'
 [^:]*:[0-9]+: Error: r13 not allowed here -- `cmp.w r0,r13'
 [^:]*:[0-9]+: Error: r15 not allowed here -- `cmp.w r0,r15'
@@ -500,6 +504,7 @@
 [^:]*:[0-9]+: Error: r15 not allowed here -- `ssat r15,#1,r0'
 [^:]*:[0-9]+: Error: r13 not allowed here -- `ssat r0,#1,r13'
 [^:]*:[0-9]+: Error: r15 not allowed here -- `ssat r0,#1,r15'
+[^:]*:[0-9]+: Error: shift expression is too large -- `ssat r1,#1,r3,asr#32'
 [^:]*:[0-9]+: Error: r13 not allowed here -- `ssat16 r13,#1,r0'
 [^:]*:[0-9]+: Error: r15 not allowed here -- `ssat16 r15,#1,r0'
 [^:]*:[0-9]+: Error: r13 not allowed here -- `ssat16 r0,#1,r13'
@@ -727,6 +732,7 @@
 [^:]*:[0-9]+: Error: r15 not allowed here -- `usat r15,#1,r0'
 [^:]*:[0-9]+: Error: r13 not allowed here -- `usat r0,#1,r13'
 [^:]*:[0-9]+: Error: r15 not allowed here -- `usat r0,#1,r15'
+[^:]*:[0-9]+: Error: shift expression is too large -- `usat r1,#1,r3,asr#32'
 [^:]*:[0-9]+: Error: r13 not allowed here -- `usat16 r13,#1,r0'
 [^:]*:[0-9]+: Error: r15 not allowed here -- `usat16 r15,#1,r0'
 [^:]*:[0-9]+: Error: r13 not allowed here -- `usat16 r0,#1,r13'

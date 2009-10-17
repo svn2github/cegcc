@@ -181,8 +181,8 @@ static const enum m68k_register mcf_ctrl[] = {
   RAMBAR0, RAMBAR1, RAMBAR, MBAR,
   0
 };
-static const enum m68k_register mcf51qe_ctrl[] = {
-  VBR,
+static const enum m68k_register mcf51_ctrl[] = {
+  VBR, CPUCR,
   0
 };
 static const enum m68k_register mcf5206_ctrl[] = {
@@ -205,16 +205,28 @@ static const enum m68k_register mcf5216_ctrl[] = {
   VBR, CACR, ACR0, ACR1, FLASHBAR, RAMBAR, RAMBAR1,
   0
 };
+static const enum m68k_register mcf5221x_ctrl[] = {
+  VBR, FLASHBAR, RAMBAR, RAMBAR1,
+  0
+};
 static const enum m68k_register mcf52223_ctrl[] = {
   VBR, CACR, ACR0, ACR1, FLASHBAR, RAMBAR, RAMBAR1,
   0
 };
 static const enum m68k_register mcf52235_ctrl[] = {
-  VBR, CACR, ACR0, ACR1, FLASHBAR, RAMBAR, RAMBAR1,
+  VBR, FLASHBAR, RAMBAR, RAMBAR1,
   0
 };
 static const enum m68k_register mcf5225_ctrl[] = {
   VBR, CACR, ACR0, ACR1, FLASHBAR, RAMBAR, MBAR, RAMBAR1,
+  0
+};
+static const enum m68k_register mcf52259_ctrl[] = {
+  VBR, FLASHBAR, RAMBAR, RAMBAR1,
+  0
+};
+static const enum m68k_register mcf52277_ctrl[] = {
+  VBR, CACR, ACR0, ACR1, RAMBAR, RAMBAR1,
   0
 };
 static const enum m68k_register mcf5235_ctrl[] = {
@@ -249,8 +261,12 @@ static const enum m68k_register mcf5282_ctrl[] = {
   VBR, CACR, ACR0, ACR1, FLASHBAR, RAMBAR, RAMBAR1,
   0
 };
+static const enum m68k_register mcf53017_ctrl[] = {
+  VBR, CACR, ACR0, ACR1, RAMBAR, RAMBAR1,
+  0
+};
 static const enum m68k_register mcf5307_ctrl[] = {
-  CACR, ACR0, ACR1,  VBR, RAMBAR0, RAMBAR_ALT, MBAR,
+  VBR, CACR, ACR0, ACR1, RAMBAR0, RAMBAR_ALT, MBAR,
   0
 };
 static const enum m68k_register mcf5329_ctrl[] = {
@@ -525,6 +541,9 @@ static const struct m68k_cpu m68k_archs[] =
   {0,0,NULL, 0}
 };
 
+/* For -mno-mac we want to turn off all types of mac.  */
+static const unsigned no_mac = mcfmac | mcfemac;
+
 /* Architecture extensions, here 'alias' -1 for m68k, +1 for cf and 0
    for either.  */
 static const struct m68k_cpu m68k_extensions[] =
@@ -537,7 +556,7 @@ static const struct m68k_cpu m68k_extensions[] =
 
   {mcfhwdiv,					NULL, "div", 1},
   {mcfusp,					NULL, "usp", 1},
-  {mcfmac,					NULL, "mac", 1},
+  {mcfmac,					(void *)&no_mac, "mac", 1},
   {mcfemac,					NULL, "emac", 1},
 
   {0,NULL,NULL, 0}
@@ -579,7 +598,12 @@ static const struct m68k_cpu m68k_cpus[] =
   {cpu32|m68881,				cpu32_ctrl, "68349", 1},
   {cpu32|m68881,				cpu32_ctrl, "68360", 1},
 
-  {mcfisa_a|mcfisa_c|mcfusp,                    mcf51qe_ctrl, "51qe", 0},
+  {mcfisa_a|mcfisa_c|mcfusp,                    mcf51_ctrl, "51", 0},
+  {mcfisa_a|mcfisa_c|mcfusp,                    mcf51_ctrl, "51ac", 1},
+  {mcfisa_a|mcfisa_c|mcfusp,                    mcf51_ctrl, "51cn", 1},
+  {mcfisa_a|mcfisa_c|mcfusp|mcfmac,  		mcf51_ctrl, "51em", 1},
+  {mcfisa_a|mcfisa_c|mcfusp,  			mcf51_ctrl, "51jm", 1},
+  {mcfisa_a|mcfisa_c|mcfusp,                    mcf51_ctrl, "51qe", 1},
 
   {mcfisa_a,					mcf_ctrl, "5200", 0},
   {mcfisa_a,					mcf_ctrl, "5202", 1},
@@ -602,6 +626,8 @@ static const struct m68k_cpu m68k_cpus[] =
   {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf5216_ctrl, "5216", 0},
   {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf5216_ctrl, "521x", 2},
 
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfmac|mcfusp,   mcf5221x_ctrl, "5221x", 0},
+
   {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfmac|mcfusp,   mcf52223_ctrl, "52221", -1},
   {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfmac|mcfusp,   mcf52223_ctrl, "52223", 0},
 
@@ -613,6 +639,9 @@ static const struct m68k_cpu m68k_cpus[] =
   {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfmac|mcfusp,   mcf5225_ctrl, "5224", -1},
   {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfmac|mcfusp,   mcf5225_ctrl, "5225", 0},
 
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,  mcf52277_ctrl, "52274", -1},
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,  mcf52277_ctrl, "52277", 0},
+  
   {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf5235_ctrl, "5232", -1},
   {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf5235_ctrl, "5233", -1},
   {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf5235_ctrl, "5234", -1},
@@ -622,7 +651,14 @@ static const struct m68k_cpu m68k_cpus[] =
   {mcfisa_a|mcfhwdiv|mcfemac,			mcf5249_ctrl, "5249", 0},
   {mcfisa_a|mcfhwdiv|mcfemac,			mcf5250_ctrl, "5250", 0},
   {mcfisa_a|mcfhwdiv|mcfemac, 			mcf5253_ctrl, "5253", 0},
-  
+
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf52259_ctrl, "52252", -1},
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf52259_ctrl, "52254", -1},
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf52259_ctrl, "52255", -1},
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf52259_ctrl, "52256", -1},
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf52259_ctrl, "52258", -1},
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf52259_ctrl, "52259", 0},
+   
   {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf5271_ctrl, "5270", -1},
   {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf5271_ctrl, "5271", 0},
   
@@ -635,6 +671,14 @@ static const struct m68k_cpu m68k_cpus[] =
   {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf5282_ctrl, "5281", -1},
   {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf5282_ctrl, "5282", -1},
   {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf5282_ctrl, "528x", 0},
+  
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf53017_ctrl, "53011", -1},
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf53017_ctrl, "53012", -1},
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf53017_ctrl, "53013", -1},
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf53017_ctrl, "53014", -1},
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf53017_ctrl, "53015", -1},
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf53017_ctrl, "53016", -1},
+  {mcfisa_a|mcfisa_aa|mcfhwdiv|mcfemac|mcfusp,	mcf53017_ctrl, "53017", 0},
   
   {mcfisa_a|mcfhwdiv|mcfmac,			mcf5307_ctrl, "5307", 0},
   
@@ -1282,10 +1326,29 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS *fixp)
 	   && fixp->fx_addsy
 	   && S_IS_WEAK (fixp->fx_addsy)
 	   && ! bfd_is_und_section (S_GET_SEGMENT (fixp->fx_addsy)))
-    /* PR gas/3041 Adjust addend in order to force bfd_install_relocation()
-       to put the symbol offset into frags referencing a weak symbol.  */
-    reloc->addend = fixp->fx_addnumber
-		    - (S_GET_VALUE (fixp->fx_addsy) * 2);
+    {
+      /* PR gas/3041 References to weak symbols must be treated as extern
+	 in order to be overridable by the linker, even if they are defined
+	 in the same object file. So the original addend must be written
+	 "as is" into the output section without further processing.
+	 The addend value must be hacked here in order to force
+	 bfd_install_relocation() to write the original value into the
+	 output section.
+	 1) MD_APPLY_SYM_VALUE() is set to 1 for m68k/a.out, so the symbol
+	 value has already been added to the addend in fixup_segment(). We
+	 have to remove it.
+	 2) bfd_install_relocation() will incorrectly treat this symbol as
+	 resolved, so it will write the symbol value plus its addend and
+	 section VMA. As a workaround we can tweak the addend value here in
+	 order to get the original value in the section after the call to
+	 bfd_install_relocation().  */
+      reloc->addend = fixp->fx_addnumber
+		      /* Fix because of MD_APPLY_SYM_VALUE() */
+		      - S_GET_VALUE (fixp->fx_addsy)
+		      /* Fix for bfd_install_relocation() */
+		      - (S_GET_VALUE (fixp->fx_addsy)
+			 + S_GET_SEGMENT (fixp->fx_addsy)->vma);
+    }
   else
     reloc->addend = 0;
 #else
@@ -1301,7 +1364,7 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS *fixp)
 #endif
 
   reloc->howto = bfd_reloc_type_lookup (stdoutput, code);
-  assert (reloc->howto != 0);
+  gas_assert (reloc->howto != 0);
 
   return reloc;
 }
@@ -1454,7 +1517,7 @@ m68k_ip (char *instring)
 
 	  /* Make a copy of the operands of this insn so that
 	     we can modify them safely, should we want to.  */
-	  assert (opsfound <= (int) ARRAY_SIZE (operands_backup));
+	  gas_assert (opsfound <= (int) ARRAY_SIZE (operands_backup));
 	  for (i = 0; i < opsfound; i++)
 	    operands_backup[i] = the_ins.operands[i];
 
@@ -3275,6 +3338,7 @@ m68k_ip (char *instring)
 	      tmpreg = 0x801;
 	      break;
 	    case CAAR:
+	    case CPUCR:
 	      tmpreg = 0x802;
 	      break;
 	    case MSP:
@@ -4036,6 +4100,7 @@ static const struct init_entry init_table[] =
   { "dfcr", DFC },
   { "cacr", CACR },		/* Cache Control Register.  */
   { "caar", CAAR },		/* Cache Address Register.  */
+  { "cpucr", CPUCR },		/* CPU Control Register.  */
 
   { "usp", USP },		/* User Stack Pointer.  */
   { "vbr", VBR },		/* Vector Base Register.  */
@@ -5124,14 +5189,14 @@ md_convert_frag_1 (fragS *fragP)
       fragP->fr_fix += 4;
       break;
     case TAB (PCINDEX, BYTE):
-      assert (fragP->fr_fix >= 2);
+      gas_assert (fragP->fr_fix >= 2);
       buffer_address[-2] &= ~1;
       fixP = fix_new (fragP, fragP->fr_fix - 1, 1, fragP->fr_symbol,
 		      fragP->fr_offset, 1, RELAX_RELOC_PC8);
       fixP->fx_pcrel_adjust = 1;
       break;
     case TAB (PCINDEX, SHORT):
-      assert (fragP->fr_fix >= 2);
+      gas_assert (fragP->fr_fix >= 2);
       buffer_address[-2] |= 0x1;
       buffer_address[-1] = 0x20;
       fixP = fix_new (fragP, (int) (fragP->fr_fix), 2, fragP->fr_symbol,
@@ -5140,7 +5205,7 @@ md_convert_frag_1 (fragS *fragP)
       fragP->fr_fix += 2;
       break;
     case TAB (PCINDEX, LONG):
-      assert (fragP->fr_fix >= 2);
+      gas_assert (fragP->fr_fix >= 2);
       buffer_address[-2] |= 0x1;
       buffer_address[-1] = 0x30;
       fixP = fix_new (fragP, (int) (fragP->fr_fix), 4, fragP->fr_symbol,
@@ -7407,7 +7472,8 @@ m68k_set_extension (char const *name, int allow_m, int silent)
     }
 
   if (negated)
-    not_current_architecture |= ext->arch;
+    not_current_architecture |= (ext->control_regs
+				 ? *(unsigned *)ext->control_regs: ext->arch);
   else
     current_architecture |= ext->arch;
   return 1;
@@ -7665,7 +7731,7 @@ md_show_usage (FILE *stream)
     {
       if (i)
 	fprintf (stream, " | ");
-      fprintf (stream, m68k_archs[i].name);
+      fprintf (stream, "%s", m68k_archs[i].name);
     }
   fprintf (stream, "\n");
 
@@ -7674,7 +7740,7 @@ md_show_usage (FILE *stream)
     {
       if (i)
 	fprintf (stream, " | ");
-      fprintf (stream, m68k_cpus[i].name);
+      fprintf (stream, "%s", m68k_cpus[i].name);
     }
   fprintf (stream, _("\n"));
 }

@@ -59,7 +59,7 @@ Parameters::set_doing_static_link(bool doing_static_link)
 }
 
 void
-Parameters::set_target(const Target* target)
+Parameters::set_target(Target* target)
 {
   if (!this->target_valid())
     this->target_ = target;
@@ -67,34 +67,14 @@ Parameters::set_target(const Target* target)
     gold_assert(target == this->target_);
 }
 
-// The x86_64 kernel build converts a binary file to an object file
-// using -r --format binary --oformat elf32-i386 foo.o.  In order to
-// support that for gold we support determining the default target
-// choice from the output format.  We recognize names that the GNU
-// linker uses.
+// Return whether TARGET is compatible with the target we are using.
 
-const Target&
-Parameters::default_target() const
+bool
+Parameters::is_compatible_target(const Target* target) const
 {
-  gold_assert(this->options_valid());
-  if (this->options().user_set_oformat())
-    {
-      const Target* target
-          = select_target_by_name(this->options().oformat());
-      if (target != NULL)
-	return *target;
-
-      gold_error(_("unrecognized output format %s"),
-                 this->options().oformat());
-    }
-
-  // The GOLD_DEFAULT_xx macros are defined by the configure script.
-  const Target* target = select_target(elfcpp::GOLD_DEFAULT_MACHINE,
-                                       GOLD_DEFAULT_SIZE,
-                                       GOLD_DEFAULT_BIG_ENDIAN,
-                                       0, 0);
-  gold_assert(target != NULL);
-  return *target;
+  if (this->target_ == NULL)
+    return true;
+  return target == this->target_;
 }
 
 Parameters::Target_size_endianness
@@ -160,11 +140,55 @@ set_parameters_options(const General_options* options)
 { static_parameters.set_options(options); }
 
 void
-set_parameters_target(const Target* target)
+set_parameters_target(Target* target)
 { static_parameters.set_target(target); }
 
 void
 set_parameters_doing_static_link(bool doing_static_link)
 { static_parameters.set_doing_static_link(doing_static_link); }
+
+// Force the target to be valid by using the default.  Use the
+// --oformat option is set; this supports the x86_64 kernel build,
+// which converts a binary file to an object file using -r --format
+// binary --oformat elf32-i386 foo.o.  Otherwise use the configured
+// default.
+
+void
+parameters_force_valid_target()
+{
+  if (parameters->target_valid())
+    return;
+
+  gold_assert(parameters->options_valid());
+  if (parameters->options().user_set_oformat())
+    {
+      Target* target = select_target_by_name(parameters->options().oformat());
+      if (target != NULL)
+	{
+	  set_parameters_target(target);
+	  return;
+	}
+
+      gold_error(_("unrecognized output format %s"),
+                 parameters->options().oformat());
+    }
+
+  // The GOLD_DEFAULT_xx macros are defined by the configure script.
+  Target* target = select_target(elfcpp::GOLD_DEFAULT_MACHINE,
+				 GOLD_DEFAULT_SIZE,
+				 GOLD_DEFAULT_BIG_ENDIAN,
+				 elfcpp::GOLD_DEFAULT_OSABI,
+				 0);
+  gold_assert(target != NULL);
+  set_parameters_target(target);
+}
+
+// Clear the current target, for testing.
+
+void
+parameters_clear_target()
+{
+  static_parameters.clear_target();
+}
 
 } // End namespace gold.

@@ -1,6 +1,6 @@
 // options.c -- handle command line options for gold
 
-// Copyright 2006, 2007, 2008 Free Software Foundation, Inc.
+// Copyright 2006, 2007, 2008, 2009 Free Software Foundation, Inc.
 // Written by Ian Lance Taylor <iant@google.com>.
 
 // This file is part of gold.
@@ -22,8 +22,10 @@
 
 #include "gold.h"
 
+#include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <vector>
 #include <iostream>
 #include <sys/stat.h>
@@ -47,6 +49,11 @@ Position_dependent_options::default_options_;
 namespace options
 {
 
+// This flag is TRUE if we should register the command-line options as they
+// are constructed.  It is set after contruction of the options within
+// class Position_dependent_options.
+static bool ready_to_register = false;
+
 // This global variable is set up as General_options is constructed.
 static std::vector<const One_option*> registered_options;
 
@@ -60,6 +67,9 @@ static One_option* short_options[128];
 void
 One_option::register_option()
 {
+  if (!ready_to_register)
+    return;
+
   registered_options.push_back(this);
 
   // We can't make long_options a static Option_map because we can't
@@ -75,7 +85,10 @@ One_option::register_option()
   const int shortname_as_int = static_cast<int>(this->shortname);
   gold_assert(shortname_as_int >= 0 && shortname_as_int < 128);
   if (this->shortname != '\0')
-    short_options[shortname_as_int] = this;
+    {
+      gold_assert(short_options[shortname_as_int] == NULL);
+      short_options[shortname_as_int] = this;
+    }
 }
 
 void
@@ -182,6 +195,16 @@ parse_uint(const char* option_name, const char* arg, int* retval)
 }
 
 void
+parse_int(const char* option_name, const char* arg, int* retval)
+{
+  char* endptr;
+  *retval = strtol(arg, &endptr, 0);
+  if (*endptr != '\0')
+    gold_fatal(_("%s: invalid option value (expected an integer): %s"),
+               option_name, arg);
+}
+
+void
 parse_uint64(const char* option_name, const char* arg, uint64_t *retval)
 {
   char* endptr;
@@ -273,6 +296,7 @@ void
 General_options::parse_V(const char*, const char*, Command_line*)
 {
   gold::print_version(true);
+  this->printed_version_ = true;
   printf(_("  Supported targets:\n"));
   std::vector<const char*> supported_names;
   gold::supported_target_names(&supported_names);
@@ -290,10 +314,46 @@ General_options::parse_defsym(const char*, const char* arg,
 }
 
 void
+General_options::parse_incremental_changed(const char*, const char*,
+                                           Command_line*)
+{
+  this->implicit_incremental_ = true;
+  this->incremental_disposition_ = INCREMENTAL_CHANGED;
+}
+
+void
+General_options::parse_incremental_unchanged(const char*, const char*,
+                                             Command_line*)
+{
+  this->implicit_incremental_ = true;
+  this->incremental_disposition_ = INCREMENTAL_UNCHANGED;
+}
+
+void
+General_options::parse_incremental_unknown(const char*, const char*,
+                                           Command_line*)
+{
+  this->implicit_incremental_ = true;
+  this->incremental_disposition_ = INCREMENTAL_CHECK;
+}
+
+void
 General_options::parse_library(const char*, const char* arg,
                                Command_line* cmdline)
 {
-  Input_file_argument file(arg, true, "", false, *this);
+  Input_file_argument::Input_file_type type;
+  const char *name;
+  if (arg[0] == ':')
+    {
+      type = Input_file_argument::INPUT_FILE_TYPE_SEARCHED_FILE;
+      name = arg + 1;
+    }
+  else
+    {
+      type = Input_file_argument::INPUT_FILE_TYPE_LIBRARY;
+      name = arg;
+    }
+  Input_file_argument file(name, type, "", false, *this);
   cmdline->inputs().add_file(file);
 }
 
@@ -330,7 +390,8 @@ void
 General_options::parse_just_symbols(const char*, const char* arg,
                                     Command_line* cmdline)
 {
-  Input_file_argument file(arg, false, "", true, *this);
+  Input_file_argument file(arg, Input_file_argument::INPUT_FILE_TYPE_FILE,
+			   "", true, *this);
   cmdline->inputs().add_file(file);
 }
 
@@ -378,6 +439,93 @@ General_options::parse_end_group(const char*, const char*,
   cmdline->inputs().end_group();
 }
 
+// The function add_excluded_libs() in ld/ldlang.c of GNU ld breaks up a list
+// of names seperated by commas or colons and puts them in a linked list.
+// We implement the same parsing of names here but store names in an unordered
+// map to speed up searching of names.
+
+void
+General_options::parse_exclude_libs(const char*, const char* arg,
+                                    Command_line*)
+{
+  const char *p = arg;
+
+  while (*p != '\0')
+    {
+      size_t length = strcspn(p, ",:");
+      this->excluded_libs_.insert(std::string(p, length));
+      p += (p[length] ? length + 1 : length);
+    }
+}
+
+// The checking logic is based on the function check_excluded_libs() in
+// ld/ldlang.c of GNU ld but our implementation is different because we use
+// an unordered map instead of a linked list, which is what GNU ld uses.  GNU
+// ld searches sequentially in the excluded libs list.  For a given archive,
+// a match is found if the archive's name matches exactly one of the list
+// entry or if the archive's name is of the form FOO.a and FOO matches exactly
+// one of the list entry.  An entry "ALL" in the list is considered as a
+// wild-card and matches any given name.
+
+bool
+General_options::check_excluded_libs (const std::string &name) const
+{
+  Unordered_set<std::string>::const_iterator p;
+
+  // Exit early for the most common case.
+  if (excluded_libs_.empty())
+    return false;
+
+  // If we see "ALL", all archives are excluded from automatic export.
+  p = excluded_libs_.find(std::string("ALL"));
+  if (p != excluded_libs_.end())
+    return true;
+
+  // First strip off any directories in name.
+  const char *basename = lbasename(name.c_str());
+
+  // Try finding an exact match.
+  p = excluded_libs_.find(std::string(basename));
+  if (p != excluded_libs_.end())
+    return true;
+
+  // Try matching NAME without ".a" at the end.
+  size_t length = strlen(basename);
+  if ((length >= 2)
+      && (basename[length - 2] == '.')
+      && (basename[length - 1] == 'a'))
+    {
+      p = excluded_libs_.find(std::string(basename, length - 2));
+      if (p != excluded_libs_.end())
+	return true;
+    }
+
+  return false;
+}
+
+// Recognize input and output target names.  The GNU linker accepts
+// these with --format and --oformat.  This code is intended to be
+// minimally compatible.  In practice for an ELF target this would be
+// the same target as the input files; that name always start with
+// "elf".  Non-ELF targets would be "srec", "symbolsrec", "tekhex",
+// "binary", "ihex".
+
+General_options::Object_format
+General_options::string_to_object_format(const char* arg)
+{
+  if (strncmp(arg, "elf", 3) == 0)
+    return gold::General_options::OBJECT_FORMAT_ELF;
+  else if (strcmp(arg, "binary") == 0)
+    return gold::General_options::OBJECT_FORMAT_BINARY;
+  else
+    {
+      gold::gold_error(_("format '%s' not supported; treating as elf "
+                         "(supported formats: elf, binary)"),
+                       arg);
+      return gold::General_options::OBJECT_FORMAT_ELF;
+    }
+}
+
 } // End namespace gold.
 
 namespace
@@ -401,33 +549,10 @@ usage(const char* msg, const char *opt)
   usage();
 }
 
-// Recognize input and output target names.  The GNU linker accepts
-// these with --format and --oformat.  This code is intended to be
-// minimally compatible.  In practice for an ELF target this would be
-// the same target as the input files; that name always start with
-// "elf".  Non-ELF targets would be "srec", "symbolsrec", "tekhex",
-// "binary", "ihex".
-
-gold::General_options::Object_format
-string_to_object_format(const char* arg)
-{
-  if (strncmp(arg, "elf", 3) == 0)
-    return gold::General_options::OBJECT_FORMAT_ELF;
-  else if (strcmp(arg, "binary") == 0)
-    return gold::General_options::OBJECT_FORMAT_BINARY;
-  else
-    {
-      gold::gold_error(_("format '%s' not supported; treating as elf "
-                         "(supported formats: elf, binary)"),
-                       arg);
-      return gold::General_options::OBJECT_FORMAT_ELF;
-    }
-}
-
 // If the default sysroot is relocatable, try relocating it based on
 // the prefix FROM.
 
-char*
+static char*
 get_relative_sysroot(const char* from)
 {
   char* path = make_relative_prefix(gold::program_name, from,
@@ -448,7 +573,7 @@ get_relative_sysroot(const char* from)
 // get_relative_sysroot, which is a small memory leak, but is
 // necessary since we store this pointer directly in General_options.
 
-const char*
+static const char*
 get_default_sysroot()
 {
   const char* sysroot = TARGET_SYSTEM_ROOT;
@@ -563,7 +688,7 @@ parse_short_option(int argc, const char** argv, int pos_in_argv_i,
 
   // We handle -z as a special case.
   static gold::options::One_option dash_z("", gold::options::DASH_Z,
-                                          'z', "", "-z", "Z-OPTION", false,
+                                          'z', "", NULL, "Z-OPTION", false,
 					  NULL);
   gold::options::One_option* retval = NULL;
   if (this_argv[pos_in_argv_i] == 'z')
@@ -620,21 +745,25 @@ namespace gold
 {
 
 General_options::General_options()
-  : execstack_status_(General_options::EXECSTACK_FROM_INPUT), static_(false),
-    do_demangle_(false), plugins_()
+  : printed_version_(false),
+    execstack_status_(General_options::EXECSTACK_FROM_INPUT), static_(false),
+    do_demangle_(false), plugins_(),
+    incremental_disposition_(INCREMENTAL_CHECK), implicit_incremental_(false)
 {
+  // Turn off option registration once construction is complete.
+  gold::options::ready_to_register = false;
 }
 
 General_options::Object_format
 General_options::format_enum() const
 {
-  return string_to_object_format(this->format());
+  return General_options::string_to_object_format(this->format());
 }
 
 General_options::Object_format
 General_options::oformat_enum() const
 {
-  return string_to_object_format(this->oformat());
+  return General_options::string_to_object_format(this->oformat());
 }
 
 // Add the sysroot, if any, to the search paths.
@@ -657,6 +786,26 @@ General_options::add_sysroot()
     p->add_sysroot(this->sysroot(), canonical_sysroot);
 
   free(canonical_sysroot);
+}
+
+// Return whether FILENAME is in a system directory.
+
+bool
+General_options::is_in_system_directory(const std::string& filename) const
+{
+  for (Dir_list::const_iterator p = this->library_path_.value.begin();
+       p != this->library_path_.value.end();
+       ++p)
+    {
+      // We use a straight string comparison rather than calling
+      // FILENAME_CMP because we are only interested in the cases
+      // where we found the file in a system directory, which means
+      // that we used the directory name as a prefix for a -L search.
+      if (p->is_system_directory()
+	  && filename.compare(0, p->name().size(), p->name()) == 0)
+	return true;
+    }
+  return false;
 }
 
 // Add a plugin to the list of plugins.
@@ -724,6 +873,15 @@ General_options::finalize()
     this->set_execstack_status(EXECSTACK_YES);
   else if (this->noexecstack())
     this->set_execstack_status(EXECSTACK_NO);
+
+  // icf_status_ is a three-state variable; update it based on the
+  // value of this->icf().
+  if (strcmp(this->icf(), "none") == 0)
+    this->set_icf_status(ICF_NONE);
+  else if (strcmp(this->icf(), "safe") == 0)
+    this->set_icf_status(ICF_SAFE);
+  else
+    this->set_icf_status(ICF_ALL);
 
   // Handle the optional argument for --demangle.
   if (this->user_set_demangle())
@@ -814,6 +972,25 @@ General_options::finalize()
       this->add_to_library_path_with_sysroot("/usr/lib");
     }
 
+  // Parse the contents of -retain-symbols-file into a set.
+  if (this->retain_symbols_file())
+    {
+      std::ifstream in;
+      in.open(this->retain_symbols_file());
+      if (!in)
+        gold_fatal(_("unable to open -retain-symbols-file file %s: %s"),
+                   this->retain_symbols_file(), strerror(errno));
+      std::string line;
+      std::getline(in, line);   // this chops off the trailing \n, if any
+      while (in)
+        {
+          if (!line.empty() && line[line.length() - 1] == '\r')   // Windows
+            line.resize(line.length() - 1);
+          this->symbols_to_retain_.insert(line);
+          std::getline(in, line);
+        }
+    }
+
   if (this->shared() && !this->user_set_allow_shlib_undefined())
     this->set_allow_shlib_undefined(true);
 
@@ -824,13 +1001,24 @@ General_options::finalize()
   // Now that we've normalized the options, check for contradictory ones.
   if (this->shared() && this->is_static())
     gold_fatal(_("-shared and -static are incompatible"));
+  if (this->shared() && this->pie())
+    gold_fatal(_("-shared and -pie are incompatible"));
 
   if (this->shared() && this->relocatable())
     gold_fatal(_("-shared and -r are incompatible"));
+  if (this->pie() && this->relocatable())
+    gold_fatal(_("-pie and -r are incompatible"));
+
+  // TODO: implement support for -retain-symbols-file with -r, if needed.
+  if (this->relocatable() && this->retain_symbols_file())
+    gold_fatal(_("-retain-symbols-file does not yet work with -r"));
 
   if (this->oformat_enum() != General_options::OBJECT_FORMAT_ELF
-      && (this->shared() || this->relocatable()))
-    gold_fatal(_("binary output format not compatible with -shared or -r"));
+      && (this->shared()
+	  || this->pie()
+	  || this->relocatable()))
+    gold_fatal(_("binary output format not compatible "
+		 "with -shared or -pie or -r"));
 
   if (this->user_set_hash_bucket_empty_fraction()
       && (this->hash_bucket_empty_fraction() < 0.0
@@ -838,6 +1026,10 @@ General_options::finalize()
     gold_fatal(_("--hash-bucket-empty-fraction value %g out of range "
 		 "[0.0, 1.0)"),
 	       this->hash_bucket_empty_fraction());
+
+  if (this->implicit_incremental_ && !this->incremental())
+    gold_fatal(_("Options --incremental-changed, --incremental-unchanged, "
+                 "--incremental-unknown require the use of --incremental"));
 
   // FIXME: we can/should be doing a lot more sanity checking here.
 }
@@ -924,6 +1116,13 @@ Command_line::Command_line()
 {
 }
 
+// Pre_options is the hook that sets the ready_to_register flag.
+
+Command_line::Pre_options::Pre_options()
+{
+  gold::options::ready_to_register = true;
+}
+
 // Process the command line options.  For process_one_option, i is the
 // index of argv to process next, and must be an option (that is,
 // start with a dash).  The return value is the index of the next
@@ -987,8 +1186,9 @@ Command_line::process(int argc, const char** argv)
       this->position_options_.copy_from_options(this->options());
       if (no_more_options || argv[i][0] != '-')
         {
-          Input_file_argument file(argv[i], false, "", false,
-                                   this->position_options_);
+	  Input_file_argument file(argv[i],
+				   Input_file_argument::INPUT_FILE_TYPE_FILE,
+				   "", false, this->position_options_);
           this->inputs_.add_file(file);
           ++i;
         }

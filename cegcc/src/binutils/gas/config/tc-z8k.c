@@ -1,6 +1,6 @@
 /* tc-z8k.c -- Assemble code for the Zilog Z800n
    Copyright 1992, 1993, 1994, 1995, 1996, 1998, 2000, 2001, 2002, 2003,
-   2005, 2006, 2007  Free Software Foundation, Inc.
+   2005, 2006, 2007, 2009  Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -342,15 +342,15 @@ static char *
 parse_exp (char *s, expressionS *op)
 {
   char *save = input_line_pointer;
-  char *new;
+  char *new_pointer;
 
   input_line_pointer = s;
   expression (op);
   if (op->X_op == O_absent)
     as_bad (_("missing operand"));
-  new = input_line_pointer;
+  new_pointer = input_line_pointer;
   input_line_pointer = save;
-  return new;
+  return new_pointer;
 }
 
 /* The many forms of operand:
@@ -1369,7 +1369,7 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED,
   if (! reloc->howto)
     {
       as_bad_where (fixp->fx_file, fixp->fx_line,
-                    "Cannot represent %s relocation in object file",
+                    _("Cannot represent %s relocation in object file"),
                     bfd_get_reloc_code_name (fixp->fx_r_type));
       abort ();
     }

@@ -1,6 +1,6 @@
 /* tc-hppa.c -- Assemble for the PA
-   Copyright 1989, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-   2002, 2003, 2004, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
+   Copyright 1989, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
+   2003, 2004, 2005, 2006, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -995,6 +995,19 @@ static struct default_space_dict pa_def_spaces[] =
 #define IS_R_SELECT(S)   (*(S) == 'R' || *(S) == 'r')
 #define IS_L_SELECT(S)   (*(S) == 'L' || *(S) == 'l')
 
+/* Store immediate values of shift/deposit/extract functions.  */
+
+#define SAVE_IMMEDIATE(VALUE) \
+  { \
+    if (immediate_check) \
+      { \
+	if (pos == -1) \
+	  pos = (VALUE); \
+	else if (len == -1) \
+	  len = (VALUE); \
+      } \
+  }
+
 /* Insert FIELD into OPCODE starting at bit START.  Continue pa_ip
    main loop after insertion.  */
 
@@ -1375,8 +1388,8 @@ tc_gen_reloc (asection *section, fixS *fixp)
   if (fixp->fx_addsy == 0)
     return &no_relocs;
 
-  assert (hppa_fixp != 0);
-  assert (section != 0);
+  gas_assert (hppa_fixp != 0);
+  gas_assert (section != 0);
 
   reloc = xmalloc (sizeof (arelent));
 
@@ -1421,7 +1434,7 @@ tc_gen_reloc (asection *section, fixS *fixp)
   switch (fixp->fx_r_type)
     {
     default:
-      assert (n_relocs == 1);
+      gas_assert (n_relocs == 1);
 
       code = *codes[0];
 
@@ -1475,7 +1488,7 @@ tc_gen_reloc (asection *section, fixS *fixp)
 					    (bfd_reloc_code_real_type) code);
       reloc->address = fixp->fx_frag->fr_address + fixp->fx_where;
 
-      assert (reloc->howto && (unsigned int) code == reloc->howto->type);
+      gas_assert (reloc->howto && (unsigned int) code == reloc->howto->type);
       break;
     }
 #else /* OBJ_SOM */
@@ -1498,7 +1511,7 @@ tc_gen_reloc (asection *section, fixS *fixp)
 	  /* The only time we ever use a R_COMP2 fixup is for the difference
 	     of two symbols.  With that in mind we fill in all four
 	     relocs now and break out of the loop.  */
-	  assert (i == 1);
+	  gas_assert (i == 1);
 	  relocs[0]->sym_ptr_ptr
 	    = (asymbol **) bfd_abs_section_ptr->symbol_ptr_ptr;
 	  relocs[0]->howto
@@ -3191,6 +3204,7 @@ pa_ip (char *str)
   int match = FALSE;
   int comma = 0;
   int cmpltr, nullif, flag, cond, num;
+  int immediate_check = 0, pos = -1, len = -1;
   unsigned long opcode;
   struct pa_opcode *insn;
 
@@ -3233,7 +3247,7 @@ pa_ip (char *str)
   /* Look up the opcode in the hash table.  */
   if ((insn = (struct pa_opcode *) hash_find (op_hash, str)) == NULL)
     {
-      as_bad ("Unknown opcode: `%s'", str);
+      as_bad (_("Unknown opcode: `%s'"), str);
       return;
     }
 
@@ -3351,6 +3365,7 @@ pa_ip (char *str)
 		break;
 	      s = expr_end;
 	      CHECK_FIELD (num, 32, 1, 0);
+	      SAVE_IMMEDIATE(num);
 	      INSERT_FIELD_AND_CONTINUE (opcode, 32 - num, 0);
 
 	    /* Handle a 5 bit immediate at 15.  */
@@ -4333,6 +4348,9 @@ pa_ip (char *str)
 		  case 'x':
 		  case 'y':
 		    cmpltr = 0;
+		    /* Check immediate values in shift/extract/deposit
+		     * instructions if they will give undefined behaviour.  */
+		    immediate_check = 1;
 		    if (*s == ',')
 		      {
 			save_s = s++;
@@ -5125,6 +5143,7 @@ pa_ip (char *str)
 		break;
 	      s = expr_end;
 	      CHECK_FIELD (num, 31, 0, strict);
+	      SAVE_IMMEDIATE(num);
 	      INSERT_FIELD_AND_CONTINUE (opcode, 31 - num, 5);
 
 	    /* Handle a 6 bit shift count at 20,22:26.  */
@@ -5134,6 +5153,7 @@ pa_ip (char *str)
 		break;
 	      s = expr_end;
 	      CHECK_FIELD (num, 63, 0, strict);
+	      SAVE_IMMEDIATE(num);
 	      num = 63 - num;
 	      opcode |= (num & 0x20) << 6;
 	      INSERT_FIELD_AND_CONTINUE (opcode, num & 0x1f, 5);
@@ -5146,6 +5166,7 @@ pa_ip (char *str)
 		break;
 	      s = expr_end;
 	      CHECK_FIELD (num, 64, 1, strict);
+	      SAVE_IMMEDIATE(num);
 	      num--;
 	      opcode |= (num & 0x20) << 3;
 	      num = 31 - (num & 0x1f);
@@ -5158,6 +5179,7 @@ pa_ip (char *str)
 		break;
 	      s = expr_end;
 	      CHECK_FIELD (num, 64, 1, strict);
+	      SAVE_IMMEDIATE(num);
 	      num--;
 	      opcode |= (num & 0x20) << 7;
 	      num = 31 - (num & 0x1f);
@@ -5170,6 +5192,7 @@ pa_ip (char *str)
 		break;
 	      s = expr_end;
 	      CHECK_FIELD (num, 31, 0, strict);
+	      SAVE_IMMEDIATE(num);
 	      INSERT_FIELD_AND_CONTINUE (opcode, num, 5);
 
 	    /* Handle a 6 bit bit position at 20,22:26.  */
@@ -5179,6 +5202,7 @@ pa_ip (char *str)
 		break;
 	      s = expr_end;
 	      CHECK_FIELD (num, 63, 0, strict);
+	      SAVE_IMMEDIATE(num);
 	      opcode |= (num & 0x20) << 6;
 	      INSERT_FIELD_AND_CONTINUE (opcode, num & 0x1f, 5);
 
@@ -5686,6 +5710,13 @@ pa_ip (char *str)
       break;
     }
 
+  if (immediate_check)
+    {
+      if (pos != -1 && len != -1 && pos < len - 1)
+        as_warn (_("Immediates %d and %d will give undefined behavior."),
+			pos, len);
+    }
+
   the_insn.opcode = opcode;
 }
 
@@ -5697,7 +5728,7 @@ md_assemble (char *str)
   char *to;
 
   /* The had better be something to assemble.  */
-  assert (str);
+  gas_assert (str);
 
   /* If we are within a procedure definition, make sure we've
      defined a label for the procedure; handle case where the
@@ -6402,7 +6433,7 @@ hppa_elf_mark_end_of_function (void)
 	  symbolP = symbol_new (name, now_seg, (valueT) (frag_now_fix () - 4),
 				frag_now);
 
-	  assert (symbolP);
+	  gas_assert (symbolP);
 	  S_CLEAR_EXTERNAL (symbolP);
 	  symbol_table_insert (symbolP);
 	}
@@ -8434,7 +8465,7 @@ hppa_force_relocation (struct fix *fixp)
     return 1;
 #endif
 
-  assert (fixp->fx_addsy != NULL);
+  gas_assert (fixp->fx_addsy != NULL);
 
   /* Ensure we emit a relocation for global symbols so that dynamic
      linking works.  */

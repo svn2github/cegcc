@@ -114,6 +114,10 @@ test:
 	@ CMP (register)
 	cmp r13, r0			@ OK
 	cmp r15, r0
+	cmp r0, r13                     @ Deprecated
+	cmp r0, r15                     
+	cmp.n r0, r13                   @ Deprecated
+	cmp.n r0, r15                   
 	cmp.w r13, r0			@ OK
 	cmp.w r15, r0
 	cmp.w r0, r13
@@ -626,6 +630,7 @@ test:
 	ssat r15, #1, r0
 	ssat r0, #1, r13
 	ssat r0, #1, r15
+	ssat r1, #1, r3,asr #32
 	@ SSAT16
 	ssat16 r13, #1, r0
 	ssat16 r15, #1, r0
@@ -905,6 +910,7 @@ test:
 	usat r15, #1, r0
 	usat r0, #1, r13
 	usat r0, #1, r15
+	usat r1, #1, r3,asr #32
 	@ USAT16
 	usat16 r13, #1, r0
 	usat16 r15, #1, r0

@@ -61,3 +61,8 @@ start:
 	mtfsfi. 6,15,0
 	mtfsfi  6,0,1
 	mtfsfi. 6,15,1
+	cbcdtd  10,11
+	cdtbcd  10,11
+	addg6s  10,11,12
+	ori	1,1,0
+	.p2align 4,,15

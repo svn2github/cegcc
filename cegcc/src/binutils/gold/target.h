@@ -36,17 +36,20 @@
 #include "elfcpp.h"
 #include "options.h"
 #include "parameters.h"
+#include "debug.h"
 
 namespace gold
 {
 
 class General_options;
 class Object;
+class Relobj;
 template<int size, bool big_endian>
 class Sized_relobj;
 class Relocatable_relocs;
 template<int size, bool big_endian>
 class Relocate_info;
+class Reloc_symbol_changes;
 class Symbol;
 template<int size>
 class Sized_symbol;
@@ -141,6 +144,43 @@ class Target
   wrap_char() const
   { return this->pti_->wrap_char; }
 
+  // Return the special section index which indicates a small common
+  // symbol.  This will return SHN_UNDEF if there are no small common
+  // symbols.
+  elfcpp::Elf_Half
+  small_common_shndx() const
+  { return this->pti_->small_common_shndx; }
+
+  // Return values to add to the section flags for the section holding
+  // small common symbols.
+  elfcpp::Elf_Xword
+  small_common_section_flags() const
+  {
+    gold_assert(this->pti_->small_common_shndx != elfcpp::SHN_UNDEF);
+    return this->pti_->small_common_section_flags;
+  }
+
+  // Return the special section index which indicates a large common
+  // symbol.  This will return SHN_UNDEF if there are no large common
+  // symbols.
+  elfcpp::Elf_Half
+  large_common_shndx() const
+  { return this->pti_->large_common_shndx; }
+
+  // Return values to add to the section flags for the section holding
+  // large common symbols.
+  elfcpp::Elf_Xword
+  large_common_section_flags() const
+  {
+    gold_assert(this->pti_->large_common_shndx != elfcpp::SHN_UNDEF);
+    return this->pti_->large_common_section_flags;
+  }
+
+  // This hook is called when an output section is created.
+  void
+  new_output_section(Output_section* os) const
+  { this->do_new_output_section(os); }
+
   // This is called to tell the target to complete any sections it is
   // handling.  After this all sections must have their final size.
   void
@@ -166,6 +206,70 @@ class Target
   bool
   is_defined_by_abi(const Symbol* sym) const
   { return this->do_is_defined_by_abi(sym); }
+
+  // Adjust the output file header before it is written out.  VIEW
+  // points to the header in external form.  LEN is the length.
+  void
+  adjust_elf_header(unsigned char* view, int len) const
+  { return this->do_adjust_elf_header(view, len); }
+
+  // Return whether NAME is a local label name.  This is used to implement the
+  // --discard-locals options.
+  bool
+  is_local_label_name(const char* name) const
+  { return this->do_is_local_label_name(name); }
+
+  // A function starts at OFFSET in section SHNDX in OBJECT.  That
+  // function was compiled with -fsplit-stack, but it refers to a
+  // function which was compiled without -fsplit-stack.  VIEW is a
+  // modifiable view of the section; VIEW_SIZE is the size of the
+  // view.  The target has to adjust the function so that it allocates
+  // enough stack.
+  void
+  calls_non_split(Relobj* object, unsigned int shndx,
+		  section_offset_type fnoffset, section_size_type fnsize,
+		  unsigned char* view, section_size_type view_size,
+		  std::string* from, std::string* to) const
+  {
+    this->do_calls_non_split(object, shndx, fnoffset, fnsize, view, view_size,
+			     from, to);
+  }
+
+  // Make an ELF object.
+  template<int size, bool big_endian>
+  Object*
+  make_elf_object(const std::string& name, Input_file* input_file,
+		  off_t offset, const elfcpp::Ehdr<size, big_endian>& ehdr)
+  { return this->do_make_elf_object(name, input_file, offset, ehdr); }
+
+  // Make an output section.
+  Output_section*
+  make_output_section(const char* name, elfcpp::Elf_Word type,
+		      elfcpp::Elf_Xword flags)
+  { return this->do_make_output_section(name, type, flags); }
+
+  // Return true if target wants to perform relaxation.
+  bool
+  may_relax() const
+  {
+    // Run the dummy relaxation pass twice if relaxation debugging is enabled.
+    if (is_debugging_enabled(DEBUG_RELAXATION))
+      return true;
+
+     return this->do_may_relax();
+  }
+
+  // Perform a relaxation pass.  Return true if layout may be changed.
+  bool
+  relax(int pass, const Input_objects* input_objects, Symbol_table* symtab,
+	Layout* layout)
+  {
+    // Run the dummy relaxation pass twice if relaxation debugging is enabled.
+    if (is_debugging_enabled(DEBUG_RELAXATION))
+      return pass < 2;
+
+    return this->do_relax(pass, input_objects, symtab, layout);
+  } 
 
  protected:
   // This struct holds the constant information for a child class.  We
@@ -198,10 +302,25 @@ class Target
     uint64_t abi_pagesize;
     // The common page size used by actual implementations.
     uint64_t common_pagesize;
+    // The special section index for small common symbols; SHN_UNDEF
+    // if none.
+    elfcpp::Elf_Half small_common_shndx;
+    // The special section index for large common symbols; SHN_UNDEF
+    // if none.
+    elfcpp::Elf_Half large_common_shndx;
+    // Section flags for small common section.
+    elfcpp::Elf_Xword small_common_section_flags;
+    // Section flags for large common section.
+    elfcpp::Elf_Xword large_common_section_flags;
   };
 
   Target(const Target_info* pti)
     : pti_(pti)
+  { }
+
+  // Virtual function which may be implemented by the child class.
+  virtual void
+  do_new_output_section(Output_section*) const
   { }
 
   // Virtual function which may be implemented by the child class.
@@ -225,7 +344,91 @@ class Target
   do_is_defined_by_abi(const Symbol*) const
   { return false; }
 
+  // Adjust the output file header before it is written out.  VIEW
+  // points to the header in external form.  LEN is the length, and
+  // will be one of the values of elfcpp::Elf_sizes<size>::ehdr_size.
+  // By default, we do nothing.
+  virtual void
+  do_adjust_elf_header(unsigned char*, int) const
+  { }
+
+  // Virtual function which may be overriden by the child class.
+  virtual bool
+  do_is_local_label_name(const char*) const;
+
+  // Virtual function which may be overridden by the child class.
+  virtual void
+  do_calls_non_split(Relobj* object, unsigned int, section_offset_type,
+		     section_size_type, unsigned char*, section_size_type,
+		     std::string*, std::string*) const;
+
+  // make_elf_object hooks.  There are four versions of these for
+  // different address sizes and endianities.
+
+#ifdef HAVE_TARGET_32_LITTLE
+  // Virtual functions which may be overriden by the child class.
+  virtual Object*
+  do_make_elf_object(const std::string&, Input_file*, off_t,
+		     const elfcpp::Ehdr<32, false>&);
+#endif
+
+#ifdef HAVE_TARGET_32_BIG
+  // Virtual functions which may be overriden by the child class.
+  virtual Object*
+  do_make_elf_object(const std::string&, Input_file*, off_t,
+		     const elfcpp::Ehdr<32, true>&);
+#endif
+
+#ifdef HAVE_TARGET_64_LITTLE
+  // Virtual functions which may be overriden by the child class.
+  virtual Object*
+  do_make_elf_object(const std::string&, Input_file*, off_t,
+		     const elfcpp::Ehdr<64, false>& ehdr);
+#endif
+
+#ifdef HAVE_TARGET_64_BIG
+  // Virtual functions which may be overriden by the child class.
+  virtual Object*
+  do_make_elf_object(const std::string& name, Input_file* input_file,
+		     off_t offset, const elfcpp::Ehdr<64, true>& ehdr);
+#endif
+
+  // Virtual functions which may be overriden by the child class.
+  virtual Output_section*
+  do_make_output_section(const char* name, elfcpp::Elf_Word type,
+			 elfcpp::Elf_Xword flags);
+
+  // Virtual function which may be overriden by the child class.
+  virtual bool
+  do_may_relax() const
+  { return parameters->options().relax(); }
+
+  // Virtual function which may be overriden by the child class.
+  virtual bool
+  do_relax(int, const Input_objects*, Symbol_table*, Layout*)
+  { return false; }
+
+  // A function for targets to call.  Return whether BYTES/LEN matches
+  // VIEW/VIEW_SIZE at OFFSET.
+  bool
+  match_view(const unsigned char* view, section_size_type view_size,
+	     section_offset_type offset, const char* bytes, size_t len) const;
+
+  // Set the contents of a VIEW/VIEW_SIZE to nops starting at OFFSET
+  // for LEN bytes.
+  void
+  set_view_to_nop(unsigned char* view, section_size_type view_size,
+		  section_offset_type offset, size_t len) const;
+
  private:
+  // The implementations of the four do_make_elf_object virtual functions are
+  // almost identical except for their sizes and endianity.  We use a template.
+  // for their implementations.
+  template<int size, bool big_endian>
+  inline Object*
+  do_make_elf_object_implementation(const std::string&, Input_file*, off_t,
+				    const elfcpp::Ehdr<size, big_endian>&);
+
   Target(const Target&);
   Target& operator=(const Target&);
 
@@ -323,7 +526,8 @@ class Sized_target : public Target
 		   bool needs_special_offset_handling,
 		   unsigned char* view,
 		   typename elfcpp::Elf_types<size>::Elf_Addr view_address,
-		   section_size_type view_size) = 0;
+		   section_size_type view_size,
+		   const Reloc_symbol_changes*) = 0;
 
   // Scan the relocs during a relocatable link.  The parameters are
   // like scan_relocs, with an additional Relocatable_relocs

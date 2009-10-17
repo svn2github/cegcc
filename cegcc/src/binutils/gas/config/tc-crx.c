@@ -1,5 +1,5 @@
 /* tc-crx.c -- Assembler code for the CRX CPU core.
-   Copyright 2004, 2007, 2008 Free Software Foundation, Inc.
+   Copyright 2004, 2005, 2006, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    Contributed by Tomer Levi, NSC, Israel.
    Originally written for GAS 2.12 by Tomer Levi, NSC, Israel.
@@ -351,7 +351,7 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS * fixP)
 	}
     }
 
-  assert ((int) fixP->fx_r_type > 0);
+  gas_assert ((int) fixP->fx_r_type > 0);
   reloc->howto = bfd_reloc_type_lookup (stdoutput, fixP->fx_r_type);
 
   if (reloc->howto == (reloc_howto_type *) NULL)
@@ -362,7 +362,7 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS * fixP)
 		    bfd_get_reloc_code_name (fixP->fx_r_type));
       return NULL;
     }
-  assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
+  gas_assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
 
   return reloc;
 }

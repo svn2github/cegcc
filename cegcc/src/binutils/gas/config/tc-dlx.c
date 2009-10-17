@@ -1,5 +1,6 @@
 /* tc-ldx.c -- Assemble for the DLX
-   Copyright 2002, 2003, 2004, 2005, 2007 Free Software Foundation, Inc.
+   Copyright 2002, 2003, 2004, 2005, 2007, 2009
+   Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -594,7 +595,7 @@ static char *
 parse_operand (char *s, expressionS *operandp)
 {
   char *save = input_line_pointer;
-  char *new;
+  char *new_pos;
 
   the_insn.HI = the_insn.LO = 0;
 
@@ -641,9 +642,9 @@ parse_operand (char *s, expressionS *operandp)
       (void) expression (operandp);
     }
 
-  new = input_line_pointer;
+  new_pos = input_line_pointer;
   input_line_pointer = save;
-  return new;
+  return new_pos;
 }
 
 /* Instruction parsing.  Takes a string containing the opcode.
@@ -908,6 +909,8 @@ md_assemble (char *str)
   know (str);
   machine_ip (str);
   toP = frag_more (4);
+  dwarf2_emit_insn (4);
+
   /* Put out the opcode.  */
   md_number_to_chars (toP, the_insn.opcode, 4);
 
@@ -1203,7 +1206,7 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED,
       return NULL;
     }
 
-  assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
+  gas_assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
 
   reloc->sym_ptr_ptr = xmalloc (sizeof (asymbol *));
   *reloc->sym_ptr_ptr = symbol_get_bfdsym (fixP->fx_addsy);
@@ -1235,4 +1238,3 @@ dlx_pop_insert (void)
   pop_insert (dlx_pseudo_table);
   return ;
 }
-

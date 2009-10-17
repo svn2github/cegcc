@@ -1,5 +1,5 @@
 /* tc-cr16.c -- Assembler code for the CR16 CPU core.
-   Copyright 2007 Free Software Foundation, Inc.
+   Copyright 2007, 2008, 2009 Free Software Foundation, Inc.
 
    Contributed by M R Swami Reddy <MR.Swami.Reddy@nsc.com>
 
@@ -523,6 +523,13 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS * fixP)
   arelent * reloc;
   bfd_reloc_code_real_type code;
 
+  /* If symbols are local and resolved, then no relocation needed.  */
+  if ( ((fixP->fx_addsy) 
+        && (S_GET_SEGMENT (fixP->fx_addsy) == absolute_section))
+       || ((fixP->fx_subsy) 
+	   && (S_GET_SEGMENT (fixP->fx_subsy) == absolute_section)))
+     return NULL;
+
   reloc = xmalloc (sizeof (arelent));
   reloc->sym_ptr_ptr  = xmalloc (sizeof (asymbol *));
   *reloc->sym_ptr_ptr = symbol_get_bfdsym (fixP->fx_addsy);
@@ -586,7 +593,7 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS * fixP)
 	}
 #endif
 
-  assert ((int) fixP->fx_r_type > 0);
+  gas_assert ((int) fixP->fx_r_type > 0);
   reloc->howto = bfd_reloc_type_lookup (stdoutput, fixP->fx_r_type);
 
   if (reloc->howto == NULL)
@@ -597,7 +604,7 @@ tc_gen_reloc (asection *section ATTRIBUTE_UNUSED, fixS * fixP)
                     bfd_get_reloc_code_name (fixP->fx_r_type));
       return NULL;
     }
-  assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
+  gas_assert (!fixP->fx_pcrel == !reloc->howto->pc_relative);
 
   return reloc;
 }
@@ -728,39 +735,52 @@ void
 md_apply_fix (fixS *fixP, valueT *valP, segT seg)
 {
   valueT val = * valP;
-  char *buf = fixP->fx_frag->fr_literal + fixP->fx_where;
-  fixP->fx_offset = 0;
-
-  switch (fixP->fx_r_type)
-    {
-      case BFD_RELOC_CR16_NUM8:
-        bfd_put_8 (stdoutput, (unsigned char) val, buf);
-        break;
-      case BFD_RELOC_CR16_NUM16:
-        bfd_put_16 (stdoutput, val, buf);
-        break;
-      case BFD_RELOC_CR16_NUM32:
-        bfd_put_32 (stdoutput, val, buf);
-        break;
-      case BFD_RELOC_CR16_NUM32a:
-        bfd_put_32 (stdoutput, val, buf);
-        break;
-      default:
-        /* We shouldn't ever get here because linkrelax is nonzero.  */
-        abort ();
-        break;
-    }
-
-  fixP->fx_done = 0;
 
   if (fixP->fx_addsy == NULL
       && fixP->fx_pcrel == 0)
     fixP->fx_done = 1;
-
-  if (fixP->fx_pcrel == 1
+  else if (fixP->fx_pcrel == 1
       && fixP->fx_addsy != NULL
       && S_GET_SEGMENT (fixP->fx_addsy) == seg)
     fixP->fx_done = 1;
+  else
+    fixP->fx_done = 0;
+
+  if (fixP->fx_addsy != NULL && !fixP->fx_pcrel)
+    {
+      val = fixP->fx_offset;
+      fixP->fx_done = 1;
+    }
+
+  if (fixP->fx_done)
+    {
+      char *buf = fixP->fx_frag->fr_literal + fixP->fx_where;
+
+      fixP->fx_offset = 0;
+
+      switch (fixP->fx_r_type)
+	{
+	case BFD_RELOC_CR16_NUM8:
+	  bfd_put_8 (stdoutput, (unsigned char) val, buf);
+	  break;
+	case BFD_RELOC_CR16_NUM16:
+	  bfd_put_16 (stdoutput, val, buf);
+	  break;
+	case BFD_RELOC_CR16_NUM32:
+	  bfd_put_32 (stdoutput, val, buf);
+	  break;
+	case BFD_RELOC_CR16_NUM32a:
+	  bfd_put_32 (stdoutput, val, buf);
+	  break;
+	default:
+	  /* We shouldn't ever get here because linkrelax is nonzero.  */
+	  abort ();
+	  break;
+	}
+      fixP->fx_done = 0;
+    }
+  else
+    fixP->fx_offset = * valP;
 }
 
 /* The location from which a PC relative jump should be calculated,

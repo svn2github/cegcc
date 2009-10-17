@@ -1,6 +1,6 @@
 /* ns32k.c  -- Assemble on the National Semiconductor 32k series
    Copyright 1987, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2005, 2006, 2007
+   2001, 2002, 2003, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
@@ -712,7 +712,7 @@ get_addr_mode (char *ptr, addr_modeS *addr_modeP)
       addr_modeP->am_size += 1;
     }
 
-  assert (addr_modeP->mode >= 0); 
+  gas_assert (addr_modeP->mode >= 0); 
   if (disp_test[(unsigned int) addr_modeP->mode])
     {
       char c;
@@ -725,7 +725,7 @@ get_addr_mode (char *ptr, addr_modeS *addr_modeP)
       /* There was a displacement, probe for length  specifying suffix.  */
       addr_modeP->pcrel = 0;
 
-      assert(addr_modeP->mode >= 0);
+      gas_assert (addr_modeP->mode >= 0);
       if (disp_test[(unsigned int) addr_modeP->mode])
 	{
 	  /* There is a displacement.  */

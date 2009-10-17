@@ -1,6 +1,6 @@
 /* This is the Assembler Pre-Processor
    Copyright 1987, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2006, 2007
+   1999, 2000, 2001, 2002, 2003, 2005, 2006, 2007, 2008
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
@@ -258,7 +258,7 @@ app_push (void)
     saved->saved_input = NULL;
   else
     {
-      saved->saved_input = xmalloc (saved_input_len);
+      saved->saved_input = (char *) xmalloc (saved_input_len);
       memcpy (saved->saved_input, saved_input, saved_input_len);
       saved->saved_input_len = saved_input_len;
     }
@@ -294,7 +294,7 @@ app_pop (char *arg)
     saved_input = NULL;
   else
     {
-      assert (saved->saved_input_len <= (int) (sizeof input_buffer));
+      gas_assert (saved->saved_input_len <= (int) (sizeof input_buffer));
       memcpy (input_buffer, saved->saved_input, saved->saved_input_len);
       saved_input = input_buffer;
       saved_input_len = saved->saved_input_len;

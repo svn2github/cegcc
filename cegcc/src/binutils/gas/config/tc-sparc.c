@@ -1,6 +1,6 @@
 /* tc-sparc.c -- Assemble for the SPARC
    Copyright 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
+   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
    This file is part of GAS, the GNU Assembler.
 
@@ -542,6 +542,10 @@ md_parse_option (int c, char *arg)
 	  as_fatal (_("No compiled in support for %d bit object file format"),
 		    sparc_arch_size);
 	free (list);
+
+	if (sparc_arch_size == 64
+	    && max_architecture < SPARC_OPCODE_ARCH_V9)
+	  max_architecture = SPARC_OPCODE_ARCH_V9;
       }
       break;
 
@@ -1352,7 +1356,7 @@ md_assemble (char *str)
 	   The workaround is to add an fmovs of the destination register to
 	   itself just after the instruction.  This was true on machines
 	   with Weitek 1165 float chips, such as the Sun-4/260 and /280.  */
-	assert (the_insn.reloc == BFD_RELOC_NONE);
+	gas_assert (the_insn.reloc == BFD_RELOC_NONE);
 	the_insn.opcode = FMOVS_INSN | rd | RD (rd);
 	output_insn (insn, &the_insn);
 	return;
@@ -2741,7 +2745,7 @@ sparc_ip (char *str, const struct sparc_opcode **pinsn)
 		sparc_ffs (SPARC_OPCODE_SUPPORTED (max_architecture)
 			   & needed_arch_mask);
 
-	      assert (needed_architecture <= SPARC_OPCODE_ARCH_MAX);
+	      gas_assert (needed_architecture <= SPARC_OPCODE_ARCH_MAX);
 	      if (warn_on_bump
 		  && needed_architecture > warn_after_architecture)
 		{
@@ -2955,7 +2959,7 @@ md_apply_fix (fixS *fixP, valueT *valP, segT segment ATTRIBUTE_UNUSED)
   offsetT val = * (offsetT *) valP;
   long insn;
 
-  assert (fixP->fx_r_type < BFD_RELOC_UNUSED);
+  gas_assert (fixP->fx_r_type < BFD_RELOC_UNUSED);
 
   fixP->fx_addnumber = val;	/* Remember value for emit_reloc.  */
 
@@ -3768,9 +3772,9 @@ s_reserve (int ignore ATTRIBUTE_UNUSED)
     }
   else
     {
-      as_warn ("Ignoring attempt to re-define symbol %s",
+      as_warn (_("Ignoring attempt to re-define symbol %s"),
 	       S_GET_NAME (symbolP));
-    }				/* if not redefining.  */
+    }
 
   demand_empty_rest_of_line ();
 }
@@ -4192,7 +4196,7 @@ sparc_cons_align (int nbytes)
   if (nalign == 0)
     return;
 
-  assert (nalign > 0);
+  gas_assert (nalign > 0);
 
   if (now_seg == absolute_section)
     {

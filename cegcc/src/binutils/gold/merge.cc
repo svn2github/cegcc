@@ -204,6 +204,12 @@ Object_merge_map::initialize_input_to_output_map(
   Input_merge_map* map = this->get_input_merge_map(shndx);
   gold_assert(map != NULL);
 
+  gold_assert(initialize_map->empty());
+  // We know how many entries we are going to add.
+  // reserve_unordered_map takes an expected count of buckets, not a
+  // count of elements, so double it to try to reduce collisions.
+  reserve_unordered_map(initialize_map, map->entries.size() * 2);
+
   for (Input_merge_map::Entries::const_iterator p = map->entries.begin();
        p != map->entries.end();
        ++p)
@@ -465,7 +471,7 @@ Output_merge_string<Char_type>::do_add_input_section(Relobj* object,
   const unsigned char* pdata = object->section_contents(shndx, &len, false);
 
   const Char_type* p = reinterpret_cast<const Char_type*>(pdata);
-  const Char_type* pend = p + len;
+  const Char_type* pend = p + len / sizeof(Char_type);
 
   if (len % sizeof(Char_type) != 0)
     {
@@ -485,8 +491,10 @@ Output_merge_string<Char_type>::do_add_input_section(Relobj* object,
 	{
 	  if (pl >= pend)
 	    {
-	      object->error(_("entry in mergeable string section "
-			      "not null terminated"));
+	      gold_warning(_("%s: last entry in mergeable string section '%s' "
+			     "not null terminated"),
+			   object->name().c_str(),
+			   object->section_name(shndx).c_str());
 	      break;
 	    }
 	}

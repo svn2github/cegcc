@@ -125,12 +125,12 @@ Disassembly of section .text:
 0+1cc <[^>]*> ed910a00 	(vldr|flds)	s0, \[r1\]
 0+1d0 <[^>]*> ed9e0a00 	(vldr|flds)	s0, \[lr\]
 0+1d4 <[^>]*> ed900a00 	(vldr|flds)	s0, \[r0\]
-0+1d8 <[^>]*> ed900aff 	(vldr|flds)	s0, \[r0, #1020\]
-0+1dc <[^>]*> ed100aff 	(vldr|flds)	s0, \[r0, #-1020\]
+0+1d8 <[^>]*> ed900aff 	(vldr|flds)	s0, \[r0, #1020\].*
+0+1dc <[^>]*> ed100aff 	(vldr|flds)	s0, \[r0, #-1020\].*
 0+1e0 <[^>]*> edd00a00 	(vldr|flds)	s1, \[r0\]
 0+1e4 <[^>]*> ed901a00 	(vldr|flds)	s2, \[r0\]
 0+1e8 <[^>]*> edd0fa00 	(vldr|flds)	s31, \[r0\]
-0+1ec <[^>]*> edccaac9 	(vstr|fsts)	s21, \[ip, #804\]
+0+1ec <[^>]*> edccaac9 	(vstr|fsts)	s21, \[ip, #804\].*
 0+1f0 <[^>]*> ecd00a01 	(vldmia|fldmias)	r0, {s1}
 0+1f4 <[^>]*> ec901a01 	(vldmia|fldmias)	r0, {s2}
 0+1f8 <[^>]*> ecd0fa01 	(vldmia|fldmias)	r0, {s31}
@@ -249,5 +249,5 @@ Disassembly of section .text:
 0+3bc <[^>]*> eee70a10 	(vmsr|fmxr)	mvfr0, r0
 0+3c0 <[^>]*> eee60a10 	(vmsr|fmxr)	mvfr1, r0
 0+3c4 <[^>]*> eeec0a10 	(vmsr|fmxr)	<impl def 0xc>, r0
-0+3c8 <[^>]*> e1a00000 	nop			\(mov r0,r0\)
-0+3cc <[^>]*> e1a00000 	nop			\(mov r0,r0\)
+0+3c8 <[^>]*> e1a00000 	nop			; \(mov r0, r0\)
+0+3cc <[^>]*> e1a00000 	nop			; \(mov r0, r0\)

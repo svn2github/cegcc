@@ -56,6 +56,18 @@ class Position_dependent_options;
 class Target;
 class Plugin_manager;
 
+// Incremental build action for a specific file, as selected by the user.
+
+enum Incremental_disposition
+{
+  // Determine the status from the timestamp (default).
+  INCREMENTAL_CHECK,
+  // Assume the file changed from the previous build.
+  INCREMENTAL_CHANGED,
+  // Assume the file didn't change from the previous build.
+  INCREMENTAL_UNCHANGED
+};
+
 // The nested namespace is to contain all the global variables and
 // structs that need to be defined in the .h file, but do not need to
 // be used outside this class.
@@ -69,6 +81,9 @@ typedef Unordered_set<std::string> String_set;
 
 extern void
 parse_bool(const char* option_name, const char* arg, bool* retval);
+
+extern void
+parse_int(const char* option_name, const char* arg, int* retval);
 
 extern void
 parse_uint(const char* option_name, const char* arg, int* retval);
@@ -321,6 +336,12 @@ struct Struct_special : public Struct_var
   };                                                                     \
   Struct_disable_##varname__ disable_##varname__##_initializer_
 
+#define DEFINE_int(varname__, dashes__, shortname__, default_value__,   \
+                   helpstring__, helparg__)                             \
+  DEFINE_var(varname__, dashes__, shortname__, default_value__,         \
+             #default_value__, helpstring__, helparg__, false,		\
+             int, int, options::parse_int)
+
 #define DEFINE_uint(varname__, dashes__, shortname__, default_value__,  \
                    helpstring__, helparg__)                             \
   DEFINE_var(varname__, dashes__, shortname__, default_value__,         \
@@ -522,9 +543,22 @@ class Search_directory
   is_in_sysroot() const
   { return this->is_in_sysroot_; }
 
+  // Return whether this is considered a system directory.
+  bool
+  is_system_directory() const
+  { return this->put_in_sysroot_ || this->is_in_sysroot_; }
+
  private:
+  // The directory name.
   std::string name_;
+  // True if the sysroot should be added as a prefix for this
+  // directory (if there is a sysroot).  This is true for system
+  // directories that we search by default.
   bool put_in_sysroot_;
+  // True if this directory is in the sysroot (if there is a sysroot).
+  // This is true if there is a sysroot and either 1) put_in_sysroot_
+  // is true, or 2) the directory happens to be in the sysroot based
+  // on a pathname comparison.
   bool is_in_sysroot_;
 };
 
@@ -620,6 +654,9 @@ class General_options
               N_("Try to detect violations of the One Definition Rule"),
               NULL);
 
+  DEFINE_bool(discard_locals, options::TWO_DASHES, 'X', false,
+              N_("Delete all temporary local symbols"), NULL);
+
   DEFINE_bool(dynamic_list_data, options::TWO_DASHES, '\0', false,
               N_("Add data symbols to dynamic symbols"), NULL);
 
@@ -635,6 +672,10 @@ class General_options
   DEFINE_string(entry, options::TWO_DASHES, 'e', NULL,
                 N_("Set program start address"), N_("ADDRESS"));
 
+  DEFINE_special(exclude_libs, options::TWO_DASHES, '\0',
+		 N_("Exclude libraries from automatic export"),
+		 N_(("lib,lib ...")));
+
   DEFINE_bool(export_dynamic, options::TWO_DASHES, 'E', false,
               N_("Export all dynamic symbols"),
 	      N_("Do not export all dynamic symbols (default)"));
@@ -645,6 +686,9 @@ class General_options
   DEFINE_bool(fatal_warnings, options::TWO_DASHES, '\0', false,
 	      N_("Treat warnings as errors"),
 	      N_("Do not treat warnings as errors"));
+
+  DEFINE_string(fini, options::ONE_DASH, '\0', "_fini",
+                N_("Call SYMBOL at unload-time"), N_("SYMBOL"));
 
   DEFINE_string(soname, options::ONE_DASH, 'h', NULL,
                 N_("Set shared library name"), N_("FILENAME"));
@@ -659,6 +703,22 @@ class General_options
 
   DEFINE_string(dynamic_linker, options::TWO_DASHES, 'I', NULL,
                 N_("Set dynamic linker path"), N_("PROGRAM"));
+
+  DEFINE_bool(incremental, options::TWO_DASHES, '\0', false,
+              N_("Work in progress; do not use"),
+              N_("Do a full build"));
+
+  DEFINE_special(incremental_changed, options::TWO_DASHES, '\0',
+                 N_("Assume files changed"), NULL);
+
+  DEFINE_special(incremental_unchanged, options::TWO_DASHES, '\0',
+                 N_("Assume files didn't change"), NULL);
+
+  DEFINE_special(incremental_unknown, options::TWO_DASHES, '\0',
+                 N_("Use timestamps to check files (default)"), NULL);
+
+  DEFINE_string(init, options::ONE_DASH, '\0', "_init",
+                N_("Call SYMBOL at load-time"), N_("SYMBOL"));
 
   DEFINE_special(just_symbols, options::TWO_DASHES, '\0',
                  N_("Read only symbol values from FILE"), N_("FILE"));
@@ -703,6 +763,12 @@ class General_options
   DEFINE_string(oformat, options::EXACTLY_TWO_DASHES, '\0', "elf",
 		N_("Set output format"), N_("[binary]"));
 
+  DEFINE_bool(pie, options::ONE_DASH, '\0', false,
+	      N_("Create a position independent executable"), NULL);
+  DEFINE_bool_alias(pic_executable, pie, options::TWO_DASHES, '\0',
+		    N_("Create a position independent executable"), NULL,
+		    false);
+
 #ifdef ENABLE_PLUGINS
   DEFINE_special(plugin, options::TWO_DASHES, '\0',
                  N_("Load a plugin library"), N_("PLUGIN"));
@@ -729,6 +795,9 @@ class General_options
   DEFINE_bool(relax, options::TWO_DASHES, '\0', false,
 	      N_("Relax branches on certain targets"), NULL);
 
+  DEFINE_string(retain_symbols_file, options::EXACTLY_ONE_DASH, '\0', NULL,
+                N_("keep only symbols listed in this file"), N_("[file]"));
+
   // -R really means -rpath, but can mean --just-symbols for
   // compatibility with GNU ld.  -rpath is always -rpath, so we list
   // it separately.
@@ -754,8 +823,15 @@ class General_options
   DEFINE_bool(strip_lto_sections, options::TWO_DASHES, '\0', true,
               N_("Strip LTO intermediate code sections"), NULL);
 
-  DEFINE_bool(no_keep_memory, options::TWO_DASHES, 's', false,
-              N_("Use less memory and more disk I/O (included only for compatibility with GNU ld)"), NULL);
+  DEFINE_int(stub_group_size, options::TWO_DASHES , '\0', 1,
+             N_("(ARM only) The maximum distance from instructions in a group "
+		"of sections to their stubs.  Negative values mean stubs "
+		"are always after the group. 1 means using default size.\n"),
+	     N_("SIZE"));
+
+  DEFINE_bool(no_keep_memory, options::TWO_DASHES, '\0', false,
+              N_("Use less memory and more disk I/O "
+                 "(included only for compatibility with GNU ld)"), NULL);
 
   DEFINE_bool(shared, options::ONE_DASH, '\0', false,
               N_("Generate shared library"), NULL);
@@ -763,17 +839,37 @@ class General_options
   DEFINE_bool(Bshareable, options::ONE_DASH, '\0', false,
               N_("Generate shared library"), NULL);
 
+  DEFINE_uint(split_stack_adjust_size, options::TWO_DASHES, '\0', 0x4000,
+	      N_("Stack size when -fsplit-stack function calls non-split"),
+	      N_("SIZE"));
+
   // This is not actually special in any way, but I need to give it
   // a non-standard accessor-function name because 'static' is a keyword.
   DEFINE_special(static, options::ONE_DASH, '\0',
                  N_("Do not link against shared libraries"), NULL);
 
+  DEFINE_enum(icf, options::TWO_DASHES, '\0', "none",
+              N_("Identical Code Folding. "
+                 "\'--icf=safe\' folds only ctors and dtors."),
+	      ("[none,all,safe]"),	
+              {"none", "all", "safe"});
+
+  DEFINE_uint(icf_iterations, options::TWO_DASHES , '\0', 0,
+              N_("Number of iterations of ICF (default 2)"), N_("COUNT"));
+
+  DEFINE_bool(print_icf_sections, options::TWO_DASHES, '\0', false,
+              N_("List folded identical sections on stderr"),
+              N_("Do not list folded identical sections"));
+
+  DEFINE_set(keep_unique, options::TWO_DASHES, '\0',
+	     N_("Do not fold this symbol during ICF"), N_("SYMBOL"));
+
   DEFINE_bool(gc_sections, options::TWO_DASHES, '\0', false,
-              N_("Remove unused sections"), 
+              N_("Remove unused sections"),
               N_("Don't remove unused sections (default)"));
- 
+
   DEFINE_bool(print_gc_sections, options::TWO_DASHES, '\0', false,
-              N_("List removed unused sections on stderr"), 
+              N_("List removed unused sections on stderr"),
               N_("Do not list removed unused sections"));
 
   DEFINE_bool(stats, options::TWO_DASHES, '\0', false,
@@ -816,6 +912,10 @@ class General_options
   DEFINE_special(version_script, options::TWO_DASHES, '\0',
                  N_("Read version script"), N_("FILE"));
 
+  DEFINE_bool(warn_search_mismatch, options::TWO_DASHES, '\0', true,
+	      N_("Warn when skipping an incompatible library"),
+	      N_("Don't warn when skipping an incompatible library"));
+
   DEFINE_bool(whole_archive, options::TWO_DASHES, '\0', false,
               N_("Include all archive contents"),
               N_("Include only needed archive contents"));
@@ -847,19 +947,23 @@ class General_options
               NULL);
   DEFINE_bool(execstack, options::DASH_Z, '\0', false,
               N_("Mark output as requiring executable stack"), NULL);
-  DEFINE_uint64(max_page_size, options::DASH_Z, '\0', 0,
-                N_("Set maximum page size to SIZE"), N_("SIZE"));
-  DEFINE_bool(noexecstack, options::DASH_Z, '\0', false,
-              N_("Mark output as not requiring executable stack"), NULL);
   DEFINE_bool(initfirst, options::DASH_Z, '\0', false,
 	      N_("Mark DSO to be initialized first at runtime"),
 	      NULL);
   DEFINE_bool(interpose, options::DASH_Z, '\0', false,
 	      N_("Mark object to interpose all DSOs but executable"),
 	      NULL);
+  DEFINE_bool(lazy, options::DASH_Z, '\0', false,
+	      N_("Mark object for lazy runtime binding (default)"),
+	      NULL);
   DEFINE_bool(loadfltr, options::DASH_Z, '\0', false,
 	      N_("Mark object requiring immediate process"),
 	      NULL);
+  DEFINE_uint64(max_page_size, options::DASH_Z, '\0', 0,
+                N_("Set maximum page size to SIZE"), N_("SIZE"));
+  DEFINE_bool(copyreloc, options::DASH_Z, '\0', true,
+	      NULL,
+	      N_("Do not create copy relocs"));
   DEFINE_bool(nodefaultlib, options::DASH_Z, '\0', false,
 	      N_("Mark object not to use default search paths"),
 	      NULL);
@@ -872,12 +976,17 @@ class General_options
   DEFINE_bool(nodump, options::DASH_Z, '\0', false,
 	      N_("Mark DSO not available to dldump"),
 	      NULL);
-  DEFINE_bool(relro, options::DASH_Z, '\0', false,
-	      N_("Where possible mark variables read-only after relocation"),
-	      N_("Don't mark variables read-only after relocation"));
+  DEFINE_bool(noexecstack, options::DASH_Z, '\0', false,
+              N_("Mark output as not requiring executable stack"), NULL);
+  DEFINE_bool(now, options::DASH_Z, '\0', false,
+	      N_("Mark object for immediate function binding"),
+	      NULL);
   DEFINE_bool(origin, options::DASH_Z, '\0', false,
 	      N_("Mark DSO to indicate that needs immediate $ORIGIN "
                  "processing at runtime"), NULL);
+  DEFINE_bool(relro, options::DASH_Z, '\0', false,
+	      N_("Where possible mark variables read-only after relocation"),
+	      N_("Don't mark variables read-only after relocation"));
 
  public:
   typedef options::Dir_list Dir_list;
@@ -891,6 +1000,11 @@ class General_options
   // any problems.
   void finalize();
 
+  // True if we printed the version information.
+  bool
+  printed_version() const
+  { return this->printed_version_; }
+
   // The macro defines output() (based on --output), but that's a
   // generic name.  Provide this alternative name, which is clearer.
   const char*
@@ -901,7 +1015,7 @@ class General_options
   // the output is position-independent or not.
   bool
   output_is_position_independent() const
-  { return this->shared(); }
+  { return this->shared() || this->pie(); }
 
   // Return true if the output is something that can be exec()ed, such
   // as a static executable, or a position-dependent or
@@ -909,13 +1023,7 @@ class General_options
   // object file.
   bool
   output_is_executable() const
-  { return !this->shared() || this->output_is_pie(); }
-
-  // Return true if the output is a position-independent executable.
-  // This is currently not supported.
-  bool
-  output_is_pie() const
-  { return false; }
+  { return !this->shared() && !this->relocatable(); }
 
   // This would normally be static(), and defined automatically, but
   // since static is a keyword, we need to come up with our own name.
@@ -933,9 +1041,27 @@ class General_options
     OBJECT_FORMAT_BINARY
   };
 
+  // Convert a string to an Object_format.  Gives an error if the
+  // string is not recognized.
+  static Object_format
+  string_to_object_format(const char* arg);
+
   // Note: these functions are not very fast.
   Object_format format_enum() const;
   Object_format oformat_enum() const;
+
+  // Return whether FILENAME is in a system directory.
+  bool
+  is_in_system_directory(const std::string& name) const;
+
+  // RETURN whether SYMBOL_NAME should be kept, according to symbols_to_retain_.
+  bool
+  should_retain_symbol(const char* symbol_name) const
+    {
+      if (symbols_to_retain_.empty())    // means flag wasn't specified
+        return true;
+      return symbols_to_retain_.find(symbol_name) != symbols_to_retain_.end();
+    }
 
   // These are the best way to get access to the execstack state,
   // not execstack() and noexecstack() which are hard to use properly.
@@ -946,6 +1072,14 @@ class General_options
   bool
   is_stack_executable() const
   { return this->execstack_status_ == EXECSTACK_YES; }
+
+  bool
+  icf_enabled() const
+  { return this->icf_status_ != ICF_NONE; }
+
+  bool
+  icf_safe_folding() const
+  { return this->icf_status_ == ICF_SAFE; }
 
   // The --demangle option takes an optional string, and there is also
   // a --no-demangle option.  This is the best way to decide whether
@@ -969,6 +1103,18 @@ class General_options
   in_dynamic_list(const char* symbol) const
   { return this->dynamic_list_.version_script_info()->symbol_is_local(symbol); }
 
+  // The disposition given by the --incremental-changed,
+  // --incremental-unchanged or --incremental-unknown option.  The
+  // value may change as we proceed parsing the command line flags.
+  Incremental_disposition
+  incremental_disposition() const
+  { return this->incremental_disposition_; }
+
+  // Return true if S is the name of a library excluded from automatic
+  // symbol export.
+  bool
+  check_excluded_libs (const std::string &s) const;
+
  private:
   // Don't copy this structure.
   General_options(const General_options&);
@@ -984,6 +1130,20 @@ class General_options
     // Mark the stack as not executable (-z noexecstack).
     EXECSTACK_NO
   };
+
+  enum Icf_status
+  {
+    // Do not fold any functions (Default or --icf=none).
+    ICF_NONE,
+    // All functions are candidates for folding. (--icf=all).
+    ICF_ALL,	
+    // Only ctors and dtors are candidates for folding. (--icf=safe).
+    ICF_SAFE
+  };
+
+  void
+  set_icf_status(Icf_status value)
+  { this->icf_status_ = value; }
 
   void
   set_execstack_status(Execstack value)
@@ -1014,8 +1174,12 @@ class General_options
   void
   add_plugin_option(const char* opt);
 
+  // Whether we printed version information.
+  bool printed_version_;
   // Whether to mark the stack as executable.
   Execstack execstack_status_;
+  // Whether to do code folding.
+  Icf_status icf_status_;
   // Whether to do a static link.
   bool static_;
   // Whether to do demangling.
@@ -1026,6 +1190,18 @@ class General_options
   // script.cc, we store this as a Script_options object, even though
   // we only use a single Version_tree from it.
   Script_options dynamic_list_;
+  // The disposition given by the --incremental-changed,
+  // --incremental-unchanged or --incremental-unknown option.  The
+  // value may change as we proceed parsing the command line flags.
+  Incremental_disposition incremental_disposition_;
+  // Whether we have seen one of the options that require incremental
+  // build (--incremental-changed, --incremental-unchanged or
+  // --incremental-unknown)
+  bool implicit_incremental_;
+  // Libraries excluded from automatic export, via --exclude-libs.
+  Unordered_set<std::string> excluded_libs_;
+  // List of symbol-names to keep, via -retain-symbol-info.
+  Unordered_set<std::string> symbols_to_retain_;
 };
 
 // The position-dependent options.  We use this to store the state of
@@ -1062,12 +1238,14 @@ class Position_dependent_options
     this->set_Bdynamic(options.Bdynamic());
     this->set_format_enum(options.format_enum());
     this->set_whole_archive(options.whole_archive());
+    this->set_incremental_disposition(options.incremental_disposition());
   }
 
   DEFINE_posdep(as_needed, bool);
   DEFINE_posdep(Bdynamic, bool);
   DEFINE_posdep(format_enum, General_options::Object_format);
   DEFINE_posdep(whole_archive, bool);
+  DEFINE_posdep(incremental_disposition, Incremental_disposition);
 
  private:
   // This is a General_options with everything set to its default
@@ -1082,9 +1260,20 @@ class Position_dependent_options
 class Input_file_argument
 {
  public:
+  enum Input_file_type
+  {
+    // A regular file, name used as-is, not searched.
+    INPUT_FILE_TYPE_FILE,
+    // A library name.  When used, "lib" will be prepended and ".so" or
+    // ".a" appended to make a filename, and that filename will be searched
+    // for using the -L paths.
+    INPUT_FILE_TYPE_LIBRARY,
+    // A regular file, name used as-is, but searched using the -L paths.
+    INPUT_FILE_TYPE_SEARCHED_FILE
+  };
+
   // name: file name or library name
-  // is_lib: true if name is a library name: that is, emits the leading
-  //         "lib" and trailing ".so"/".a" from the name
+  // type: the type of this input file.
   // extra_search_path: an extra directory to look for the file, prior
   //         to checking the normal library search path.  If this is "",
   //         then no extra directory is added.
@@ -1092,15 +1281,15 @@ class Input_file_argument
   // options: The position dependent options at this point in the
   //         command line, such as --whole-archive.
   Input_file_argument()
-    : name_(), is_lib_(false), extra_search_path_(""), just_symbols_(false),
-      options_()
+    : name_(), type_(INPUT_FILE_TYPE_FILE), extra_search_path_(""),
+      just_symbols_(false), options_()
   { }
 
-  Input_file_argument(const char* name, bool is_lib,
+  Input_file_argument(const char* name, Input_file_type type,
                       const char* extra_search_path,
                       bool just_symbols,
                       const Position_dependent_options& options)
-    : name_(name), is_lib_(is_lib), extra_search_path_(extra_search_path),
+    : name_(name), type_(type), extra_search_path_(extra_search_path),
       just_symbols_(just_symbols), options_(options)
   { }
 
@@ -1108,11 +1297,11 @@ class Input_file_argument
   // Position_dependent_options.  In that case, we extract the
   // position-independent vars from the General_options and only store
   // those.
-  Input_file_argument(const char* name, bool is_lib,
+  Input_file_argument(const char* name, Input_file_type type,
                       const char* extra_search_path,
                       bool just_symbols,
                       const General_options& options)
-    : name_(name), is_lib_(is_lib), extra_search_path_(extra_search_path),
+    : name_(name), type_(type), extra_search_path_(extra_search_path),
       just_symbols_(just_symbols), options_(options)
   { }
 
@@ -1126,7 +1315,11 @@ class Input_file_argument
 
   bool
   is_lib() const
-  { return this->is_lib_; }
+  { return type_ == INPUT_FILE_TYPE_LIBRARY; }
+
+  bool
+  is_searched_file() const
+  { return type_ == INPUT_FILE_TYPE_SEARCHED_FILE; }
 
   const char*
   extra_search_path() const
@@ -1145,14 +1338,18 @@ class Input_file_argument
   // options.
   bool
   may_need_search() const
-  { return this->is_lib_ || !this->extra_search_path_.empty(); }
+  {
+    return (this->is_lib()
+	    || this->is_searched_file()
+	    || !this->extra_search_path_.empty());
+  }
 
  private:
   // We use std::string, not const char*, here for convenience when
   // using script files, so that we do not have to preserve the string
   // in that case.
   std::string name_;
-  bool is_lib_;
+  Input_file_type type_;
   std::string extra_search_path_;
   bool just_symbols_;
   Position_dependent_options options_;
@@ -1212,14 +1409,15 @@ class Input_argument
   Input_file_group* group_;
 };
 
+typedef std::vector<Input_argument> Input_argument_list;
+
 // A group from the command line.  This is a set of arguments within
 // --start-group ... --end-group.
 
 class Input_file_group
 {
  public:
-  typedef std::vector<Input_argument> Files;
-  typedef Files::const_iterator const_iterator;
+  typedef Input_argument_list::const_iterator const_iterator;
 
   Input_file_group()
     : files_()
@@ -1241,7 +1439,7 @@ class Input_file_group
   { return this->files_.end(); }
 
  private:
-  Files files_;
+  Input_argument_list files_;
 };
 
 // A list of files from the command line or a script.
@@ -1249,7 +1447,6 @@ class Input_file_group
 class Input_arguments
 {
  public:
-  typedef std::vector<Input_argument> Input_argument_list;
   typedef Input_argument_list::const_iterator const_iterator;
 
   Input_arguments()
@@ -1369,6 +1566,16 @@ class Command_line
   Command_line(const Command_line&);
   Command_line& operator=(const Command_line&);
 
+  // This is a dummy class to provide a constructor that runs before
+  // the constructor for the General_options.  The Pre_options constructor
+  // is used as a hook to set the flag enabling the options to register
+  // themselves.
+  struct Pre_options {
+    Pre_options();
+  };
+
+  // This must come before options_!
+  Pre_options pre_options_;
   General_options options_;
   Position_dependent_options position_options_;
   Script_options script_options_;

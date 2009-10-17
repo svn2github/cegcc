@@ -234,7 +234,8 @@ linker_script:
 
 /* A command which may appear at top level of a linker script.  */
 file_cmd:
-	  FORCE_COMMON_ALLOCATION
+	  EXTERN '(' extern_name_list ')'
+	| FORCE_COMMON_ALLOCATION
 	    { script_set_common_allocation(closure, 1); }
 	| GROUP
 	    { script_start_group(closure); }
@@ -245,6 +246,19 @@ file_cmd:
 	| INPUT '(' input_list ')'
         | OPTION '(' string ')'
 	    { script_parse_option(closure, $3.value, $3.length); }
+	| OUTPUT_FORMAT '(' string ')'
+	    {
+	      if (!script_check_output_format(closure, $3.value, $3.length,
+					      NULL, 0, NULL, 0))
+		YYABORT;
+	    }
+	| OUTPUT_FORMAT '(' string ',' string ',' string ')'
+	    {
+	      if (!script_check_output_format(closure, $3.value, $3.length,
+					      $5.value, $5.length,
+					      $7.value, $7.length))
+		YYABORT;
+	    }
 	| PHDRS '{' phdrs_defs '}'
 	| SEARCH_DIR '(' string ')'
 	    { script_add_search_dir(closure, $3.value, $3.length); }
@@ -252,6 +266,8 @@ file_cmd:
 	    { script_start_sections(closure); }
 	  sections_block '}'
 	    { script_finish_sections(closure); }
+	| TARGET_K '(' string ')'
+	    { script_set_target(closure, $3.value, $3.length); }
         | VERSIONK '{'
             { script_push_lex_into_version_mode(closure); }
           version_script '}'
@@ -266,9 +282,26 @@ file_cmd:
    these is more-or-less OK since most scripts simply explicitly
    choose the default.  */
 ignore_cmd:
-	  OUTPUT_FORMAT '(' string ')'
-	| OUTPUT_FORMAT '(' string ',' string ',' string ')'
-	| OUTPUT_ARCH '(' string ')'
+	  OUTPUT_ARCH '(' string ')'
+	;
+
+/* A list of external undefined symbols.  We put the lexer into
+   expression mode so that commas separate names; this is what the GNU
+   linker does.  */
+
+extern_name_list:
+	    { script_push_lex_into_expression_mode(closure); }
+	  extern_name_list_body
+	    { script_pop_lex_mode(closure); }
+	;
+
+extern_name_list_body:
+	  string
+	    { script_add_extern(closure, $1.value, $1.length); }
+	| extern_name_list_body string
+	    { script_add_extern(closure, $2.value, $2.length); }
+	| extern_name_list_body ',' string
+	    { script_add_extern(closure, $3.value, $3.length); }
 	;
 
 /* A list of input file names.  */
@@ -828,6 +861,10 @@ exp:
 	| SEGMENT_START '(' string ',' exp ')'
 	    {
 	      $$ = script_exp_function_segment_start($3.value, $3.length, $5);
+	      /* We need to take note of any SEGMENT_START expressions
+		 because they change the behaviour of -Ttext, -Tdata and
+		 -Tbss options.  */
+	      script_saw_segment_start_expression(closure);
 	    }
 	| ASSERT_K '(' exp ',' string ')'
 	    { $$ = script_exp_function_assert($3, $5.value, $5.length); }
