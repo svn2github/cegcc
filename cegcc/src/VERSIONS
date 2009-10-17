@@ -11,7 +11,7 @@ Versions of the subdirectories below are:
 	ftp://sources.redhat.com/pub/newlib/index.html
 	ftp://sources.redhat.com/pub/newlib/newlib-1.14.0.tar.gz
 
-- binutils from cvs, 4 February 2009
+- binutils from CVS, 16 October 2009 (just after binutils 2.20)
 
 	cvs -d :pserver:anoncvs@sourceware.org:/cvs/src ...
 
