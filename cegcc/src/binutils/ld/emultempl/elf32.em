@@ -13,7 +13,8 @@ fragment <<EOF
 
 /* ${ELFSIZE} bit ELF emulation code for ${EMULATION_NAME}
    Copyright 1991, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-   2002, 2003, 2004, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
+   2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
+   Free Software Foundation, Inc.
    Written by Steve Chamberlain <sac@cygnus.com>
    ELF support by Ian Lance Taylor <ian@cygnus.com>
 
@@ -62,10 +63,9 @@ fragment <<EOF
 static void gld${EMULATION_NAME}_before_parse (void);
 static void gld${EMULATION_NAME}_after_open (void);
 static void gld${EMULATION_NAME}_before_allocation (void);
+static void gld${EMULATION_NAME}_after_allocation (void);
 static lang_output_section_statement_type *gld${EMULATION_NAME}_place_orphan
   (asection *, const char *, int);
-static void gld${EMULATION_NAME}_finish (void);
-
 EOF
 
 if [ "x${USE_LIBPATH}" = xyes ] ; then
@@ -114,30 +114,31 @@ fragment <<EOF
 static bfd_boolean
 gld${EMULATION_NAME}_load_symbols (lang_input_statement_type *entry)
 {
-  int class = 0;
+  int link_class = 0;
 
   /* Tell the ELF linker that we don't want the output file to have a
      DT_NEEDED entry for this file, unless it is used to resolve
      references in a regular object.  */
   if (entry->as_needed)
-    class = DYN_AS_NEEDED;
+    link_class = DYN_AS_NEEDED;
 
   /* Tell the ELF linker that we don't want the output file to have a
      DT_NEEDED entry for any dynamic library in DT_NEEDED tags from
      this file at all.  */
   if (!entry->add_needed)
-    class |= DYN_NO_ADD_NEEDED;
+    link_class |= DYN_NO_ADD_NEEDED;
 
   if (entry->just_syms_flag
       && (bfd_get_file_flags (entry->the_bfd) & DYNAMIC) != 0)
     einfo (_("%P%F: --just-symbols may not be used on DSO: %B\n"),
 	   entry->the_bfd);
 
-  if (!class
+  if (!link_class
       || (bfd_get_file_flags (entry->the_bfd) & DYNAMIC) == 0)
     return FALSE;
 
-  bfd_elf_set_dyn_lib_class (entry->the_bfd, class);
+  bfd_elf_set_dyn_lib_class (entry->the_bfd,
+                             (enum dynamic_lib_link_class) link_class);
 
   /* Continue on with normal load_symbols processing.  */
   return FALSE;
@@ -156,6 +157,10 @@ static lang_input_statement_type *global_found;
 static struct bfd_link_needed_list *global_vercheck_needed;
 static bfd_boolean global_vercheck_failed;
 
+/* These variables are used to implement target options */
+
+static char *audit; /* colon (typically) separated list of libs */
+static char *depaudit; /* colon (typically) separated list of libs */
 
 /* On Linux, it's possible to have different versions of the same
    shared library linked against different versions of libc.  The
@@ -306,7 +311,7 @@ gld${EMULATION_NAME}_try_needed (struct dt_needed *needed,
   bfd *abfd;
   const char *name = needed->name;
   const char *soname;
-  int class;
+  int link_class;
 
   abfd = bfd_openr (name, bfd_get_target (link_info.output_bfd));
   if (abfd == NULL)
@@ -419,16 +424,16 @@ fragment <<EOF
   /* Tell the ELF linker that we don't want the output file to have a
      DT_NEEDED entry for this file, unless it is used to resolve
      references in a regular object.  */
-  class = DYN_DT_NEEDED;
+  link_class = DYN_DT_NEEDED;
 
   /* Tell the ELF linker that we don't want the output file to have a
      DT_NEEDED entry for this file at all if the entry is from a file
      with DYN_NO_ADD_NEEDED.  */
   if (needed->by != NULL
       && (bfd_elf_get_dyn_lib_class (needed->by) & DYN_NO_ADD_NEEDED) != 0)
-    class |= DYN_NO_NEEDED | DYN_NO_ADD_NEEDED;
+    link_class |= DYN_NO_NEEDED | DYN_NO_ADD_NEEDED;
 
-  bfd_elf_set_dyn_lib_class (abfd, class);
+  bfd_elf_set_dyn_lib_class (abfd, (enum dynamic_lib_link_class) link_class);
 
   /* Add this file into the symbol table.  */
   if (! bfd_link_add_symbols (abfd, &link_info))
@@ -930,7 +935,7 @@ static bfd_boolean
 gld${EMULATION_NAME}_write_build_id_section (bfd *abfd)
 {
   const struct elf_backend_data *bed = get_elf_backend_data (abfd);
-  struct build_id_info *info =
+  struct build_id_info *info = (struct build_id_info *)
     elf_tdata (abfd)->after_write_object_contents_info;
   asection *asec;
   Elf_Internal_Shdr *i_shdr;
@@ -950,13 +955,13 @@ gld${EMULATION_NAME}_write_build_id_section (bfd *abfd)
   if (i_shdr->contents == NULL)
     {
       if (asec->contents == NULL)
-	asec->contents = xmalloc (asec->size);
+	asec->contents = (unsigned char *) xmalloc (asec->size);
       contents = asec->contents;
     }
   else
     contents = i_shdr->contents + asec->output_offset;
 
-  e_note = (void *) contents;
+  e_note = (Elf_External_Note *) contents;
   size = offsetof (Elf_External_Note, name[sizeof "GNU"]);
   size = (size + 3) & -(bfd_size_type) 4;
   id_bits = contents + size;
@@ -1050,37 +1055,49 @@ gld${EMULATION_NAME}_after_open (void)
 
       abfd = link_info.input_bfds;
 
-      size = gld${EMULATION_NAME}_id_note_section_size (abfd, &link_info);
-      if (size == 0)
+      if (abfd == NULL)
 	{
-	  einfo ("%P: warning: unrecognized --build-id style ignored.\n");
+	  /* PR 10555: If there are no input files do not
+	     try to create a .note.gnu-build-id section.  */
 	  free (link_info.emit_note_gnu_build_id);
 	  link_info.emit_note_gnu_build_id = NULL;
 	}
       else
 	{
-	  s = bfd_make_section_with_flags (abfd, ".note.gnu.build-id",
-					   SEC_ALLOC | SEC_LOAD
-					   | SEC_IN_MEMORY | SEC_LINKER_CREATED
-					   | SEC_READONLY | SEC_DATA);
-	  if (s != NULL && bfd_set_section_alignment (abfd, s, 2))
+	  size = gld${EMULATION_NAME}_id_note_section_size (abfd, &link_info);
+	  if (size == 0)
 	    {
-	      struct elf_obj_tdata *t = elf_tdata (link_info.output_bfd);
-	      struct build_id_info *b = xmalloc (sizeof *b);
-	      b->style = link_info.emit_note_gnu_build_id;
-	      b->sec = s;
-	      elf_section_type (s) = SHT_NOTE;
-	      s->size = size;
-	      t->after_write_object_contents
-		= &gld${EMULATION_NAME}_write_build_id_section;
-	      t->after_write_object_contents_info = b;
+	      einfo ("%P: warning: unrecognized --build-id style ignored.\n");
+	      free (link_info.emit_note_gnu_build_id);
+	      link_info.emit_note_gnu_build_id = NULL;
 	    }
 	  else
 	    {
-	      einfo ("%P: warning: Cannot create .note.gnu.build-id section,"
-		     " --build-id ignored.\n");
-	      free (link_info.emit_note_gnu_build_id);
-	      link_info.emit_note_gnu_build_id = NULL;
+	      s = bfd_make_section_with_flags (abfd, ".note.gnu.build-id",
+					       SEC_ALLOC | SEC_LOAD
+					       | SEC_IN_MEMORY | SEC_LINKER_CREATED
+					       | SEC_READONLY | SEC_DATA);
+	      if (s != NULL && bfd_set_section_alignment (abfd, s, 2))
+		{
+		  struct elf_obj_tdata *t = elf_tdata (link_info.output_bfd);
+		  struct build_id_info *b =
+                      (struct build_id_info *) xmalloc (sizeof *b);
+
+		  b->style = link_info.emit_note_gnu_build_id;
+		  b->sec = s;
+		  elf_section_type (s) = SHT_NOTE;
+		  s->size = size;
+		  t->after_write_object_contents
+		    = &gld${EMULATION_NAME}_write_build_id_section;
+		  t->after_write_object_contents_info = b;
+		}
+	      else
+		{
+		  einfo ("%P: warning: Cannot create .note.gnu.build-id section,"
+			 " --build-id ignored.\n");
+		  free (link_info.emit_note_gnu_build_id);
+		  link_info.emit_note_gnu_build_id = NULL;
+		}
 	    }
 	}
     }
@@ -1383,6 +1400,46 @@ if test x"$LDEMUL_BEFORE_ALLOCATION" != xgld"$EMULATION_NAME"_before_allocation;
   fi
 fragment <<EOF
 
+/* used by before_allocation and handle_option. */
+static void 
+gld${EMULATION_NAME}_append_to_separated_string (char **to, char *optarg)
+{
+  if (*to == NULL)
+    *to = xstrdup (optarg);
+  else
+    {
+      size_t to_len = strlen (*to);
+      size_t optarg_len = strlen (optarg);
+      char *buf;
+      char *cp = *to;
+
+      /* First see whether OPTARG is already in the path.  */
+      do
+	{
+	  if (strncmp (optarg, cp, optarg_len) == 0
+	      && (cp[optarg_len] == 0
+		  || cp[optarg_len] == config.rpath_separator))
+	    /* We found it.  */
+	    break;
+
+	  /* Not yet found.  */
+	  cp = strchr (cp, config.rpath_separator);
+	  if (cp != NULL)
+	    ++cp;
+	}
+      while (cp != NULL);
+
+      if (cp == NULL)
+	{
+	  buf = xmalloc (to_len + optarg_len + 2);
+	  sprintf (buf, "%s%c%s", *to,
+		   config.rpath_separator, optarg);
+	  free (*to);
+	  *to = buf;
+	}
+    }
+}
+
 /* This is called after the sections have been attached to output
    sections, but before any sizes or addresses have been set.  */
 
@@ -1391,6 +1448,7 @@ gld${EMULATION_NAME}_before_allocation (void)
 {
   const char *rpath;
   asection *sinterp;
+  bfd *abfd;
 
   if (link_info.hash->type == bfd_link_elf_hash_table)
     _bfd_elf_tls_setup (link_info.output_bfd, &link_info);
@@ -1405,9 +1463,39 @@ gld${EMULATION_NAME}_before_allocation (void)
   rpath = command_line.rpath;
   if (rpath == NULL)
     rpath = (const char *) getenv ("LD_RUN_PATH");
+
+  for (abfd = link_info.input_bfds; abfd; abfd = abfd->link_next)
+    {
+      const char *audit_libs = elf_dt_audit (abfd);
+
+      /* If the input bfd contains an audit entry, we need to add it as 
+         a dep audit entry.  */
+      if (audit_libs && *audit_libs != '\0')
+	{
+	  char *cp = xstrdup (audit_libs);
+	  do
+	    {
+	      int more = 0;
+	      char *cp2 = strchr (cp, config.rpath_separator);
+
+	      if (cp2)
+		{
+	          *cp2 = '\0';
+		  more = 1;
+		}
+	      
+	      if (cp != NULL && *cp != '\0')
+	        gld${EMULATION_NAME}_append_to_separated_string (&depaudit, cp);
+
+	      cp = more ? ++cp2 : NULL;
+	    }
+	  while (cp != NULL);
+	}
+    }
+
   if (! (bfd_elf_size_dynamic_sections
 	 (link_info.output_bfd, command_line.soname, rpath,
-	  command_line.filter_shlib,
+	  command_line.filter_shlib, audit, depaudit,
 	  (const char * const *) command_line.auxiliary_filters,
 	  &link_info, &sinterp, lang_elf_version_info)))
     einfo ("%P%F: failed to set dynamic section sizes: %E\n");
@@ -1442,7 +1530,7 @@ ${ELF_INTERPRETER_SET_DEFAULT}
 	  continue;
 
 	sz = s->size;
-	msg = xmalloc ((size_t) (sz + 1));
+	msg = (char *) xmalloc ((size_t) (sz + 1));
 	if (! bfd_get_section_contents (is->the_bfd, s,	msg,
 					(file_ptr) 0, sz))
 	  einfo ("%F%B: Can't read contents of section .gnu.warning: %E\n",
@@ -1712,23 +1800,32 @@ gld${EMULATION_NAME}_place_orphan (asection *s,
     }
 
   /* Look through the script to see where to place this section.  */
-  if (constraint == 0
-      && (os = lang_output_section_find (secname)) != NULL
-      && os->bfd_section != NULL
-      && (os->bfd_section->flags == 0
-	  || (_bfd_elf_match_sections_by_type (link_info.output_bfd,
-					       os->bfd_section, s->owner, s)
-	      && ((s->flags ^ os->bfd_section->flags)
-		  & (SEC_LOAD | SEC_ALLOC)) == 0)))
-    {
-      /* We already have an output section statement with this
-	 name, and its bfd section has compatible flags.
-	 If the section already exists but does not have any flags
-	 set, then it has been created by the linker, probably as a
-	 result of a --section-start command line switch.  */
-      lang_add_section (&os->children, s, os);
-      return os;
-    }
+  if (constraint == 0)
+    for (os = lang_output_section_find (secname);
+	 os != NULL;
+	 os = next_matching_output_section_statement (os, 0))
+      {
+	/* If we don't match an existing output section, tell
+	   lang_insert_orphan to create a new output section.  */
+	constraint = SPECIAL;
+
+	if (os->bfd_section != NULL
+	    && (os->bfd_section->flags == 0
+		|| (_bfd_elf_match_sections_by_type (link_info.output_bfd,
+						     os->bfd_section,
+						     s->owner, s)
+		    && ((s->flags ^ os->bfd_section->flags)
+			& (SEC_LOAD | SEC_ALLOC)) == 0)))
+	  {
+	    /* We already have an output section statement with this
+	       name, and its bfd section has compatible flags.
+	       If the section already exists but does not have any flags
+	       set, then it has been created by the linker, probably as a
+	       result of a --section-start command line switch.  */
+	    lang_add_section (&os->children, s, os);
+	    return os;
+	  }
+      }
 
   if (!orphan_init_done)
     {
@@ -1821,17 +1918,15 @@ gld${EMULATION_NAME}_place_orphan (asection *s,
 EOF
 fi
 
-if test x"$LDEMUL_FINISH" != xgld"$EMULATION_NAME"_finish; then
+if test x"$LDEMUL_AFTER_ALLOCATION" != xgld"$EMULATION_NAME"_after_allocation; then
 fragment <<EOF
 
 static void
-gld${EMULATION_NAME}_finish (void)
+gld${EMULATION_NAME}_after_allocation (void)
 {
   bfd_boolean need_layout = bfd_elf_discard_info (link_info.output_bfd,
 						  &link_info);
-
   gld${EMULATION_NAME}_map_segments (need_layout);
-  finish_default ();
 }
 EOF
 fi
@@ -1987,15 +2082,18 @@ fragment <<EOF
 #define OPTION_EXCLUDE_LIBS		(OPTION_EH_FRAME_HDR + 1)
 #define OPTION_HASH_STYLE		(OPTION_EXCLUDE_LIBS + 1)
 #define OPTION_BUILD_ID			(OPTION_HASH_STYLE + 1)
+#define OPTION_AUDIT			(OPTION_BUILD_ID + 1)
 
 static void
 gld${EMULATION_NAME}_add_options
   (int ns, char **shortopts, int nl, struct option **longopts,
    int nrl ATTRIBUTE_UNUSED, struct option **really_longopts ATTRIBUTE_UNUSED)
 {
-  static const char xtra_short[] = "${PARSE_AND_LIST_SHORTOPTS}z:";
+  static const char xtra_short[] = "${PARSE_AND_LIST_SHORTOPTS}z:P:";
   static const struct option xtra_long[] = {
     {"build-id", optional_argument, NULL, OPTION_BUILD_ID},
+    {"audit", required_argument, NULL, OPTION_AUDIT},
+    {"depaudit", required_argument, NULL, 'P'},
 EOF
 
 if test x"$GENERATE_SHLIB_SCRIPT" = xyes; then
@@ -2047,6 +2145,12 @@ gld${EMULATION_NAME}_handle_option (int optc)
       if (strcmp (optarg, "none"))
 	link_info.emit_note_gnu_build_id = xstrdup (optarg);
       break;
+    case OPTION_AUDIT:
+  	gld${EMULATION_NAME}_append_to_separated_string (&audit, optarg); 
+	break;
+    case 'P':
+	gld${EMULATION_NAME}_append_to_separated_string (&depaudit, optarg);
+	break;
 
 EOF
 
@@ -2161,8 +2265,6 @@ fragment <<EOF
 	  if (*end || (config.maxpagesize & (config.maxpagesize - 1)) != 0)
 	    einfo (_("%P%F: invalid maxium page size \`%s'\n"),
 		   optarg + 14);
-	  ASSERT (default_target != NULL);
-	  bfd_emul_set_maxpagesize (default_target, config.maxpagesize);
 	}
       else if (CONST_STRNEQ (optarg, "common-page-size="))
 	{
@@ -2172,9 +2274,6 @@ fragment <<EOF
 	      || (config.commonpagesize & (config.commonpagesize - 1)) != 0)
 	    einfo (_("%P%F: invalid common page size \`%s'\n"),
 		   optarg + 17);
-	  ASSERT (default_target != NULL);
-	  bfd_emul_set_commonpagesize (default_target,
-				       config.commonpagesize);
 	}
       /* What about the other Solaris -z options? FIXME.  */
       break;
@@ -2203,6 +2302,11 @@ gld${EMULATION_NAME}_list_options (FILE * file)
 {
   fprintf (file, _("\
   --build-id[=STYLE]          Generate build ID note\n"));
+  fprintf (file, _("\
+  --audit=AUDITLIB            Specify a library to use for auditing\n"));
+  fprintf (file, _("\
+  -P AUDITLIB, --depaudit=AUDITLIB\n" "\
+                              Specify a library to use for auditing dependencies\n"));
 EOF
 
 if test x"$GENERATE_SHLIB_SCRIPT" = xyes; then
@@ -2318,14 +2422,14 @@ struct ld_emulation_xfer_struct ld_${EMULATION_NAME}_emulation =
   ${LDEMUL_HLL-hll_default},
   ${LDEMUL_AFTER_PARSE-after_parse_default},
   ${LDEMUL_AFTER_OPEN-gld${EMULATION_NAME}_after_open},
-  ${LDEMUL_AFTER_ALLOCATION-after_allocation_default},
+  ${LDEMUL_AFTER_ALLOCATION-gld${EMULATION_NAME}_after_allocation},
   ${LDEMUL_SET_OUTPUT_ARCH-set_output_arch_default},
   ${LDEMUL_CHOOSE_TARGET-ldemul_default_target},
   ${LDEMUL_BEFORE_ALLOCATION-gld${EMULATION_NAME}_before_allocation},
   ${LDEMUL_GET_SCRIPT-gld${EMULATION_NAME}_get_script},
   "${EMULATION_NAME}",
   "${OUTPUT_FORMAT}",
-  ${LDEMUL_FINISH-gld${EMULATION_NAME}_finish},
+  ${LDEMUL_FINISH-finish_default},
   ${LDEMUL_CREATE_OUTPUT_SECTION_STATEMENTS-NULL},
   ${LDEMUL_OPEN_DYNAMIC_ARCHIVE-gld${EMULATION_NAME}_open_dynamic_archive},
   ${LDEMUL_PLACE_ORPHAN-gld${EMULATION_NAME}_place_orphan},

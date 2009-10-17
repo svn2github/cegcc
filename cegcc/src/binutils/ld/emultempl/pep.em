@@ -9,7 +9,7 @@ fi
 rm -f e${EMULATION_NAME}.c
 (echo;echo;echo;echo;echo)>e${EMULATION_NAME}.c # there, now line numbers match ;-)
 fragment <<EOF
-/* Copyright 2006, 2007, 2008 Free Software Foundation, Inc.
+/* Copyright 2006, 2007, 2008, 2009 Free Software Foundation, Inc.
    Written by Kai Tietz, OneVision Software GmbH&CoKg.
 
    This file is part of the GNU Binutils.
@@ -104,6 +104,7 @@ static int dll;
 static flagword real_flags = IMAGE_FILE_LARGE_ADDRESS_AWARE;
 static int support_old_code = 0;
 static lang_assignment_statement_type *image_base_statement = 0;
+static unsigned short pe_dll_characteristics = 0;
 
 #ifdef DLL_SUPPORT
 static int    pep_enable_stdcall_fixup = 1; /* 0=disable 1=enable (default).  */
@@ -157,6 +158,7 @@ enum options
   OPTION_OUT_DEF,
   OPTION_EXPORT_ALL,
   OPTION_EXCLUDE_SYMBOLS,
+  OPTION_EXCLUDE_ALL_SYMBOLS,
   OPTION_KILL_ATS,
   OPTION_STDCALL_ALIASES,
   OPTION_ENABLE_STDCALL_FIXUP,
@@ -177,7 +179,17 @@ enum options
   OPTION_DLL_ENABLE_RUNTIME_PSEUDO_RELOC_V1,
   OPTION_DLL_ENABLE_RUNTIME_PSEUDO_RELOC_V2,
   OPTION_EXCLUDE_MODULES_FOR_IMPLIB,
-  OPTION_USE_NUL_PREFIXED_IMPORT_TABLES
+  OPTION_USE_NUL_PREFIXED_IMPORT_TABLES,
+  OPTION_ENABLE_LONG_SECTION_NAMES,
+  OPTION_DISABLE_LONG_SECTION_NAMES,
+  OPTION_DYNAMIC_BASE,
+  OPTION_FORCE_INTEGRITY,
+  OPTION_NX_COMPAT,
+  OPTION_NO_ISOLATION,
+  OPTION_NO_SEH,
+  OPTION_NO_BIND,
+  OPTION_WDM_DRIVER,
+  OPTION_TERMINAL_SERVER_AWARE
 };
 
 static void
@@ -216,6 +228,7 @@ gld${EMULATION_NAME}_add_options
     {"output-def", required_argument, NULL, OPTION_OUT_DEF},
     {"export-all-symbols", no_argument, NULL, OPTION_EXPORT_ALL},
     {"exclude-symbols", required_argument, NULL, OPTION_EXCLUDE_SYMBOLS},
+    {"exclude-all-symbols", no_argument, NULL, OPTION_EXCLUDE_ALL_SYMBOLS},
     {"exclude-libs", required_argument, NULL, OPTION_EXCLUDE_LIBS},
     {"exclude-modules-for-implib", required_argument, NULL, OPTION_EXCLUDE_MODULES_FOR_IMPLIB},
     {"kill-at", no_argument, NULL, OPTION_KILL_ATS},
@@ -240,10 +253,21 @@ gld${EMULATION_NAME}_add_options
     {"enable-runtime-pseudo-reloc-v1", no_argument, NULL, OPTION_DLL_ENABLE_RUNTIME_PSEUDO_RELOC_V1},
     {"enable-runtime-pseudo-reloc-v2", no_argument, NULL, OPTION_DLL_ENABLE_RUNTIME_PSEUDO_RELOC_V2},
 #endif
+    {"enable-long-section-names", no_argument, NULL, OPTION_ENABLE_LONG_SECTION_NAMES},
+    {"disable-long-section-names", no_argument, NULL, OPTION_DISABLE_LONG_SECTION_NAMES},
+    {"dynamicbase",no_argument, NULL, OPTION_DYNAMIC_BASE},
+    {"forceinteg", no_argument, NULL, OPTION_FORCE_INTEGRITY},
+    {"nxcompat", no_argument, NULL, OPTION_NX_COMPAT},
+    {"no-isolation", no_argument, NULL, OPTION_NO_ISOLATION},
+    {"no-seh", no_argument, NULL, OPTION_NO_SEH},
+    {"no-bind", no_argument, NULL, OPTION_NO_BIND},
+    {"wdmdriver", no_argument, NULL, OPTION_WDM_DRIVER},
+    {"tsaware", no_argument, NULL, OPTION_TERMINAL_SERVER_AWARE},
     {NULL, no_argument, NULL, 0}
   };
 
-  *longopts = xrealloc (*longopts, nl * sizeof (struct option) + sizeof (xtra_long));
+  *longopts
+    = xrealloc (*longopts, nl * sizeof (struct option) + sizeof (xtra_long));
   memcpy (*longopts + nl, &xtra_long, sizeof (xtra_long));
 }
 
@@ -284,6 +308,7 @@ static definfo init[] =
   D(SizeOfHeapReserve,"__size_of_heap_reserve__", 0x100000),
   D(SizeOfHeapCommit,"__size_of_heap_commit__", 0x1000),
   D(LoaderFlags,"__loader_flags__", 0x0),
+  D(DllCharacteristics, "__dll_characteristics__", 0x0), 
   { NULL, 0, 0, NULL, 0 }
 };
 
@@ -311,6 +336,7 @@ gld_${EMULATION_NAME}_list_options (FILE *file)
   fprintf (file, _("  --disable-stdcall-fixup            Don't link _sym to _sym@nn\n"));
   fprintf (file, _("  --enable-stdcall-fixup             Link _sym to _sym@nn without warnings\n"));
   fprintf (file, _("  --exclude-symbols sym,sym,...      Exclude symbols from automatic export\n"));
+  fprintf (file, _("  --exclude-all-symbols              Exclude all symbols from automatic export\n"));
   fprintf (file, _("  --exclude-libs lib,lib,...         Exclude libraries from automatic export\n"));
   fprintf (file, _("  --exclude-modules-for-implib mod,mod,...\n"));
   fprintf (file, _("                                     Exclude objects, archive members from auto\n"));
@@ -338,6 +364,20 @@ gld_${EMULATION_NAME}_list_options (FILE *file)
                                        auto-imported DATA.\n"));
   fprintf (file, _("  --enable-extra-pep-debug            Enable verbose debug output when building\n\
                                        or linking to DLLs (esp. auto-import)\n"));
+  fprintf (file, _("  --enable-long-section-names        Use long COFF section names even in\n\
+                                       executable image files\n"));
+  fprintf (file, _("  --disable-long-section-names       Never use long COFF section names, even\n\
+                                       in object files\n"));
+  fprintf (file, _("  --dynamicbase			 Image base address may be relocated using\n\
+				       address space layout randomization (ASLR)\n"));
+  fprintf (file, _("  --forceinteg		 Code integrity checks are enforced\n"));
+  fprintf (file, _("  --nxcompat		 Image is compatible with data execution prevention\n"));
+  fprintf (file, _("  --no-isolation		 Image understands isolation but do not isolate the image\n"));
+  fprintf (file, _("  --no-seh			 Image does not use SEH. No SE handler may\n\
+				       be called in this image\n"));
+  fprintf (file, _("  --no-bind			 Do not bind this image\n"));
+  fprintf (file, _("  --wdmdriver		 Driver uses the WDM model\n"));
+  fprintf (file, _("  --tsaware       		 Image is Terminal Server aware\n"));
 #endif
 }
 
@@ -572,6 +612,9 @@ gld${EMULATION_NAME}_handle_option (int optc)
     case OPTION_EXCLUDE_SYMBOLS:
       pep_dll_add_excludes (optarg, EXCLUDESYMS);
       break;
+    case OPTION_EXCLUDE_ALL_SYMBOLS:
+      pep_dll_exclude_all_symbols = 1;
+      break;
     case OPTION_EXCLUDE_LIBS:
       pep_dll_add_excludes (optarg, EXCLUDELIBS);
       break;
@@ -633,7 +676,42 @@ gld${EMULATION_NAME}_handle_option (int optc)
       pep_dll_extra_pe_debug = 1;
       break;
 #endif
+    case OPTION_ENABLE_LONG_SECTION_NAMES:
+      pep_use_coff_long_section_names = 1;
+      break;
+    case OPTION_DISABLE_LONG_SECTION_NAMES:
+      pep_use_coff_long_section_names = 0;
+      break;
+    /*  Get DLLCharacteristics bits  */
+    case OPTION_DYNAMIC_BASE:
+      pe_dll_characteristics |= IMAGE_DLL_CHARACTERISTICS_DYNAMIC_BASE;
+      break;
+    case OPTION_FORCE_INTEGRITY:
+      pe_dll_characteristics |= IMAGE_DLL_CHARACTERISTICS_FORCE_INTEGRITY;
+      break;
+    case OPTION_NX_COMPAT:
+      pe_dll_characteristics |= IMAGE_DLL_CHARACTERISTICS_NX_COMPAT;
+      break;
+    case OPTION_NO_ISOLATION:
+      pe_dll_characteristics |= IMAGE_DLLCHARACTERISTICS_NO_ISOLATION;
+      break;
+    case OPTION_NO_SEH:
+      pe_dll_characteristics |= IMAGE_DLLCHARACTERISTICS_NO_SEH;
+      break;
+    case OPTION_NO_BIND:
+      pe_dll_characteristics |= IMAGE_DLLCHARACTERISTICS_NO_BIND;
+      break;
+    case OPTION_WDM_DRIVER:
+      pe_dll_characteristics |= IMAGE_DLLCHARACTERISTICS_WDM_DRIVER;
+      break;
+    case OPTION_TERMINAL_SERVER_AWARE:
+      pe_dll_characteristics |= IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE;
+      break;
     }
+
+  /*  Set DLLCharacteristics bits  */
+  set_pep_name ("__dll_characteristics__", pe_dll_characteristics);
+ 
   return TRUE;
 }
 
@@ -681,22 +759,24 @@ gld_${EMULATION_NAME}_set_symbols (void)
   /* Run through and invent symbols for all the
      names and insert the defaults.  */
   int j;
-  lang_statement_list_type *save;
 
   if (!init[IMAGEBASEOFF].inited)
     {
       if (link_info.relocatable)
 	init[IMAGEBASEOFF].value = 0;
       else if (init[DLLOFF].value || (link_info.shared && !link_info.pie))
+	{
 #ifdef DLL_SUPPORT
-	init[IMAGEBASEOFF].value = (pep_enable_auto_image_base) ?
-	  compute_dll_image_base (output_filename) : NT_DLL_IMAGE_BASE;
+	  init[IMAGEBASEOFF].value = (pep_enable_auto_image_base
+				      ? compute_dll_image_base (output_filename)
+				      : NT_DLL_IMAGE_BASE);
 #else
-	init[IMAGEBASEOFF].value = NT_DLL_IMAGE_BASE;
+	  init[IMAGEBASEOFF].value = NT_DLL_IMAGE_BASE;
 #endif
+	}
       else
 	init[IMAGEBASEOFF].value = NT_EXE_IMAGE_BASE;
-	init[MSIMAGEBASEOFF].value = init[IMAGEBASEOFF].value;
+      init[MSIMAGEBASEOFF].value = init[IMAGEBASEOFF].value;
     }
 
   /* Don't do any symbol assignments if this is a relocatable link.  */
@@ -704,9 +784,7 @@ gld_${EMULATION_NAME}_set_symbols (void)
     return;
 
   /* Glue the assignments into the abs section.  */
-  save = stat_ptr;
-
-  stat_ptr = &(abs_output_section->children);
+  push_stat_ptr (&abs_output_section->children);
 
   for (j = 0; init[j].ptr; j++)
     {
@@ -728,7 +806,7 @@ gld_${EMULATION_NAME}_set_symbols (void)
 	image_base_statement = rv;
     }
   /* Restore the pointer.  */
-  stat_ptr = save;
+  pop_stat_ptr ();
 
   if (pep.FileAlignment > pep.SectionAlignment)
     {
@@ -742,21 +820,13 @@ gld_${EMULATION_NAME}_set_symbols (void)
 static void
 gld_${EMULATION_NAME}_after_parse (void)
 {
-  /* The Windows libraries are designed for the linker to treat the
-     entry point as an undefined symbol.  Otherwise, the .obj that
-     defines mainCRTStartup is brought in because it is the first
-     encountered in libc.lib and it has other symbols in it which will
-     be pulled in by the link process.  To avoid this, we act as
-     though the user specified -u with the entry point symbol.
+  /* PR ld/6744:  Warn the user if they have used an ELF-only
+     option hoping it will work on PE+.  */
+  if (link_info.export_dynamic)
+    einfo (_("%P: warning: --export-dynamic is not supported for PE+ "
+      "targets, did you mean --export-all-symbols?\n"));
 
-     This function is called after the linker script and command line
-     options have been read, so at this point we know the right entry
-     point.  This function is called before the input files are
-     opened, so registering the symbol as undefined will make a
-     difference.  */
-
-  if (! link_info.relocatable && entry_symbol.name != NULL)
-    ldlang_add_undef (entry_symbol.name);
+  after_parse_default ();
 }
 
 /* pep-dll.c directly accesses pep_data_import_dll,
@@ -984,7 +1054,7 @@ This should work unless it involves constant data structures referencing symbols
 		}
 
 	      pep_walk_relocs_of_symbol (&link_info, undef->root.string,
-					make_import_fixup);
+					 make_import_fixup);
 
 	      /* Let's differentiate it somehow from defined.  */
 	      undef->type = bfd_link_hash_defweak;
@@ -1009,6 +1079,13 @@ pr_sym (struct bfd_hash_entry *h, void *inf ATTRIBUTE_UNUSED)
 }
 #endif /* DLL_SUPPORT */
 
+static void 
+debug_section_p (bfd *abfd ATTRIBUTE_UNUSED, asection *sect, void *obj)
+{
+  int *found = (int *) obj;
+  if (strncmp (".debug_", sect->name, sizeof (".debug_") - 1) == 0)
+    *found = 1;
+}
 
 static void
 gld_${EMULATION_NAME}_after_open (void)
@@ -1042,6 +1119,30 @@ gld_${EMULATION_NAME}_after_open (void)
   pe_data (link_info.output_bfd)->pe_opthdr = pep;
   pe_data (link_info.output_bfd)->dll = init[DLLOFF].value;
   pe_data (link_info.output_bfd)->real_flags |= real_flags;
+
+  /* At this point we must decide whether to use long section names
+     in the output or not.  If the user hasn't explicitly specified
+     on the command line, we leave it to the default for the format
+     (object files yes, image files no), except if there is debug
+     information present; GDB relies on the long section names to
+     find it, so enable it in that case.  */
+  if (pep_use_coff_long_section_names < 0 && link_info.strip == strip_none)
+    {
+      /* Iterate over all sections of all input BFDs, checking
+         for any that begin 'debug_' and are long names.  */
+      LANG_FOR_EACH_INPUT_STATEMENT (is)
+	{
+	  int found_debug = 0;
+	  bfd_map_over_sections (is->the_bfd, debug_section_p, &found_debug);
+	  if (found_debug)
+	    {
+	      pep_use_coff_long_section_names = 1;
+	      break;
+	    }
+	}
+    }
+
+  pep_output_file_set_long_section_names (link_info.output_bfd);
 
 #ifdef DLL_SUPPORT
   if (pep_enable_stdcall_fixup) /* -1=warn or 1=disable */
@@ -1442,6 +1543,7 @@ gld_${EMULATION_NAME}_place_orphan (asection *s,
   char *dollar = NULL;
   lang_output_section_statement_type *os;
   lang_statement_list_type add_child;
+  lang_statement_union_type **pl;
 
   /* Look through the script to see where to place this section.  */
   if (!link_info.relocatable
@@ -1456,21 +1558,32 @@ gld_${EMULATION_NAME}_place_orphan (asection *s,
 
   lang_list_init (&add_child);
 
-  if (constraint == 0
-      && (os = lang_output_section_find (secname)) != NULL
-      && os->bfd_section != NULL
-      && (os->bfd_section->flags == 0
-	  || ((s->flags ^ os->bfd_section->flags)
-	      & (SEC_LOAD | SEC_ALLOC)) == 0))
-    {
-      /* We already have an output section statement with this
-	 name, and its bfd section has compatible flags.
-	 If the section already exists but does not have any flags set,
-	 then it has been created by the linker, probably as a result of
-	 a --section-start command line switch.  */
-      lang_add_section (&add_child, s, os);
-    }
-  else
+  os = NULL;
+  if (constraint == 0)
+    for (os = lang_output_section_find (secname);
+	 os != NULL;
+	 os = next_matching_output_section_statement (os, 0))
+      {
+	/* If we don't match an existing output section, tell
+	   lang_insert_orphan to create a new output section.  */
+	constraint = SPECIAL;
+
+	if (os->bfd_section != NULL
+	    && (os->bfd_section->flags == 0
+		|| ((s->flags ^ os->bfd_section->flags)
+		    & (SEC_LOAD | SEC_ALLOC)) == 0))
+	  {
+	    /* We already have an output section statement with this
+	       name, and its bfd section has compatible flags.
+	       If the section already exists but does not have any flags set,
+	       then it has been created by the linker, probably as a result of
+	       a --section-start command line switch.  */
+	    lang_add_section (&add_child, s, os);
+	    break;
+	  }
+      }
+
+  if (os == NULL)
     {
       static struct orphan_save hold[] =
 	{
@@ -1547,47 +1660,29 @@ gld_${EMULATION_NAME}_place_orphan (asection *s,
 			       &add_child);
     }
 
-  {
-    lang_statement_union_type **pl = &os->children.head;
+  /* If the section name has a '\$', sort it with the other '\$'
+     sections.  */
+  for (pl = &os->children.head; *pl != NULL; pl = &(*pl)->header.next)
+    {
+      lang_input_section_type *ls;
+      const char *lname;
 
-    if (dollar != NULL)
-      {
-	bfd_boolean found_dollar;
+      if ((*pl)->header.type != lang_input_section_enum)
+	continue;
 
-	/* The section name has a '\$'.  Sort it with the other '\$'
-	   sections.  */
-	found_dollar = FALSE;
-	for ( ; *pl != NULL; pl = &(*pl)->header.next)
-	  {
-	    lang_input_section_type *ls;
-	    const char *lname;
+      ls = &(*pl)->input_section;
 
-	    if ((*pl)->header.type != lang_input_section_enum)
-	      continue;
+      lname = bfd_get_section_name (ls->section->owner, ls->section);
+      if (strchr (lname, '\$') != NULL
+	  && (dollar == NULL || strcmp (orig_secname, lname) < 0))
+	break;
+    }
 
-	    ls = &(*pl)->input_section;
-
-	    lname = bfd_get_section_name (ls->section->owner, ls->section);
-	    if (strchr (lname, '\$') == NULL)
-	      {
-		if (found_dollar)
-		  break;
-	      }
-	    else
-	      {
-		found_dollar = TRUE;
-		if (strcmp (orig_secname, lname) < 0)
-		  break;
-	      }
-	  }
-      }
-
-    if (add_child.head != NULL)
-      {
-	add_child.head->header.next = *pl;
-	*pl = add_child.head;
-      }
-  }
+  if (add_child.head != NULL)
+    {
+      *add_child.tail = *pl;
+      *pl = add_child.head;
+    }
 
   return os;
 }

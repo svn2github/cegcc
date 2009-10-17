@@ -41,7 +41,7 @@ SYMBOL TABLE:
 0+82168 l    d  \.got	0+ \.got
 0+821a4 l    d  \.data	0+ \.data
 0+ l       \.tdata	0+80 tls128
-0+82168 l     O \.got	0+ \.hidden _GLOBAL_OFFSET_TABLE_
+0+82168 l     O \.got	0+ _GLOBAL_OFFSET_TABLE_
 0+80 g       \.tdata	0+4 \.hidden x
 0+800c4 g     F \.text	0+6 tlsdsofn2
 0+821b4 g     O \.data	0+4 got7var5
@@ -75,7 +75,7 @@ Contents of section \.tdata:
  8215c 28000000 29000000 2a000000           .*
 Contents of section \.got:
  82168 00000000 00000000 00000000 01000000  .*
- 82178 00000000 f4ffffff 01000000 f4ffffff  .*
+ 82178 00000000 f4ffffff 01000000 80000000  .*
  82188 b4210800 ac210800 bc210800 b8210800  .*
  82198 a4210800 b0210800 a8210800           .*
 Contents of section \.data:

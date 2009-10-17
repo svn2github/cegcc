@@ -1,5 +1,44 @@
 -*- text -*-
 
+* Add --exlcude-all-symbols option to PE based linkers.  This prevents all
+  symbols from automatically being exported.
+
+* Add support for the Renesas RX processor.
+
+Changes in 2.20:
+
+* GNU/Linux targets now support the STB_GNU_UNIQUE symbol binding.  This is a
+  GNU extension to the standard set of ELF symbol bindings.  The binding will
+  be passed on to the dynamic linker which will make sure that in the entire
+  process there is just one symbol with the given name and type in use.
+
+* PE targets now support a GNU extension to allow the alignment of common
+  common symbols to be specified.  This support uses custom options in
+  the .drectve section, which will be disregarded by the native tools.
+
+* PE targets now add primitive support for ELF version scripts; symbols
+  are not versioned, but the local and global symbol visibility directives
+  are respected when filtering symbols in auto-export mode.
+
+* New option --no-export-dynamic to undo the effect of the -E and
+  --export-dynamic options.
+
+* ELF: --warn-alternate-em option to warn if an object has alternate
+  ELF machine code.
+
+* New script function REGION_ALIAS to add alias names to memory regions.
+
+* PE targets no longer make use of the long section names PE extension to
+  the COFF format when generating executable images, by default.  The old
+  (slightly non-conformant) behaviour can still be invoked by using the
+  new '--enable-long-section-names' command-line option.  It is also enabled
+  automatically in the presence of un-stripped debug information, as GDB
+  needs to be able to find the debug info sections by their full names.
+
+* For GNU/Linux systems the linker will now avoid processing any relocations
+  made against symbols of the STT_GNU_IFUNC type and instead emit them into
+  the resulting binary for processing by the loader.
+
 * --as-needed now links in a dynamic library if it satisfies undefined
   symbols in regular objects, or in other dynamic libraries.  In the
   latter case the library is not linked if it is found in a DT_NEEDED
@@ -7,6 +46,8 @@
 
 * Add a new command line option, -Ttext-segment ADDR, for ELF targets
   to set the address of the first byte of the text segment.
+
+* Add support for Sunplus score architecture.
 
 * Add new option --use-nul-prefixed-import-tables to ld for PE targets to
   allow fallback to old import table generation with null element prefix.

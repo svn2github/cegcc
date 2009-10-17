@@ -1,5 +1,5 @@
 # This shell script emits a C file. -*- C -*-
-# Copyright 2002, 2003, 2004, 2005, 2007, 2008
+# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
 # Free Software Foundation, Inc.
 #
 # This file is part of the GNU Binutils.
@@ -47,6 +47,7 @@ static int dotsyms = 1;
 
 /* Whether to run tls optimization.  */
 static int no_tls_opt = 0;
+static int no_tls_get_addr_opt = 0;
 
 /* Whether to run opd optimization.  */
 static int no_opd_opt = 0;
@@ -58,7 +59,7 @@ static int no_toc_opt = 0;
 static int no_multi_toc = 0;
 
 /* Whether to emit symbols for stubs.  */
-static int emit_stub_syms = 0;
+static int emit_stub_syms = -1;
 
 static asection *toc_section = 0;
 
@@ -106,7 +107,8 @@ ppc_before_allocation (void)
 				  non_overlapping_opd))
 	einfo ("%X%P: can not edit %s %E\n", "opd");
 
-      if (ppc64_elf_tls_setup (link_info.output_bfd, &link_info)
+      if (ppc64_elf_tls_setup (link_info.output_bfd, &link_info,
+			       no_tls_get_addr_opt)
 	  && !no_tls_opt)
 	{
 	  /* Size the sections.  This is premature, but we want to know the
@@ -258,18 +260,12 @@ ppc_layout_sections_again (void)
      to recalculate all the section offsets.  This may mean we need to
      add even more stubs.  */
   gld${EMULATION_NAME}_map_segments (TRUE);
-  need_laying_out = -1;
-}
 
-
-/* Call the back-end function to set TOC base after we have placed all
-   the sections.  */
-static void
-gld${EMULATION_NAME}_after_allocation (void)
-{
   if (!link_info.relocatable)
     _bfd_set_gp_value (link_info.output_bfd,
 		       ppc64_elf_toc (link_info.output_bfd));
+
+  need_laying_out = -1;
 }
 
 
@@ -307,18 +303,13 @@ build_section_lists (lang_statement_union_type *statement)
 }
 
 
-/* Final emulation specific call.  */
-
+/* Call the back-end function to set TOC base after we have placed all
+   the sections.  */
 static void
-gld${EMULATION_NAME}_finish (void)
+gld${EMULATION_NAME}_after_allocation (void)
 {
-  /* e_entry on PowerPC64 points to the function descriptor for
-     _start.  If _start is missing, default to the first function
-     descriptor in the .opd section.  */
-  entry_section = ".opd";
-
-  /* bfd_elf_discard_info just plays with debugging sections,
-     ie. doesn't affect any code, so we can delay resizing the
+  /* bfd_elf_discard_info just plays with data and debugging sections,
+     ie. doesn't affect code size, so we can delay resizing the
      sections.  It's likely we'll resize everything in the process of
      adding stubs.  */
   if (bfd_elf_discard_info (link_info.output_bfd, &link_info))
@@ -354,7 +345,25 @@ gld${EMULATION_NAME}_finish (void)
     }
 
   if (need_laying_out != -1)
-    gld${EMULATION_NAME}_map_segments (need_laying_out);
+    {
+      gld${EMULATION_NAME}_map_segments (need_laying_out);
+
+      if (!link_info.relocatable)
+	_bfd_set_gp_value (link_info.output_bfd,
+			   ppc64_elf_toc (link_info.output_bfd));
+    }
+}
+
+
+/* Final emulation specific call.  */
+
+static void
+gld${EMULATION_NAME}_finish (void)
+{
+  /* e_entry on PowerPC64 points to the function descriptor for
+     _start.  If _start is missing, default to the first function
+     descriptor in the .opd section.  */
+  entry_section = ".opd";
 
   if (link_info.relocatable)
     {
@@ -369,7 +378,8 @@ gld${EMULATION_NAME}_finish (void)
       char *msg = NULL;
       char *line, *endline;
 
-      emit_stub_syms |= link_info.emitrelocations;
+      if (emit_stub_syms < 0)
+	emit_stub_syms = 1;
       if (!ppc64_elf_build_stubs (emit_stub_syms, &link_info,
 				  config.stats ? &msg : NULL))
 	einfo ("%X%P: can not build stubs: %E\n");
@@ -478,10 +488,12 @@ fi
 PARSE_AND_LIST_PROLOGUE='
 #define OPTION_STUBGROUP_SIZE		301
 #define OPTION_STUBSYMS			(OPTION_STUBGROUP_SIZE + 1)
-#define OPTION_DOTSYMS			(OPTION_STUBSYMS + 1)
+#define OPTION_NO_STUBSYMS		(OPTION_STUBSYMS + 1)
+#define OPTION_DOTSYMS			(OPTION_NO_STUBSYMS + 1)
 #define OPTION_NO_DOTSYMS		(OPTION_DOTSYMS + 1)
 #define OPTION_NO_TLS_OPT		(OPTION_NO_DOTSYMS + 1)
-#define OPTION_NO_OPD_OPT		(OPTION_NO_TLS_OPT + 1)
+#define OPTION_NO_TLS_GET_ADDR_OPT	(OPTION_NO_TLS_OPT + 1)
+#define OPTION_NO_OPD_OPT		(OPTION_NO_TLS_GET_ADDR_OPT + 1)
 #define OPTION_NO_TOC_OPT		(OPTION_NO_OPD_OPT + 1)
 #define OPTION_NO_MULTI_TOC		(OPTION_NO_TOC_OPT + 1)
 #define OPTION_NON_OVERLAPPING_OPD	(OPTION_NO_MULTI_TOC + 1)
@@ -490,9 +502,11 @@ PARSE_AND_LIST_PROLOGUE='
 PARSE_AND_LIST_LONGOPTS='
   { "stub-group-size", required_argument, NULL, OPTION_STUBGROUP_SIZE },
   { "emit-stub-syms", no_argument, NULL, OPTION_STUBSYMS },
+  { "no-emit-stub-syms", no_argument, NULL, OPTION_NO_STUBSYMS },
   { "dotsyms", no_argument, NULL, OPTION_DOTSYMS },
   { "no-dotsyms", no_argument, NULL, OPTION_NO_DOTSYMS },
   { "no-tls-optimize", no_argument, NULL, OPTION_NO_TLS_OPT },
+  { "no-tls-get-addr-optimize", no_argument, NULL, OPTION_NO_TLS_GET_ADDR_OPT },
   { "no-opd-optimize", no_argument, NULL, OPTION_NO_OPD_OPT },
   { "no-toc-optimize", no_argument, NULL, OPTION_NO_TOC_OPT },
   { "no-multi-toc", no_argument, NULL, OPTION_NO_MULTI_TOC },
@@ -514,6 +528,9 @@ PARSE_AND_LIST_OPTIONS='
   --emit-stub-syms            Label linker stubs with a symbol.\n"
 		   ));
   fprintf (file, _("\
+  --no-emit-stub-syms         Don'\''t label linker stubs with a symbol.\n"
+		   ));
+  fprintf (file, _("\
   --dotsyms                   For every version pattern \"foo\" in a version\n\
                                 script, add \".foo\" so that function code\n\
                                 symbols are treated the same as function\n\
@@ -524,6 +541,9 @@ PARSE_AND_LIST_OPTIONS='
 		   ));
   fprintf (file, _("\
   --no-tls-optimize           Don'\''t try to optimize TLS accesses.\n"
+		   ));
+  fprintf (file, _("\
+  --no-tls-get-addr-optimize  Don'\''t use a special __tls_get_addr call.\n"
 		   ));
   fprintf (file, _("\
   --no-opd-optimize           Don'\''t optimize the OPD section.\n"
@@ -554,6 +574,10 @@ PARSE_AND_LIST_ARGS_CASES='
       emit_stub_syms = 1;
       break;
 
+    case OPTION_NO_STUBSYMS:
+      emit_stub_syms = 0;
+      break;
+
     case OPTION_DOTSYMS:
       dotsyms = 1;
       break;
@@ -564,6 +588,10 @@ PARSE_AND_LIST_ARGS_CASES='
 
     case OPTION_NO_TLS_OPT:
       no_tls_opt = 1;
+      break;
+
+    case OPTION_NO_TLS_GET_ADDR_OPT:
+      no_tls_get_addr_opt = 1;
       break;
 
     case OPTION_NO_OPD_OPT:

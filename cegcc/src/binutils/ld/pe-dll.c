@@ -1,6 +1,6 @@
 /* Routines to help build PEI-format DLLs (Win32 etc)
    Copyright 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
-   2008 Free Software Foundation, Inc.
+   2008, 2009 Free Software Foundation, Inc.
    Written by DJ Delorie <dj@cygnus.com>
 
    This file is part of the GNU Binutils.
@@ -149,6 +149,7 @@ static void add_bfd_to_link (bfd *, const char *, struct bfd_link_info *);
 
 def_file * pe_def_file = 0;
 int pe_dll_export_everything = 0;
+int pe_dll_exclude_all_symbols = 0;
 int pe_dll_do_default_excludes = 1;
 int pe_dll_kill_ats = 0;
 int pe_dll_stdcall_aliases = 0;
@@ -156,6 +157,7 @@ int pe_dll_warn_dup_exports = 0;
 int pe_dll_compat_implib = 0;
 int pe_dll_extra_pe_debug = 0;
 int pe_use_nul_prefixed_import_tables = 0;
+int pe_use_coff_long_section_names = -1;
 
 /* Static variables and types.  */
 
@@ -617,7 +619,7 @@ auto_export (bfd *abfd, def_file *d, const char *n)
 }
 
 static void
-process_def_file (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
+process_def_file_and_drectve (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
 {
   int i, j;
   struct bfd_link_hash_entry *blhe;
@@ -644,14 +646,37 @@ process_def_file (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
 	}
     }
 
-  /* If we are not building a DLL, when there are no exports
-     we do not build an export table at all.  */
-  if (!pe_dll_export_everything && pe_def_file->num_exports == 0
-      && info->executable)
+  /* Process aligned common symbol information from the
+     .drectve sections now; common symbol allocation is
+     done before final link, so it will be too late to
+     process them in process_embedded_commands() called
+     from _bfd_coff_link_input_bfd().  */
+  if (pe_def_file->aligncomms)
+    {
+      def_file_aligncomm *ac = pe_def_file->aligncomms;
+      while (ac)
+	{
+	  struct coff_link_hash_entry *sym_hash;
+	  sym_hash = coff_link_hash_lookup (coff_hash_table (info),
+		ac->symbol_name, FALSE, FALSE, FALSE);
+	  if (sym_hash && sym_hash->root.type == bfd_link_hash_common
+	    && sym_hash->root.u.c.p->alignment_power < (unsigned) ac->alignment)
+	    {
+	      sym_hash->root.u.c.p->alignment_power = (unsigned) ac->alignment;
+	    }
+	  ac = ac->next;
+	}
+    }
+
+  /* If we are building an executable and there is nothing
+     to export, we do not build an export table at all.  */
+  if (info->executable && pe_def_file->num_exports == 0
+      && (!pe_dll_export_everything || pe_dll_exclude_all_symbols))
     return;
 
   /* Now, maybe export everything else the default way.  */
-  if (pe_dll_export_everything || pe_def_file->num_exports == 0)
+  if ((pe_dll_export_everything || pe_def_file->num_exports == 0)
+      && !pe_dll_exclude_all_symbols)
     {
       for (b = info->input_bfds; b; b = b->link_next)
 	{
@@ -672,9 +697,18 @@ process_def_file (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
 	      /* We should export symbols which are either global or not
 		 anything at all.  (.bss data is the latter)
 		 We should not export undefined symbols.  */
-	      if (symbols[j]->section != &bfd_und_section
-		  && ((symbols[j]->flags & BSF_GLOBAL)
-		      || (symbols[j]->flags == 0)))
+	      bfd_boolean would_export = symbols[j]->section != &bfd_und_section
+		      && ((symbols[j]->flags & BSF_GLOBAL)
+			  || (symbols[j]->flags == 0));
+	      if (lang_elf_version_info && would_export)
+		{
+		  bfd_boolean hide = 0;
+		  char ofs = pe_details->underscored && symbols[j]->name[0] == '_';
+		  (void) bfd_find_version_for_sym (lang_elf_version_info,
+				symbols[j]->name + ofs, &hide);
+		  would_export = !hide;
+		}
+	      if (would_export)
 		{
 		  const char *sn = symbols[j]->name;
 
@@ -712,6 +746,10 @@ process_def_file (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
 
 #undef NE
 #define NE pe_def_file->num_exports
+
+  /* Don't create an empty export table.  */
+  if (NE == 0)
+    return;
 
   /* Canonicalize the export list.  */
   if (pe_dll_kill_ats)
@@ -1046,7 +1084,7 @@ generate_edata (bfd *abfd, struct bfd_link_info *info ATTRIBUTE_UNUSED)
 }
 
 /* Fill the exported symbol offsets. The preliminary work has already
-   been done in process_def_file().  */
+   been done in process_def_file_and_drectve().  */
 
 static void
 fill_exported_offsets (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
@@ -3036,6 +3074,15 @@ pe_implied_import_dll (const char *filename)
   return TRUE;
 }
 
+void
+pe_output_file_set_long_section_names (bfd *abfd)
+{
+  if (pe_use_coff_long_section_names < 0)
+    return;
+  if (!bfd_coff_set_long_section_names (abfd, pe_use_coff_long_section_names))
+    einfo (_("%XError: can't use long section names on this arch\n"));
+}
+
 /* These are the main functions, called from the emulation.  The first
    is called after the bfds are read, so we can guess at how much space
    we need.  The second is called after everything is placed, so we
@@ -3045,26 +3092,31 @@ void
 pe_dll_build_sections (bfd *abfd, struct bfd_link_info *info)
 {
   pe_dll_id_target (bfd_get_target (abfd));
-  process_def_file (abfd, info);
+  pe_output_file_set_long_section_names (abfd);
+  process_def_file_and_drectve (abfd, info);
 
   if (pe_def_file->num_exports == 0 && !info->shared)
     return;
 
   generate_edata (abfd, info);
   build_filler_bfd (1);
+  pe_output_file_set_long_section_names (filler_bfd);
 }
 
 void
 pe_exe_build_sections (bfd *abfd, struct bfd_link_info *info ATTRIBUTE_UNUSED)
 {
   pe_dll_id_target (bfd_get_target (abfd));
+  pe_output_file_set_long_section_names (abfd);
   build_filler_bfd (0);
+  pe_output_file_set_long_section_names (filler_bfd);
 }
 
 void
 pe_dll_fill_sections (bfd *abfd, struct bfd_link_info *info)
 {
   pe_dll_id_target (bfd_get_target (abfd));
+  pe_output_file_set_long_section_names (abfd);
   image_base = pe_data (abfd)->pe_opthdr.ImageBase;
 
   generate_reloc (abfd, info);
@@ -3096,6 +3148,7 @@ void
 pe_exe_fill_sections (bfd *abfd, struct bfd_link_info *info)
 {
   pe_dll_id_target (bfd_get_target (abfd));
+  pe_output_file_set_long_section_names (abfd);
   image_base = pe_data (abfd)->pe_opthdr.ImageBase;
 
   generate_reloc (abfd, info);

@@ -42,7 +42,7 @@ SYMBOL TABLE:
 0+820c0 l    d  \.tdata	0+ \.tdata
 0+820d0 l    d  \.tbss	0+ \.tbss
 0+820d0 l    d  \.got	0+ \.got
-0+820d0 l     O \.got	0+ \.hidden _GLOBAL_OFFSET_TABLE_
+0+820d0 l     O \.got	0+ _GLOBAL_OFFSET_TABLE_
 0+ g       \.tdata	0+4 \.hidden x
 0+800a0 g     F \.text	0+6 tlsdsofn2
 0+800a8 g     F \.text	0+6 tlsfn12
@@ -64,7 +64,7 @@ Contents of section \.tdata:
  820c0 28000000 2a000000 29000000 2a000000  .*
 Contents of section \.got:
  820d0 00000000 00000000 00000000 01000000  .*
- 820e0 00000000 b0ffffff 01000000 b0ffffff  .*
+ 820e0 00000000 b0ffffff 01000000 00000000  .*
 
 Disassembly of section \.text:
 

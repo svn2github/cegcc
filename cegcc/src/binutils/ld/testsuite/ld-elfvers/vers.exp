@@ -1,6 +1,6 @@
 # Expect script for ld-version tests
-#   Copyright 1997, 1998, 1999, 2001, 2002, 2003, 2004, 2005, 2007
-#   Free Software Foundation, Inc.
+#   Copyright 1997, 1998, 1999, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,
+#   2009 Free Software Foundation, Inc.
 #
 # This file is part of the GNU Binutils.
 #
@@ -803,6 +803,10 @@ setup_xfail "mips*-*-*"
 build_exec "vers4" vers4.c vers4 "" "" "" "" vers4.sym
 
 build_exec "vers4a" vers4.c vers4a "-export-dynamic" "" vers4a.ver vers4a.dsym vers4a.sym
+
+# Verify that --no-export-dynamic undoes the effect of --export-dynamic.
+setup_xfail "mips*-*-*"
+build_exec "vers4b" vers4.c vers4b "-export-dynamic -Wl,--no-export-dynamic" "" "" "" vers4.sym
 
 
 #

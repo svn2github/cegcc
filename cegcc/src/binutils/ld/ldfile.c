@@ -1,6 +1,6 @@
 /* Linker file opening and searching.
    Copyright 1991, 1992, 1993, 1994, 1995, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005, 2007, 2008 Free Software Foundation, Inc.
+   2003, 2004, 2005, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    This file is part of the GNU Binutils.
 
@@ -98,28 +98,28 @@ is_sysrooted_pathname (const char *name, bfd_boolean notsame)
 void
 ldfile_add_library_path (const char *name, bfd_boolean cmdline)
 {
-  search_dirs_type *new;
+  search_dirs_type *new_dirs;
 
   if (!cmdline && config.only_cmd_line_lib_dirs)
     return;
 
-  new = xmalloc (sizeof (search_dirs_type));
-  new->next = NULL;
-  new->cmdline = cmdline;
-  *search_tail_ptr = new;
-  search_tail_ptr = &new->next;
+  new_dirs = (search_dirs_type *) xmalloc (sizeof (search_dirs_type));
+  new_dirs->next = NULL;
+  new_dirs->cmdline = cmdline;
+  *search_tail_ptr = new_dirs;
+  search_tail_ptr = &new_dirs->next;
 
   /* If a directory is marked as honoring sysroot, prepend the sysroot path
      now.  */
   if (name[0] == '=')
     {
-      new->name = concat (ld_sysroot, name + 1, (const char *) NULL);
-      new->sysrooted = TRUE;
+      new_dirs->name = concat (ld_sysroot, name + 1, (const char *) NULL);
+      new_dirs->sysrooted = TRUE;
     }
   else
     {
-      new->name = xstrdup (name);
-      new->sysrooted = is_sysrooted_pathname (name, FALSE);
+      new_dirs->name = xstrdup (name);
+      new_dirs->sysrooted = is_sysrooted_pathname (name, FALSE);
     }
 }
 
@@ -477,15 +477,12 @@ check_for_scripts_dir (char *dir)
    SCRIPTDIR (passed from Makefile)
 	     (adjusted according to the current location of the binary)
    SCRIPTDIR (passed from Makefile)
-   the dir where this program is (for using it from the build tree)
-   the dir where this program is/../lib
-	     (for installing the tool suite elsewhere).  */
+   the dir where this program is (for using it from the build tree).  */
 
 static char *
 find_scripts_dir (void)
 {
-  char *end, *dir;
-  size_t dirlen;
+  char *dir;
 
   dir = make_relative_prefix (program_name, BINDIR, SCRIPTDIR);
   if (dir)
@@ -508,56 +505,38 @@ find_scripts_dir (void)
     return SCRIPTDIR;
 
   /* Look for "ldscripts" in the dir where our binary is.  */
-  end = strrchr (program_name, '/');
-#ifdef HAVE_DOS_BASED_FILE_SYSTEM
-  {
-    /* We could have \foo\bar, or /foo\bar.  */
-    char *bslash = strrchr (program_name, '\\');
+  dir = make_relative_prefix (program_name, ".", ".");
+  if (dir)
+    {
+      if (check_for_scripts_dir (dir))
+	return dir;
+      free (dir);
+    }
 
-    if (end == NULL || (bslash != NULL && bslash > end))
-      end = bslash;
-  }
-#endif
-
-  if (end == NULL)
-    /* Don't look for ldscripts in the current directory.  There is
-       too much potential for confusion.  */
-    return NULL;
-
-  dirlen = end - program_name;
-  /* Make a copy of program_name in dir.
-     Leave room for later "/../lib".  */
-  dir = xmalloc (dirlen + sizeof ("/../lib"));
-  strncpy (dir, program_name, dirlen);
-  dir[dirlen] = '\0';
-
-  if (check_for_scripts_dir (dir))
-    return dir;
-
-  /* Look for "ldscripts" in <the dir where our binary is>/../lib.  */
-  strcpy (dir + dirlen, "/../lib");
-  if (check_for_scripts_dir (dir))
-    return dir;
-  free (dir);
   return NULL;
 }
 
-/* Try to open NAME; if that fails, look for it in the default script
-   directory, then in any directories specified with -L, without and
-   with EXTEND appended.  */
+/* If DEFAULT_ONLY is false, try to open NAME; if that fails, look for
+   it in directories specified with -L, then in the default script
+   directory, without and with EXTEND appended.  If DEFAULT_ONLY is
+   true, the search is restricted to the default script location.  */
 
 static FILE *
-ldfile_find_command_file (const char *name, const char *extend)
+ldfile_find_command_file (const char *name, const char *extend,
+			  bfd_boolean default_only)
 {
   search_dirs_type *search;
-  FILE *result;
+  FILE *result = NULL;
   char *buffer;
   static search_dirs_type *script_search;
 
-  /* First try raw name.  */
-  result = try_open (name, "");
-  if (result != NULL)
-    return result;
+  if (!default_only)
+    {
+      /* First try raw name.  */
+      result = try_open (name, "");
+      if (result != NULL)
+	return result;
+    }
 
   if (!script_search)
     {
@@ -569,16 +548,17 @@ ldfile_find_command_file (const char *name, const char *extend)
 	  ldfile_add_library_path (script_dir, TRUE);
 	  search_tail_ptr = save_tail_ptr;
 	}
-      if (!script_search)
-	script_search = search_head;
-      else
-	script_search->next = search_head;
     }
 
-  /* Try now prefixes.  */
-  for (search = script_search; search != NULL; search = search->next)
-    {
+  /* Temporarily append script_search to the path list so that the
+     paths specified with -L will be searched first.  */
+  *search_tail_ptr = script_search;
 
+  /* Try now prefixes.  */
+  for (search = default_only ? script_search : search_head;
+       search != NULL;
+       search = search->next)
+    {
       buffer = concat (search->name, slash, name, (const char *) NULL);
       result = try_open (buffer, extend);
       free (buffer);
@@ -586,14 +566,19 @@ ldfile_find_command_file (const char *name, const char *extend)
 	break;
     }
 
+  /* Restore the original path list.  */
+  *search_tail_ptr = NULL;
+
   return result;
 }
 
-void
-ldfile_open_command_file (const char *name)
+/* Open command file NAME.  */
+
+static void
+ldfile_open_command_file_1 (const char *name, bfd_boolean default_only)
 {
   FILE *ldlex_input_stack;
-  ldlex_input_stack = ldfile_find_command_file (name, "");
+  ldlex_input_stack = ldfile_find_command_file (name, "", default_only);
 
   if (ldlex_input_stack == NULL)
     {
@@ -609,23 +594,41 @@ ldfile_open_command_file (const char *name)
   saved_script_handle = ldlex_input_stack;
 }
 
+/* Open command file NAME in the current directory, -L directories,
+   the default script location, in that order.  */
+
+void
+ldfile_open_command_file (const char *name)
+{
+  ldfile_open_command_file_1 (name, FALSE);
+}
+
+/* Open command file NAME at the default script location.  */
+
+void
+ldfile_open_default_command_file (const char *name)
+{
+  ldfile_open_command_file_1 (name, TRUE);
+}
+
 void
 ldfile_add_arch (const char *in_name)
 {
   char *name = xstrdup (in_name);
-  search_arch_type *new = xmalloc (sizeof (search_arch_type));
+  search_arch_type *new_arch = (search_arch_type *)
+      xmalloc (sizeof (search_arch_type));
 
   ldfile_output_machine_name = in_name;
 
-  new->name = name;
-  new->next = NULL;
+  new_arch->name = name;
+  new_arch->next = NULL;
   while (*name)
     {
       *name = TOLOWER (*name);
       name++;
     }
-  *search_arch_tail_ptr = new;
-  search_arch_tail_ptr = &new->next;
+  *search_arch_tail_ptr = new_arch;
+  search_arch_tail_ptr = &new_arch->next;
 
 }
 

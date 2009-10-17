@@ -1,6 +1,6 @@
 /* Parse options for the GNU linker.
    Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005, 2006, 2007
+   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of the GNU Binutils.
@@ -77,6 +77,7 @@ enum option_values
   OPTION_EL,
   OPTION_EMBEDDED_RELOCS,
   OPTION_EXPORT_DYNAMIC,
+  OPTION_NO_EXPORT_DYNAMIC,
   OPTION_HELP,
   OPTION_IGNORE,
   OPTION_MAP,
@@ -163,12 +164,32 @@ enum option_values
   OPTION_WARN_UNRESOLVED_SYMBOLS,
   OPTION_ERROR_UNRESOLVED_SYMBOLS,
   OPTION_WARN_SHARED_TEXTREL,
+  OPTION_WARN_ALTERNATE_EM,
   OPTION_REDUCE_MEMORY_OVERHEADS,
   OPTION_DEFAULT_SCRIPT
 };
 
 /* The long options.  This structure is used for both the option
    parsing and the help text.  */
+
+enum control_enum {
+  /* Use one dash before long option name.  */
+  ONE_DASH,
+  /* Use two dashes before long option name.  */
+  TWO_DASHES,
+  /* Only accept two dashes before the long option name.
+     This is an overloading of the use of this enum, since originally it
+     was only intended to tell the --help display function how to display
+     the long option name.  This feature was added in order to resolve
+     the confusion about the -omagic command line switch.  Is it setting
+     the output file name to "magic" or is it setting the NMAGIC flag on
+     the output ?  It has been decided that it is setting the output file
+     name, and that if you want to set the NMAGIC flag you should use -N
+     or --omagic.  */
+  EXACTLY_TWO_DASHES,
+  /* Don't mention this option in --help output.  */
+  NO_HELP
+};
 
 struct ld_option
 {
@@ -181,24 +202,7 @@ struct ld_option
   /* The documentation string.  If this is NULL, this is a synonym for
      the previous option.  */
   const char *doc;
-  enum {
-    /* Use one dash before long option name.  */
-    ONE_DASH,
-    /* Use two dashes before long option name.  */
-    TWO_DASHES,
-    /* Only accept two dashes before the long option name.
-       This is an overloading of the use of this enum, since originally it
-       was only intended to tell the --help display function how to display
-       the long option name.  This feature was added in order to resolve
-       the confusion about the -omagic command line switch.  Is it setting
-       the output file name to "magic" or is it setting the NMAGIC flag on
-       the output ?  It has been decided that it is setting the output file
-       name, and that if you want to set the NMAGIC flag you should use -N
-       or --omagic.  */
-    EXACTLY_TWO_DASHES,
-    /* Don't mention this option in --help output.  */
-    NO_HELP
-  } control;
+  enum control_enum control;
 };
 
 static const struct ld_option ld_options[] =
@@ -221,6 +225,8 @@ static const struct ld_option ld_options[] =
     'e', N_("ADDRESS"), N_("Set start address"), TWO_DASHES },
   { {"export-dynamic", no_argument, NULL, OPTION_EXPORT_DYNAMIC},
     'E', NULL, N_("Export all dynamic symbols"), TWO_DASHES },
+  { {"no-export-dynamic", no_argument, NULL, OPTION_NO_EXPORT_DYNAMIC},
+    '\0', NULL, N_("Undo the effect of --export-dynamic"), TWO_DASHES },
   { {"EB", no_argument, NULL, OPTION_EB},
     '\0', NULL, N_("Link big-endian objects"), ONE_DASH },
   { {"EL", no_argument, NULL, OPTION_EL},
@@ -555,6 +561,9 @@ static const struct ld_option ld_options[] =
   { {"warn-shared-textrel", no_argument, NULL, OPTION_WARN_SHARED_TEXTREL},
     '\0', NULL, N_("Warn if shared object has DT_TEXTREL"),
     TWO_DASHES },
+  { {"warn-alternate-em", no_argument, NULL, OPTION_WARN_ALTERNATE_EM},
+    '\0', NULL, N_("Warn if an object has alternate ELF machine code"),
+    TWO_DASHES },
   { {"warn-unresolved-symbols", no_argument, NULL,
      OPTION_WARN_UNRESOLVED_SYMBOLS},
     '\0', NULL, N_("Report unresolved symbols as warnings"), TWO_DASHES },
@@ -583,9 +592,11 @@ parse_args (unsigned argc, char **argv)
   int last_optind;
   enum report_method how_to_report_unresolved_symbols = RM_GENERATE_ERROR;
 
-  shortopts = xmalloc (OPTION_COUNT * 3 + 2);
-  longopts = xmalloc (sizeof (*longopts) * (OPTION_COUNT + 1));
-  really_longopts = xmalloc (sizeof (*really_longopts) * (OPTION_COUNT + 1));
+  shortopts = (char *) xmalloc (OPTION_COUNT * 3 + 2);
+  longopts = (struct option *)
+      xmalloc (sizeof (*longopts) * (OPTION_COUNT + 1));
+  really_longopts = (struct option *)
+      malloc (sizeof (*really_longopts) * (OPTION_COUNT + 1));
 
   /* Starting the short option string with '-' is for programs that
      expect options and other ARGV-elements in any order and that care about
@@ -670,7 +681,7 @@ parse_args (unsigned argc, char **argv)
 	{
 	  char *n;
 
-	  n = xmalloc (strlen (argv[i]) + 20);
+	  n = (char *) xmalloc (strlen (argv[i]) + 20);
 	  sprintf (n, "--library=%s", argv[i] + 2);
 	  argv[i] = n;
 	}
@@ -816,13 +827,17 @@ parse_args (unsigned argc, char **argv)
 	case 'E': /* HP/UX compatibility.  */
 	  link_info.export_dynamic = TRUE;
 	  break;
+	case OPTION_NO_EXPORT_DYNAMIC:
+	  link_info.export_dynamic = FALSE;
+	  break;
 	case 'e':
 	  lang_add_entry (optarg, TRUE);
 	  break;
 	case 'f':
 	  if (command_line.auxiliary_filters == NULL)
 	    {
-	      command_line.auxiliary_filters = xmalloc (2 * sizeof (char *));
+	      command_line.auxiliary_filters = (char **)
+                  xmalloc (2 * sizeof (char *));
 	      command_line.auxiliary_filters[0] = optarg;
 	      command_line.auxiliary_filters[1] = NULL;
 	    }
@@ -834,8 +849,8 @@ parse_args (unsigned argc, char **argv)
 	      c = 0;
 	      for (p = command_line.auxiliary_filters; *p != NULL; p++)
 		++c;
-	      command_line.auxiliary_filters
-		= xrealloc (command_line.auxiliary_filters,
+	      command_line.auxiliary_filters = (char **)
+                  xrealloc (command_line.auxiliary_filters,
 			    (c + 2) * sizeof (char *));
 	      command_line.auxiliary_filters[c] = optarg;
 	      command_line.auxiliary_filters[c + 1] = NULL;
@@ -1081,7 +1096,7 @@ parse_args (unsigned argc, char **argv)
 
 	      if (cp == NULL)
 		{
-		  buf = xmalloc (rpath_len + optarg_len + 2);
+		  buf = (char *) xmalloc (rpath_len + optarg_len + 2);
 		  sprintf (buf, "%s%c%s", command_line.rpath,
 			   config.rpath_separator, optarg);
 		  free (command_line.rpath);
@@ -1096,9 +1111,9 @@ parse_args (unsigned argc, char **argv)
 	    {
 	      char *buf;
 
-	      buf = xmalloc (strlen (command_line.rpath_link)
-			     + strlen (optarg)
-			     + 2);
+	      buf = (char *) xmalloc (strlen (command_line.rpath_link)
+                                      + strlen (optarg)
+                                      + 2);
 	      sprintf (buf, "%s%c%s", command_line.rpath_link,
 		       config.rpath_separator, optarg);
 	      free (command_line.rpath_link);
@@ -1213,7 +1228,7 @@ parse_args (unsigned argc, char **argv)
 	    /* We must copy the section name as set_section_start
 	       doesn't do it for us.  */
 	    len = optarg2 - optarg;
-	    sec_name = xmalloc (len);
+	    sec_name = (char *) xmalloc (len);
 	    memcpy (sec_name, optarg, len - 1);
 	    sec_name[len - 1] = 0;
 
@@ -1357,6 +1372,9 @@ parse_args (unsigned argc, char **argv)
 	  break;
 	case OPTION_WARN_SHARED_TEXTREL:
 	  link_info.warn_shared_textrel = TRUE;
+	  break;
+	case OPTION_WARN_ALTERNATE_EM:
+	  link_info.warn_alternate_em = TRUE;
 	  break;
 	case OPTION_WHOLE_ARCHIVE:
 	  whole_archive = TRUE;
@@ -1535,7 +1553,7 @@ set_segment_start (const char *section, char *valstr)
       }
   /* There was no existing value so we must create a new segment
      entry.  */
-  seg = stat_alloc (sizeof (*seg));
+  seg = (segment_type *) stat_alloc (sizeof (*seg));
   seg->name = name;
   seg->value = val;
   seg->used = FALSE;
