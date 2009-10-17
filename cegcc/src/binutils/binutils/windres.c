@@ -1,6 +1,6 @@
 /* windres.c -- a program to manipulate Windows resources
-   Copyright 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007
-   Free Software Foundation, Inc.
+   Copyright 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007, 2008,
+   2009 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Cygnus Support.
    Rewritten by Kai Tietz, Onevision.
 
@@ -45,11 +45,6 @@
 #include "safe-ctype.h"
 #include "obstack.h"
 #include "windres.h"
-
-/* Defined in bfd/binary.c.  Used to set architecture and machine of input
-   binary files.  */
-extern enum bfd_architecture  bfd_external_binary_architecture;
-extern unsigned long          bfd_external_machine;
 
 /* Used by resrc.c at least.  */
 
@@ -1102,7 +1097,7 @@ set_endianess (bfd *abfd, const char *target)
 
 	if (hyp != NULL)
 	  {
-	    tname = hyp + 1;
+	    tname = ++hyp;
 
 	    /* Make sure we dectect architecture names
 	       for triplets like "pe-arm-wince-little".  */

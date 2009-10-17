@@ -1,5 +1,5 @@
 #   Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-#   2004, 2006, 2007
+#   2004, 2006, 2007, 2009
 #   Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
@@ -584,6 +584,7 @@ proc copy_executable { prog flags test1 test2 } {
 	setup_xfail "thumb*-*-coff"
 	setup_xfail "thumb*-*-pe"
 	setup_xfail "x86_64-*-mingw*"
+	setup_xfail "*-*-cygwin*"
     
 	fail $test1
     }
@@ -611,6 +612,7 @@ proc strip_executable { prog flags test } {
     global NMFLAGS
     global host_triplet
 
+    remote_file build delete tmpdir/striprog
     remote_download build tmpdir/copyprog tmpdir/striprog
     if [is_remote host] {
 	set copyfile [remote_download host tmpdir/striprog]
@@ -653,6 +655,7 @@ proc strip_executable_with_saving_a_symbol { prog flags test } {
     global NMFLAGS
     global host_triplet
 
+    remote_file build delete tmpdir/striprog
     remote_download build tmpdir/copyprog tmpdir/striprog
     if [is_remote host] {
 	set copyfile [remote_download host tmpdir/striprog]
@@ -704,6 +707,7 @@ proc keep_debug_symbols_and_test_copy { prog1 flags1 test1 prog2 flags2 test2 } 
     global NM
     global NMFLAGS
 
+    remote_file build delete tmpdir/striprog
     remote_download build tmpdir/copyprog tmpdir/striprog
     if [is_remote host] {
 	set copyfile [remote_download host tmpdir/striprog]
@@ -835,6 +839,7 @@ if [is_elf_format] {
 
 run_dump_test "copy-2"
 run_dump_test "copy-3"
+run_dump_test "copy-4"
 
 if [is_elf_format] {
     run_dump_test "strip-1"
@@ -846,6 +851,7 @@ if [is_elf_format] {
     run_dump_test "strip-7"
     run_dump_test "strip-8"
     run_dump_test "strip-9"
+    run_dump_test "strip-10"
 
     if { [istarget "i*86-*"] || [istarget "x86_64-*-*"] } {
 	# Check to make sure we don't strip a symbol named in relocations.
@@ -867,5 +873,7 @@ if [is_elf_format] {
     }
 
     run_dump_test "localize-hidden-1"
+    run_dump_test "testranges"
+    run_dump_test "testranges-ia64"
 }
 run_dump_test "localize-hidden-2"

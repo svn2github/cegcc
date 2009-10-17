@@ -32,6 +32,24 @@
 #include "elf-bfd.h"
 #include <sys/stat.h>
 #include "libbfd.h"
+#include "coff/internal.h"
+#include "libcoff.h"
+
+/* FIXME: See bfd/peXXigen.c for why we include an architecture specific
+   header in generic PE code.  */
+#include "coff/i386.h"
+#include "coff/pe.h"
+
+static bfd_vma pe_file_alignment = (bfd_vma) -1;
+static bfd_vma pe_heap_commit = (bfd_vma) -1;
+static bfd_vma pe_heap_reserve = (bfd_vma) -1;
+static bfd_vma pe_image_base = (bfd_vma) -1;
+static bfd_vma pe_section_alignment = (bfd_vma) -1;
+static bfd_vma pe_stack_commit = (bfd_vma) -1;
+static bfd_vma pe_stack_reserve = (bfd_vma) -1;
+static short pe_subsystem = -1;
+static short pe_major_subsystem_version = -1;
+static short pe_minor_subsystem_version = -1;
 
 struct is_specified_symbol_predicate_data
 {
@@ -216,6 +234,18 @@ static bfd_boolean extract_symbol = FALSE;
    of <reverse_bytes> bytes within each output section.  */
 static int reverse_bytes = 0;
 
+/* For Coff objects, we may want to allow or disallow long section names,
+   or preserve them where found in the inputs.  Debug info relies on them.  */
+enum long_section_name_handling
+  {
+    DISABLE,
+    ENABLE,
+    KEEP
+  };
+
+/* The default long section handling mode is to preserve them.
+   This is also the only behaviour for 'strip'.  */
+static enum long_section_name_handling long_section_names = KEEP;
 
 /* 150 isn't special; it's just an arbitrary non-ASCII char value.  */
 enum command_line_switch
@@ -247,6 +277,7 @@ enum command_line_switch
     OPTION_KEEP_SYMBOLS,
     OPTION_LOCALIZE_HIDDEN,
     OPTION_LOCALIZE_SYMBOLS,
+    OPTION_LONG_SECTION_NAMES,
     OPTION_GLOBALIZE_SYMBOL,
     OPTION_GLOBALIZE_SYMBOLS,
     OPTION_KEEPGLOBAL_SYMBOLS,
@@ -265,7 +296,13 @@ enum command_line_switch
     OPTION_PURE,
     OPTION_IMPURE,
     OPTION_EXTRACT_SYMBOL,
-    OPTION_REVERSE_BYTES
+    OPTION_REVERSE_BYTES,
+    OPTION_FILE_ALIGNMENT,
+    OPTION_HEAP,
+    OPTION_IMAGE_BASE,
+    OPTION_SECTION_ALIGNMENT,
+    OPTION_STACK,
+    OPTION_SUBSYSTEM
   };
 
 /* Options to handle if running as "strip".  */
@@ -340,6 +377,7 @@ static struct option copy_options[] =
   {"localize-hidden", no_argument, 0, OPTION_LOCALIZE_HIDDEN},
   {"localize-symbol", required_argument, 0, 'L'},
   {"localize-symbols", required_argument, 0, OPTION_LOCALIZE_SYMBOLS},
+  {"long-section-names", required_argument, 0, OPTION_LONG_SECTION_NAMES},
   {"no-adjust-warnings", no_argument, 0, OPTION_NO_CHANGE_WARNINGS},
   {"no-change-warnings", no_argument, 0, OPTION_NO_CHANGE_WARNINGS},
   {"only-keep-debug", no_argument, 0, OPTION_ONLY_KEEP_DEBUG},
@@ -378,6 +416,12 @@ static struct option copy_options[] =
   {"weaken-symbols", required_argument, 0, OPTION_WEAKEN_SYMBOLS},
   {"wildcard", no_argument, 0, 'w'},
   {"writable-text", no_argument, 0, OPTION_WRITABLE_TEXT},
+  {"file-alignment", required_argument, 0, OPTION_FILE_ALIGNMENT},
+  {"heap", required_argument, 0, OPTION_HEAP},
+  {"image-base", required_argument, 0 , OPTION_IMAGE_BASE},
+  {"section-alignment", required_argument, 0, OPTION_SECTION_ALIGNMENT},
+  {"stack", required_argument, 0, OPTION_STACK},
+  {"subsystem", required_argument, 0, OPTION_SUBSYSTEM},
   {0, no_argument, 0, 0}
 };
 
@@ -398,11 +442,6 @@ extern unsigned int Chunk;
    on by the --srec-forceS3 command line switch.  */
 extern bfd_boolean S3Forced;
 
-/* Defined in bfd/binary.c.  Used to set architecture and machine of input
-   binary files.  */
-extern enum bfd_architecture  bfd_external_binary_architecture;
-extern unsigned long          bfd_external_machine;
-
 /* Forward declarations.  */
 static void setup_section (bfd *, asection *, void *);
 static void setup_bfd_headers (bfd *, bfd *);
@@ -422,7 +461,7 @@ copy_usage (FILE *stream, int exit_status)
   fprintf (stream, _("\
   -I --input-target <bfdname>      Assume input file is in format <bfdname>\n\
   -O --output-target <bfdname>     Create an output file in format <bfdname>\n\
-  -B --binary-architecture <arch>  Set arch of output file, when input is binary\n\
+  -B --binary-architecture <arch>  Set output arch, when input is arch-less\n\
   -F --target <bfdname>            Set both input and output format to <bfdname>\n\
      --debugging                   Convert debugging information, if possible\n\
   -p --preserve-dates              Copy modified/access timestamps to the output\n\
@@ -470,6 +509,8 @@ copy_usage (FILE *stream, int exit_status)
                                    Set section <name>'s properties to <flags>\n\
      --add-section <name>=<file>   Add section <name> found in <file> to output\n\
      --rename-section <old>=<new>[,<flags>] Rename section <old> to <new>\n\
+     --long-section-names {enable|disable|keep}\n\
+                                   Handle long section names in Coff objects.\n\
      --change-leading-char         Force output format's leading character style\n\
      --remove-leading-char         Remove leading character from global symbols\n\
      --reverse-bytes=<num>         Reverse <num> bytes at a time, in output sections with content\n\
@@ -497,6 +538,15 @@ copy_usage (FILE *stream, int exit_status)
      --prefix-alloc-sections <prefix>\n\
                                    Add <prefix> to start of every allocatable\n\
                                      section name\n\
+     --file-alignment <num>        Set PE file alignment to <num>\n\
+     --heap <reserve>[,<commit>]   Set PE reserve/commit heap to <reserve>/\n\
+                                   <commit>\n\
+     --image-base <address>        Set PE image base to <address>\n\
+     --section-alignment <num>     Set PE section alignment to <num>\n\
+     --stack <reserve>[,<commit>]  Set PE reserve/commit stack to <reserve>/\n\
+                                   <commit>\n\
+     --subsystem <name>[:<version>]\n\
+                                   Set PE subsystem to <name> [& <version>]\n]\
   -v --verbose                     List all object files modified\n\
   @<file>                          Read options from <file>\n\
   -V --version                     Display this program's version number\n\
@@ -585,7 +635,7 @@ parse_flags (const char *s)
 	{
 	  char *copy;
 
-	  copy = xmalloc (len + 1);
+	  copy = (char *) xmalloc (len + 1);
 	  strncpy (copy, s, len);
 	  copy[len] = '\0';
 	  non_fatal (_("unrecognized section flag `%s'"), copy);
@@ -614,7 +664,7 @@ find_section_list (const char *name, bfd_boolean add)
   if (! add)
     return NULL;
 
-  p = xmalloc (sizeof (struct section_list));
+  p = (struct section_list *) xmalloc (sizeof (struct section_list));
   p->name = name;
   p->used = FALSE;
   p->remove = FALSE;
@@ -637,7 +687,7 @@ find_section_list (const char *name, bfd_boolean add)
 static int
 eq_string (const void *s1, const void *s2)
 {
-  return strcmp (s1, s2) == 0;
+  return strcmp ((const char *) s1, (const char *) s2) == 0;
 }
 
 static htab_t
@@ -687,7 +737,7 @@ add_specific_symbols (const char *filename, htab_t htab)
       return;
     }
 
-  buffer = xmalloc (size + 2);
+  buffer = (char *) xmalloc (size + 2);
   f = fopen (filename, FOPEN_RT);
   if (f == NULL)
     fatal (_("cannot open '%s': %s"), filename, strerror (errno));
@@ -788,8 +838,9 @@ add_specific_symbols (const char *filename, htab_t htab)
 static int
 is_specified_symbol_predicate (void **slot, void *data)
 {
-  struct is_specified_symbol_predicate_data *d = data;
-  const char *slot_name = *slot;
+  struct is_specified_symbol_predicate_data *d =
+      (struct is_specified_symbol_predicate_data *) data;
+  const char *slot_name = (char *) *slot;
 
   if (*slot_name != '!')
     {
@@ -1001,8 +1052,8 @@ filter_symbols (bfd *abfd, bfd *obfd, asymbol **osyms,
         {
           char *n, *ptr;
 
-          ptr = n = xmalloc (1 + strlen (prefix_symbols_string)
-			     + strlen (name) + 1);
+          ptr = n = (char *) xmalloc (1 + strlen (prefix_symbols_string)
+                                      + strlen (name) + 1);
           if (add_leading_char)
 	    *ptr++ = bfd_get_symbol_leading_char (obfd);
 
@@ -1028,7 +1079,8 @@ filter_symbols (bfd *abfd, bfd *obfd, asymbol **osyms,
 	  used_in_reloc = TRUE;
 	}
       else if (relocatable			/* Relocatable file.  */
-	       && (flags & (BSF_GLOBAL | BSF_WEAK)) != 0)
+	       && ((flags & (BSF_GLOBAL | BSF_WEAK)) != 0
+		   || bfd_is_com_section (bfd_get_section (sym))))
 	keep = TRUE;
       else if (bfd_decode_symclass (sym) == 'I')
 	/* Global symbols in $idata sections need to be retained
@@ -1152,7 +1204,7 @@ redefine_list_append (const char *cause, const char *source, const char *target)
 	       cause, target);
     }
 
-  new_node = xmalloc (sizeof (struct redefine_node));
+  new_node = (struct redefine_node *) xmalloc (sizeof (struct redefine_node));
 
   new_node->source = strdup (source);
   new_node->target = strdup (target);
@@ -1180,7 +1232,7 @@ add_redefine_syms_file (const char *filename)
 	   filename, strerror (errno));
 
   bufsize = 100;
-  buf = xmalloc (bufsize);
+  buf = (char *) xmalloc (bufsize);
 
   lineno = 1;
   c = getc (file);
@@ -1197,7 +1249,7 @@ add_redefine_syms_file (const char *filename)
 	  if (len >= bufsize)
 	    {
 	      bufsize *= 2;
-	      buf = xrealloc (buf, bufsize);
+	      buf = (char *) xrealloc (buf, bufsize);
 	    }
 	  c = getc (file);
 	}
@@ -1223,7 +1275,7 @@ add_redefine_syms_file (const char *filename)
 	  if (len >= bufsize)
 	    {
 	      bufsize *= 2;
-	      buf = xrealloc (buf, bufsize);
+	      buf = (char *) xrealloc (buf, bufsize);
 	    }
 	  c = getc (file);
 	}
@@ -1308,7 +1360,7 @@ copy_unknown_object (bfd *ibfd, bfd *obfd)
     printf (_("copy from `%s' [unknown] to `%s' [unknown]\n"),
 	    bfd_get_archive_filename (ibfd), bfd_get_filename (obfd));
 
-  cbuf = xmalloc (BUFSIZE);
+  cbuf = (char *) xmalloc (BUFSIZE);
   ncopied = 0;
   while (ncopied < size)
     {
@@ -1344,7 +1396,7 @@ copy_unknown_object (bfd *ibfd, bfd *obfd)
    Returns TRUE upon success, FALSE otherwise.  */
 
 static bfd_boolean
-copy_object (bfd *ibfd, bfd *obfd)
+copy_object (bfd *ibfd, bfd *obfd, const bfd_arch_info_type *input_arch)
 {
   bfd_vma start;
   long symcount;
@@ -1395,6 +1447,9 @@ copy_object (bfd *ibfd, bfd *obfd)
       flags &= ~bfd_flags_to_clear;
       flags &= bfd_applicable_file_flags (obfd);
 
+      if (strip_symbols == STRIP_ALL)
+	flags &= ~HAS_RELOC;
+
       if (!bfd_set_start_address (obfd, start)
 	  || !bfd_set_file_flags (obfd, flags))
 	{
@@ -1406,6 +1461,18 @@ copy_object (bfd *ibfd, bfd *obfd)
   /* Copy architecture of input file to output file.  */
   iarch = bfd_get_arch (ibfd);
   imach = bfd_get_mach (ibfd);
+  if (input_arch)
+    {
+      if (bfd_get_arch_info (ibfd) == NULL
+	  || bfd_get_arch_info (ibfd)->arch == bfd_arch_unknown)
+	{
+	  iarch = input_arch->arch;
+	  imach = input_arch->mach;
+	}
+      else
+	non_fatal (_("Input file `%s' ignores binary architecture parameter."),
+		   bfd_get_archive_filename (ibfd));
+    }
   if (!bfd_set_arch_mach (obfd, iarch, imach)
       && (ibfd->target_defaulted
 	  || bfd_get_arch (ibfd) != bfd_get_arch (obfd)))
@@ -1426,6 +1493,63 @@ copy_object (bfd *ibfd, bfd *obfd)
       return FALSE;
     }
 
+  if (bfd_get_flavour (obfd) == bfd_target_coff_flavour
+      && bfd_pei_p (obfd))
+    {
+      /* Set up PE parameters.  */
+      pe_data_type *pe = pe_data (obfd);
+
+      /* Copy PE parameters before changing them.  */
+      if (ibfd->xvec->flavour == bfd_target_coff_flavour
+	  && bfd_pei_p (ibfd))
+	pe->pe_opthdr = pe_data (ibfd)->pe_opthdr;
+
+      if (pe_file_alignment != (bfd_vma) -1)
+	pe->pe_opthdr.FileAlignment = pe_file_alignment;
+      else
+	pe_file_alignment = PE_DEF_FILE_ALIGNMENT;
+
+      if (pe_heap_commit != (bfd_vma) -1)
+	pe->pe_opthdr.SizeOfHeapCommit = pe_heap_commit;
+
+      if (pe_heap_reserve != (bfd_vma) -1)
+	pe->pe_opthdr.SizeOfHeapCommit = pe_heap_reserve;
+
+      if (pe_image_base != (bfd_vma) -1)
+	pe->pe_opthdr.ImageBase = pe_image_base;
+
+      if (pe_section_alignment != (bfd_vma) -1)
+	pe->pe_opthdr.SectionAlignment = pe_section_alignment;
+      else
+	pe_section_alignment = PE_DEF_SECTION_ALIGNMENT;
+
+      if (pe_stack_commit != (bfd_vma) -1)
+	pe->pe_opthdr.SizeOfStackCommit = pe_stack_commit;
+
+      if (pe_stack_reserve != (bfd_vma) -1)
+	pe->pe_opthdr.SizeOfStackCommit = pe_stack_reserve;
+
+      if (pe_subsystem != -1)
+	pe->pe_opthdr.Subsystem = pe_subsystem;
+
+      if (pe_major_subsystem_version != -1)
+	pe->pe_opthdr.MajorSubsystemVersion = pe_major_subsystem_version;
+
+      if (pe_minor_subsystem_version != -1)
+	pe->pe_opthdr.MinorSubsystemVersion = pe_minor_subsystem_version;
+
+      if (pe_file_alignment > pe_section_alignment)
+	{
+	  char file_alignment[20], section_alignment[20];
+
+	  sprintf_vma (file_alignment, pe_file_alignment);
+	  sprintf_vma (section_alignment, pe_section_alignment);
+	  non_fatal (_("warning: file alignment (0x%s) > section alignment (0x%s)"),
+
+		     file_alignment, section_alignment);
+	}
+    }
+
   if (isympp)
     free (isympp);
 
@@ -1442,7 +1566,7 @@ copy_object (bfd *ibfd, bfd *obfd)
       return FALSE;
     }
 
-  osympp = isympp = xmalloc (symsize);
+  osympp = isympp = (asymbol **) xmalloc (symsize);
   symcount = bfd_canonicalize_symtab (ibfd, isympp);
   if (symcount < 0)
     {
@@ -1596,13 +1720,13 @@ copy_object (bfd *ibfd, bfd *obfd)
 	 We write out the gap contents below.  */
 
       c = bfd_count_sections (obfd);
-      osections = xmalloc (c * sizeof (asection *));
+      osections = (asection **) xmalloc (c * sizeof (asection *));
       set = osections;
       bfd_map_over_sections (obfd, get_sections, &set);
 
       qsort (osections, c, sizeof (asection *), compare_section_lma);
 
-      gaps = xmalloc (c * sizeof (bfd_size_type));
+      gaps = (bfd_size_type *) xmalloc (c * sizeof (bfd_size_type));
       memset (gaps, 0, c * sizeof (bfd_size_type));
 
       if (gap_fill_set)
@@ -1703,7 +1827,7 @@ copy_object (bfd *ibfd, bfd *obfd)
 	bfd_map_over_sections (ibfd,
 			       mark_symbols_used_in_relocations,
 			       isympp);
-      osympp = xmalloc ((symcount + 1) * sizeof (asymbol *));
+      osympp = (asymbol **) xmalloc ((symcount + 1) * sizeof (asymbol *));
       symcount = filter_symbols (ibfd, obfd, osympp, isympp, symcount);
     }
 
@@ -1756,7 +1880,7 @@ copy_object (bfd *ibfd, bfd *obfd)
       /* Fill in the gaps.  */
       if (max_gap > 8192)
 	max_gap = 8192;
-      buf = xmalloc (max_gap);
+      buf = (bfd_byte *) xmalloc (max_gap);
       memset (buf, gap_fill, max_gap);
 
       c = bfd_count_sections (obfd);
@@ -1839,7 +1963,8 @@ copy_object (bfd *ibfd, bfd *obfd)
 
 static void
 copy_archive (bfd *ibfd, bfd *obfd, const char *output_target,
-	      bfd_boolean force_output_target)
+	      bfd_boolean force_output_target,
+	      const bfd_arch_info_type *input_arch)
 {
   struct name_list
     {
@@ -1879,7 +2004,7 @@ copy_archive (bfd *ibfd, bfd *obfd, const char *output_target,
       bfd *last_element;
       struct stat buf;
       int stat_status = 0;
-      bfd_boolean delete = TRUE;
+      bfd_boolean del = TRUE;
 
       /* Create an output file for this member.  */
       output_name = concat (dir, "/",
@@ -1893,7 +2018,7 @@ copy_archive (bfd *ibfd, bfd *obfd, const char *output_target,
 	    fatal (_("cannot create tempdir for archive copying (error: %s)"),
 		   strerror (errno));
 
-	  l = xmalloc (sizeof (struct name_list));
+	  l = (struct name_list *) xmalloc (sizeof (struct name_list));
 	  l->name = output_name;
 	  l->next = list;
 	  l->obfd = NULL;
@@ -1911,7 +2036,7 @@ copy_archive (bfd *ibfd, bfd *obfd, const char *output_target,
 		       bfd_get_filename (this_element));
 	}
 
-      l = xmalloc (sizeof (struct name_list));
+      l = (struct name_list *) xmalloc (sizeof (struct name_list));
       l->name = output_name;
       l->next = list;
       l->obfd = NULL;
@@ -1933,9 +2058,9 @@ copy_archive (bfd *ibfd, bfd *obfd, const char *output_target,
 	      return;
 	    }
 
-	  delete = ! copy_object (this_element, output_bfd);
+ 	  del = ! copy_object (this_element, output_bfd, input_arch);
 
-	  if (! delete
+	  if (! del
 	      || bfd_get_arch (this_element) != bfd_arch_unknown)
 	    {
 	      if (!bfd_close (output_bfd))
@@ -1955,7 +2080,7 @@ copy_archive (bfd *ibfd, bfd *obfd, const char *output_target,
 
 	  output_bfd = bfd_openw (output_name, output_target);
 copy_unknown_element:
-	  delete = !copy_unknown_object (this_element, output_bfd);
+	  del = !copy_unknown_object (this_element, output_bfd);
 	  if (!bfd_close_all_done (output_bfd))
 	    {
 	      bfd_nonfatal_message (output_name, NULL, NULL, NULL);
@@ -1964,7 +2089,7 @@ copy_unknown_element:
 	    }
 	}
 
-      if (delete)
+      if (del)
 	{
 	  unlink (output_name);
 	  status = 1;
@@ -2021,18 +2146,36 @@ copy_unknown_element:
   rmdir (dir);
 }
 
+static void
+set_long_section_mode (bfd *output_bfd, bfd *input_bfd, enum long_section_name_handling style)
+{
+  /* This is only relevant to Coff targets.  */
+  if (bfd_get_flavour (output_bfd) == bfd_target_coff_flavour)
+    {
+      if (style == KEEP
+	  && bfd_get_flavour (input_bfd) == bfd_target_coff_flavour)
+	style = bfd_coff_long_section_names (input_bfd) ? ENABLE : DISABLE;
+      bfd_coff_set_long_section_names (output_bfd, style != DISABLE);
+    }
+}
+
 /* The top-level control.  */
 
 static void
 copy_file (const char *input_filename, const char *output_filename,
-	   const char *input_target,   const char *output_target)
+	   const char *input_target,   const char *output_target,
+	   const bfd_arch_info_type *input_arch)
 {
   bfd *ibfd;
   char **obj_matching;
   char **core_matching;
+  off_t size = get_file_size (input_filename);
 
-  if (get_file_size (input_filename) < 1)
+  if (size < 1)
     {
+      if (size == 0)
+	non_fatal (_("error: the input file '%s' is empty"),
+		   input_filename);
       status = 1;
       return;
     }
@@ -2069,8 +2212,10 @@ copy_file (const char *input_filename, const char *output_filename,
 	  status = 1;
 	  return;
 	}
+      /* This is a no-op on non-Coff targets.  */
+      set_long_section_mode (obfd, ibfd, long_section_names);
 
-      copy_archive (ibfd, obfd, output_target, force_output_target);
+      copy_archive (ibfd, obfd, output_target, force_output_target, input_arch);
     }
   else if (bfd_check_format_matches (ibfd, bfd_object, &obj_matching))
     {
@@ -2089,8 +2234,10 @@ copy_file (const char *input_filename, const char *output_filename,
  	  status = 1;
  	  return;
  	}
+      /* This is a no-op on non-Coff targets.  */
+      set_long_section_mode (obfd, ibfd, long_section_names);
 
-      if (! copy_object (ibfd, obfd))
+      if (! copy_object (ibfd, obfd, input_arch))
 	status = 1;
 
       if (!bfd_close (obfd))
@@ -2162,7 +2309,7 @@ add_section_rename (const char * old_name, const char * new_name,
 	fatal (_("Multiple renames of section %s"), old_name);
       }
 
-  rename = xmalloc (sizeof (* rename));
+  rename = (section_rename *) xmalloc (sizeof (* rename));
 
   rename->old_name = old_name;
   rename->new_name = new_name;
@@ -2224,7 +2371,7 @@ setup_bfd_headers (bfd *ibfd, bfd *obfd)
 static void
 setup_section (bfd *ibfd, sec_ptr isection, void *obfdarg)
 {
-  bfd *obfd = obfdarg;
+  bfd *obfd = (bfd *) obfdarg;
   struct section_list *p;
   sec_ptr osection;
   bfd_size_type size;
@@ -2257,7 +2404,7 @@ setup_section (bfd *ibfd, sec_ptr isection, void *obfdarg)
     {
       char *n;
 
-      n = xmalloc (strlen (prefix) + strlen (name) + 1);
+      n = (char *) xmalloc (strlen (prefix) + strlen (name) + 1);
       strcpy (n, prefix);
       strcat (n, name);
       name = n;
@@ -2394,7 +2541,7 @@ loser:
 static void
 copy_section (bfd *ibfd, sec_ptr isection, void *obfdarg)
 {
-  bfd *obfd = obfdarg;
+  bfd *obfd = (bfd *) obfdarg;
   struct section_list *p;
   arelent **relpp;
   long relcount;
@@ -2451,7 +2598,7 @@ copy_section (bfd *ibfd, sec_ptr isection, void *obfdarg)
     bfd_set_reloc (obfd, osection, NULL, 0);
   else
     {
-      relpp = xmalloc (relsize);
+      relpp = (arelent **) xmalloc (relsize);
       relcount = bfd_canonicalize_reloc (ibfd, isection, relpp, isympp);
       if (relcount < 0)
 	{
@@ -2469,7 +2616,7 @@ copy_section (bfd *ibfd, sec_ptr isection, void *obfdarg)
 	  long temp_relcount = 0;
 	  long i;
 
-	  temp_relpp = xmalloc (relsize);
+	  temp_relpp = (arelent **) xmalloc (relsize);
 	  for (i = 0; i < relcount; i++)
 	    if (is_specified_symbol (bfd_asymbol_name (*relpp[i]->sym_ptr_ptr),
 				     keep_specific_htab))
@@ -2526,7 +2673,7 @@ copy_section (bfd *ibfd, sec_ptr isection, void *obfdarg)
 	{
 	  /* Keep only every `copy_byte'th byte in MEMHUNK.  */
 	  char *from = (char *) memhunk + copy_byte;
-	  char *to = memhunk;
+	  char *to = (char *) memhunk;
 	  char *end = (char *) memhunk + size;
 
 	  for (; from < end; from += interleave)
@@ -2571,7 +2718,7 @@ copy_section (bfd *ibfd, sec_ptr isection, void *obfdarg)
 static void
 get_sections (bfd *obfd ATTRIBUTE_UNUSED, asection *osection, void *secppparg)
 {
-  asection ***secppp = secppparg;
+  asection ***secppp = (asection ***) secppparg;
 
   **secppp = osection;
   ++(*secppp);
@@ -2584,8 +2731,8 @@ get_sections (bfd *obfd ATTRIBUTE_UNUSED, asection *osection, void *secppparg)
 static int
 compare_section_lma (const void *arg1, const void *arg2)
 {
-  const asection *const *sec1 = arg1;
-  const asection *const *sec2 = arg2;
+  const asection *const *sec1 = (const asection * const *) arg1;
+  const asection *const *sec2 = (const asection * const *) arg2;
   flagword flags1, flags2;
 
   /* Sort non loadable sections to the front.  */
@@ -2628,7 +2775,7 @@ compare_section_lma (const void *arg1, const void *arg2)
 static void
 mark_symbols_used_in_relocations (bfd *ibfd, sec_ptr isection, void *symbolsarg)
 {
-  asymbol **symbols = symbolsarg;
+  asymbol **symbols = (asymbol **) symbolsarg;
   long relsize;
   arelent **relpp;
   long relcount, i;
@@ -2649,7 +2796,7 @@ mark_symbols_used_in_relocations (bfd *ibfd, sec_ptr isection, void *symbolsarg)
   if (relsize == 0)
     return;
 
-  relpp = xmalloc (relsize);
+  relpp = (arelent **) xmalloc (relsize);
   relcount = bfd_canonicalize_reloc (ibfd, isection, relpp, symbols);
   if (relcount < 0)
     bfd_fatal (bfd_get_filename (ibfd));
@@ -2871,15 +3018,17 @@ strip_main (int argc, char *argv[])
 	}
 
       status = 0;
-      copy_file (argv[i], tmpname, input_target, output_target);
+      copy_file (argv[i], tmpname, input_target, output_target, NULL);
       if (status == 0)
 	{
 	  if (preserve_dates)
 	    set_times (tmpname, &statbuf);
 	  if (output_file != tmpname)
-	    smart_rename (tmpname, output_file ? output_file : argv[i],
-			  preserve_dates);
-	  status = hold_status;
+	    status = (smart_rename (tmpname,
+				    output_file ? output_file : argv[i],
+				    preserve_dates) != 0);
+	  if (status == 0)
+	    status = hold_status;
 	}
       else
 	unlink_if_ordinary (tmpname);
@@ -2890,10 +3039,120 @@ strip_main (int argc, char *argv[])
   return status;
 }
 
+/* Set up PE subsystem.  */
+
+static void
+set_pe_subsystem (const char *s)
+{
+  const char *version, *subsystem;
+  size_t i;
+  static const struct
+    {
+      const char *name;
+      const char set_def;
+      const short value;
+    }
+  v[] =
+    {
+      { "native", 0, IMAGE_SUBSYSTEM_NATIVE },  
+      { "windows", 0, IMAGE_SUBSYSTEM_WINDOWS_GUI },
+      { "console", 0, IMAGE_SUBSYSTEM_WINDOWS_CUI },
+      { "posix", 0, IMAGE_SUBSYSTEM_POSIX_CUI },
+      { "wince", 0, IMAGE_SUBSYSTEM_WINDOWS_CE_GUI },
+      { "efi-app", 1, IMAGE_SUBSYSTEM_EFI_APPLICATION },
+      { "efi-bsd", 1, IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER },
+      { "efi-rtd", 1, IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER },
+      { "sal-rtd", 1, IMAGE_SUBSYSTEM_SAL_RUNTIME_DRIVER },
+      { "xbox", 0, IMAGE_SUBSYSTEM_XBOX }
+    };
+  short value;
+  char *copy;
+  int set_def = -1;
+
+  /* Check for the presence of a version number.  */
+  version = strchr (s, ':');
+  if (version == NULL)
+    subsystem = s;
+  else
+    {
+      int len = version - s;
+      copy = xstrdup (s);
+      subsystem = copy;
+      copy[len] = '\0';
+      version = copy + 1 + len;
+      pe_major_subsystem_version = strtoul (version, &copy, 0);
+      if (*copy == '.')
+	pe_minor_subsystem_version = strtoul (copy + 1, &copy, 0);
+      if (*copy != '\0')
+	non_fatal (_("%s: bad version in PE subsystem"), s);
+    }
+
+  /* Check for numeric subsystem.  */
+  value = (short) strtol (subsystem, &copy, 0);
+  if (*copy == '\0')
+    {
+      for (i = 0; i < ARRAY_SIZE (v); i++)
+	if (v[i].value == value)
+	  {
+	    pe_subsystem = value;
+	    set_def = v[i].set_def;
+	    break;
+	  }
+    }
+  else
+    {
+      /* Search for subsystem by name.  */
+      for (i = 0; i < ARRAY_SIZE (v); i++)
+	if (strcmp (subsystem, v[i].name) == 0)
+	  {
+	    pe_subsystem = v[i].value;
+	    set_def = v[i].set_def;
+	    break;
+	  }
+    }
+
+  switch (set_def)
+    {
+    case -1:
+      fatal (_("unknown PE subsystem: %s"), s);
+      break;
+    case 0:
+      break;
+    default:
+      if (pe_file_alignment == (bfd_vma) -1)
+	pe_file_alignment = PE_DEF_FILE_ALIGNMENT;
+      if (pe_section_alignment == (bfd_vma) -1)
+	pe_section_alignment = PE_DEF_SECTION_ALIGNMENT;
+      break;
+    }
+}
+
+/* Convert EFI target to PEI target.  */
+
+static void
+convert_efi_target (char *efi)
+{
+  efi[0] = 'p';
+  efi[1] = 'e';
+  efi[2] = 'i';
+
+  if (strcmp (efi + 4, "ia32") == 0)
+    {
+      /* Change ia32 to i386.  */
+      efi[5]= '3';
+      efi[6]= '8';
+      efi[7]= '6';
+    }
+  else if (strcmp (efi + 4, "x86_64") == 0)
+    {
+      /* Change x86_64 to x86-64.  */
+      efi[7] = '-';
+    }
+}
+
 static int
 copy_main (int argc, char *argv[])
 {
-  char * binary_architecture = NULL;
   char *input_filename = NULL;
   char *output_filename = NULL;
   char *tmpname;
@@ -2905,6 +3164,7 @@ copy_main (int argc, char *argv[])
   int c;
   struct section_list *p;
   struct stat statbuf;
+  const bfd_arch_info_type *input_arch = NULL;
 
   while ((c = getopt_long (argc, argv, "b:B:i:I:j:K:N:s:O:d:F:L:G:R:SpgxXHhVvW:w",
 			   copy_options, (int *) 0)) != EOF)
@@ -2918,7 +3178,9 @@ copy_main (int argc, char *argv[])
 	  break;
 
 	case 'B':
-	  binary_architecture = optarg;
+	  input_arch = bfd_scan_arch (optarg);
+	  if (input_arch == NULL)
+	    fatal (_("architecture %s unknown"), optarg);
 	  break;
 
 	case 'i':
@@ -3062,17 +3324,17 @@ copy_main (int argc, char *argv[])
 		break;
 	      }
 
-	    pa = xmalloc (sizeof (struct section_add));
+	    pa = (struct section_add *) xmalloc (sizeof (struct section_add));
 
 	    len = s - optarg;
-	    name = xmalloc (len + 1);
+	    name = (char *) xmalloc (len + 1);
 	    strncpy (name, optarg, len);
 	    name[len] = '\0';
 	    pa->name = name;
 
 	    pa->filename = s + 1;
 	    pa->size = size;
-	    pa->contents = xmalloc (size);
+	    pa->contents = (bfd_byte *) xmalloc (size);
 
 	    f = fopen (pa->filename, FOPEN_RB);
 
@@ -3132,7 +3394,7 @@ copy_main (int argc, char *argv[])
 	      }
 
 	    len = s - optarg;
-	    name = xmalloc (len + 1);
+	    name = (char *) xmalloc (len + 1);
 	    strncpy (name, optarg, len);
 	    name[len] = '\0';
 
@@ -3230,13 +3492,13 @@ copy_main (int argc, char *argv[])
 	      fatal (_("bad format for %s"), "--redefine-sym");
 
 	    len = s - optarg;
-	    source = xmalloc (len + 1);
+	    source = (char *) xmalloc (len + 1);
 	    strncpy (source, optarg, len);
 	    source[len] = '\0';
 
 	    nextarg = s + 1;
 	    len = strlen (nextarg);
-	    target = xmalloc (len + 1);
+	    target = (char *) xmalloc (len + 1);
 	    strcpy (target, nextarg);
 
 	    redefine_list_append ("--redefine-sym", source, target);
@@ -3261,7 +3523,7 @@ copy_main (int argc, char *argv[])
 	      fatal (_("bad format for %s"), "--set-section-flags");
 
 	    len = s - optarg;
-	    name = xmalloc (len + 1);
+	    name = (char *) xmalloc (len + 1);
 	    strncpy (name, optarg, len);
 	    name[len] = '\0';
 
@@ -3288,7 +3550,7 @@ copy_main (int argc, char *argv[])
 	    if (len == 0)
 	      fatal (_("bad format for %s"), "--rename-section");
 
-	    old_name = xmalloc (len + 1);
+	    old_name = (char *) xmalloc (len + 1);
 	    strncpy (old_name, optarg, len);
 	    old_name[len] = 0;
 
@@ -3308,7 +3570,7 @@ copy_main (int argc, char *argv[])
 	    if (len == 0)
 	      fatal (_("bad format for %s"), "--rename-section");
 
-	    new_name = xmalloc (len + 1);
+	    new_name = (char *) xmalloc (len + 1);
 	    strncpy (new_name, eq, len);
 	    new_name[len] = 0;
 
@@ -3347,6 +3609,17 @@ copy_main (int argc, char *argv[])
 
 	case OPTION_LOCALIZE_SYMBOLS:
 	  add_specific_symbols (optarg, localize_specific_htab);
+	  break;
+
+	case OPTION_LONG_SECTION_NAMES:
+	  if (!strcmp ("enable", optarg))
+	    long_section_names = ENABLE;
+	  else if (!strcmp ("disable", optarg))
+	    long_section_names = DISABLE;
+	  else if (!strcmp ("keep", optarg))
+	    long_section_names = KEEP;
+	  else
+	    fatal (_("unknown long section names option '%s'"), optarg);
 	  break;
 
 	case OPTION_GLOBALIZE_SYMBOLS:
@@ -3417,6 +3690,59 @@ copy_main (int argc, char *argv[])
             break;
           }
 
+	case OPTION_FILE_ALIGNMENT:
+	  pe_file_alignment = parse_vma (optarg, "--file-alignment");
+	  break;
+	
+	case OPTION_HEAP:
+	    {
+	      char *end;
+	      pe_heap_reserve = strtoul (optarg, &end, 0);
+	      if (end == optarg
+		  || (*end != '.' && *end != '\0'))
+		non_fatal (_("%s: invalid reserve value for --heap"),
+			   optarg);
+	      else if (*end != '\0')
+		{
+		  pe_heap_commit = strtoul (end + 1, &end, 0);
+		  if (*end != '\0')
+		    non_fatal (_("%s: invalid commit value for --heap"),
+			       optarg);
+		}
+	    }
+	  break;
+	
+	case OPTION_IMAGE_BASE:
+	  pe_image_base = parse_vma (optarg, "--image-base");
+	  break;
+	
+	case OPTION_SECTION_ALIGNMENT:
+	  pe_section_alignment = parse_vma (optarg,
+					    "--section-alignment");
+	  break;
+	
+	case OPTION_SUBSYSTEM:
+	  set_pe_subsystem (optarg);
+	  break;
+	
+	case OPTION_STACK:
+	    {
+	      char *end;
+	      pe_stack_reserve = strtoul (optarg, &end, 0);
+	      if (end == optarg
+		  || (*end != '.' && *end != '\0'))
+		non_fatal (_("%s: invalid reserve value for --stack"),
+			   optarg);
+	      else if (*end != '\0')
+		{
+		  pe_stack_commit = strtoul (end + 1, &end, 0);
+		  if (*end != '\0')
+		    non_fatal (_("%s: invalid commit value for --stack"),
+			       optarg);
+		}
+	    }
+	  break;
+	
 	case 0:
 	  /* We've been given a long option.  */
 	  break;
@@ -3456,27 +3782,57 @@ copy_main (int argc, char *argv[])
   if (output_target == NULL)
     output_target = input_target;
 
-  if (binary_architecture != NULL)
+  /* Convert input EFI target to PEI target.  */
+  if (input_target != NULL
+      && strncmp (input_target, "efi-", 4) == 0)
     {
-      if (input_target && strcmp (input_target, "binary") == 0)
+      char *efi;
+
+      efi = xstrdup (output_target + 4);
+      if (strncmp (efi, "bsdrv-", 6) == 0
+	  || strncmp (efi, "rtdrv-", 6) == 0)
+	efi += 2;
+      else if (strncmp (efi, "app-", 4) != 0)
+	fatal (_("unknown input EFI target: %s"), input_target);
+
+      input_target = efi;
+      convert_efi_target (efi);
+    }
+
+  /* Convert output EFI target to PEI target.  */
+  if (output_target != NULL
+      && strncmp (output_target, "efi-", 4) == 0)
+    {
+      char *efi;
+
+      efi = xstrdup (output_target + 4);
+      if (strncmp (efi, "app-", 4) == 0)
 	{
-	  const bfd_arch_info_type * temp_arch_info;
-
-	  temp_arch_info = bfd_scan_arch (binary_architecture);
-
-	  if (temp_arch_info != NULL)
-	    {
-	      bfd_external_binary_architecture = temp_arch_info->arch;
-	      bfd_external_machine             = temp_arch_info->mach;
-	    }
-	  else
-	    fatal (_("architecture %s unknown"), binary_architecture);
+	  if (pe_subsystem == -1)
+	    pe_subsystem = IMAGE_SUBSYSTEM_EFI_APPLICATION;
+	}
+      else if (strncmp (efi, "bsdrv-", 6) == 0)
+	{
+	  if (pe_subsystem == -1)
+	    pe_subsystem = IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER;
+	  efi += 2;
+	}
+      else if (strncmp (efi, "rtdrv-", 6) == 0)
+	{
+	  if (pe_subsystem == -1)
+	    pe_subsystem = IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER;
+	  efi += 2;
 	}
       else
-	{
-	  non_fatal (_("Warning: input target 'binary' required for binary architecture parameter."));
-	  non_fatal (_(" Argument %s ignored"), binary_architecture);
-	}
+	fatal (_("unknown output EFI target: %s"), output_target);
+
+      if (pe_file_alignment == (bfd_vma) -1)
+	pe_file_alignment = PE_DEF_FILE_ALIGNMENT;
+      if (pe_section_alignment == (bfd_vma) -1)
+	pe_section_alignment = PE_DEF_SECTION_ALIGNMENT;
+
+      output_target = efi;
+      convert_efi_target (efi);
     }
 
   if (preserve_dates)
@@ -3495,13 +3851,14 @@ copy_main (int argc, char *argv[])
     fatal (_("warning: could not create temporary file whilst copying '%s', (error: %s)"),
 	   input_filename, strerror (errno));
 
-  copy_file (input_filename, tmpname, input_target, output_target);
+  copy_file (input_filename, tmpname, input_target, output_target, input_arch);
   if (status == 0)
     {
       if (preserve_dates)
 	set_times (tmpname, &statbuf);
       if (tmpname != output_filename)
-	smart_rename (tmpname, input_filename, preserve_dates);
+	status = (smart_rename (tmpname, input_filename,
+				preserve_dates) != 0);
     }
   else
     unlink_if_ordinary (tmpname);
