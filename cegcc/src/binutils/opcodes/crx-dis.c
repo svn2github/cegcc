@@ -1,5 +1,5 @@
 /* Disassembler code for CRX.
-   Copyright 2004, 2005, 2007 Free Software Foundation, Inc.
+   Copyright 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
    Contributed by Tomer Levi, NSC, Israel.
    Written by Tomer Levi.
 
@@ -355,7 +355,7 @@ match_opcode (void)
   unsigned long mask;
 
   /* The instruction 'constant' opcode doewsn't exceed 32 bits.  */
-  unsigned long doubleWord = words[1] + (words[0] << 16);
+  unsigned long doubleWord = (words[1] + (words[0] << 16)) & 0xffffffff;
 
   /* Start searching from end of instruction table.  */
   instruction = &crx_instruction[NUMOPCODES - 2];

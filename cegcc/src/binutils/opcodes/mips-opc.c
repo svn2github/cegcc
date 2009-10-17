@@ -1,6 +1,6 @@
 /* mips-opc.c -- MIPS opcode list.
    Copyright 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002
-   2003, 2004, 2005, 2007, 2008, 2009  Free Software Foundation, Inc.
+   2003, 2004, 2005, 2006, 2007, 2008, 2009  Free Software Foundation, Inc.
    Contributed by Ralph Campbell and OSF
    Commented and modified by Ian Lance Taylor, Cygnus Support
    Extended for MIPS32 support by Anders Norlander, and by SiByte, Inc.
@@ -1506,12 +1506,12 @@ const struct mips_opcode mips_builtin_opcodes[] =
 {"bc2tl",   "N,p",	0x49030000, 0xffe30000,	CBL|RD_CC,		0,		I32	},
 {"cfc2",    "t,G",	0x48400000, 0xffe007ff,	LCD|WR_t|RD_C2,		0,		I1	},
 {"ctc2",    "t,G",	0x48c00000, 0xffe007ff,	COD|RD_t|WR_CC,		0,		I1	},
+{"dmfc2",   "t,i",	0x48200000, 0xffe00000,	LCD|WR_t|RD_C2,		0,		IOCT	},
 {"dmfc2",   "t,G",	0x48200000, 0xffe007ff,	LCD|WR_t|RD_C2,		0,		I3	},
 {"dmfc2",   "t,G,H",	0x48200000, 0xffe007f8,	LCD|WR_t|RD_C2,		0,		I64	},
-{"dmfc2",   "t,i",	0x48200000, 0xffe00000,	LCD|WR_t|RD_C2,		0,		IOCT	},
+{"dmtc2",   "t,i",	0x48a00000, 0xffe00000,	COD|RD_t|WR_C2|WR_CC,	0,		IOCT	},
 {"dmtc2",   "t,G",	0x48a00000, 0xffe007ff,	COD|RD_t|WR_C2|WR_CC,	0,		I3	},
 {"dmtc2",   "t,G,H",	0x48a00000, 0xffe007f8,	COD|RD_t|WR_C2|WR_CC,	0,		I64	},
-{"dmtc2",   "t,i",	0x48a00000, 0xffe00000,	COD|RD_t|WR_C2|WR_CC,	0,		IOCT	},
 {"mfc2",    "t,G",	0x48000000, 0xffe007ff,	LCD|WR_t|RD_C2,		0,		I1	},
 {"mfc2",    "t,G,H",	0x48000000, 0xffe007f8,	LCD|WR_t|RD_C2,		0,		I32	},
 {"mfhc2",   "t,G",	0x48600000, 0xffe007ff,	LCD|WR_t|RD_C2,		0,		I33	},

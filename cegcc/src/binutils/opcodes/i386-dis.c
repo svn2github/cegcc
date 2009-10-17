@@ -55,8 +55,8 @@ static void append_seg (void);
 static void OP_indirE (int, int);
 static void print_operand_value (char *, int, bfd_vma);
 static void OP_E_register (int, int);
-static void OP_E_memory (int, int, int);
-static void OP_E_extended (int, int, int);
+static void OP_E_memory (int, int);
+static void OP_E_extended (int, int);
 static void print_displacement (char *, bfd_vma);
 static void OP_E (int, int);
 static void OP_G (int, int);
@@ -93,10 +93,14 @@ static void OP_MS (int, int);
 static void OP_XS (int, int);
 static void OP_M (int, int);
 static void OP_VEX (int, int);
+static void OP_VEX_FMA (int, int);
 static void OP_EX_Vex (int, int);
+static void OP_EX_VexW (int, int);
 static void OP_XMM_Vex (int, int);
+static void OP_XMM_VexW (int, int);
 static void OP_REG_VexI4 (int, int);
 static void PCLMUL_Fixup (int, int);
+static void VEXI4_Fixup (int, int);
 static void VZERO_Fixup (int, int);
 static void VCMP_Fixup (int, int);
 static void OP_0f07 (int, int);
@@ -111,11 +115,7 @@ static void REP_Fixup (int, int);
 static void CMPXCHG8B_Fixup (int, int);
 static void XMM_Fixup (int, int);
 static void CRC32_Fixup (int, int);
-static void print_drex_arg (unsigned int, int, int);
-static void OP_DREX4 (int, int);
-static void OP_DREX3 (int, int);
-static void OP_DREX_ICMP (int, int);
-static void OP_DREX_FCMP (int, int);
+
 static void MOVBE_Fixup (int, int);
 
 struct dis_private {
@@ -162,20 +162,6 @@ static int rex_ignored;
     else						\
       rex_used |= REX_OPCODE;				\
   }
-
-/* Special 'registers' for DREX handling */
-#define DREX_REG_UNKNOWN	1000	/* not initialized */
-#define DREX_REG_MEMORY         1001	/* use MODRM/SIB/OFFSET memory */
-
-/* The DREX byte has the following fields:
-   Bits 7-4 -- DREX.Dest, xmm destination register
-   Bit 3    -- DREX.OC0, operand config bit defines operand order
-   Bit 2    -- DREX.R, equivalent to REX_R bit, to extend ModRM register
-   Bit 1    -- DREX.X, equivalent to REX_X bit, to extend SIB index field
-   Bit 0    -- DREX.W, equivalent to REX_B bit, to extend ModRM r/m field,
-	       SIB base field, or opcode reg field.  */
-#define DREX_XMM(drex) ((drex >> 4) & 0xf)
-#define DREX_OC0(drex) ((drex >> 3) & 0x1)
 
 /* Flags for prefixes which we somehow handled when printing the
    current instruction.  */
@@ -376,11 +362,18 @@ fetch_data (struct disassemble_info *info, bfd_byte *addr)
 #define Vex { OP_VEX, vex_mode }
 #define Vex128 { OP_VEX, vex128_mode }
 #define Vex256 { OP_VEX, vex256_mode }
+#define VexI4 { VEXI4_Fixup, 0}
+#define VexFMA { OP_VEX_FMA, vex_mode }
+#define Vex128FMA { OP_VEX_FMA, vex128_mode }
 #define EXdVex { OP_EX_Vex, d_mode }
 #define EXdVexS { OP_EX_Vex, d_swap_mode }
 #define EXqVex { OP_EX_Vex, q_mode }
 #define EXqVexS { OP_EX_Vex, q_swap_mode }
+#define EXVexW { OP_EX_VexW, x_mode }
+#define EXdVexW { OP_EX_VexW, d_mode }
+#define EXqVexW { OP_EX_VexW, q_mode }
 #define XMVex { OP_XMM_Vex, 0 }
+#define XMVexW { OP_XMM_VexW, 0 }
 #define XMVexI4 { OP_REG_VexI4, x_mode }
 #define PCLMUL { PCLMUL_Fixup, 0 }
 #define VZERO { VZERO_Fixup, 0 }
@@ -404,136 +397,130 @@ fetch_data (struct disassemble_info *info, bfd_byte *addr)
 #define AFLAG 2
 #define DFLAG 1
 
-/* byte operand */
-#define b_mode			1
-/* byte operand with operand swapped */
-#define b_swap_mode		(b_mode + 1)
-/* operand size depends on prefixes */
-#define v_mode			(b_swap_mode + 1)
-/* operand size depends on prefixes with operand swapped */
-#define v_swap_mode		(v_mode + 1)
-/* word operand */
-#define w_mode			(v_swap_mode + 1)
-/* double word operand  */
-#define d_mode			(w_mode + 1)
-/* double word operand with operand swapped */
-#define d_swap_mode		(d_mode + 1)
-/* quad word operand */
-#define q_mode			(d_swap_mode + 1)
-/* quad word operand with operand swapped */
-#define q_swap_mode		(q_mode + 1)
-/* ten-byte operand */
-#define t_mode			(q_swap_mode + 1)
-/* 16-byte XMM or 32-byte YMM operand */
-#define x_mode			(t_mode + 1)
-/* 16-byte XMM or 32-byte YMM operand with operand swapped */
-#define x_swap_mode		(x_mode + 1)
-/* 16-byte XMM operand */
-#define xmm_mode		(x_swap_mode + 1)
-/* 16-byte XMM or quad word operand */
-#define xmmq_mode		(xmm_mode + 1)
-/* 32-byte YMM or quad word operand */
-#define ymmq_mode		(xmmq_mode + 1)
-/* d_mode in 32bit, q_mode in 64bit mode.  */
-#define m_mode			(ymmq_mode + 1)
-/* pair of v_mode operands */
-#define a_mode			(m_mode + 1)
-#define cond_jump_mode		(a_mode + 1)
-#define loop_jcxz_mode		(cond_jump_mode + 1)
-/* operand size depends on REX prefixes.  */
-#define dq_mode			(loop_jcxz_mode + 1)
-/* registers like dq_mode, memory like w_mode.  */
-#define dqw_mode		(dq_mode + 1)
-/* 4- or 6-byte pointer operand */
-#define f_mode			(dqw_mode + 1)
-#define const_1_mode		(f_mode + 1)
-/* v_mode for stack-related opcodes.  */
-#define stack_v_mode		(const_1_mode + 1)
-/* non-quad operand size depends on prefixes */
-#define z_mode			(stack_v_mode + 1)
-/* 16-byte operand */
-#define o_mode			(z_mode + 1)
-/* registers like dq_mode, memory like b_mode.  */
-#define dqb_mode		(o_mode + 1)
-/* registers like dq_mode, memory like d_mode.  */
-#define dqd_mode		(dqb_mode + 1)
-/* normal vex mode */
-#define vex_mode		(dqd_mode + 1)
-/* 128bit vex mode */
-#define vex128_mode		(vex_mode + 1)
-/* 256bit vex mode */
-#define vex256_mode		(vex128_mode + 1)
-/* operand size depends on the VEX.W bit.  */
-#define vex_w_dq_mode		(vex256_mode + 1)
+enum
+{
+  /* byte operand */
+  b_mode = 1,
+  /* byte operand with operand swapped */
+  b_swap_mode,
+  /* operand size depends on prefixes */
+  v_mode,
+  /* operand size depends on prefixes with operand swapped */
+  v_swap_mode,
+  /* word operand */
+  w_mode,
+  /* double word operand  */
+  d_mode,
+  /* double word operand with operand swapped */
+  d_swap_mode,
+  /* quad word operand */
+  q_mode,
+  /* quad word operand with operand swapped */
+  q_swap_mode,
+  /* ten-byte operand */
+  t_mode,
+  /* 16-byte XMM or 32-byte YMM operand */
+  x_mode,
+  /* 16-byte XMM or 32-byte YMM operand with operand swapped */
+  x_swap_mode,
+  /* 16-byte XMM operand */
+  xmm_mode,
+  /* 16-byte XMM or quad word operand */
+  xmmq_mode,
+  /* 32-byte YMM or quad word operand */
+  ymmq_mode,
+  /* d_mode in 32bit, q_mode in 64bit mode.  */
+  m_mode,
+  /* pair of v_mode operands */
+  a_mode,
+  cond_jump_mode,
+  loop_jcxz_mode,
+  /* operand size depends on REX prefixes.  */
+  dq_mode,
+  /* registers like dq_mode, memory like w_mode.  */
+  dqw_mode,
+  /* 4- or 6-byte pointer operand */
+  f_mode,
+  const_1_mode,
+  /* v_mode for stack-related opcodes.  */
+  stack_v_mode,
+  /* non-quad operand size depends on prefixes */
+  z_mode,
+  /* 16-byte operand */
+  o_mode,
+  /* registers like dq_mode, memory like b_mode.  */
+  dqb_mode,
+  /* registers like dq_mode, memory like d_mode.  */
+  dqd_mode,
+  /* normal vex mode */
+  vex_mode,
+  /* 128bit vex mode */
+  vex128_mode,
+  /* 256bit vex mode */
+  vex256_mode,
+  /* operand size depends on the VEX.W bit.  */
+  vex_w_dq_mode,
 
-#define es_reg			(vex_w_dq_mode + 1)
-#define cs_reg			(es_reg + 1)
-#define ss_reg			(cs_reg + 1)
-#define ds_reg			(ss_reg + 1)
-#define fs_reg			(ds_reg + 1)
-#define gs_reg			(fs_reg + 1)
+  es_reg,
+  cs_reg,
+  ss_reg,
+  ds_reg,
+  fs_reg,
+  gs_reg,
 
-#define eAX_reg			(gs_reg + 1)
-#define eCX_reg			(eAX_reg + 1)
-#define eDX_reg			(eCX_reg + 1)
-#define eBX_reg			(eDX_reg + 1)
-#define eSP_reg			(eBX_reg + 1)
-#define eBP_reg			(eSP_reg + 1)
-#define eSI_reg			(eBP_reg + 1)
-#define eDI_reg			(eSI_reg + 1)
+  eAX_reg,
+  eCX_reg,
+  eDX_reg,
+  eBX_reg,
+  eSP_reg,
+  eBP_reg,
+  eSI_reg,
+  eDI_reg,
 
-#define al_reg			(eDI_reg + 1)
-#define cl_reg			(al_reg + 1)
-#define dl_reg			(cl_reg + 1)
-#define bl_reg			(dl_reg + 1)
-#define ah_reg			(bl_reg + 1)
-#define ch_reg			(ah_reg + 1)
-#define dh_reg			(ch_reg + 1)
-#define bh_reg			(dh_reg + 1)
+  al_reg,
+  cl_reg,
+  dl_reg,
+  bl_reg,
+  ah_reg,
+  ch_reg,
+  dh_reg,
+  bh_reg,
 
-#define ax_reg			(bh_reg + 1)
-#define cx_reg			(ax_reg + 1)
-#define dx_reg			(cx_reg + 1)
-#define bx_reg			(dx_reg + 1)
-#define sp_reg			(bx_reg + 1)
-#define bp_reg			(sp_reg + 1)
-#define si_reg			(bp_reg + 1)
-#define di_reg			(si_reg + 1)
+  ax_reg,
+  cx_reg,
+  dx_reg,
+  bx_reg,
+  sp_reg,
+  bp_reg,
+  si_reg,
+  di_reg,
 
-#define rAX_reg			(di_reg + 1)
-#define rCX_reg			(rAX_reg + 1)
-#define rDX_reg			(rCX_reg + 1)
-#define rBX_reg			(rDX_reg + 1)
-#define rSP_reg			(rBX_reg + 1)
-#define rBP_reg			(rSP_reg + 1)
-#define rSI_reg			(rBP_reg + 1)
-#define rDI_reg			(rSI_reg + 1)
+  rAX_reg,
+  rCX_reg,
+  rDX_reg,
+  rBX_reg,
+  rSP_reg,
+  rBP_reg,
+  rSI_reg,
+  rDI_reg,
 
-#define z_mode_ax_reg		(rDI_reg + 1)
-#define indir_dx_reg		(z_mode_ax_reg + 1)
+  z_mode_ax_reg,
+  indir_dx_reg
+};
 
-#define MAX_BYTEMODE	indir_dx_reg
-
-/* Flags that are OR'ed into the bytemode field to pass extra
-   information.  */
-#define DREX_OC1		0x10000	/* OC1 bit set */
-#define DREX_NO_OC0		0x20000	/* OC0 bit not used */
-#define DREX_MASK		0x40000	/* mask to delete */
-
-#if MAX_BYTEMODE >= DREX_OC1
-#error MAX_BYTEMODE must be less than DREX_OC1
-#endif
-
-#define FLOATCODE		1
-#define USE_REG_TABLE		(FLOATCODE + 1)
-#define USE_MOD_TABLE		(USE_REG_TABLE + 1)
-#define USE_RM_TABLE		(USE_MOD_TABLE + 1)
-#define USE_PREFIX_TABLE	(USE_RM_TABLE + 1)
-#define USE_X86_64_TABLE	(USE_PREFIX_TABLE + 1)
-#define USE_3BYTE_TABLE		(USE_X86_64_TABLE + 1)
-#define USE_VEX_C4_TABLE	(USE_3BYTE_TABLE + 1)
-#define USE_VEX_C5_TABLE	(USE_VEX_C4_TABLE + 1)
-#define USE_VEX_LEN_TABLE	(USE_VEX_C5_TABLE + 1)
+enum
+{
+  FLOATCODE = 1,
+  USE_REG_TABLE,
+  USE_MOD_TABLE,
+  USE_RM_TABLE,
+  USE_PREFIX_TABLE,
+  USE_X86_64_TABLE,
+  USE_3BYTE_TABLE,
+  USE_VEX_C4_TABLE,
+  USE_VEX_C5_TABLE,
+  USE_VEX_LEN_TABLE
+};
 
 #define FLOAT			NULL, { { NULL, FLOATCODE } }
 
@@ -548,705 +535,754 @@ fetch_data (struct disassemble_info *info, bfd_byte *addr)
 #define VEX_C5_TABLE(I)		DIS386 (USE_VEX_C5_TABLE, (I))
 #define VEX_LEN_TABLE(I)	DIS386 (USE_VEX_LEN_TABLE, (I))
 
-#define REG_80			0
-#define REG_81			(REG_80 + 1)
-#define REG_82			(REG_81 + 1)
-#define REG_8F			(REG_82 + 1)
-#define REG_C0			(REG_8F + 1)
-#define REG_C1			(REG_C0 + 1)
-#define REG_C6			(REG_C1 + 1)
-#define REG_C7			(REG_C6 + 1)
-#define REG_D0			(REG_C7 + 1)
-#define REG_D1			(REG_D0 + 1)
-#define REG_D2			(REG_D1 + 1)
-#define REG_D3			(REG_D2 + 1)
-#define REG_F6			(REG_D3 + 1)
-#define REG_F7			(REG_F6 + 1)
-#define REG_FE			(REG_F7 + 1)
-#define REG_FF			(REG_FE + 1)
-#define REG_0F00		(REG_FF + 1)
-#define REG_0F01		(REG_0F00 + 1)
-#define REG_0F0D		(REG_0F01 + 1)
-#define REG_0F18		(REG_0F0D + 1)
-#define REG_0F71		(REG_0F18 + 1)
-#define REG_0F72		(REG_0F71 + 1)
-#define REG_0F73		(REG_0F72 + 1)
-#define REG_0FA6		(REG_0F73 + 1)
-#define REG_0FA7		(REG_0FA6 + 1)
-#define REG_0FAE		(REG_0FA7 + 1)
-#define REG_0FBA		(REG_0FAE + 1)
-#define REG_0FC7		(REG_0FBA + 1)
-#define REG_VEX_71		(REG_0FC7 + 1)
-#define REG_VEX_72		(REG_VEX_71 + 1)
-#define REG_VEX_73		(REG_VEX_72 + 1)
-#define REG_VEX_AE		(REG_VEX_73 + 1)
+enum
+{
+  REG_80 = 0,
+  REG_81,
+  REG_82,
+  REG_8F,
+  REG_C0,
+  REG_C1,
+  REG_C6,
+  REG_C7,
+  REG_D0,
+  REG_D1,
+  REG_D2,
+  REG_D3,
+  REG_F6,
+  REG_F7,
+  REG_FE,
+  REG_FF,
+  REG_0F00,
+  REG_0F01,
+  REG_0F0D,
+  REG_0F18,
+  REG_0F71,
+  REG_0F72,
+  REG_0F73,
+  REG_0FA6,
+  REG_0FA7,
+  REG_0FAE,
+  REG_0FBA,
+  REG_0FC7,
+  REG_VEX_71,
+  REG_VEX_72,
+  REG_VEX_73,
+  REG_VEX_AE
+};
 
-#define MOD_8D			0
-#define MOD_0F01_REG_0		(MOD_8D + 1)
-#define MOD_0F01_REG_1		(MOD_0F01_REG_0 + 1)
-#define MOD_0F01_REG_2		(MOD_0F01_REG_1 + 1)
-#define MOD_0F01_REG_3		(MOD_0F01_REG_2 + 1)
-#define MOD_0F01_REG_7		(MOD_0F01_REG_3 + 1)
-#define MOD_0F12_PREFIX_0	(MOD_0F01_REG_7 + 1)
-#define MOD_0F13		(MOD_0F12_PREFIX_0 + 1)
-#define MOD_0F16_PREFIX_0	(MOD_0F13 + 1)
-#define MOD_0F17		(MOD_0F16_PREFIX_0 + 1)
-#define MOD_0F18_REG_0		(MOD_0F17 + 1)
-#define MOD_0F18_REG_1		(MOD_0F18_REG_0 + 1)
-#define MOD_0F18_REG_2		(MOD_0F18_REG_1 + 1)
-#define MOD_0F18_REG_3		(MOD_0F18_REG_2 + 1)
-#define MOD_0F20		(MOD_0F18_REG_3 + 1)
-#define MOD_0F21		(MOD_0F20 + 1)
-#define MOD_0F22		(MOD_0F21 + 1)
-#define MOD_0F23		(MOD_0F22 + 1)
-#define MOD_0F24		(MOD_0F23 + 1)
-#define MOD_0F26		(MOD_0F24 + 1)
-#define MOD_0F2B_PREFIX_0	(MOD_0F26 + 1)
-#define MOD_0F2B_PREFIX_1	(MOD_0F2B_PREFIX_0 + 1)
-#define MOD_0F2B_PREFIX_2	(MOD_0F2B_PREFIX_1 + 1)
-#define MOD_0F2B_PREFIX_3	(MOD_0F2B_PREFIX_2 + 1)
-#define MOD_0F51		(MOD_0F2B_PREFIX_3 + 1)
-#define MOD_0F71_REG_2		(MOD_0F51 + 1)
-#define MOD_0F71_REG_4		(MOD_0F71_REG_2 + 1)
-#define MOD_0F71_REG_6		(MOD_0F71_REG_4 + 1)
-#define MOD_0F72_REG_2		(MOD_0F71_REG_6 + 1)
-#define MOD_0F72_REG_4		(MOD_0F72_REG_2 + 1)
-#define MOD_0F72_REG_6		(MOD_0F72_REG_4 + 1)
-#define MOD_0F73_REG_2		(MOD_0F72_REG_6 + 1)
-#define MOD_0F73_REG_3		(MOD_0F73_REG_2 + 1)
-#define MOD_0F73_REG_6		(MOD_0F73_REG_3 + 1)
-#define MOD_0F73_REG_7		(MOD_0F73_REG_6 + 1)
-#define MOD_0FAE_REG_0		(MOD_0F73_REG_7 + 1)
-#define MOD_0FAE_REG_1		(MOD_0FAE_REG_0 + 1)
-#define MOD_0FAE_REG_2		(MOD_0FAE_REG_1 + 1)
-#define MOD_0FAE_REG_3		(MOD_0FAE_REG_2 + 1)
-#define MOD_0FAE_REG_4		(MOD_0FAE_REG_3 + 1)
-#define MOD_0FAE_REG_5		(MOD_0FAE_REG_4 + 1)
-#define MOD_0FAE_REG_6		(MOD_0FAE_REG_5 + 1)
-#define MOD_0FAE_REG_7		(MOD_0FAE_REG_6 + 1)
-#define MOD_0FB2		(MOD_0FAE_REG_7 + 1)
-#define MOD_0FB4		(MOD_0FB2 + 1)
-#define MOD_0FB5		(MOD_0FB4 + 1)
-#define MOD_0FC7_REG_6		(MOD_0FB5 + 1)
-#define MOD_0FC7_REG_7		(MOD_0FC7_REG_6 + 1)
-#define MOD_0FD7		(MOD_0FC7_REG_7 + 1)
-#define MOD_0FE7_PREFIX_2	(MOD_0FD7 + 1)
-#define MOD_0FF0_PREFIX_3	(MOD_0FE7_PREFIX_2 + 1)
-#define MOD_0F382A_PREFIX_2	(MOD_0FF0_PREFIX_3 + 1)
-#define MOD_62_32BIT		(MOD_0F382A_PREFIX_2 + 1)
-#define MOD_C4_32BIT		(MOD_62_32BIT + 1)
-#define MOD_C5_32BIT		(MOD_C4_32BIT + 1)
-#define MOD_VEX_12_PREFIX_0	(MOD_C5_32BIT + 1)
-#define MOD_VEX_13		(MOD_VEX_12_PREFIX_0 + 1)
-#define MOD_VEX_16_PREFIX_0	(MOD_VEX_13 + 1)
-#define MOD_VEX_17		(MOD_VEX_16_PREFIX_0 + 1)
-#define MOD_VEX_2B		(MOD_VEX_17 + 1)
-#define MOD_VEX_51		(MOD_VEX_2B + 1)
-#define MOD_VEX_71_REG_2	(MOD_VEX_51 + 1)
-#define MOD_VEX_71_REG_4	(MOD_VEX_71_REG_2 + 1)
-#define MOD_VEX_71_REG_6	(MOD_VEX_71_REG_4 + 1)
-#define MOD_VEX_72_REG_2	(MOD_VEX_71_REG_6 + 1)
-#define MOD_VEX_72_REG_4	(MOD_VEX_72_REG_2 + 1)
-#define MOD_VEX_72_REG_6	(MOD_VEX_72_REG_4 + 1)
-#define MOD_VEX_73_REG_2	(MOD_VEX_72_REG_6 + 1)
-#define MOD_VEX_73_REG_3	(MOD_VEX_73_REG_2 + 1)
-#define MOD_VEX_73_REG_6	(MOD_VEX_73_REG_3 + 1)
-#define MOD_VEX_73_REG_7	(MOD_VEX_73_REG_6 + 1)
-#define MOD_VEX_AE_REG_2	(MOD_VEX_73_REG_7 + 1)
-#define MOD_VEX_AE_REG_3	(MOD_VEX_AE_REG_2 + 1)
-#define MOD_VEX_D7_PREFIX_2	(MOD_VEX_AE_REG_3 + 1)
-#define MOD_VEX_E7_PREFIX_2	(MOD_VEX_D7_PREFIX_2 + 1)
-#define MOD_VEX_F0_PREFIX_3	(MOD_VEX_E7_PREFIX_2 + 1)
-#define MOD_VEX_3818_PREFIX_2	(MOD_VEX_F0_PREFIX_3 + 1)
-#define MOD_VEX_3819_PREFIX_2	(MOD_VEX_3818_PREFIX_2 + 1)
-#define MOD_VEX_381A_PREFIX_2	(MOD_VEX_3819_PREFIX_2 + 1)
-#define MOD_VEX_382A_PREFIX_2	(MOD_VEX_381A_PREFIX_2 + 1)
-#define MOD_VEX_382C_PREFIX_2	(MOD_VEX_382A_PREFIX_2 + 1)
-#define MOD_VEX_382D_PREFIX_2	(MOD_VEX_382C_PREFIX_2 + 1)
-#define MOD_VEX_382E_PREFIX_2	(MOD_VEX_382D_PREFIX_2 + 1)
-#define MOD_VEX_382F_PREFIX_2	(MOD_VEX_382E_PREFIX_2 + 1)
+enum
+{
+  MOD_8D = 0,
+  MOD_0F01_REG_0,
+  MOD_0F01_REG_1,
+  MOD_0F01_REG_2,
+  MOD_0F01_REG_3,
+  MOD_0F01_REG_7,
+  MOD_0F12_PREFIX_0,
+  MOD_0F13,
+  MOD_0F16_PREFIX_0,
+  MOD_0F17,
+  MOD_0F18_REG_0,
+  MOD_0F18_REG_1,
+  MOD_0F18_REG_2,
+  MOD_0F18_REG_3,
+  MOD_0F20,
+  MOD_0F21,
+  MOD_0F22,
+  MOD_0F23,
+  MOD_0F24,
+  MOD_0F26,
+  MOD_0F2B_PREFIX_0,
+  MOD_0F2B_PREFIX_1,
+  MOD_0F2B_PREFIX_2,
+  MOD_0F2B_PREFIX_3,
+  MOD_0F51,
+  MOD_0F71_REG_2,
+  MOD_0F71_REG_4,
+  MOD_0F71_REG_6,
+  MOD_0F72_REG_2,
+  MOD_0F72_REG_4,
+  MOD_0F72_REG_6,
+  MOD_0F73_REG_2,
+  MOD_0F73_REG_3,
+  MOD_0F73_REG_6,
+  MOD_0F73_REG_7,
+  MOD_0FAE_REG_0,
+  MOD_0FAE_REG_1,
+  MOD_0FAE_REG_2,
+  MOD_0FAE_REG_3,
+  MOD_0FAE_REG_4,
+  MOD_0FAE_REG_5,
+  MOD_0FAE_REG_6,
+  MOD_0FAE_REG_7,
+  MOD_0FB2,
+  MOD_0FB4,
+  MOD_0FB5,
+  MOD_0FC7_REG_6,
+  MOD_0FC7_REG_7,
+  MOD_0FD7,
+  MOD_0FE7_PREFIX_2,
+  MOD_0FF0_PREFIX_3,
+  MOD_0F382A_PREFIX_2,
+  MOD_62_32BIT,
+  MOD_C4_32BIT,
+  MOD_C5_32BIT,
+  MOD_VEX_12_PREFIX_0,
+  MOD_VEX_13,
+  MOD_VEX_16_PREFIX_0,
+  MOD_VEX_17,
+  MOD_VEX_2B,
+  MOD_VEX_51,
+  MOD_VEX_71_REG_2,
+  MOD_VEX_71_REG_4,
+  MOD_VEX_71_REG_6,
+  MOD_VEX_72_REG_2,
+  MOD_VEX_72_REG_4,
+  MOD_VEX_72_REG_6,
+  MOD_VEX_73_REG_2,
+  MOD_VEX_73_REG_3,
+  MOD_VEX_73_REG_6,
+  MOD_VEX_73_REG_7,
+  MOD_VEX_AE_REG_2,
+  MOD_VEX_AE_REG_3,
+  MOD_VEX_D7_PREFIX_2,
+  MOD_VEX_E7_PREFIX_2,
+  MOD_VEX_F0_PREFIX_3,
+  MOD_VEX_3818_PREFIX_2,
+  MOD_VEX_3819_PREFIX_2,
+  MOD_VEX_381A_PREFIX_2,
+  MOD_VEX_382A_PREFIX_2,
+  MOD_VEX_382C_PREFIX_2,
+  MOD_VEX_382D_PREFIX_2,
+  MOD_VEX_382E_PREFIX_2,
+  MOD_VEX_382F_PREFIX_2
+};
 
-#define RM_0F01_REG_0		0
-#define RM_0F01_REG_1		(RM_0F01_REG_0 + 1)
-#define RM_0F01_REG_2		(RM_0F01_REG_1 + 1)
-#define RM_0F01_REG_3		(RM_0F01_REG_2 + 1)
-#define RM_0F01_REG_7		(RM_0F01_REG_3 + 1)
-#define RM_0FAE_REG_5		(RM_0F01_REG_7 + 1)
-#define RM_0FAE_REG_6		(RM_0FAE_REG_5 + 1)
-#define RM_0FAE_REG_7		(RM_0FAE_REG_6 + 1)
+enum
+{
+  RM_0F01_REG_0 = 0,
+  RM_0F01_REG_1,
+  RM_0F01_REG_2,
+  RM_0F01_REG_3,
+  RM_0F01_REG_7,
+  RM_0FAE_REG_5,
+  RM_0FAE_REG_6,
+  RM_0FAE_REG_7
+};
 
-#define PREFIX_90		0
-#define PREFIX_0F10		(PREFIX_90 + 1)
-#define PREFIX_0F11		(PREFIX_0F10 + 1)
-#define PREFIX_0F12		(PREFIX_0F11 + 1)
-#define PREFIX_0F16		(PREFIX_0F12 + 1)
-#define PREFIX_0F2A		(PREFIX_0F16 + 1)
-#define PREFIX_0F2B		(PREFIX_0F2A + 1)
-#define PREFIX_0F2C		(PREFIX_0F2B + 1)
-#define PREFIX_0F2D		(PREFIX_0F2C + 1)
-#define PREFIX_0F2E		(PREFIX_0F2D + 1)
-#define PREFIX_0F2F		(PREFIX_0F2E + 1)
-#define PREFIX_0F51		(PREFIX_0F2F + 1)
-#define PREFIX_0F52		(PREFIX_0F51 + 1)
-#define PREFIX_0F53		(PREFIX_0F52 + 1)
-#define PREFIX_0F58		(PREFIX_0F53 + 1)
-#define PREFIX_0F59		(PREFIX_0F58 + 1)
-#define PREFIX_0F5A		(PREFIX_0F59 + 1)
-#define PREFIX_0F5B		(PREFIX_0F5A + 1)
-#define PREFIX_0F5C		(PREFIX_0F5B + 1)
-#define PREFIX_0F5D		(PREFIX_0F5C + 1)
-#define PREFIX_0F5E		(PREFIX_0F5D + 1)
-#define PREFIX_0F5F		(PREFIX_0F5E + 1)
-#define PREFIX_0F60		(PREFIX_0F5F + 1)
-#define PREFIX_0F61		(PREFIX_0F60 + 1)
-#define PREFIX_0F62		(PREFIX_0F61 + 1)
-#define PREFIX_0F6C		(PREFIX_0F62 + 1)
-#define PREFIX_0F6D		(PREFIX_0F6C + 1)
-#define PREFIX_0F6F		(PREFIX_0F6D + 1)
-#define PREFIX_0F70		(PREFIX_0F6F + 1)
-#define PREFIX_0F73_REG_3	(PREFIX_0F70 + 1)
-#define PREFIX_0F73_REG_7	(PREFIX_0F73_REG_3 + 1)
-#define PREFIX_0F78		(PREFIX_0F73_REG_7 + 1)
-#define PREFIX_0F79		(PREFIX_0F78 + 1)
-#define PREFIX_0F7C		(PREFIX_0F79 + 1)
-#define PREFIX_0F7D		(PREFIX_0F7C + 1)
-#define PREFIX_0F7E		(PREFIX_0F7D + 1)
-#define PREFIX_0F7F		(PREFIX_0F7E + 1)
-#define PREFIX_0FB8		(PREFIX_0F7F + 1)
-#define PREFIX_0FBD		(PREFIX_0FB8 + 1)
-#define PREFIX_0FC2		(PREFIX_0FBD + 1)
-#define PREFIX_0FC3		(PREFIX_0FC2 + 1)
-#define PREFIX_0FC7_REG_6	(PREFIX_0FC3 + 1)
-#define PREFIX_0FD0		(PREFIX_0FC7_REG_6 + 1)
-#define PREFIX_0FD6		(PREFIX_0FD0 + 1)
-#define PREFIX_0FE6		(PREFIX_0FD6 + 1)
-#define PREFIX_0FE7		(PREFIX_0FE6 + 1)
-#define PREFIX_0FF0		(PREFIX_0FE7 + 1)
-#define PREFIX_0FF7		(PREFIX_0FF0 + 1)
-#define PREFIX_0F3810		(PREFIX_0FF7 + 1)
-#define PREFIX_0F3814		(PREFIX_0F3810 + 1)
-#define PREFIX_0F3815		(PREFIX_0F3814 + 1)
-#define PREFIX_0F3817		(PREFIX_0F3815 + 1)
-#define PREFIX_0F3820		(PREFIX_0F3817 + 1)
-#define PREFIX_0F3821		(PREFIX_0F3820 + 1)
-#define PREFIX_0F3822		(PREFIX_0F3821 + 1)
-#define PREFIX_0F3823		(PREFIX_0F3822 + 1)
-#define PREFIX_0F3824		(PREFIX_0F3823 + 1)
-#define PREFIX_0F3825		(PREFIX_0F3824 + 1)
-#define PREFIX_0F3828		(PREFIX_0F3825 + 1)
-#define PREFIX_0F3829		(PREFIX_0F3828 + 1)
-#define PREFIX_0F382A		(PREFIX_0F3829 + 1)
-#define PREFIX_0F382B		(PREFIX_0F382A + 1)
-#define PREFIX_0F3830		(PREFIX_0F382B + 1)
-#define PREFIX_0F3831		(PREFIX_0F3830 + 1)
-#define PREFIX_0F3832		(PREFIX_0F3831 + 1)
-#define PREFIX_0F3833		(PREFIX_0F3832 + 1)
-#define PREFIX_0F3834		(PREFIX_0F3833 + 1)
-#define PREFIX_0F3835		(PREFIX_0F3834 + 1)
-#define PREFIX_0F3837		(PREFIX_0F3835 + 1)
-#define PREFIX_0F3838		(PREFIX_0F3837 + 1)
-#define PREFIX_0F3839		(PREFIX_0F3838 + 1)
-#define PREFIX_0F383A		(PREFIX_0F3839 + 1)
-#define PREFIX_0F383B		(PREFIX_0F383A + 1)
-#define PREFIX_0F383C		(PREFIX_0F383B + 1)
-#define PREFIX_0F383D		(PREFIX_0F383C + 1)
-#define PREFIX_0F383E		(PREFIX_0F383D + 1)
-#define PREFIX_0F383F		(PREFIX_0F383E + 1)
-#define PREFIX_0F3840		(PREFIX_0F383F + 1)
-#define PREFIX_0F3841		(PREFIX_0F3840 + 1)
-#define PREFIX_0F3880		(PREFIX_0F3841 + 1)
-#define PREFIX_0F3881		(PREFIX_0F3880 + 1)
-#define PREFIX_0F38DB		(PREFIX_0F3881 + 1)
-#define PREFIX_0F38DC		(PREFIX_0F38DB + 1)
-#define PREFIX_0F38DD		(PREFIX_0F38DC + 1)
-#define PREFIX_0F38DE		(PREFIX_0F38DD + 1)
-#define PREFIX_0F38DF		(PREFIX_0F38DE + 1)
-#define PREFIX_0F38F0		(PREFIX_0F38DF + 1)
-#define PREFIX_0F38F1		(PREFIX_0F38F0 + 1)
-#define PREFIX_0F3A08		(PREFIX_0F38F1 + 1)
-#define PREFIX_0F3A09		(PREFIX_0F3A08 + 1)
-#define PREFIX_0F3A0A		(PREFIX_0F3A09 + 1)
-#define PREFIX_0F3A0B		(PREFIX_0F3A0A + 1)
-#define PREFIX_0F3A0C		(PREFIX_0F3A0B + 1)
-#define PREFIX_0F3A0D		(PREFIX_0F3A0C + 1)
-#define PREFIX_0F3A0E		(PREFIX_0F3A0D + 1)
-#define PREFIX_0F3A14		(PREFIX_0F3A0E + 1)
-#define PREFIX_0F3A15		(PREFIX_0F3A14 + 1)
-#define PREFIX_0F3A16		(PREFIX_0F3A15 + 1)
-#define PREFIX_0F3A17		(PREFIX_0F3A16 + 1)
-#define PREFIX_0F3A20		(PREFIX_0F3A17 + 1)
-#define PREFIX_0F3A21		(PREFIX_0F3A20 + 1)
-#define PREFIX_0F3A22		(PREFIX_0F3A21 + 1)
-#define PREFIX_0F3A40		(PREFIX_0F3A22 + 1)
-#define PREFIX_0F3A41		(PREFIX_0F3A40 + 1)
-#define PREFIX_0F3A42		(PREFIX_0F3A41 + 1)
-#define PREFIX_0F3A44		(PREFIX_0F3A42 + 1)
-#define PREFIX_0F3A60		(PREFIX_0F3A44 + 1)
-#define PREFIX_0F3A61		(PREFIX_0F3A60 + 1)
-#define PREFIX_0F3A62		(PREFIX_0F3A61 + 1)
-#define PREFIX_0F3A63		(PREFIX_0F3A62 + 1)
-#define PREFIX_0F3ADF		(PREFIX_0F3A63 + 1)
-#define PREFIX_VEX_10		(PREFIX_0F3ADF + 1)
-#define PREFIX_VEX_11		(PREFIX_VEX_10 + 1)
-#define PREFIX_VEX_12		(PREFIX_VEX_11 + 1)
-#define PREFIX_VEX_16		(PREFIX_VEX_12 + 1)
-#define PREFIX_VEX_2A		(PREFIX_VEX_16 + 1)
-#define PREFIX_VEX_2C		(PREFIX_VEX_2A + 1)
-#define PREFIX_VEX_2D		(PREFIX_VEX_2C + 1)
-#define PREFIX_VEX_2E		(PREFIX_VEX_2D + 1)
-#define PREFIX_VEX_2F		(PREFIX_VEX_2E + 1)
-#define PREFIX_VEX_51		(PREFIX_VEX_2F + 1)
-#define PREFIX_VEX_52		(PREFIX_VEX_51 + 1)
-#define PREFIX_VEX_53		(PREFIX_VEX_52 + 1)
-#define PREFIX_VEX_58		(PREFIX_VEX_53 + 1)
-#define PREFIX_VEX_59		(PREFIX_VEX_58 + 1)
-#define PREFIX_VEX_5A		(PREFIX_VEX_59 + 1)
-#define PREFIX_VEX_5B		(PREFIX_VEX_5A + 1)
-#define PREFIX_VEX_5C		(PREFIX_VEX_5B + 1)
-#define PREFIX_VEX_5D		(PREFIX_VEX_5C + 1)
-#define PREFIX_VEX_5E		(PREFIX_VEX_5D + 1)
-#define PREFIX_VEX_5F		(PREFIX_VEX_5E + 1)
-#define PREFIX_VEX_60		(PREFIX_VEX_5F + 1)
-#define PREFIX_VEX_61		(PREFIX_VEX_60 + 1)
-#define PREFIX_VEX_62		(PREFIX_VEX_61 + 1)
-#define PREFIX_VEX_63		(PREFIX_VEX_62 + 1)
-#define PREFIX_VEX_64		(PREFIX_VEX_63 + 1)
-#define PREFIX_VEX_65		(PREFIX_VEX_64 + 1)
-#define PREFIX_VEX_66		(PREFIX_VEX_65 + 1)
-#define PREFIX_VEX_67		(PREFIX_VEX_66 + 1)
-#define PREFIX_VEX_68		(PREFIX_VEX_67 + 1)
-#define PREFIX_VEX_69		(PREFIX_VEX_68 + 1)
-#define PREFIX_VEX_6A		(PREFIX_VEX_69 + 1)
-#define PREFIX_VEX_6B		(PREFIX_VEX_6A + 1)
-#define PREFIX_VEX_6C		(PREFIX_VEX_6B + 1)
-#define PREFIX_VEX_6D		(PREFIX_VEX_6C + 1)
-#define PREFIX_VEX_6E		(PREFIX_VEX_6D + 1)
-#define PREFIX_VEX_6F		(PREFIX_VEX_6E + 1)
-#define PREFIX_VEX_70		(PREFIX_VEX_6F + 1)
-#define PREFIX_VEX_71_REG_2	(PREFIX_VEX_70 + 1)
-#define PREFIX_VEX_71_REG_4	(PREFIX_VEX_71_REG_2 + 1)
-#define PREFIX_VEX_71_REG_6	(PREFIX_VEX_71_REG_4 + 1)
-#define PREFIX_VEX_72_REG_2	(PREFIX_VEX_71_REG_6 + 1)
-#define PREFIX_VEX_72_REG_4	(PREFIX_VEX_72_REG_2 + 1)
-#define PREFIX_VEX_72_REG_6	(PREFIX_VEX_72_REG_4 + 1)
-#define PREFIX_VEX_73_REG_2	(PREFIX_VEX_72_REG_6 + 1)
-#define PREFIX_VEX_73_REG_3	(PREFIX_VEX_73_REG_2 + 1)
-#define PREFIX_VEX_73_REG_6	(PREFIX_VEX_73_REG_3 + 1)
-#define PREFIX_VEX_73_REG_7	(PREFIX_VEX_73_REG_6 + 1)
-#define PREFIX_VEX_74		(PREFIX_VEX_73_REG_7 + 1)
-#define PREFIX_VEX_75		(PREFIX_VEX_74 + 1)
-#define PREFIX_VEX_76		(PREFIX_VEX_75 + 1)
-#define PREFIX_VEX_77		(PREFIX_VEX_76 + 1)
-#define PREFIX_VEX_7C		(PREFIX_VEX_77 + 1)
-#define PREFIX_VEX_7D		(PREFIX_VEX_7C + 1)
-#define PREFIX_VEX_7E		(PREFIX_VEX_7D + 1)
-#define PREFIX_VEX_7F		(PREFIX_VEX_7E + 1)
-#define PREFIX_VEX_C2		(PREFIX_VEX_7F + 1)
-#define PREFIX_VEX_C4		(PREFIX_VEX_C2 + 1)
-#define PREFIX_VEX_C5		(PREFIX_VEX_C4 + 1)
-#define PREFIX_VEX_D0		(PREFIX_VEX_C5 + 1)
-#define PREFIX_VEX_D1		(PREFIX_VEX_D0 + 1)
-#define PREFIX_VEX_D2		(PREFIX_VEX_D1 + 1)
-#define PREFIX_VEX_D3		(PREFIX_VEX_D2 + 1)
-#define PREFIX_VEX_D4		(PREFIX_VEX_D3 + 1)
-#define PREFIX_VEX_D5		(PREFIX_VEX_D4 + 1)
-#define PREFIX_VEX_D6		(PREFIX_VEX_D5 + 1)
-#define PREFIX_VEX_D7		(PREFIX_VEX_D6 + 1)
-#define PREFIX_VEX_D8		(PREFIX_VEX_D7 + 1)
-#define PREFIX_VEX_D9		(PREFIX_VEX_D8 + 1)
-#define PREFIX_VEX_DA		(PREFIX_VEX_D9 + 1)
-#define PREFIX_VEX_DB		(PREFIX_VEX_DA + 1)
-#define PREFIX_VEX_DC		(PREFIX_VEX_DB + 1)
-#define PREFIX_VEX_DD		(PREFIX_VEX_DC + 1)
-#define PREFIX_VEX_DE		(PREFIX_VEX_DD + 1)
-#define PREFIX_VEX_DF		(PREFIX_VEX_DE + 1)
-#define PREFIX_VEX_E0		(PREFIX_VEX_DF + 1)
-#define PREFIX_VEX_E1		(PREFIX_VEX_E0 + 1)
-#define PREFIX_VEX_E2		(PREFIX_VEX_E1 + 1)
-#define PREFIX_VEX_E3		(PREFIX_VEX_E2 + 1)
-#define PREFIX_VEX_E4		(PREFIX_VEX_E3 + 1)
-#define PREFIX_VEX_E5		(PREFIX_VEX_E4 + 1)
-#define PREFIX_VEX_E6		(PREFIX_VEX_E5 + 1)
-#define PREFIX_VEX_E7		(PREFIX_VEX_E6 + 1)
-#define PREFIX_VEX_E8		(PREFIX_VEX_E7 + 1)
-#define PREFIX_VEX_E9		(PREFIX_VEX_E8 + 1)
-#define PREFIX_VEX_EA		(PREFIX_VEX_E9 + 1)
-#define PREFIX_VEX_EB		(PREFIX_VEX_EA + 1)
-#define PREFIX_VEX_EC		(PREFIX_VEX_EB + 1)
-#define PREFIX_VEX_ED		(PREFIX_VEX_EC + 1)
-#define PREFIX_VEX_EE		(PREFIX_VEX_ED + 1)
-#define PREFIX_VEX_EF		(PREFIX_VEX_EE + 1)
-#define PREFIX_VEX_F0		(PREFIX_VEX_EF + 1)
-#define PREFIX_VEX_F1		(PREFIX_VEX_F0 + 1)
-#define PREFIX_VEX_F2		(PREFIX_VEX_F1 + 1)
-#define PREFIX_VEX_F3		(PREFIX_VEX_F2 + 1)
-#define PREFIX_VEX_F4		(PREFIX_VEX_F3 + 1)
-#define PREFIX_VEX_F5		(PREFIX_VEX_F4 + 1)
-#define PREFIX_VEX_F6		(PREFIX_VEX_F5 + 1)
-#define PREFIX_VEX_F7		(PREFIX_VEX_F6 + 1)
-#define PREFIX_VEX_F8		(PREFIX_VEX_F7 + 1)
-#define PREFIX_VEX_F9		(PREFIX_VEX_F8 + 1)
-#define PREFIX_VEX_FA		(PREFIX_VEX_F9 + 1)
-#define PREFIX_VEX_FB		(PREFIX_VEX_FA + 1)
-#define PREFIX_VEX_FC		(PREFIX_VEX_FB + 1)
-#define PREFIX_VEX_FD		(PREFIX_VEX_FC + 1)
-#define PREFIX_VEX_FE		(PREFIX_VEX_FD + 1)
-#define PREFIX_VEX_3800		(PREFIX_VEX_FE + 1)
-#define PREFIX_VEX_3801		(PREFIX_VEX_3800 + 1)
-#define PREFIX_VEX_3802		(PREFIX_VEX_3801 + 1)
-#define PREFIX_VEX_3803		(PREFIX_VEX_3802 + 1)
-#define PREFIX_VEX_3804		(PREFIX_VEX_3803 + 1)
-#define PREFIX_VEX_3805		(PREFIX_VEX_3804 + 1)
-#define PREFIX_VEX_3806		(PREFIX_VEX_3805 + 1)
-#define PREFIX_VEX_3807		(PREFIX_VEX_3806 + 1)
-#define PREFIX_VEX_3808		(PREFIX_VEX_3807 + 1)
-#define PREFIX_VEX_3809		(PREFIX_VEX_3808 + 1)
-#define PREFIX_VEX_380A		(PREFIX_VEX_3809 + 1)
-#define PREFIX_VEX_380B		(PREFIX_VEX_380A + 1)
-#define PREFIX_VEX_380C		(PREFIX_VEX_380B + 1)
-#define PREFIX_VEX_380D		(PREFIX_VEX_380C + 1)
-#define PREFIX_VEX_380E		(PREFIX_VEX_380D + 1)
-#define PREFIX_VEX_380F		(PREFIX_VEX_380E + 1)
-#define PREFIX_VEX_3817		(PREFIX_VEX_380F + 1)
-#define PREFIX_VEX_3818		(PREFIX_VEX_3817 + 1)
-#define PREFIX_VEX_3819		(PREFIX_VEX_3818 + 1)
-#define PREFIX_VEX_381A		(PREFIX_VEX_3819 + 1)
-#define PREFIX_VEX_381C		(PREFIX_VEX_381A + 1)
-#define PREFIX_VEX_381D		(PREFIX_VEX_381C + 1)
-#define PREFIX_VEX_381E		(PREFIX_VEX_381D + 1)
-#define PREFIX_VEX_3820		(PREFIX_VEX_381E + 1)
-#define PREFIX_VEX_3821		(PREFIX_VEX_3820 + 1)
-#define PREFIX_VEX_3822		(PREFIX_VEX_3821 + 1)
-#define PREFIX_VEX_3823		(PREFIX_VEX_3822 + 1)
-#define PREFIX_VEX_3824		(PREFIX_VEX_3823 + 1)
-#define PREFIX_VEX_3825		(PREFIX_VEX_3824 + 1)
-#define PREFIX_VEX_3828		(PREFIX_VEX_3825 + 1)
-#define PREFIX_VEX_3829		(PREFIX_VEX_3828 + 1)
-#define PREFIX_VEX_382A		(PREFIX_VEX_3829 + 1)
-#define PREFIX_VEX_382B		(PREFIX_VEX_382A + 1)
-#define PREFIX_VEX_382C		(PREFIX_VEX_382B + 1)
-#define PREFIX_VEX_382D		(PREFIX_VEX_382C + 1)
-#define PREFIX_VEX_382E		(PREFIX_VEX_382D + 1)
-#define PREFIX_VEX_382F		(PREFIX_VEX_382E + 1)
-#define PREFIX_VEX_3830		(PREFIX_VEX_382F + 1)
-#define PREFIX_VEX_3831		(PREFIX_VEX_3830 + 1)
-#define PREFIX_VEX_3832		(PREFIX_VEX_3831 + 1)
-#define PREFIX_VEX_3833		(PREFIX_VEX_3832 + 1)
-#define PREFIX_VEX_3834		(PREFIX_VEX_3833 + 1)
-#define PREFIX_VEX_3835		(PREFIX_VEX_3834 + 1)
-#define PREFIX_VEX_3837		(PREFIX_VEX_3835 + 1)
-#define PREFIX_VEX_3838		(PREFIX_VEX_3837 + 1)
-#define PREFIX_VEX_3839		(PREFIX_VEX_3838 + 1)
-#define PREFIX_VEX_383A		(PREFIX_VEX_3839 + 1)
-#define PREFIX_VEX_383B		(PREFIX_VEX_383A + 1)
-#define PREFIX_VEX_383C		(PREFIX_VEX_383B + 1)
-#define PREFIX_VEX_383D		(PREFIX_VEX_383C + 1)
-#define PREFIX_VEX_383E		(PREFIX_VEX_383D + 1)
-#define PREFIX_VEX_383F		(PREFIX_VEX_383E + 1)
-#define PREFIX_VEX_3840		(PREFIX_VEX_383F + 1)
-#define PREFIX_VEX_3841		(PREFIX_VEX_3840 + 1)
-#define PREFIX_VEX_3896		(PREFIX_VEX_3841 + 1)
-#define PREFIX_VEX_3897		(PREFIX_VEX_3896 + 1)
-#define PREFIX_VEX_3898		(PREFIX_VEX_3897 + 1)
-#define PREFIX_VEX_3899		(PREFIX_VEX_3898 + 1)
-#define PREFIX_VEX_389A		(PREFIX_VEX_3899 + 1)
-#define PREFIX_VEX_389B		(PREFIX_VEX_389A + 1)
-#define PREFIX_VEX_389C		(PREFIX_VEX_389B + 1)
-#define PREFIX_VEX_389D		(PREFIX_VEX_389C + 1)
-#define PREFIX_VEX_389E		(PREFIX_VEX_389D + 1)
-#define PREFIX_VEX_389F		(PREFIX_VEX_389E + 1)
-#define PREFIX_VEX_38A6		(PREFIX_VEX_389F + 1)
-#define PREFIX_VEX_38A7		(PREFIX_VEX_38A6 + 1)
-#define PREFIX_VEX_38A8		(PREFIX_VEX_38A7 + 1)
-#define PREFIX_VEX_38A9		(PREFIX_VEX_38A8 + 1)
-#define PREFIX_VEX_38AA		(PREFIX_VEX_38A9 + 1)
-#define PREFIX_VEX_38AB		(PREFIX_VEX_38AA + 1)
-#define PREFIX_VEX_38AC		(PREFIX_VEX_38AB + 1)
-#define PREFIX_VEX_38AD		(PREFIX_VEX_38AC + 1)
-#define PREFIX_VEX_38AE		(PREFIX_VEX_38AD + 1)
-#define PREFIX_VEX_38AF		(PREFIX_VEX_38AE + 1)
-#define PREFIX_VEX_38B6		(PREFIX_VEX_38AF + 1)
-#define PREFIX_VEX_38B7		(PREFIX_VEX_38B6 + 1)
-#define PREFIX_VEX_38B8		(PREFIX_VEX_38B7 + 1)
-#define PREFIX_VEX_38B9		(PREFIX_VEX_38B8 + 1)
-#define PREFIX_VEX_38BA		(PREFIX_VEX_38B9 + 1)
-#define PREFIX_VEX_38BB		(PREFIX_VEX_38BA + 1)
-#define PREFIX_VEX_38BC		(PREFIX_VEX_38BB + 1)
-#define PREFIX_VEX_38BD		(PREFIX_VEX_38BC + 1)
-#define PREFIX_VEX_38BE		(PREFIX_VEX_38BD + 1)
-#define PREFIX_VEX_38BF		(PREFIX_VEX_38BE + 1)
-#define PREFIX_VEX_38DB		(PREFIX_VEX_38BF + 1)
-#define PREFIX_VEX_38DC		(PREFIX_VEX_38DB + 1)
-#define PREFIX_VEX_38DD		(PREFIX_VEX_38DC + 1)
-#define PREFIX_VEX_38DE		(PREFIX_VEX_38DD + 1)
-#define PREFIX_VEX_38DF		(PREFIX_VEX_38DE + 1)
-#define PREFIX_VEX_3A04		(PREFIX_VEX_38DF + 1)
-#define PREFIX_VEX_3A05		(PREFIX_VEX_3A04 + 1)
-#define PREFIX_VEX_3A06		(PREFIX_VEX_3A05 + 1)
-#define PREFIX_VEX_3A08		(PREFIX_VEX_3A06 + 1)
-#define PREFIX_VEX_3A09		(PREFIX_VEX_3A08 + 1)
-#define PREFIX_VEX_3A0A		(PREFIX_VEX_3A09 + 1)
-#define PREFIX_VEX_3A0B		(PREFIX_VEX_3A0A + 1)
-#define PREFIX_VEX_3A0C		(PREFIX_VEX_3A0B + 1)
-#define PREFIX_VEX_3A0D		(PREFIX_VEX_3A0C + 1)
-#define PREFIX_VEX_3A0E		(PREFIX_VEX_3A0D + 1)
-#define PREFIX_VEX_3A0F		(PREFIX_VEX_3A0E + 1)
-#define PREFIX_VEX_3A14		(PREFIX_VEX_3A0F + 1)
-#define PREFIX_VEX_3A15		(PREFIX_VEX_3A14 + 1)
-#define PREFIX_VEX_3A16		(PREFIX_VEX_3A15 + 1)
-#define PREFIX_VEX_3A17		(PREFIX_VEX_3A16 + 1)
-#define PREFIX_VEX_3A18		(PREFIX_VEX_3A17 + 1)
-#define PREFIX_VEX_3A19		(PREFIX_VEX_3A18 + 1)
-#define PREFIX_VEX_3A20		(PREFIX_VEX_3A19 + 1)
-#define PREFIX_VEX_3A21		(PREFIX_VEX_3A20 + 1)
-#define PREFIX_VEX_3A22		(PREFIX_VEX_3A21 + 1)
-#define PREFIX_VEX_3A40		(PREFIX_VEX_3A22 + 1)
-#define PREFIX_VEX_3A41		(PREFIX_VEX_3A40 + 1)
-#define PREFIX_VEX_3A42		(PREFIX_VEX_3A41 + 1)
-#define PREFIX_VEX_3A44		(PREFIX_VEX_3A42 + 1)
-#define PREFIX_VEX_3A4A		(PREFIX_VEX_3A44 + 1)
-#define PREFIX_VEX_3A4B		(PREFIX_VEX_3A4A + 1)
-#define PREFIX_VEX_3A4C		(PREFIX_VEX_3A4B + 1)
-#define PREFIX_VEX_3A60		(PREFIX_VEX_3A4C + 1)
-#define PREFIX_VEX_3A61		(PREFIX_VEX_3A60 + 1)
-#define PREFIX_VEX_3A62		(PREFIX_VEX_3A61 + 1)
-#define PREFIX_VEX_3A63		(PREFIX_VEX_3A62 + 1)
-#define PREFIX_VEX_3ADF		(PREFIX_VEX_3A63 + 1)
+enum
+{
+  PREFIX_90 = 0,
+  PREFIX_0F10,
+  PREFIX_0F11,
+  PREFIX_0F12,
+  PREFIX_0F16,
+  PREFIX_0F2A,
+  PREFIX_0F2B,
+  PREFIX_0F2C,
+  PREFIX_0F2D,
+  PREFIX_0F2E,
+  PREFIX_0F2F,
+  PREFIX_0F51,
+  PREFIX_0F52,
+  PREFIX_0F53,
+  PREFIX_0F58,
+  PREFIX_0F59,
+  PREFIX_0F5A,
+  PREFIX_0F5B,
+  PREFIX_0F5C,
+  PREFIX_0F5D,
+  PREFIX_0F5E,
+  PREFIX_0F5F,
+  PREFIX_0F60,
+  PREFIX_0F61,
+  PREFIX_0F62,
+  PREFIX_0F6C,
+  PREFIX_0F6D,
+  PREFIX_0F6F,
+  PREFIX_0F70,
+  PREFIX_0F73_REG_3,
+  PREFIX_0F73_REG_7,
+  PREFIX_0F78,
+  PREFIX_0F79,
+  PREFIX_0F7C,
+  PREFIX_0F7D,
+  PREFIX_0F7E,
+  PREFIX_0F7F,
+  PREFIX_0FB8,
+  PREFIX_0FBD,
+  PREFIX_0FC2,
+  PREFIX_0FC3,
+  PREFIX_0FC7_REG_6,
+  PREFIX_0FD0,
+  PREFIX_0FD6,
+  PREFIX_0FE6,
+  PREFIX_0FE7,
+  PREFIX_0FF0,
+  PREFIX_0FF7,
+  PREFIX_0F3810,
+  PREFIX_0F3814,
+  PREFIX_0F3815,
+  PREFIX_0F3817,
+  PREFIX_0F3820,
+  PREFIX_0F3821,
+  PREFIX_0F3822,
+  PREFIX_0F3823,
+  PREFIX_0F3824,
+  PREFIX_0F3825,
+  PREFIX_0F3828,
+  PREFIX_0F3829,
+  PREFIX_0F382A,
+  PREFIX_0F382B,
+  PREFIX_0F3830,
+  PREFIX_0F3831,
+  PREFIX_0F3832,
+  PREFIX_0F3833,
+  PREFIX_0F3834,
+  PREFIX_0F3835,
+  PREFIX_0F3837,
+  PREFIX_0F3838,
+  PREFIX_0F3839,
+  PREFIX_0F383A,
+  PREFIX_0F383B,
+  PREFIX_0F383C,
+  PREFIX_0F383D,
+  PREFIX_0F383E,
+  PREFIX_0F383F,
+  PREFIX_0F3840,
+  PREFIX_0F3841,
+  PREFIX_0F3880,
+  PREFIX_0F3881,
+  PREFIX_0F38DB,
+  PREFIX_0F38DC,
+  PREFIX_0F38DD,
+  PREFIX_0F38DE,
+  PREFIX_0F38DF,
+  PREFIX_0F38F0,
+  PREFIX_0F38F1,
+  PREFIX_0F3A08,
+  PREFIX_0F3A09,
+  PREFIX_0F3A0A,
+  PREFIX_0F3A0B,
+  PREFIX_0F3A0C,
+  PREFIX_0F3A0D,
+  PREFIX_0F3A0E,
+  PREFIX_0F3A14,
+  PREFIX_0F3A15,
+  PREFIX_0F3A16,
+  PREFIX_0F3A17,
+  PREFIX_0F3A20,
+  PREFIX_0F3A21,
+  PREFIX_0F3A22,
+  PREFIX_0F3A40,
+  PREFIX_0F3A41,
+  PREFIX_0F3A42,
+  PREFIX_0F3A44,
+  PREFIX_0F3A60,
+  PREFIX_0F3A61,
+  PREFIX_0F3A62,
+  PREFIX_0F3A63,
+  PREFIX_0F3ADF,
+  PREFIX_VEX_10,
+  PREFIX_VEX_11,
+  PREFIX_VEX_12,
+  PREFIX_VEX_16,
+  PREFIX_VEX_2A,
+  PREFIX_VEX_2C,
+  PREFIX_VEX_2D,
+  PREFIX_VEX_2E,
+  PREFIX_VEX_2F,
+  PREFIX_VEX_51,
+  PREFIX_VEX_52,
+  PREFIX_VEX_53,
+  PREFIX_VEX_58,
+  PREFIX_VEX_59,
+  PREFIX_VEX_5A,
+  PREFIX_VEX_5B,
+  PREFIX_VEX_5C,
+  PREFIX_VEX_5D,
+  PREFIX_VEX_5E,
+  PREFIX_VEX_5F,
+  PREFIX_VEX_60,
+  PREFIX_VEX_61,
+  PREFIX_VEX_62,
+  PREFIX_VEX_63,
+  PREFIX_VEX_64,
+  PREFIX_VEX_65,
+  PREFIX_VEX_66,
+  PREFIX_VEX_67,
+  PREFIX_VEX_68,
+  PREFIX_VEX_69,
+  PREFIX_VEX_6A,
+  PREFIX_VEX_6B,
+  PREFIX_VEX_6C,
+  PREFIX_VEX_6D,
+  PREFIX_VEX_6E,
+  PREFIX_VEX_6F,
+  PREFIX_VEX_70,
+  PREFIX_VEX_71_REG_2,
+  PREFIX_VEX_71_REG_4,
+  PREFIX_VEX_71_REG_6,
+  PREFIX_VEX_72_REG_2,
+  PREFIX_VEX_72_REG_4,
+  PREFIX_VEX_72_REG_6,
+  PREFIX_VEX_73_REG_2,
+  PREFIX_VEX_73_REG_3,
+  PREFIX_VEX_73_REG_6,
+  PREFIX_VEX_73_REG_7,
+  PREFIX_VEX_74,
+  PREFIX_VEX_75,
+  PREFIX_VEX_76,
+  PREFIX_VEX_77,
+  PREFIX_VEX_7C,
+  PREFIX_VEX_7D,
+  PREFIX_VEX_7E,
+  PREFIX_VEX_7F,
+  PREFIX_VEX_C2,
+  PREFIX_VEX_C4,
+  PREFIX_VEX_C5,
+  PREFIX_VEX_D0,
+  PREFIX_VEX_D1,
+  PREFIX_VEX_D2,
+  PREFIX_VEX_D3,
+  PREFIX_VEX_D4,
+  PREFIX_VEX_D5,
+  PREFIX_VEX_D6,
+  PREFIX_VEX_D7,
+  PREFIX_VEX_D8,
+  PREFIX_VEX_D9,
+  PREFIX_VEX_DA,
+  PREFIX_VEX_DB,
+  PREFIX_VEX_DC,
+  PREFIX_VEX_DD,
+  PREFIX_VEX_DE,
+  PREFIX_VEX_DF,
+  PREFIX_VEX_E0,
+  PREFIX_VEX_E1,
+  PREFIX_VEX_E2,
+  PREFIX_VEX_E3,
+  PREFIX_VEX_E4,
+  PREFIX_VEX_E5,
+  PREFIX_VEX_E6,
+  PREFIX_VEX_E7,
+  PREFIX_VEX_E8,
+  PREFIX_VEX_E9,
+  PREFIX_VEX_EA,
+  PREFIX_VEX_EB,
+  PREFIX_VEX_EC,
+  PREFIX_VEX_ED,
+  PREFIX_VEX_EE,
+  PREFIX_VEX_EF,
+  PREFIX_VEX_F0,
+  PREFIX_VEX_F1,
+  PREFIX_VEX_F2,
+  PREFIX_VEX_F3,
+  PREFIX_VEX_F4,
+  PREFIX_VEX_F5,
+  PREFIX_VEX_F6,
+  PREFIX_VEX_F7,
+  PREFIX_VEX_F8,
+  PREFIX_VEX_F9,
+  PREFIX_VEX_FA,
+  PREFIX_VEX_FB,
+  PREFIX_VEX_FC,
+  PREFIX_VEX_FD,
+  PREFIX_VEX_FE,
+  PREFIX_VEX_3800,
+  PREFIX_VEX_3801,
+  PREFIX_VEX_3802,
+  PREFIX_VEX_3803,
+  PREFIX_VEX_3804,
+  PREFIX_VEX_3805,
+  PREFIX_VEX_3806,
+  PREFIX_VEX_3807,
+  PREFIX_VEX_3808,
+  PREFIX_VEX_3809,
+  PREFIX_VEX_380A,
+  PREFIX_VEX_380B,
+  PREFIX_VEX_380C,
+  PREFIX_VEX_380D,
+  PREFIX_VEX_380E,
+  PREFIX_VEX_380F,
+  PREFIX_VEX_3817,
+  PREFIX_VEX_3818,
+  PREFIX_VEX_3819,
+  PREFIX_VEX_381A,
+  PREFIX_VEX_381C,
+  PREFIX_VEX_381D,
+  PREFIX_VEX_381E,
+  PREFIX_VEX_3820,
+  PREFIX_VEX_3821,
+  PREFIX_VEX_3822,
+  PREFIX_VEX_3823,
+  PREFIX_VEX_3824,
+  PREFIX_VEX_3825,
+  PREFIX_VEX_3828,
+  PREFIX_VEX_3829,
+  PREFIX_VEX_382A,
+  PREFIX_VEX_382B,
+  PREFIX_VEX_382C,
+  PREFIX_VEX_382D,
+  PREFIX_VEX_382E,
+  PREFIX_VEX_382F,
+  PREFIX_VEX_3830,
+  PREFIX_VEX_3831,
+  PREFIX_VEX_3832,
+  PREFIX_VEX_3833,
+  PREFIX_VEX_3834,
+  PREFIX_VEX_3835,
+  PREFIX_VEX_3837,
+  PREFIX_VEX_3838,
+  PREFIX_VEX_3839,
+  PREFIX_VEX_383A,
+  PREFIX_VEX_383B,
+  PREFIX_VEX_383C,
+  PREFIX_VEX_383D,
+  PREFIX_VEX_383E,
+  PREFIX_VEX_383F,
+  PREFIX_VEX_3840,
+  PREFIX_VEX_3841,
+  PREFIX_VEX_3896,
+  PREFIX_VEX_3897,
+  PREFIX_VEX_3898,
+  PREFIX_VEX_3899,
+  PREFIX_VEX_389A,
+  PREFIX_VEX_389B,
+  PREFIX_VEX_389C,
+  PREFIX_VEX_389D,
+  PREFIX_VEX_389E,
+  PREFIX_VEX_389F,
+  PREFIX_VEX_38A6,
+  PREFIX_VEX_38A7,
+  PREFIX_VEX_38A8,
+  PREFIX_VEX_38A9,
+  PREFIX_VEX_38AA,
+  PREFIX_VEX_38AB,
+  PREFIX_VEX_38AC,
+  PREFIX_VEX_38AD,
+  PREFIX_VEX_38AE,
+  PREFIX_VEX_38AF,
+  PREFIX_VEX_38B6,
+  PREFIX_VEX_38B7,
+  PREFIX_VEX_38B8,
+  PREFIX_VEX_38B9,
+  PREFIX_VEX_38BA,
+  PREFIX_VEX_38BB,
+  PREFIX_VEX_38BC,
+  PREFIX_VEX_38BD,
+  PREFIX_VEX_38BE,
+  PREFIX_VEX_38BF,
+  PREFIX_VEX_38DB,
+  PREFIX_VEX_38DC,
+  PREFIX_VEX_38DD,
+  PREFIX_VEX_38DE,
+  PREFIX_VEX_38DF,
+  PREFIX_VEX_3A04,
+  PREFIX_VEX_3A05,
+  PREFIX_VEX_3A06,
+  PREFIX_VEX_3A08,
+  PREFIX_VEX_3A09,
+  PREFIX_VEX_3A0A,
+  PREFIX_VEX_3A0B,
+  PREFIX_VEX_3A0C,
+  PREFIX_VEX_3A0D,
+  PREFIX_VEX_3A0E,
+  PREFIX_VEX_3A0F,
+  PREFIX_VEX_3A14,
+  PREFIX_VEX_3A15,
+  PREFIX_VEX_3A16,
+  PREFIX_VEX_3A17,
+  PREFIX_VEX_3A18,
+  PREFIX_VEX_3A19,
+  PREFIX_VEX_3A20,
+  PREFIX_VEX_3A21,
+  PREFIX_VEX_3A22,
+  PREFIX_VEX_3A40,
+  PREFIX_VEX_3A41,
+  PREFIX_VEX_3A42,
+  PREFIX_VEX_3A44,
+  PREFIX_VEX_3A4A,
+  PREFIX_VEX_3A4B,
+  PREFIX_VEX_3A4C,
+  PREFIX_VEX_3A5C,
+  PREFIX_VEX_3A5D,
+  PREFIX_VEX_3A5E,
+  PREFIX_VEX_3A5F,
+  PREFIX_VEX_3A60,
+  PREFIX_VEX_3A61,
+  PREFIX_VEX_3A62,
+  PREFIX_VEX_3A63,
+  PREFIX_VEX_3A68,
+  PREFIX_VEX_3A69,
+  PREFIX_VEX_3A6A,
+  PREFIX_VEX_3A6B,
+  PREFIX_VEX_3A6C,
+  PREFIX_VEX_3A6D,
+  PREFIX_VEX_3A6E,
+  PREFIX_VEX_3A6F,
+  PREFIX_VEX_3A78,
+  PREFIX_VEX_3A79,
+  PREFIX_VEX_3A7A,
+  PREFIX_VEX_3A7B,
+  PREFIX_VEX_3A7C,
+  PREFIX_VEX_3A7D,
+  PREFIX_VEX_3A7E,
+  PREFIX_VEX_3A7F,
+  PREFIX_VEX_3ADF
+};
 
-#define X86_64_06		0
-#define X86_64_07		(X86_64_06 + 1)
-#define X86_64_0D		(X86_64_07 + 1)
-#define X86_64_16		(X86_64_0D + 1)
-#define X86_64_17		(X86_64_16 + 1)
-#define X86_64_1E		(X86_64_17 + 1)
-#define X86_64_1F		(X86_64_1E + 1)
-#define X86_64_27		(X86_64_1F + 1)
-#define X86_64_2F		(X86_64_27 + 1)
-#define X86_64_37		(X86_64_2F + 1)
-#define X86_64_3F		(X86_64_37 + 1)
-#define X86_64_60		(X86_64_3F + 1)
-#define X86_64_61		(X86_64_60 + 1)
-#define X86_64_62		(X86_64_61 + 1)
-#define X86_64_63		(X86_64_62 + 1)
-#define X86_64_6D		(X86_64_63 + 1)
-#define X86_64_6F		(X86_64_6D + 1)
-#define X86_64_9A		(X86_64_6F + 1)
-#define X86_64_C4		(X86_64_9A + 1)
-#define X86_64_C5		(X86_64_C4 + 1)
-#define X86_64_CE		(X86_64_C5 + 1)
-#define X86_64_D4		(X86_64_CE + 1)
-#define X86_64_D5		(X86_64_D4 + 1)
-#define X86_64_EA		(X86_64_D5 + 1)
-#define X86_64_0F01_REG_0	(X86_64_EA + 1)
-#define X86_64_0F01_REG_1	(X86_64_0F01_REG_0 + 1)
-#define X86_64_0F01_REG_2	(X86_64_0F01_REG_1 + 1)
-#define X86_64_0F01_REG_3	(X86_64_0F01_REG_2 + 1)
+enum
+{
+  X86_64_06 = 0,
+  X86_64_07,
+  X86_64_0D,
+  X86_64_16,
+  X86_64_17,
+  X86_64_1E,
+  X86_64_1F,
+  X86_64_27,
+  X86_64_2F,
+  X86_64_37,
+  X86_64_3F,
+  X86_64_60,
+  X86_64_61,
+  X86_64_62,
+  X86_64_63,
+  X86_64_6D,
+  X86_64_6F,
+  X86_64_9A,
+  X86_64_C4,
+  X86_64_C5,
+  X86_64_CE,
+  X86_64_D4,
+  X86_64_D5,
+  X86_64_EA,
+  X86_64_0F01_REG_0,
+  X86_64_0F01_REG_1,
+  X86_64_0F01_REG_2,
+  X86_64_0F01_REG_3
+};
 
-#define THREE_BYTE_0F24		0
-#define THREE_BYTE_0F25		(THREE_BYTE_0F24 + 1)
-#define THREE_BYTE_0F38		(THREE_BYTE_0F25 + 1)
-#define THREE_BYTE_0F3A		(THREE_BYTE_0F38 + 1)
-#define THREE_BYTE_0F7A		(THREE_BYTE_0F3A + 1)
-#define THREE_BYTE_0F7B		(THREE_BYTE_0F7A + 1)
+enum
+{
+  THREE_BYTE_0F38 = 0,
+  THREE_BYTE_0F3A,
+  THREE_BYTE_0F7A
+};
 
-#define VEX_0F			0
-#define VEX_0F38		(VEX_0F + 1)
-#define VEX_0F3A		(VEX_0F38 + 1)
+enum
+{
+  VEX_0F = 0,
+  VEX_0F38,
+  VEX_0F3A
+};
 
-#define VEX_LEN_10_P_1	0
-#define VEX_LEN_10_P_3	(VEX_LEN_10_P_1 + 1)
-#define VEX_LEN_11_P_1	(VEX_LEN_10_P_3 + 1)
-#define VEX_LEN_11_P_3	(VEX_LEN_11_P_1 + 1)
-#define VEX_LEN_12_P_0_M_0	(VEX_LEN_11_P_3 + 1)
-#define VEX_LEN_12_P_0_M_1	(VEX_LEN_12_P_0_M_0 + 1)
-#define VEX_LEN_12_P_2	(VEX_LEN_12_P_0_M_1 + 1)
-#define VEX_LEN_13_M_0	(VEX_LEN_12_P_2 + 1)
-#define VEX_LEN_16_P_0_M_0	(VEX_LEN_13_M_0 + 1)
-#define VEX_LEN_16_P_0_M_1	(VEX_LEN_16_P_0_M_0 + 1)
-#define VEX_LEN_16_P_2	(VEX_LEN_16_P_0_M_1 + 1)
-#define VEX_LEN_17_M_0	(VEX_LEN_16_P_2 + 1)
-#define VEX_LEN_2A_P_1	(VEX_LEN_17_M_0 + 1)
-#define VEX_LEN_2A_P_3	(VEX_LEN_2A_P_1 + 1)
-#define VEX_LEN_2C_P_1	(VEX_LEN_2A_P_3 + 1)
-#define VEX_LEN_2C_P_3	(VEX_LEN_2C_P_1 + 1)
-#define VEX_LEN_2D_P_1	(VEX_LEN_2C_P_3 + 1)
-#define VEX_LEN_2D_P_3	(VEX_LEN_2D_P_1 + 1)
-#define VEX_LEN_2E_P_0	(VEX_LEN_2D_P_3 + 1)
-#define VEX_LEN_2E_P_2	(VEX_LEN_2E_P_0 + 1)
-#define VEX_LEN_2F_P_0	(VEX_LEN_2E_P_2 + 1)
-#define VEX_LEN_2F_P_2	(VEX_LEN_2F_P_0 + 1)
-#define VEX_LEN_51_P_1	(VEX_LEN_2F_P_2 + 1)
-#define VEX_LEN_51_P_3	(VEX_LEN_51_P_1 + 1)
-#define VEX_LEN_52_P_1	(VEX_LEN_51_P_3 + 1)
-#define VEX_LEN_53_P_1	(VEX_LEN_52_P_1 + 1)
-#define VEX_LEN_58_P_1	(VEX_LEN_53_P_1 + 1)
-#define VEX_LEN_58_P_3	(VEX_LEN_58_P_1 + 1)
-#define VEX_LEN_59_P_1	(VEX_LEN_58_P_3 + 1)
-#define VEX_LEN_59_P_3	(VEX_LEN_59_P_1 + 1)
-#define VEX_LEN_5A_P_1	(VEX_LEN_59_P_3 + 1)
-#define VEX_LEN_5A_P_3	(VEX_LEN_5A_P_1 + 1)
-#define VEX_LEN_5C_P_1	(VEX_LEN_5A_P_3 + 1)
-#define VEX_LEN_5C_P_3	(VEX_LEN_5C_P_1 + 1)
-#define VEX_LEN_5D_P_1	(VEX_LEN_5C_P_3 + 1)
-#define VEX_LEN_5D_P_3	(VEX_LEN_5D_P_1 + 1)
-#define VEX_LEN_5E_P_1	(VEX_LEN_5D_P_3 + 1)
-#define VEX_LEN_5E_P_3	(VEX_LEN_5E_P_1 + 1)
-#define VEX_LEN_5F_P_1	(VEX_LEN_5E_P_3 + 1)
-#define VEX_LEN_5F_P_3	(VEX_LEN_5F_P_1 + 1)
-#define VEX_LEN_60_P_2	(VEX_LEN_5F_P_3 + 1)
-#define VEX_LEN_61_P_2	(VEX_LEN_60_P_2 + 1)
-#define VEX_LEN_62_P_2	(VEX_LEN_61_P_2 + 1)
-#define VEX_LEN_63_P_2	(VEX_LEN_62_P_2 + 1)
-#define VEX_LEN_64_P_2	(VEX_LEN_63_P_2 + 1)
-#define VEX_LEN_65_P_2	(VEX_LEN_64_P_2 + 1)
-#define VEX_LEN_66_P_2	(VEX_LEN_65_P_2 + 1)
-#define VEX_LEN_67_P_2	(VEX_LEN_66_P_2 + 1)
-#define VEX_LEN_68_P_2	(VEX_LEN_67_P_2 + 1)
-#define VEX_LEN_69_P_2	(VEX_LEN_68_P_2 + 1)
-#define VEX_LEN_6A_P_2	(VEX_LEN_69_P_2 + 1)
-#define VEX_LEN_6B_P_2	(VEX_LEN_6A_P_2 + 1)
-#define VEX_LEN_6C_P_2	(VEX_LEN_6B_P_2 + 1)
-#define VEX_LEN_6D_P_2	(VEX_LEN_6C_P_2 + 1)
-#define VEX_LEN_6E_P_2	(VEX_LEN_6D_P_2 + 1)
-#define VEX_LEN_70_P_1	(VEX_LEN_6E_P_2 + 1)
-#define VEX_LEN_70_P_2	(VEX_LEN_70_P_1 + 1)
-#define VEX_LEN_70_P_3	(VEX_LEN_70_P_2 + 1)
-#define VEX_LEN_71_R_2_P_2	(VEX_LEN_70_P_3 + 1)
-#define VEX_LEN_71_R_4_P_2	(VEX_LEN_71_R_2_P_2 + 1)
-#define VEX_LEN_71_R_6_P_2	(VEX_LEN_71_R_4_P_2 + 1)
-#define VEX_LEN_72_R_2_P_2	(VEX_LEN_71_R_6_P_2 + 1)
-#define VEX_LEN_72_R_4_P_2	(VEX_LEN_72_R_2_P_2 + 1)
-#define VEX_LEN_72_R_6_P_2	(VEX_LEN_72_R_4_P_2 + 1)
-#define VEX_LEN_73_R_2_P_2	(VEX_LEN_72_R_6_P_2 + 1)
-#define VEX_LEN_73_R_3_P_2	(VEX_LEN_73_R_2_P_2 + 1)
-#define VEX_LEN_73_R_6_P_2	(VEX_LEN_73_R_3_P_2 + 1)
-#define VEX_LEN_73_R_7_P_2	(VEX_LEN_73_R_6_P_2 + 1)
-#define VEX_LEN_74_P_2	(VEX_LEN_73_R_7_P_2 + 1)
-#define VEX_LEN_75_P_2	(VEX_LEN_74_P_2 + 1)
-#define VEX_LEN_76_P_2	(VEX_LEN_75_P_2 + 1)
-#define VEX_LEN_7E_P_1	(VEX_LEN_76_P_2 + 1)
-#define VEX_LEN_7E_P_2	(VEX_LEN_7E_P_1 + 1)
-#define VEX_LEN_AE_R_2_M_0	(VEX_LEN_7E_P_2 + 1)
-#define VEX_LEN_AE_R_3_M_0	(VEX_LEN_AE_R_2_M_0 + 1)
-#define VEX_LEN_C2_P_1	(VEX_LEN_AE_R_3_M_0 + 1)
-#define VEX_LEN_C2_P_3	(VEX_LEN_C2_P_1 + 1)
-#define VEX_LEN_C4_P_2	(VEX_LEN_C2_P_3 + 1)
-#define VEX_LEN_C5_P_2	(VEX_LEN_C4_P_2 + 1)
-#define VEX_LEN_D1_P_2	(VEX_LEN_C5_P_2 + 1)
-#define VEX_LEN_D2_P_2	(VEX_LEN_D1_P_2 + 1)
-#define VEX_LEN_D3_P_2	(VEX_LEN_D2_P_2 + 1)
-#define VEX_LEN_D4_P_2	(VEX_LEN_D3_P_2 + 1)
-#define VEX_LEN_D5_P_2	(VEX_LEN_D4_P_2 + 1)
-#define VEX_LEN_D6_P_2	(VEX_LEN_D5_P_2 + 1)
-#define VEX_LEN_D7_P_2_M_1	(VEX_LEN_D6_P_2 + 1)
-#define VEX_LEN_D8_P_2	(VEX_LEN_D7_P_2_M_1 + 1)
-#define VEX_LEN_D9_P_2	(VEX_LEN_D8_P_2 + 1)
-#define VEX_LEN_DA_P_2	(VEX_LEN_D9_P_2 + 1)
-#define VEX_LEN_DB_P_2	(VEX_LEN_DA_P_2 + 1)
-#define VEX_LEN_DC_P_2	(VEX_LEN_DB_P_2 + 1)
-#define VEX_LEN_DD_P_2	(VEX_LEN_DC_P_2 + 1)
-#define VEX_LEN_DE_P_2	(VEX_LEN_DD_P_2 + 1)
-#define VEX_LEN_DF_P_2	(VEX_LEN_DE_P_2 + 1)
-#define VEX_LEN_E0_P_2	(VEX_LEN_DF_P_2 + 1)
-#define VEX_LEN_E1_P_2	(VEX_LEN_E0_P_2 + 1)
-#define VEX_LEN_E2_P_2	(VEX_LEN_E1_P_2 + 1)
-#define VEX_LEN_E3_P_2	(VEX_LEN_E2_P_2 + 1)
-#define VEX_LEN_E4_P_2	(VEX_LEN_E3_P_2 + 1)
-#define VEX_LEN_E5_P_2	(VEX_LEN_E4_P_2 + 1)
-#define VEX_LEN_E8_P_2	(VEX_LEN_E5_P_2 + 1)
-#define VEX_LEN_E9_P_2	(VEX_LEN_E8_P_2 + 1)
-#define VEX_LEN_EA_P_2	(VEX_LEN_E9_P_2 + 1)
-#define VEX_LEN_EB_P_2	(VEX_LEN_EA_P_2 + 1)
-#define VEX_LEN_EC_P_2	(VEX_LEN_EB_P_2 + 1)
-#define VEX_LEN_ED_P_2	(VEX_LEN_EC_P_2 + 1)
-#define VEX_LEN_EE_P_2	(VEX_LEN_ED_P_2 + 1)
-#define VEX_LEN_EF_P_2	(VEX_LEN_EE_P_2 + 1)
-#define VEX_LEN_F1_P_2	(VEX_LEN_EF_P_2 + 1)
-#define VEX_LEN_F2_P_2	(VEX_LEN_F1_P_2 + 1)
-#define VEX_LEN_F3_P_2	(VEX_LEN_F2_P_2 + 1)
-#define VEX_LEN_F4_P_2	(VEX_LEN_F3_P_2 + 1)
-#define VEX_LEN_F5_P_2	(VEX_LEN_F4_P_2 + 1)
-#define VEX_LEN_F6_P_2	(VEX_LEN_F5_P_2 + 1)
-#define VEX_LEN_F7_P_2	(VEX_LEN_F6_P_2 + 1)
-#define VEX_LEN_F8_P_2	(VEX_LEN_F7_P_2 + 1)
-#define VEX_LEN_F9_P_2	(VEX_LEN_F8_P_2 + 1)
-#define VEX_LEN_FA_P_2	(VEX_LEN_F9_P_2 + 1)
-#define VEX_LEN_FB_P_2	(VEX_LEN_FA_P_2 + 1)
-#define VEX_LEN_FC_P_2	(VEX_LEN_FB_P_2 + 1)
-#define VEX_LEN_FD_P_2	(VEX_LEN_FC_P_2 + 1)
-#define VEX_LEN_FE_P_2	(VEX_LEN_FD_P_2 + 1)
-#define VEX_LEN_3800_P_2	(VEX_LEN_FE_P_2 + 1)
-#define VEX_LEN_3801_P_2	(VEX_LEN_3800_P_2 + 1)
-#define VEX_LEN_3802_P_2	(VEX_LEN_3801_P_2 + 1)
-#define VEX_LEN_3803_P_2	(VEX_LEN_3802_P_2 + 1)
-#define VEX_LEN_3804_P_2	(VEX_LEN_3803_P_2 + 1)
-#define VEX_LEN_3805_P_2	(VEX_LEN_3804_P_2 + 1)
-#define VEX_LEN_3806_P_2	(VEX_LEN_3805_P_2 + 1)
-#define VEX_LEN_3807_P_2	(VEX_LEN_3806_P_2 + 1)
-#define VEX_LEN_3808_P_2	(VEX_LEN_3807_P_2 + 1)
-#define VEX_LEN_3809_P_2	(VEX_LEN_3808_P_2 + 1)
-#define VEX_LEN_380A_P_2	(VEX_LEN_3809_P_2 + 1)
-#define VEX_LEN_380B_P_2	(VEX_LEN_380A_P_2 + 1)
-#define VEX_LEN_3819_P_2_M_0	(VEX_LEN_380B_P_2 + 1)
-#define VEX_LEN_381A_P_2_M_0	(VEX_LEN_3819_P_2_M_0 + 1)
-#define VEX_LEN_381C_P_2	(VEX_LEN_381A_P_2_M_0 + 1)
-#define VEX_LEN_381D_P_2	(VEX_LEN_381C_P_2 + 1)
-#define VEX_LEN_381E_P_2	(VEX_LEN_381D_P_2 + 1)
-#define VEX_LEN_3820_P_2	(VEX_LEN_381E_P_2 + 1)
-#define VEX_LEN_3821_P_2	(VEX_LEN_3820_P_2 + 1)
-#define VEX_LEN_3822_P_2	(VEX_LEN_3821_P_2 + 1)
-#define VEX_LEN_3823_P_2	(VEX_LEN_3822_P_2 + 1)
-#define VEX_LEN_3824_P_2	(VEX_LEN_3823_P_2 + 1)
-#define VEX_LEN_3825_P_2	(VEX_LEN_3824_P_2 + 1)
-#define VEX_LEN_3828_P_2	(VEX_LEN_3825_P_2 + 1)
-#define VEX_LEN_3829_P_2	(VEX_LEN_3828_P_2 + 1)
-#define VEX_LEN_382A_P_2_M_0	(VEX_LEN_3829_P_2 + 1)
-#define VEX_LEN_382B_P_2	(VEX_LEN_382A_P_2_M_0 + 1)
-#define VEX_LEN_3830_P_2	(VEX_LEN_382B_P_2 + 1)
-#define VEX_LEN_3831_P_2	(VEX_LEN_3830_P_2 + 1)
-#define VEX_LEN_3832_P_2	(VEX_LEN_3831_P_2 + 1)
-#define VEX_LEN_3833_P_2	(VEX_LEN_3832_P_2 + 1)
-#define VEX_LEN_3834_P_2	(VEX_LEN_3833_P_2 + 1)
-#define VEX_LEN_3835_P_2	(VEX_LEN_3834_P_2 + 1)
-#define VEX_LEN_3837_P_2	(VEX_LEN_3835_P_2 + 1)
-#define VEX_LEN_3838_P_2	(VEX_LEN_3837_P_2 + 1)
-#define VEX_LEN_3839_P_2	(VEX_LEN_3838_P_2 + 1)
-#define VEX_LEN_383A_P_2	(VEX_LEN_3839_P_2 + 1)
-#define VEX_LEN_383B_P_2	(VEX_LEN_383A_P_2 + 1)
-#define VEX_LEN_383C_P_2	(VEX_LEN_383B_P_2 + 1)
-#define VEX_LEN_383D_P_2	(VEX_LEN_383C_P_2 + 1)
-#define VEX_LEN_383E_P_2	(VEX_LEN_383D_P_2 + 1)
-#define VEX_LEN_383F_P_2	(VEX_LEN_383E_P_2 + 1)
-#define VEX_LEN_3840_P_2	(VEX_LEN_383F_P_2 + 1)
-#define VEX_LEN_3841_P_2	(VEX_LEN_3840_P_2 + 1)
-#define VEX_LEN_38DB_P_2	(VEX_LEN_3841_P_2 + 1)
-#define VEX_LEN_38DC_P_2	(VEX_LEN_38DB_P_2 + 1)
-#define VEX_LEN_38DD_P_2	(VEX_LEN_38DC_P_2 + 1)
-#define VEX_LEN_38DE_P_2	(VEX_LEN_38DD_P_2 + 1)
-#define VEX_LEN_38DF_P_2	(VEX_LEN_38DE_P_2 + 1)
-#define VEX_LEN_3A06_P_2	(VEX_LEN_38DF_P_2 + 1)
-#define VEX_LEN_3A0A_P_2	(VEX_LEN_3A06_P_2 + 1)
-#define VEX_LEN_3A0B_P_2	(VEX_LEN_3A0A_P_2 + 1)
-#define VEX_LEN_3A0E_P_2	(VEX_LEN_3A0B_P_2 + 1)
-#define VEX_LEN_3A0F_P_2	(VEX_LEN_3A0E_P_2 + 1)
-#define VEX_LEN_3A14_P_2	(VEX_LEN_3A0F_P_2 + 1)
-#define VEX_LEN_3A15_P_2	(VEX_LEN_3A14_P_2 + 1)
-#define VEX_LEN_3A16_P_2	(VEX_LEN_3A15_P_2 + 1)
-#define VEX_LEN_3A17_P_2	(VEX_LEN_3A16_P_2 + 1)
-#define VEX_LEN_3A18_P_2	(VEX_LEN_3A17_P_2 + 1)
-#define VEX_LEN_3A19_P_2	(VEX_LEN_3A18_P_2 + 1)
-#define VEX_LEN_3A20_P_2	(VEX_LEN_3A19_P_2 + 1)
-#define VEX_LEN_3A21_P_2	(VEX_LEN_3A20_P_2 + 1)
-#define VEX_LEN_3A22_P_2	(VEX_LEN_3A21_P_2 + 1)
-#define VEX_LEN_3A41_P_2	(VEX_LEN_3A22_P_2 + 1)
-#define VEX_LEN_3A42_P_2	(VEX_LEN_3A41_P_2 + 1)
-#define VEX_LEN_3A44_P_2	(VEX_LEN_3A42_P_2 + 1)
-#define VEX_LEN_3A4C_P_2	(VEX_LEN_3A44_P_2 + 1)
-#define VEX_LEN_3A60_P_2	(VEX_LEN_3A4C_P_2 + 1)
-#define VEX_LEN_3A61_P_2	(VEX_LEN_3A60_P_2 + 1)
-#define VEX_LEN_3A62_P_2	(VEX_LEN_3A61_P_2 + 1)
-#define VEX_LEN_3A63_P_2	(VEX_LEN_3A62_P_2 + 1)
-#define VEX_LEN_3ADF_P_2	(VEX_LEN_3A63_P_2 + 1)
+enum
+{
+  VEX_LEN_10_P_1 = 0,
+  VEX_LEN_10_P_3,
+  VEX_LEN_11_P_1,
+  VEX_LEN_11_P_3,
+  VEX_LEN_12_P_0_M_0,
+  VEX_LEN_12_P_0_M_1,
+  VEX_LEN_12_P_2,
+  VEX_LEN_13_M_0,
+  VEX_LEN_16_P_0_M_0,
+  VEX_LEN_16_P_0_M_1,
+  VEX_LEN_16_P_2,
+  VEX_LEN_17_M_0,
+  VEX_LEN_2A_P_1,
+  VEX_LEN_2A_P_3,
+  VEX_LEN_2C_P_1,
+  VEX_LEN_2C_P_3,
+  VEX_LEN_2D_P_1,
+  VEX_LEN_2D_P_3,
+  VEX_LEN_2E_P_0,
+  VEX_LEN_2E_P_2,
+  VEX_LEN_2F_P_0,
+  VEX_LEN_2F_P_2,
+  VEX_LEN_51_P_1,
+  VEX_LEN_51_P_3,
+  VEX_LEN_52_P_1,
+  VEX_LEN_53_P_1,
+  VEX_LEN_58_P_1,
+  VEX_LEN_58_P_3,
+  VEX_LEN_59_P_1,
+  VEX_LEN_59_P_3,
+  VEX_LEN_5A_P_1,
+  VEX_LEN_5A_P_3,
+  VEX_LEN_5C_P_1,
+  VEX_LEN_5C_P_3,
+  VEX_LEN_5D_P_1,
+  VEX_LEN_5D_P_3,
+  VEX_LEN_5E_P_1,
+  VEX_LEN_5E_P_3,
+  VEX_LEN_5F_P_1,
+  VEX_LEN_5F_P_3,
+  VEX_LEN_60_P_2,
+  VEX_LEN_61_P_2,
+  VEX_LEN_62_P_2,
+  VEX_LEN_63_P_2,
+  VEX_LEN_64_P_2,
+  VEX_LEN_65_P_2,
+  VEX_LEN_66_P_2,
+  VEX_LEN_67_P_2,
+  VEX_LEN_68_P_2,
+  VEX_LEN_69_P_2,
+  VEX_LEN_6A_P_2,
+  VEX_LEN_6B_P_2,
+  VEX_LEN_6C_P_2,
+  VEX_LEN_6D_P_2,
+  VEX_LEN_6E_P_2,
+  VEX_LEN_70_P_1,
+  VEX_LEN_70_P_2,
+  VEX_LEN_70_P_3,
+  VEX_LEN_71_R_2_P_2,
+  VEX_LEN_71_R_4_P_2,
+  VEX_LEN_71_R_6_P_2,
+  VEX_LEN_72_R_2_P_2,
+  VEX_LEN_72_R_4_P_2,
+  VEX_LEN_72_R_6_P_2,
+  VEX_LEN_73_R_2_P_2,
+  VEX_LEN_73_R_3_P_2,
+  VEX_LEN_73_R_6_P_2,
+  VEX_LEN_73_R_7_P_2,
+  VEX_LEN_74_P_2,
+  VEX_LEN_75_P_2,
+  VEX_LEN_76_P_2,
+  VEX_LEN_7E_P_1,
+  VEX_LEN_7E_P_2,
+  VEX_LEN_AE_R_2_M_0,
+  VEX_LEN_AE_R_3_M_0,
+  VEX_LEN_C2_P_1,
+  VEX_LEN_C2_P_3,
+  VEX_LEN_C4_P_2,
+  VEX_LEN_C5_P_2,
+  VEX_LEN_D1_P_2,
+  VEX_LEN_D2_P_2,
+  VEX_LEN_D3_P_2,
+  VEX_LEN_D4_P_2,
+  VEX_LEN_D5_P_2,
+  VEX_LEN_D6_P_2,
+  VEX_LEN_D7_P_2_M_1,
+  VEX_LEN_D8_P_2,
+  VEX_LEN_D9_P_2,
+  VEX_LEN_DA_P_2,
+  VEX_LEN_DB_P_2,
+  VEX_LEN_DC_P_2,
+  VEX_LEN_DD_P_2,
+  VEX_LEN_DE_P_2,
+  VEX_LEN_DF_P_2,
+  VEX_LEN_E0_P_2,
+  VEX_LEN_E1_P_2,
+  VEX_LEN_E2_P_2,
+  VEX_LEN_E3_P_2,
+  VEX_LEN_E4_P_2,
+  VEX_LEN_E5_P_2,
+  VEX_LEN_E8_P_2,
+  VEX_LEN_E9_P_2,
+  VEX_LEN_EA_P_2,
+  VEX_LEN_EB_P_2,
+  VEX_LEN_EC_P_2,
+  VEX_LEN_ED_P_2,
+  VEX_LEN_EE_P_2,
+  VEX_LEN_EF_P_2,
+  VEX_LEN_F1_P_2,
+  VEX_LEN_F2_P_2,
+  VEX_LEN_F3_P_2,
+  VEX_LEN_F4_P_2,
+  VEX_LEN_F5_P_2,
+  VEX_LEN_F6_P_2,
+  VEX_LEN_F7_P_2,
+  VEX_LEN_F8_P_2,
+  VEX_LEN_F9_P_2,
+  VEX_LEN_FA_P_2,
+  VEX_LEN_FB_P_2,
+  VEX_LEN_FC_P_2,
+  VEX_LEN_FD_P_2,
+  VEX_LEN_FE_P_2,
+  VEX_LEN_3800_P_2,
+  VEX_LEN_3801_P_2,
+  VEX_LEN_3802_P_2,
+  VEX_LEN_3803_P_2,
+  VEX_LEN_3804_P_2,
+  VEX_LEN_3805_P_2,
+  VEX_LEN_3806_P_2,
+  VEX_LEN_3807_P_2,
+  VEX_LEN_3808_P_2,
+  VEX_LEN_3809_P_2,
+  VEX_LEN_380A_P_2,
+  VEX_LEN_380B_P_2,
+  VEX_LEN_3819_P_2_M_0,
+  VEX_LEN_381A_P_2_M_0,
+  VEX_LEN_381C_P_2,
+  VEX_LEN_381D_P_2,
+  VEX_LEN_381E_P_2,
+  VEX_LEN_3820_P_2,
+  VEX_LEN_3821_P_2,
+  VEX_LEN_3822_P_2,
+  VEX_LEN_3823_P_2,
+  VEX_LEN_3824_P_2,
+  VEX_LEN_3825_P_2,
+  VEX_LEN_3828_P_2,
+  VEX_LEN_3829_P_2,
+  VEX_LEN_382A_P_2_M_0,
+  VEX_LEN_382B_P_2,
+  VEX_LEN_3830_P_2,
+  VEX_LEN_3831_P_2,
+  VEX_LEN_3832_P_2,
+  VEX_LEN_3833_P_2,
+  VEX_LEN_3834_P_2,
+  VEX_LEN_3835_P_2,
+  VEX_LEN_3837_P_2,
+  VEX_LEN_3838_P_2,
+  VEX_LEN_3839_P_2,
+  VEX_LEN_383A_P_2,
+  VEX_LEN_383B_P_2,
+  VEX_LEN_383C_P_2,
+  VEX_LEN_383D_P_2,
+  VEX_LEN_383E_P_2,
+  VEX_LEN_383F_P_2,
+  VEX_LEN_3840_P_2,
+  VEX_LEN_3841_P_2,
+  VEX_LEN_38DB_P_2,
+  VEX_LEN_38DC_P_2,
+  VEX_LEN_38DD_P_2,
+  VEX_LEN_38DE_P_2,
+  VEX_LEN_38DF_P_2,
+  VEX_LEN_3A06_P_2,
+  VEX_LEN_3A0A_P_2,
+  VEX_LEN_3A0B_P_2,
+  VEX_LEN_3A0E_P_2,
+  VEX_LEN_3A0F_P_2,
+  VEX_LEN_3A14_P_2,
+  VEX_LEN_3A15_P_2,
+  VEX_LEN_3A16_P_2,
+  VEX_LEN_3A17_P_2,
+  VEX_LEN_3A18_P_2,
+  VEX_LEN_3A19_P_2,
+  VEX_LEN_3A20_P_2,
+  VEX_LEN_3A21_P_2,
+  VEX_LEN_3A22_P_2,
+  VEX_LEN_3A41_P_2,
+  VEX_LEN_3A42_P_2,
+  VEX_LEN_3A44_P_2,
+  VEX_LEN_3A4C_P_2,
+  VEX_LEN_3A60_P_2,
+  VEX_LEN_3A61_P_2,
+  VEX_LEN_3A62_P_2,
+  VEX_LEN_3A63_P_2,
+  VEX_LEN_3A6A_P_2,
+  VEX_LEN_3A6B_P_2,
+  VEX_LEN_3A6E_P_2,
+  VEX_LEN_3A6F_P_2,
+  VEX_LEN_3A7A_P_2,
+  VEX_LEN_3A7B_P_2,
+  VEX_LEN_3A7E_P_2,
+  VEX_LEN_3A7F_P_2,
+  VEX_LEN_3ADF_P_2
+};
 
 typedef void (*op_rtn) (int bytemode, int sizeflag);
 
@@ -1642,7 +1678,7 @@ static const struct dis386 dis386_twobyte[] = {
   { MOD_TABLE (MOD_0F22) },
   { MOD_TABLE (MOD_0F23) },
   { MOD_TABLE (MOD_0F24) },
-  { THREE_BYTE_TABLE (THREE_BYTE_0F25) },
+  { "(bad)",		{ XX } },
   { MOD_TABLE (MOD_0F26) },
   { "(bad)",		{ XX } },
   /* 28 */
@@ -1739,7 +1775,7 @@ static const struct dis386 dis386_twobyte[] = {
   { PREFIX_TABLE (PREFIX_0F78) },
   { PREFIX_TABLE (PREFIX_0F79) },
   { THREE_BYTE_TABLE (THREE_BYTE_0F7A) },
-  { THREE_BYTE_TABLE (THREE_BYTE_0F7B) },
+  { "(bad)",		{ XX } },
   { PREFIX_TABLE (PREFIX_0F7C) },
   { PREFIX_TABLE (PREFIX_0F7D) },
   { PREFIX_TABLE (PREFIX_0F7E) },
@@ -5058,6 +5094,38 @@ static const struct dis386 prefix_table[][4] = {
     { "(bad)",	{ XX } },
   },
 
+  /* PREFIX_VEX_3A5C */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { "vfmaddsubps", { XMVexW, VexFMA, EXVexW, EXVexW, VexI4 } },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A5D */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { "vfmaddsubpd", { XMVexW, VexFMA, EXVexW, EXVexW, VexI4 } },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A5E */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { "vfmsubaddps", { XMVexW, VexFMA, EXVexW, EXVexW, VexI4 } },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A5F */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { "vfmsubaddpd", { XMVexW, VexFMA, EXVexW, EXVexW, VexI4 } },
+    { "(bad)",	{ XX } },
+  },
+
   /* PREFIX_VEX_3A60 */
   {
     { "(bad)",	{ XX } },
@@ -5087,6 +5155,134 @@ static const struct dis386 prefix_table[][4] = {
     { "(bad)",	{ XX } },
     { "(bad)",	{ XX } },
     { VEX_LEN_TABLE (VEX_LEN_3A63_P_2) },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A68 */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { "vfmaddps", { XMVexW, VexFMA, EXVexW, EXVexW, VexI4 } },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A69 */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { "vfmaddpd", { XMVexW, VexFMA, EXVexW, EXVexW, VexI4 } },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A6A */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { VEX_LEN_TABLE (VEX_LEN_3A6A_P_2) },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A6B */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { VEX_LEN_TABLE (VEX_LEN_3A6B_P_2) },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A6C */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { "vfmsubps", { XMVexW, VexFMA, EXVexW, EXVexW, VexI4 } },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A6D */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { "vfmsubpd", { XMVexW, VexFMA, EXVexW, EXVexW, VexI4 } },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A6E */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { VEX_LEN_TABLE (VEX_LEN_3A6E_P_2) },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A6F */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { VEX_LEN_TABLE (VEX_LEN_3A6F_P_2) },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A78 */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { "vfnmaddps", { XMVexW, VexFMA, EXVexW, EXVexW, VexI4 } },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A79 */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { "vfnmaddpd", { XMVexW, VexFMA, EXVexW, EXVexW, VexI4 } },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A7A */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { VEX_LEN_TABLE (VEX_LEN_3A7A_P_2) },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A7B */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { VEX_LEN_TABLE (VEX_LEN_3A7B_P_2) },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A7C */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { "vfnmsubps", { XMVexW, VexFMA, EXVexW, EXVexW, VexI4 } },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A7D */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { "vfnmsubpd", { XMVexW, VexFMA, EXVexW, EXVexW, VexI4 } },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A7E */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { VEX_LEN_TABLE (VEX_LEN_3A7E_P_2) },
+    { "(bad)",	{ XX } },
+  },
+
+  /* PREFIX_VEX_3A7F */
+  {
+    { "(bad)",	{ XX } },
+    { "(bad)",	{ XX } },
+    { VEX_LEN_TABLE (VEX_LEN_3A7F_P_2) },
     { "(bad)",	{ XX } },
   },
 
@@ -5270,588 +5466,7 @@ static const struct dis386 x86_64_table[][2] = {
 };
 
 static const struct dis386 three_byte_table[][256] = {
-  /* THREE_BYTE_0F24 */
-  {
-    /* 00 */
-    { "fmaddps",	{ { OP_DREX4, q_mode } } },
-    { "fmaddpd",	{ { OP_DREX4, q_mode } } },
-    { "fmaddss",	{ { OP_DREX4, w_mode } } },
-    { "fmaddsd",	{ { OP_DREX4, d_mode } } },
-    { "fmaddps",	{ { OP_DREX4, DREX_OC1 + q_mode } } },
-    { "fmaddpd",	{ { OP_DREX4, DREX_OC1 + q_mode } } },
-    { "fmaddss",	{ { OP_DREX4, DREX_OC1 + w_mode } } },
-    { "fmaddsd",	{ { OP_DREX4, DREX_OC1 + d_mode } } },
-    /* 08 */
-    { "fmsubps",	{ { OP_DREX4, q_mode } } },
-    { "fmsubpd",	{ { OP_DREX4, q_mode } } },
-    { "fmsubss",	{ { OP_DREX4, w_mode } } },
-    { "fmsubsd",	{ { OP_DREX4, d_mode } } },
-    { "fmsubps",	{ { OP_DREX4, DREX_OC1 + q_mode } } },
-    { "fmsubpd",	{ { OP_DREX4, DREX_OC1 + q_mode } } },
-    { "fmsubss",	{ { OP_DREX4, DREX_OC1 + w_mode } } },
-    { "fmsubsd",	{ { OP_DREX4, DREX_OC1 + d_mode } } },
-    /* 10 */
-    { "fnmaddps",	{ { OP_DREX4, q_mode } } },
-    { "fnmaddpd",	{ { OP_DREX4, q_mode } } },
-    { "fnmaddss",	{ { OP_DREX4, w_mode } } },
-    { "fnmaddsd",	{ { OP_DREX4, d_mode } } },
-    { "fnmaddps",	{ { OP_DREX4, DREX_OC1 + q_mode } } },
-    { "fnmaddpd",	{ { OP_DREX4, DREX_OC1 + q_mode } } },
-    { "fnmaddss",	{ { OP_DREX4, DREX_OC1 + w_mode } } },
-    { "fnmaddsd",	{ { OP_DREX4, DREX_OC1 + d_mode } } },
-    /* 18 */
-    { "fnmsubps",	{ { OP_DREX4, q_mode } } },
-    { "fnmsubpd",	{ { OP_DREX4, q_mode } } },
-    { "fnmsubss",	{ { OP_DREX4, w_mode } } },
-    { "fnmsubsd",	{ { OP_DREX4, d_mode } } },
-    { "fnmsubps",	{ { OP_DREX4, DREX_OC1 + q_mode } } },
-    { "fnmsubpd",	{ { OP_DREX4, DREX_OC1 + q_mode } } },
-    { "fnmsubss",	{ { OP_DREX4, DREX_OC1 + w_mode } } },
-    { "fnmsubsd",	{ { OP_DREX4, DREX_OC1 + d_mode } } },
-    /* 20 */
-    { "permps",		{ { OP_DREX4, q_mode } } },
-    { "permpd",		{ { OP_DREX4, q_mode } } },
-    { "pcmov",		{ { OP_DREX4, q_mode } } },
-    { "pperm",		{ { OP_DREX4, q_mode } } },
-    { "permps",		{ { OP_DREX4, DREX_OC1 + q_mode } } },
-    { "permpd",		{ { OP_DREX4, DREX_OC1 + q_mode } } },
-    { "pcmov",		{ { OP_DREX4, DREX_OC1 + w_mode } } },
-    { "pperm",		{ { OP_DREX4, DREX_OC1 + d_mode } } },
-    /* 28 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 30 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 38 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 40 */
-    { "protb",		{ { OP_DREX3, q_mode } } },
-    { "protw",		{ { OP_DREX3, q_mode } } },
-    { "protd",		{ { OP_DREX3, q_mode } } },
-    { "protq",		{ { OP_DREX3, q_mode } } },
-    { "pshlb",		{ { OP_DREX3, q_mode } } },
-    { "pshlw",		{ { OP_DREX3, q_mode } } },
-    { "pshld",		{ { OP_DREX3, q_mode } } },
-    { "pshlq",		{ { OP_DREX3, q_mode } } },
-    /* 48 */
-    { "pshab",		{ { OP_DREX3, q_mode } } },
-    { "pshaw",		{ { OP_DREX3, q_mode } } },
-    { "pshad",		{ { OP_DREX3, q_mode } } },
-    { "pshaq",		{ { OP_DREX3, q_mode } } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 50 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 58 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 60 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 68 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 70 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 78 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 80 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "pmacssww",	{ { OP_DREX4, DREX_OC1 + DREX_NO_OC0 + q_mode } } },
-    { "pmacsswd",	{ { OP_DREX4, DREX_OC1 + DREX_NO_OC0 + q_mode } } },
-    { "pmacssdql",	{ { OP_DREX4, DREX_OC1 + DREX_NO_OC0 + q_mode } } },
-    /* 88 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "pmacssdd",	{ { OP_DREX4, DREX_OC1 + DREX_NO_OC0 + q_mode } } },
-    { "pmacssdqh",	{ { OP_DREX4, DREX_OC1 + DREX_NO_OC0 + q_mode } } },
-    /* 90 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "pmacsww",	{ { OP_DREX4, DREX_OC1 + DREX_NO_OC0 + q_mode } } },
-    { "pmacswd",	{ { OP_DREX4, DREX_OC1 + DREX_NO_OC0 + q_mode } } },
-    { "pmacsdql",	{ { OP_DREX4, DREX_OC1 + DREX_NO_OC0 + q_mode } } },
-    /* 98 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "pmacsdd",	{ { OP_DREX4, DREX_OC1 + DREX_NO_OC0 + q_mode } } },
-    { "pmacsdqh",	{ { OP_DREX4, DREX_OC1 + DREX_NO_OC0 + q_mode } } },
-    /* a0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "pmadcsswd",	{ { OP_DREX4, DREX_OC1 + DREX_NO_OC0 + q_mode } } },
-    { "(bad)",		{ XX } },
-    /* a8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* b0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "pmadcswd",	{ { OP_DREX4, DREX_OC1 + DREX_NO_OC0 + q_mode } } },
-    { "(bad)",		{ XX } },
-    /* b8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* c0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* c8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* d0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* d8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* e0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* e8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* f0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* f8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-  },
-  /* THREE_BYTE_0F25 */
-  {
-    /* 00 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 08 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 10 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 18 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 20 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 28 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "comps",		{ { OP_DREX3, q_mode }, { OP_DREX_FCMP, b_mode } } },
-    { "compd",		{ { OP_DREX3, q_mode }, { OP_DREX_FCMP, b_mode } } },
-    { "comss",		{ { OP_DREX3, w_mode }, { OP_DREX_FCMP, b_mode } } },
-    { "comsd",		{ { OP_DREX3, d_mode }, { OP_DREX_FCMP, b_mode } } },
-    /* 30 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 38 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 40 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 48 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "pcomb",		{ { OP_DREX3, q_mode }, { OP_DREX_ICMP, b_mode } } },
-    { "pcomw",		{ { OP_DREX3, q_mode }, { OP_DREX_ICMP, b_mode } } },
-    { "pcomd",		{ { OP_DREX3, q_mode }, { OP_DREX_ICMP, b_mode } } },
-    { "pcomq",		{ { OP_DREX3, q_mode }, { OP_DREX_ICMP, b_mode } } },
-    /* 50 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 58 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 60 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 68 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "pcomub",		{ { OP_DREX3, q_mode }, { OP_DREX_ICMP, b_mode } } },
-    { "pcomuw",		{ { OP_DREX3, q_mode }, { OP_DREX_ICMP, b_mode } } },
-    { "pcomud",		{ { OP_DREX3, q_mode }, { OP_DREX_ICMP, b_mode } } },
-    { "pcomuq",		{ { OP_DREX3, q_mode }, { OP_DREX_ICMP, b_mode } } },
-    /* 70 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 78 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 80 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 88 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 90 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 98 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* a0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* a8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* b0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* b8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* c0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* c8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* d0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* d8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* e0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* e8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* f0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* f8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-  },
+
   /* THREE_BYTE_0F38 */
   {
     /* 00 */
@@ -6434,6 +6049,7 @@ static const struct dis386 three_byte_table[][256] = {
     { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
   },
+
   /* THREE_BYTE_0F7A */
   {
     /* 00 */
@@ -6455,10 +6071,10 @@ static const struct dis386 three_byte_table[][256] = {
     { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
     /* 10 */
-    { "frczps",		{ XM, EXq } },
-    { "frczpd",		{ XM, EXq } },
-    { "frczss",		{ XM, EXq } },
-    { "frczsd",		{ XM, EXq } },
+    { "(bad)",		{ XX } },
+    { "(bad)",		{ XX } },
+    { "(bad)",		{ XX } },
+    { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
@@ -6491,8 +6107,8 @@ static const struct dis386 three_byte_table[][256] = {
     { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
     /* 30 */
-    { "cvtph2ps",	{ XM, EXd } },
-    { "cvtps2ph",	{ EXd, XM } },
+    { "(bad)",		{ XX } },
+    { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
@@ -6725,298 +6341,8 @@ static const struct dis386 three_byte_table[][256] = {
     { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
   },
-  /* THREE_BYTE_0F7B */
-  {
-    /* 00 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 08 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 10 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 18 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 20 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 28 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 30 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 38 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 40 */
-    { "protb",		{ XM, EXq, Ib } },
-    { "protw",		{ XM, EXq, Ib } },
-    { "protd",		{ XM, EXq, Ib } },
-    { "protq",		{ XM, EXq, Ib } },
-    { "pshlb",		{ XM, EXq, Ib } },
-    { "pshlw",		{ XM, EXq, Ib } },
-    { "pshld",		{ XM, EXq, Ib } },
-    { "pshlq",		{ XM, EXq, Ib } },
-    /* 48 */
-    { "pshab",		{ XM, EXq, Ib } },
-    { "pshaw",		{ XM, EXq, Ib } },
-    { "pshad",		{ XM, EXq, Ib } },
-    { "pshaq",		{ XM, EXq, Ib } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 50 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 58 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 60 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 68 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 70 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 78 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 80 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 88 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 90 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* 98 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* a0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* a8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* b0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* b8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* c0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* c8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* d0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* d8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* e0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* e8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* f0 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    /* f8 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-  },
 };
+
 
 static const struct dis386 vex_table[][256] = {
   /* VEX_0F */
@@ -7707,10 +7033,10 @@ static const struct dis386 vex_table[][256] = {
     { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
+    { PREFIX_TABLE (PREFIX_VEX_3A5C) },
+    { PREFIX_TABLE (PREFIX_VEX_3A5D) },
+    { PREFIX_TABLE (PREFIX_VEX_3A5E) },
+    { PREFIX_TABLE (PREFIX_VEX_3A5F) },
     /* 60 */
     { PREFIX_TABLE (PREFIX_VEX_3A60) },
     { PREFIX_TABLE (PREFIX_VEX_3A61) },
@@ -7721,14 +7047,14 @@ static const struct dis386 vex_table[][256] = {
     { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
     /* 68 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
+    { PREFIX_TABLE (PREFIX_VEX_3A68) },
+    { PREFIX_TABLE (PREFIX_VEX_3A69) },
+    { PREFIX_TABLE (PREFIX_VEX_3A6A) },
+    { PREFIX_TABLE (PREFIX_VEX_3A6B) },
+    { PREFIX_TABLE (PREFIX_VEX_3A6C) },
+    { PREFIX_TABLE (PREFIX_VEX_3A6D) },
+    { PREFIX_TABLE (PREFIX_VEX_3A6E) },
+    { PREFIX_TABLE (PREFIX_VEX_3A6F) },
     /* 70 */
     { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
@@ -7739,14 +7065,14 @@ static const struct dis386 vex_table[][256] = {
     { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
     /* 78 */
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
-    { "(bad)",		{ XX } },
+    { PREFIX_TABLE (PREFIX_VEX_3A78) },
+    { PREFIX_TABLE (PREFIX_VEX_3A79) },
+    { PREFIX_TABLE (PREFIX_VEX_3A7A) },
+    { PREFIX_TABLE (PREFIX_VEX_3A7B) },
+    { PREFIX_TABLE (PREFIX_VEX_3A7C) },
+    { PREFIX_TABLE (PREFIX_VEX_3A7D) },
+    { PREFIX_TABLE (PREFIX_VEX_3A7E) },
+    { PREFIX_TABLE (PREFIX_VEX_3A7F) },
     /* 80 */
     { "(bad)",		{ XX } },
     { "(bad)",		{ XX } },
@@ -8333,13 +7659,13 @@ static const struct dis386 vex_len_table[][2] = {
     { "(bad)",		{ XX } },
   },
 
-  /* VEX_LEN_AE_R_2_M0 */
+  /* VEX_LEN_AE_R_2_M_0 */
   {
     { "vldmxcsr",	{ Md } },
     { "(bad)",		{ XX } },
   },
 
-  /* VEX_LEN_AE_R_3_M0 */
+  /* VEX_LEN_AE_R_3_M_0 */
   {
     { "vstmxcsr",	{ Md } },
     { "(bad)",		{ XX } },
@@ -9053,6 +8379,54 @@ static const struct dis386 vex_len_table[][2] = {
     { "(bad)",		{ XX } },
   },
 
+  /* VEX_LEN_3A6A_P_2 */
+  {
+    { "vfmaddss",	{ XMVexW, Vex128FMA, EXdVexW, EXdVexW, VexI4 } },
+    { "(bad)",		{ XX } },
+  },
+
+  /* VEX_LEN_3A6B_P_2 */
+  {
+    { "vfmaddsd",	{ XMVexW, Vex128FMA, EXqVexW, EXqVexW, VexI4 } },
+    { "(bad)",		{ XX } },
+  },
+
+  /* VEX_LEN_3A6E_P_2 */
+  {
+    { "vfmsubss",	{ XMVexW, Vex128FMA, EXdVexW, EXdVexW, VexI4 } },
+    { "(bad)",		{ XX } },
+  },
+
+  /* VEX_LEN_3A6F_P_2 */
+  {
+    { "vfmsubsd",	{ XMVexW, Vex128FMA, EXqVexW, EXqVexW, VexI4 } },
+    { "(bad)",		{ XX } },
+  },
+
+  /* VEX_LEN_3A7A_P_2 */
+  {
+    { "vfnmaddss",	{ XMVexW, Vex128FMA, EXdVexW, EXdVexW, VexI4 } },
+    { "(bad)",		{ XX } },
+  },
+
+  /* VEX_LEN_3A7B_P_2 */
+  {
+    { "vfnmaddsd",	{ XMVexW, Vex128FMA, EXqVexW, EXqVexW, VexI4 } },
+    { "(bad)",		{ XX } },
+  },
+
+  /* VEX_LEN_3A7E_P_2 */
+  {
+    { "vfnmsubss",	{ XMVexW, Vex128FMA, EXdVexW, EXdVexW, VexI4 } },
+    { "(bad)",		{ XX } },
+  },
+
+  /* VEX_LEN_3A7F_P_2 */
+  {
+    { "vfnmsubsd",	{ XMVexW, Vex128FMA, EXqVexW, EXqVexW, VexI4 } },
+    { "(bad)",		{ XX } },
+  },
+
   /* VEX_LEN_3ADF_P_2 */
   {
     { "vaeskeygenassist", { XM, EXx, Ib } },
@@ -9153,7 +8527,7 @@ static const struct dis386 mod_table[][2] = {
   },
   {
     /* MOD_0F24 */
-    { THREE_BYTE_TABLE (THREE_BYTE_0F24) },
+    { "(bad)",		{ XX } },    
     { "movL",		{ Rd, Td } },
   },
   {
@@ -10044,8 +9418,7 @@ get_valid_dis386 (const struct dis386 *dp, disassemble_info *info)
       break;
 
     default:
-      oappend (INTERNAL_DISASSEMBLER_ERROR);
-      return NULL;
+      abort ();
     }
 
   if (dp->name != NULL)
@@ -10069,19 +9442,24 @@ print_insn (bfd_vma pc, disassemble_info *info)
   char *prefix_obufp;
 
   if (info->mach == bfd_mach_x86_64_intel_syntax
-      || info->mach == bfd_mach_x86_64)
+      || info->mach == bfd_mach_x86_64
+      || info->mach == bfd_mach_l1om
+      || info->mach == bfd_mach_l1om_intel_syntax)
     address_mode = mode_64bit;
   else
     address_mode = mode_32bit;
 
   if (intel_syntax == (char) -1)
     intel_syntax = (info->mach == bfd_mach_i386_i386_intel_syntax
-		    || info->mach == bfd_mach_x86_64_intel_syntax);
+		    || info->mach == bfd_mach_x86_64_intel_syntax
+		    || info->mach == bfd_mach_l1om_intel_syntax);
 
   if (info->mach == bfd_mach_i386_i386
       || info->mach == bfd_mach_x86_64
+      || info->mach == bfd_mach_l1om
       || info->mach == bfd_mach_i386_i386_intel_syntax
-      || info->mach == bfd_mach_x86_64_intel_syntax)
+      || info->mach == bfd_mach_x86_64_intel_syntax
+      || info->mach == bfd_mach_l1om_intel_syntax)
     priv.orig_sizeflag = AFLAG | DFLAG;
   else if (info->mach == bfd_mach_i386_i8086)
     priv.orig_sizeflag = 0;
@@ -10183,8 +9561,13 @@ print_insn (bfd_vma pc, disassemble_info *info)
     }
 
   /* The output looks better if we put 7 bytes on a line, since that
-     puts most long word instructions on a single line.  */
-  info->bytes_per_line = 7;
+     puts most long word instructions on a single line.  Use 8 bytes
+     for Intel L1OM.  */
+  if (info->mach == bfd_mach_l1om
+      || info->mach == bfd_mach_l1om_intel_syntax)
+    info->bytes_per_line = 8;
+  else
+    info->bytes_per_line = 7;
 
   info->private_data = &priv;
   priv.max_fetched = priv.the_buffer;
@@ -10252,6 +9635,7 @@ print_insn (bfd_vma pc, disassemble_info *info)
     }
 
   op = 0;
+
   if (*codep == 0x0f)
     {
       unsigned char threebyte;
@@ -10330,15 +9714,16 @@ print_insn (bfd_vma pc, disassemble_info *info)
       modrm.rm = *codep & 7;
     }
 
+   need_vex = 0;
+   need_vex_reg = 0;
+   vex_w_done = 0;
+
   if (dp->name == NULL && dp->op[0].bytemode == FLOATCODE)
     {
       dofloat (sizeflag);
     }
   else
     {
-      need_vex = 0;
-      need_vex_reg = 0;
-      vex_w_done = 0;
       dp = get_valid_dis386 (dp, info);
       if (dp != NULL && putop (dp->name, sizeflag) == 0)
         {
@@ -10733,8 +10118,8 @@ static char *fgrps[][8] = {
 
   /* db_4  6 */
   {
-    "feni(287 only)","fdisi(287 only)","fNclex","fNinit",
-    "fNsetpm(287 only)","(bad)","(bad)","(bad)",
+    "fNeni(8087 only)","fNdisi(8087 only)","fNclex","fNinit",
+    "fNsetpm(287 only)","frstpm(287 only)","(bad)","(bad)",
   },
 
   /* de_3  7 */
@@ -10827,7 +10212,7 @@ OP_STi (int bytemode ATTRIBUTE_UNUSED, int sizeflag ATTRIBUTE_UNUSED)
 
 /* Capital letters in template are macros.  */
 static int
-putop (const char *template, int sizeflag)
+putop (const char *in_template, int sizeflag)
 {
   const char *p;
   int alt = 0;
@@ -10841,7 +10226,7 @@ putop (const char *template, int sizeflag)
   else					\
     abort ();
 
-  for (p = template; *p; p++)
+  for (p = in_template; *p; p++)
     {
       switch (*p)
 	{
@@ -11608,7 +10993,7 @@ OP_E_register (int bytemode, int sizeflag)
 }
 
 static void
-OP_E_memory (int bytemode, int sizeflag, int has_drex)
+OP_E_memory (int bytemode, int sizeflag)
 {
   bfd_vma disp = 0;
   int add = (rex & REX_B) ? 8 : 0;
@@ -11650,14 +11035,6 @@ OP_E_memory (int bytemode, int sizeflag, int has_drex)
 	  codep++;
 	}
       rbase = base + add;
-
-      /* If we have a DREX byte, skip it now 
-	 (it has already been handled) */
-      if (has_drex)
-	{
-	  FETCH_DATA (the_info, codep + 1);
-	  codep++;
-	}
 
       switch (modrm.mod)
 	{
@@ -11758,7 +11135,7 @@ OP_E_memory (int bytemode, int sizeflag, int has_drex)
 		  *obufp++ = '+';
 		  *obufp = '\0';
 		}
-	      else if (modrm.mod != 1)
+	      else if (modrm.mod != 1 && disp != -disp)
 		{
 		  *obufp++ = '-';
 		  *obufp = '\0';
@@ -11868,7 +11245,7 @@ OP_E_memory (int bytemode, int sizeflag, int has_drex)
 }
 
 static void
-OP_E_extended (int bytemode, int sizeflag, int has_drex)
+OP_E_extended (int bytemode, int sizeflag)
 {
   /* Skip mod/rm byte.  */
   MODRM_CHECK;
@@ -11877,13 +11254,13 @@ OP_E_extended (int bytemode, int sizeflag, int has_drex)
   if (modrm.mod == 3)
     OP_E_register (bytemode, sizeflag);
   else
-    OP_E_memory (bytemode, sizeflag, has_drex);
+    OP_E_memory (bytemode, sizeflag);
 }
 
 static void
 OP_E (int bytemode, int sizeflag)
 {
-  OP_E_extended (bytemode, sizeflag, 0);
+  OP_E_extended (bytemode, sizeflag);
 }
 
 
@@ -12676,11 +12053,17 @@ static void
 OP_EX (int bytemode, int sizeflag)
 {
   int add;
+
+  /* Skip mod/rm byte.  */
+  MODRM_CHECK;
+  codep++;
+
   if (modrm.mod != 3)
     {
-      OP_E (bytemode, sizeflag);
+      OP_E_memory (bytemode, sizeflag);
       return;
     }
+
   USED_REX (REX_B);
   if (rex & REX_B)
     add = 8;
@@ -12693,9 +12076,6 @@ OP_EX (int bytemode, int sizeflag)
 	  || bytemode == q_swap_mode))
     swap_operand ();
 
-  /* Skip mod/rm byte.  */
-  MODRM_CHECK;
-  codep++;
   if (need_vex
       && bytemode != xmm_mode
       && bytemode != xmmq_mode)
@@ -13100,347 +12480,6 @@ skip:
     OP_E (bytemode, sizeflag);
 }
 
-/* Print a DREX argument as either a register or memory operation.  */
-static void
-print_drex_arg (unsigned int reg, int bytemode, int sizeflag)
-{
-  if (reg == DREX_REG_UNKNOWN)
-    BadOp ();
-
-  else if (reg != DREX_REG_MEMORY)
-    {
-      sprintf (scratchbuf, "%%xmm%d", reg);
-      oappend (scratchbuf + intel_syntax);
-    }
-
-  else
-    OP_E_extended (bytemode, sizeflag, 1);
-}
-
-/* SSE5 instructions that have 4 arguments are encoded as:
-   0f 24 <sub-opcode> <modrm> <optional-sib> <drex> <offset>.
-
-   The <sub-opcode> byte has 1 bit (0x4) that is combined with 1 bit in
-   the DREX field (0x8) to determine how the arguments are laid out.  
-   The destination register must be the same register as one of the 
-   inputs, and it is encoded in the DREX byte.  No REX prefix is used 
-   for these instructions, since the DREX field contains the 3 extension
-   bits provided by the REX prefix.
-
-   The bytemode argument adds 2 extra bits for passing extra information:
-	DREX_OC1	-- Set the OC1 bit to indicate dest == 1st arg
-	DREX_NO_OC0	-- OC0 in DREX is invalid 
-	(but pretend it is set).  */
-
-static void
-OP_DREX4 (int flag_bytemode, int sizeflag)
-{
-  unsigned int drex_byte;
-  unsigned int regs[4];
-  unsigned int modrm_regmem;
-  unsigned int modrm_reg;
-  unsigned int drex_reg;
-  int bytemode;
-  int rex_save = rex;
-  int rex_used_save = rex_used;
-  int has_sib = 0;
-  int oc1 = (flag_bytemode & DREX_OC1) ? 2 : 0;
-  int oc0;
-  int i;
-
-  bytemode = flag_bytemode & ~ DREX_MASK;
-
-  for (i = 0; i < 4; i++)
-    regs[i] = DREX_REG_UNKNOWN;
-
-  /* Determine if we have a SIB byte in addition to MODRM before the 
-     DREX byte.  */
-  if (((sizeflag & AFLAG) || address_mode == mode_64bit)
-      && (modrm.mod != 3)
-      && (modrm.rm == 4))
-    has_sib = 1;
-
-  /* Get the DREX byte.  */
-  FETCH_DATA (the_info, codep + 2 + has_sib);
-  drex_byte = codep[has_sib+1];
-  drex_reg = DREX_XMM (drex_byte);
-  modrm_reg = modrm.reg + ((drex_byte & REX_R) ? 8 : 0);
-
-  /* Is OC0 legal?  If not, hardwire oc0 == 1.  */
-  if (flag_bytemode & DREX_NO_OC0)
-    {
-      oc0 = 1;
-      if (DREX_OC0 (drex_byte))
-	BadOp ();
-    }
-  else
-    oc0 = DREX_OC0 (drex_byte);
-
-  if (modrm.mod == 3)
-    {			
-      /* regmem == register  */
-      modrm_regmem = modrm.rm + ((drex_byte & REX_B) ? 8 : 0);
-      rex = rex_used = 0;
-      /* skip modrm/drex since we don't call OP_E_extended  */
-      codep += 2;
-    }
-  else
-    {			
-      /* regmem == memory, fill in appropriate REX bits  */
-      modrm_regmem = DREX_REG_MEMORY;
-      rex = drex_byte & (REX_B | REX_X | REX_R);
-      if (rex)
-	rex |= REX_OPCODE;
-      rex_used = rex;
-    }
-  
-  /* Based on the OC1/OC0 bits, lay out the arguments in the correct 
-     order.  */
-  switch (oc0 + oc1)
-    {
-    default:
-      BadOp ();
-      return;
-
-    case 0:
-      regs[0] = modrm_regmem;
-      regs[1] = modrm_reg;
-      regs[2] = drex_reg;
-      regs[3] = drex_reg;
-      break;
-
-    case 1:
-      regs[0] = modrm_reg;
-      regs[1] = modrm_regmem;
-      regs[2] = drex_reg;
-      regs[3] = drex_reg;
-      break;
-
-    case 2:
-      regs[0] = drex_reg;
-      regs[1] = modrm_regmem;
-      regs[2] = modrm_reg;
-      regs[3] = drex_reg;
-      break;
-
-    case 3:
-      regs[0] = drex_reg;
-      regs[1] = modrm_reg;
-      regs[2] = modrm_regmem;
-      regs[3] = drex_reg;
-      break;
-    }
-
-  /* Print out the arguments.  */
-  for (i = 0; i < 4; i++)
-    {
-      int j = (intel_syntax) ? 3 - i : i;
-      if (i > 0)
-	{
-	  *obufp++ = ',';
-	  *obufp = '\0';
-	}
-
-      print_drex_arg (regs[j], bytemode, sizeflag);
-    }
-
-  rex = rex_save;
-  rex_used = rex_used_save;
-}
-
-/* SSE5 instructions that have 3 arguments, and are encoded as:
-   0f 24 <sub-opcode> <modrm> <optional-sib> <drex> <offset>	(or)
-   0f 25 <sub-opcode> <modrm> <optional-sib> <drex> <offset> <cmp-byte>
-
-   The DREX field has 1 bit (0x8) to determine how the arguments are 
-   laid out. The destination register is encoded in the DREX byte.  
-   No REX prefix is used for these instructions, since the DREX field 
-   contains the 3 extension bits provided by the REX prefix.  */
-
-static void
-OP_DREX3 (int flag_bytemode, int sizeflag)
-{
-  unsigned int drex_byte;
-  unsigned int regs[3];
-  unsigned int modrm_regmem;
-  unsigned int modrm_reg;
-  unsigned int drex_reg;
-  int bytemode;
-  int rex_save = rex;
-  int rex_used_save = rex_used;
-  int has_sib = 0;
-  int oc0;
-  int i;
-
-  bytemode = flag_bytemode & ~ DREX_MASK;
-
-  for (i = 0; i < 3; i++)
-    regs[i] = DREX_REG_UNKNOWN;
-
-  /* Determine if we have a SIB byte in addition to MODRM before the 
-     DREX byte.  */
-  if (((sizeflag & AFLAG) || address_mode == mode_64bit)
-      && (modrm.mod != 3)
-      && (modrm.rm == 4))
-    has_sib = 1;
-
-  /* Get the DREX byte.  */
-  FETCH_DATA (the_info, codep + 2 + has_sib);
-  drex_byte = codep[has_sib+1];
-  drex_reg = DREX_XMM (drex_byte);
-  modrm_reg = modrm.reg + ((drex_byte & REX_R) ? 8 : 0);
-
-  /* Is OC0 legal?  If not, hardwire oc0 == 0 */
-  oc0 = DREX_OC0 (drex_byte);
-  if ((flag_bytemode & DREX_NO_OC0) && oc0)
-    BadOp ();
-
-  if (modrm.mod == 3)
-    {			
-      /* regmem == register */
-      modrm_regmem = modrm.rm + ((drex_byte & REX_B) ? 8 : 0);
-      rex = rex_used = 0;
-      /* skip modrm/drex since we don't call OP_E_extended.  */
-      codep += 2;
-    }
-  else
-    {			
-      /* regmem == memory, fill in appropriate REX bits.  */
-      modrm_regmem = DREX_REG_MEMORY;
-      rex = drex_byte & (REX_B | REX_X | REX_R);
-      if (rex)
-	rex |= REX_OPCODE;
-      rex_used = rex;
-    }
-
-  /* Based on the OC1/OC0 bits, lay out the arguments in the correct 
-     order.  */
-  switch (oc0)
-    {
-    default:
-      BadOp ();
-      return;
-
-    case 0:
-      regs[0] = modrm_regmem;
-      regs[1] = modrm_reg;
-      regs[2] = drex_reg;
-      break;
-
-    case 1:
-      regs[0] = modrm_reg;
-      regs[1] = modrm_regmem;
-      regs[2] = drex_reg;
-      break;
-    }
-
-  /* Print out the arguments.  */
-  for (i = 0; i < 3; i++)
-    {
-      int j = (intel_syntax) ? 2 - i : i;
-      if (i > 0)
-	{
-	  *obufp++ = ',';
-	  *obufp = '\0';
-	}
-
-      print_drex_arg (regs[j], bytemode, sizeflag);
-    }
-
-  rex = rex_save;
-  rex_used = rex_used_save;
-}
-
-/* Emit a floating point comparison for comp<xx> instructions.  */
-
-static void
-OP_DREX_FCMP (int bytemode ATTRIBUTE_UNUSED, 
-	      int sizeflag ATTRIBUTE_UNUSED)
-{
-  unsigned char byte;
-
-  static const char *const cmp_test[] = {
-    "eq",
-    "lt",
-    "le",
-    "unord",
-    "ne",
-    "nlt",
-    "nle",
-    "ord",
-    "ueq",
-    "ult",
-    "ule",
-    "false",
-    "une",
-    "unlt",
-    "unle",
-    "true"
-  };
-
-  FETCH_DATA (the_info, codep + 1);
-  byte = *codep & 0xff;
-
-  if (byte >= ARRAY_SIZE (cmp_test)
-      || obuf[0] != 'c'
-      || obuf[1] != 'o'
-      || obuf[2] != 'm')
-    {
-      /* The instruction isn't one we know about, so just append the 
-	 extension byte as a numeric value.  */
-      OP_I (b_mode, 0);
-    }
-
-  else
-    {
-      sprintf (scratchbuf, "com%s%s", cmp_test[byte], obuf+3);
-      mnemonicendp = stpcpy (obuf, scratchbuf);
-      codep++;
-    }
-}
-
-/* Emit an integer point comparison for pcom<xx> instructions, 
-   rewriting the instruction to have the test inside of it.  */
-
-static void
-OP_DREX_ICMP (int bytemode ATTRIBUTE_UNUSED, 
-	      int sizeflag ATTRIBUTE_UNUSED)
-{
-  unsigned char byte;
-
-  static const char *const cmp_test[] = {
-    "lt",
-    "le",
-    "gt",
-    "ge",
-    "eq",
-    "ne",
-    "false",
-    "true"
-  };
-
-  FETCH_DATA (the_info, codep + 1);
-  byte = *codep & 0xff;
-
-  if (byte >= ARRAY_SIZE (cmp_test)
-      || obuf[0] != 'p'
-      || obuf[1] != 'c'
-      || obuf[2] != 'o'
-      || obuf[3] != 'm')
-    {
-      /* The instruction isn't one we know about, so just print the 
-	 comparison test byte as a numeric value.  */
-      OP_I (b_mode, 0);
-    }
-
-  else
-    {
-      sprintf (scratchbuf, "pcom%s%s", cmp_test[byte], obuf+4);
-      mnemonicendp = stpcpy (obuf, scratchbuf);
-      codep++;
-    }
-}
-
 /* Display the destination register operand for instructions with
    VEX. */
 
@@ -13488,6 +12527,182 @@ OP_VEX (int bytemode, int sizeflag ATTRIBUTE_UNUSED)
   oappend (scratchbuf + intel_syntax);
 }
 
+/* Get the VEX immediate byte without moving codep.  */
+
+static unsigned char
+get_vex_imm8 (int sizeflag)
+{
+  int bytes_before_imm = 0;
+
+  /* Skip mod/rm byte.   */
+  MODRM_CHECK;
+  codep++;
+
+  if (modrm.mod != 3)
+    {
+      /* There are SIB/displacement bytes.  */
+      if ((sizeflag & AFLAG) || address_mode == mode_64bit)
+	{
+	  /* 32/64 bit address mode */
+	  int base = modrm.rm;
+
+	  /* Check SIB byte.  */
+	  if (base == 4)
+	    {
+	      FETCH_DATA (the_info, codep + 1);
+	      base = *codep & 7;
+	      bytes_before_imm++;
+	    }
+
+	  switch (modrm.mod)
+	    {
+	    case 0:
+	      /* When modrm.rm == 5 or modrm.rm == 4 and base in
+		 SIB == 5, there is a 4 byte displacement.  */
+	      if (base != 5)
+		/* No displacement. */
+		break;
+	    case 2:
+	      /* 4 byte displacement.  */
+	      bytes_before_imm += 4;
+	      break;
+	    case 1:
+	      /* 1 byte displacement.  */
+	      bytes_before_imm++;
+	      break;
+	    }
+	}
+      else
+	{ /* 16 bit address mode */
+	  switch (modrm.mod)
+	    {
+	    case 0:
+	      /* When modrm.rm == 6, there is a 2 byte displacement.  */
+	      if (modrm.rm != 6)
+		/* No displacement. */
+		break;
+	    case 2:
+	      /* 2 byte displacement.  */
+	      bytes_before_imm += 2;
+	      break;
+	    case 1:
+	      /* 1 byte displacement.  */
+	      bytes_before_imm++;
+	      break;
+	    }
+	}
+    }
+
+  FETCH_DATA (the_info, codep + bytes_before_imm + 1);
+  return codep [bytes_before_imm];
+}
+
+static void
+OP_EX_VexReg (int bytemode, int sizeflag, int reg)
+{
+  if (reg == -1 && modrm.mod != 3)
+    {
+      OP_E_memory (bytemode, sizeflag);
+      return;
+    }
+  else
+    {
+      if (reg == -1)
+	{
+	  reg = modrm.rm;
+	  USED_REX (REX_B);
+	  if (rex & REX_B)
+	    reg += 8;
+	}
+      else if (reg > 7 && address_mode != mode_64bit)
+	BadOp ();
+    }
+
+  switch (vex.length)
+    {
+    case 128:
+      sprintf (scratchbuf, "%%xmm%d", reg);
+      break;
+    case 256:
+      sprintf (scratchbuf, "%%ymm%d", reg);
+      break;
+    default:
+      abort ();
+    }
+  oappend (scratchbuf + intel_syntax);
+}
+
+static void
+OP_EX_VexW (int bytemode, int sizeflag)
+{
+  int reg = -1;
+
+  if (!vex_w_done)
+    {
+      vex_w_done = 1;
+      if (vex.w)
+	reg = vex.register_specifier;
+    }
+  else
+    {
+      if (!vex.w)
+	reg = vex.register_specifier;
+    }
+
+  OP_EX_VexReg (bytemode, sizeflag, reg);
+}
+
+static void
+OP_VEX_FMA (int bytemode, int sizeflag)
+{
+  int reg = get_vex_imm8 (sizeflag) >> 4;
+
+  if (reg > 7 && address_mode != mode_64bit)
+    BadOp ();
+
+  switch (vex.length)
+    {
+    case 128:
+      switch (bytemode)
+	{
+	case vex_mode:
+	case vex128_mode:
+	  break;
+	default:
+	  abort ();
+	  return;
+	}
+
+      sprintf (scratchbuf, "%%xmm%d", reg);
+      break;
+    case 256:
+      switch (bytemode)
+	{
+	case vex_mode:
+	  break;
+	default:
+	  abort ();
+	  return;
+	}
+
+      sprintf (scratchbuf, "%%ymm%d", reg);
+      break;
+    default:
+      abort ();
+    }
+  oappend (scratchbuf + intel_syntax);
+}
+
+static void
+VEXI4_Fixup (int bytemode ATTRIBUTE_UNUSED,
+	     int sizeflag ATTRIBUTE_UNUSED)
+{
+  /* Skip the immediate byte and check for invalid bits.  */
+  FETCH_DATA (the_info, codep + 1);
+  if (*codep++ & 0xf)
+    BadOp ();
+}
+
 static void
 OP_REG_VexI4 (int bytemode, int sizeflag ATTRIBUTE_UNUSED)
 {
@@ -13517,6 +12732,15 @@ OP_REG_VexI4 (int bytemode, int sizeflag ATTRIBUTE_UNUSED)
       abort ();
     }
   oappend (scratchbuf + intel_syntax);
+}
+
+static void
+OP_XMM_VexW (int bytemode, int sizeflag)
+{
+  /* Turn off the REX.W bit since it is used for swapping operands
+     now.  */
+  rex &= ~REX_W;
+  OP_XMM (bytemode, sizeflag);
 }
 
 static void

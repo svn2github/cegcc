@@ -1,6 +1,6 @@
 /* opcode/i386.h -- Intel 80386 opcode macros
    Copyright 1989, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
+   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler, and GDB, the GNU Debugger.
@@ -59,6 +59,11 @@
 /* The opcode for the fwait instruction, which disassembler treats as a
    prefix when it can.  */
 #define FWAIT_OPCODE 0x9b
+
+/* Instruction prefixes.
+   NOTE: For certain SSE* instructions, 0x66,0xf2,0xf3 are treated as
+   part of the opcode.  Other prefixes may still appear between them
+   and the 0x0f part of the opcode.  */
 #define ADDR_PREFIX_OPCODE 0x67
 #define DATA_PREFIX_OPCODE 0x66
 #define LOCK_PREFIX_OPCODE 0xf0

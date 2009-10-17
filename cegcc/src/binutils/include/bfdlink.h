@@ -1,6 +1,6 @@
 /* bfdlink.h -- header file for BFD link routines
    Copyright 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
+   2003, 2004, 2005, 2006, 2007, 2008, 2009 Free Software Foundation, Inc.
    Written by Steve Chamberlain and Ian Lance Taylor, Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -67,13 +67,19 @@ enum bfd_link_hash_type
   bfd_link_hash_warning		/* Like indirect, but warn if referenced.  */
 };
 
-enum bfd_link_common_skip_ar_aymbols
+enum bfd_link_common_skip_ar_symbols
 {
   bfd_link_common_skip_none,
   bfd_link_common_skip_text,
   bfd_link_common_skip_data,
   bfd_link_common_skip_all
 };
+
+struct bfd_link_hash_common_entry
+  {
+    unsigned int alignment_power;	/* Alignment.  */
+    asection *section;		/* Symbol section.  */
+  };
 
 /* The linking routines use a hash table which uses this structure for
    its elements.  */
@@ -143,11 +149,7 @@ struct bfd_link_hash_entry
 	     directly because we don't want to increase the size of
 	     the union; this structure is a major space user in the
 	     linker.  */
-	  struct bfd_link_hash_common_entry
-	    {
-	      unsigned int alignment_power;	/* Alignment.  */
-	      asection *section;		/* Symbol section.  */
-	    } *p;
+	  struct bfd_link_hash_common_entry *p;
 	  bfd_size_type size;	/* Common symbol size.  */
 	} c;
     } u;
@@ -322,6 +324,9 @@ struct bfd_link_info
   /* TRUE if we should warn when adding a DT_TEXTREL to a shared object.  */
   unsigned int warn_shared_textrel: 1;
 
+  /* TRUE if we should warn alternate ELF machine code.  */
+  unsigned int warn_alternate_em: 1;
+
   /* TRUE if unreferenced sections should be removed.  */
   unsigned int gc_sections: 1;
 
@@ -366,9 +371,9 @@ struct bfd_link_info
   /* Which local symbols to discard.  */
   enum bfd_link_discard discard;
 
-  /* Criteria for skipping symbols when detemining
+  /* Criteria for skipping symbols when determining
      whether to include an object from an archive. */
-  enum bfd_link_common_skip_ar_aymbols common_skip_ar_aymbols;
+  enum bfd_link_common_skip_ar_symbols common_skip_ar_symbols;
 
   /* Char that may appear as the first char of a symbol, but should be
      skipped (like symbol_leading_char) when looking up symbols in

@@ -1,5 +1,5 @@
 /* x86_64 ELF support for BFD.
-   Copyright (C) 2000, 2001, 2002, 2004, 2005, 2006, 2008
+   Copyright (C) 2000, 2001, 2002, 2004, 2005, 2006, 2008, 2009
    Free Software Foundation, Inc.
    Contributed by Jan Hubicka <jh@suse.cz>
 
@@ -71,6 +71,7 @@ START_RELOC_NUMBERS (elf_x86_64_reloc_type)
      RELOC_NUMBER (R_X86_64_TLSDESC_CALL, 35) /* Relaxable call through TLS
 						 descriptor.  */
      RELOC_NUMBER (R_X86_64_TLSDESC, 36)      /* 2x64-bit TLS descriptor.  */
+     RELOC_NUMBER (R_X86_64_IRELATIVE, 37)    /* Adjust indirectly by program base */
      RELOC_NUMBER (R_X86_64_GNU_VTINHERIT, 250)       /* GNU C++ hack  */
      RELOC_NUMBER (R_X86_64_GNU_VTENTRY, 251)         /* GNU C++ hack  */
 END_RELOC_NUMBERS (R_X86_64_max)

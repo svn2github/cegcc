@@ -1,5 +1,5 @@
 /* Toshiba MeP ELF support for BFD.
-   Copyright (C) 2001, 2004, 2005 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2004, 2005, 2007, 2009 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -73,12 +73,22 @@ END_RELOC_NUMBERS(R_MEP_max)
 #define EF_MEP_CPU_C2   	0x01000000	/* MEP c2 */
 #define EF_MEP_CPU_C3   	0x02000000	/* MEP c3 */
 #define EF_MEP_CPU_C4   	0x04000000	/* MEP c4 */
+/* 5..7 are reseved */
+#define EF_MEP_CPU_C5   	0x08000000	/* MEP c5 */
 #define EF_MEP_CPU_H1   	0x10000000	/* MEP h1 */
+
+#define EF_MEP_COP_MASK		0x00ff0000
+#define EF_MEP_COP_NONE		0x00000000
+#define EF_MEP_COP_AVC		0x00010000
+#define EF_MEP_COP_AVC2		0x00020000
+#define EF_MEP_COP_FMAX		0x00030000
+/* 4..5 are reserved.  */
+#define EF_MEP_COP_IVC2		0x00060000
 
 #define EF_MEP_LIBRARY		0x00000100	/* Built as a library */
 
 #define EF_MEP_INDEX_MASK       0x000000ff      /* Configuration index */
 
-#define EF_MEP_ALL_FLAGS	0xff0001ff
+#define EF_MEP_ALL_FLAGS	0xffff01ff
 
 #endif /* _ELF_MEP_H */

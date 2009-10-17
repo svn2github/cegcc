@@ -1,5 +1,6 @@
 /* A splay-tree datatype.  
-   Copyright 1998, 1999, 2000, 2002, 2007 Free Software Foundation, Inc.
+   Copyright 1998, 1999, 2000, 2002, 2005, 2007, 2009
+   Free Software Foundation, Inc.
    Contributed by Mark Mitchell (mark@markmitchell.com).
 
    This file is part of GCC.
@@ -86,8 +87,7 @@ typedef void *(*splay_tree_allocate_fn) (int, void *);
 typedef void (*splay_tree_deallocate_fn) (void *, void *);
 
 /* The nodes in the splay tree.  */
-struct splay_tree_node_s GTY(())
-{
+struct GTY(()) splay_tree_node_s {
   /* The key.  */
   splay_tree_key GTY ((use_param1)) key;
 
@@ -100,8 +100,7 @@ struct splay_tree_node_s GTY(())
 };
 
 /* The splay tree itself.  */
-struct splay_tree_s GTY(())
-{
+struct GTY(()) splay_tree_s {
   /* The root of the tree.  */
   splay_tree_node GTY ((use_params)) root;
 

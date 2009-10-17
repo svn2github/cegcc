@@ -122,11 +122,16 @@ mep-dis.c
 mep-ibld.c
 mep-opc.c
 mep-opc.h
+microblaze-dis.c
+microblaze-opc.h
 mips-dis.c
 mips-opc.c
 mips16-opc.c
 mmix-dis.c
 mmix-opc.c
+moxie-dis.c
+moxie-opc.c
+msp430-dis.c
 mt-asm.c
 mt-desc.c
 mt-desc.h
@@ -155,6 +160,7 @@ s390-mkopc.c
 s390-opc.c
 score-dis.c
 score-opc.h
+score7-dis.c
 sh-dis.c
 sh-opc.h
 sh64-dis.c

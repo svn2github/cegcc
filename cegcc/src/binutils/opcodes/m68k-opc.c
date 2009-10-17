@@ -1,6 +1,6 @@
 /* Opcode table for m680[012346]0/m6888[12]/m68851/mcf5200.
    Copyright 1989, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2003, 2004, 2005, 2006, 2007
+   2000, 2001, 2003, 2004, 2005, 2006, 2007, 2009
    Free Software Foundation, Inc.
 
    This file is part of the GNU opcodes library.
@@ -1507,7 +1507,7 @@ const struct m68k_opcode m68k_opcodes[] =
 {"macl", 4,  	two(0xa080, 0x0800), two(0xf180, 0x0f10), "RNRo4/Rn", mcfmac },
 {"macl", 4,  	two(0xa000, 0x0800), two(0xf1b0, 0x0b00), "RMRmiI", mcfmac },
 {"macl", 4,  	two(0xa000, 0x0a00), two(0xf1b0, 0x0b00), "RMRmMh", mcfmac },
-{"macl", 4,  	two(0xa000, 0x0800), two(0xf1b0, 0x0800), "RMRm", mcfmac },
+{"macl", 4,  	two(0xa000, 0x0800), two(0xf1b0, 0x0900), "RMRm", mcfmac },
 
 {"macl", 4,  	two(0xa000, 0x0800), two(0xf100, 0x0900), "R3R1iI4/RneG", mcfemac },
 {"macl", 4,  	two(0xa000, 0x0a00), two(0xf100, 0x0900), "R3R1Mh4/RneG", mcfemac },
@@ -1690,7 +1690,7 @@ const struct m68k_opcode m68k_opcodes[] =
 {"msacl", 4,  	two(0xa080, 0x0900), two(0xf180, 0x0f10), "RNRo4/Rn", mcfmac },
 {"msacl", 4,  	two(0xa000, 0x0900), two(0xf1b0, 0x0b00), "RMRmiI", mcfmac },
 {"msacl", 4,  	two(0xa000, 0x0b00), two(0xf1b0, 0x0b00), "RMRmMh", mcfmac },
-{"msacl", 4,  	two(0xa000, 0x0900), two(0xf1b0, 0x0800), "RMRm", mcfmac },
+{"msacl", 4,  	two(0xa000, 0x0900), two(0xf1b0, 0x0900), "RMRm", mcfmac },
 
 {"msacl", 4,  	two(0xa000, 0x0900), two(0xf100, 0x0900), "R3R1iI4/RneG", mcfemac },
 {"msacl", 4,  	two(0xa000, 0x0b00), two(0xf100, 0x0900), "R3R1Mh4/RneG", mcfemac },
@@ -2025,7 +2025,9 @@ const struct m68k_opcode m68k_opcodes[] =
 
 {"sbcd", 2,	one(0100400),		one(0170770), "DsDd", m68000up },
 {"sbcd", 2,	one(0100410),		one(0170770), "-s-d", m68000up },
-
+  
+{"stldsr", 6,   two(0x40e7, 0x46fc),    two(0xffff, 0xffff), "#w", mcfisa_c },
+  
   /* Traps have to come before conditional sets, as they have a more
      specific opcode.  */
 {"trapcc", 2,	one(0052374),	one(0177777), "", m68020up | cpu32 | fido_a },

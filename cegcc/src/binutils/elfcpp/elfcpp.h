@@ -1,10 +1,10 @@
 // elfcpp.h -- main header file for elfcpp    -*- C++ -*-
 
-// Copyright 2006, 2007, 2008, Free Software Foundation, Inc.
+// Copyright 2006, 2007, 2008, 2009 Free Software Foundation, Inc.
 // Written by Ian Lance Taylor <iant@google.com>.
 
 // This file is part of elfcpp.
-   
+
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public License
 // as published by the Free Software Foundation; either version 2, or
@@ -321,6 +321,9 @@ enum
   // with the SHF_LINK_ORDER and SHF_ORDERED section flags.
   SHN_BEFORE = 0xff00,
   SHN_AFTER = 0xff01,
+
+  // x86_64 specific large common symbol.
+  SHN_X86_64_LCOMMON = 0xff02
 };
 
 // The valid values found in the Shdr sh_type field.
@@ -351,6 +354,8 @@ enum SHT
   SHT_LOUSER = 0x80000000,
   SHT_HIUSER = 0xffffffff,
   // The remaining values are not in the standard.
+  // Incremental build data.
+  SHT_GNU_INCREMENTAL_INPUTS = 0x6fff4700,
   // Object attributes.
   SHT_GNU_ATTRIBUTES = 0x6ffffff5,
   // GNU style dynamic hash table.
@@ -368,6 +373,20 @@ enum SHT
   SHT_GNU_versym = 0x6fffffff,
 
   SHT_SPARC_GOTDATA = 0x70000000,
+
+  // ARM-specific section types.
+  // Exception Index table.
+  SHT_ARM_EXIDX = 0x70000001,
+  // BPABI DLL dynamic linking pre-emption map.
+  SHT_ARM_PREEMPTMAP = 0x70000002,
+  // Object file compatibility attributes.
+  SHT_ARM_ATTRIBUTES = 0x70000003,
+  // Support for debugging overlaid programs.
+  SHT_ARM_DEBUGOVERLAY = 0x70000004,
+  SHT_ARM_OVERLAYSECTION = 0x70000005,
+
+  // x86_64 unwind information.
+  SHT_X86_64_UNWIND = 0x70000001,
 
   // Link editor is to sort the entries in this section based on the
   // address specified in the associated symbol table entry.
@@ -402,6 +421,9 @@ enum SHF
   // executable or shared object.  This flag is ignored if SHF_ALLOC
   // is also set, or if relocations exist against the section.
   SHF_EXCLUDE = 0x80000000,
+
+  // x86_64 specific large section.
+  SHF_X86_64_LARGE = 0x10000000
 };
 
 // Bit flags which appear in the first 32-bit word of the section data
@@ -437,7 +459,11 @@ enum PT
   // Stack flags.
   PT_GNU_STACK = 0x6474e551,
   // Read only after relocation.
-  PT_GNU_RELRO = 0x6474e552
+  PT_GNU_RELRO = 0x6474e552,
+  // Platform architecture compatibility information
+  PT_ARM_ARCHEXT = 0x70000000,
+  // Exception unwind tables
+  PT_ARM_EXIDX = 0x70000001
 };
 
 // The valid bit flags found in the Phdr p_flags field.
@@ -459,6 +485,7 @@ enum STB
   STB_GLOBAL = 1,
   STB_WEAK = 2,
   STB_LOOS = 10,
+  STB_GNU_UNIQUE = 10,
   STB_HIOS = 12,
   STB_LOPROC = 13,
   STB_HIPROC = 15
@@ -476,6 +503,7 @@ enum STT
   STT_COMMON = 5,
   STT_TLS = 6,
   STT_LOOS = 10,
+  STT_GNU_IFUNC = 10,
   STT_HIOS = 12,
   STT_LOPROC = 13,
   STT_HIPROC = 15,
@@ -483,6 +511,10 @@ enum STT
   // The section type that must be used for register symbols on
   // Sparc.  These symbols initialize a global register.
   STT_SPARC_REGISTER = 13,
+
+  // ARM: a THUMB function.  This is not defined in ARM ELF Specification but
+  // used by the GNU tool-chain.
+  STT_ARM_TFUNC = 13,
 };
 
 inline STB
@@ -934,7 +966,7 @@ class Ehdr_write
   void
   put_e_type(Elf_Half v)
   { this->p_->e_type = Convert<16, big_endian>::convert_host(v); }
-  
+
   void
   put_e_machine(Elf_Half v)
   { this->p_->e_machine = Convert<16, big_endian>::convert_host(v); }

@@ -1,5 +1,6 @@
 #  S/390 opcodes list. Use s390-mkopc to convert it into the opcode table.
-#  Copyright 2000, 2001, 2003, 2004 Free Software Foundation, Inc.
+#  Copyright 2000, 2001, 2003, 2004, 2005, 2007, 2008, 2009
+#  Free Software Foundation, Inc.
 #  Contributed by Martin Schwidefsky (schwidefsky@de.ibm.com).
 5a a RX_RRRD "add" g5 esa,zarch
 6a ad RX_FRRD "add normalized (long)" g5 esa,zarch
@@ -260,10 +261,10 @@ b252 msr RRE_RR "multiply single" g5 esa,zarch
 71 ms RX_RRRD "multiply single" g5 esa,zarch
 a700 tmh RI_RU "test under mask high" g5 esa,zarch
 a701 tml RI_RU "test under mask low" g5 esa,zarch
-0700 nopr RR_0R "no operation" g5 esa,zarch
+0700 nopr RR_0R_OPT "no operation" g5 esa,zarch
 0700 b*8r RR_0R "conditional branch" g5 esa,zarch
 07f0 br RR_0R "unconditional branch" g5 esa,zarch
-4700 nop RX_0RRD "no operation" g5 esa,zarch
+4700 nop RX_0RRD_OPT "no operation" g5 esa,zarch
 4700 b*8 RX_0RRD "conditional branch" g5 esa,zarch
 47f0 b RX_0RRD "unconditional branch" g5 esa,zarch
 a704 j*8 RI_0P "conditional jump" g5 esa,zarch

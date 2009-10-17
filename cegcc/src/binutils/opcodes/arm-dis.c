@@ -1,6 +1,6 @@
 /* Instruction printing code for the ARM
-   Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004
-   2007, Free Software Foundation, Inc.
+   Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
+   2004, 2005, 2006, 2007, 2008, 2009  Free Software Foundation, Inc.
    Contributed by Richard Earnshaw (rwe@pegasus.esprit.ec.org)
    Modification by James G. Smith (jsmith@cygnus.co.uk)
 
@@ -48,8 +48,9 @@
 struct opcode32
 {
   unsigned long arch;		/* Architecture defining this insn.  */
-  unsigned long value, mask;	/* Recognise insn if (op&mask)==value.  */
-  const char *assembler;	/* How to disassemble this insn.  */
+  unsigned long value;		/* If arch == 0 then value is a sentinel.  */
+  unsigned long mask;		/* Recognise insn if (op & mask) == value.  */
+  const char *  assembler;	/* How to disassemble this insn.  */
 };
 
 struct opcode16
@@ -103,8 +104,16 @@ struct opcode16
 			versions.
    %i			print 5-bit immediate in bits 8,3..0
 			(print "32" when 0)
-   %r			print register offset address for wldt/wstr instruction
-*/
+   %r			print register offset address for wldt/wstr instruction.  */
+
+enum opcode_sentinel_enum
+{
+  SENTINEL_IWMMXT_START = 1,
+  SENTINEL_IWMMXT_END,
+  SENTINEL_GENERIC_START
+} opcode_sentinels;
+
+#define UNDEFINED_INSTRUCTION "undefined instruction %0-31x"
 
 /* Common coprocessor opcodes shared between Arm and Thumb-2.  */
 
@@ -116,10 +125,9 @@ static const struct opcode32 coprocessor_opcodes[] =
   {ARM_CEXT_XSCALE, 0x0e2c0010, 0x0ffc0ff0, "mia%17'T%17`B%16'T%16`B%c\tacc0, %0-3r, %12-15r"},
   {ARM_CEXT_XSCALE, 0x0c400000, 0x0ff00fff, "mar%c\tacc0, %12-15r, %16-19r"},
   {ARM_CEXT_XSCALE, 0x0c500000, 0x0ff00fff, "mra%c\t%12-15r, %16-19r, acc0"},
-    
+
   /* Intel Wireless MMX technology instructions.  */
-#define FIRST_IWMMXT_INSN 0x0e130130
-#define IWMMXT_INSN_COUNT 73
+  { 0, SENTINEL_IWMMXT_START, 0, "" },
   {ARM_CEXT_IWMMXT, 0x0e130130, 0x0f3f0fff, "tandc%22-23w%c\t%12-15r"},
   {ARM_CEXT_XSCALE, 0x0e400010, 0x0ff00f3f, "tbcst%6-7w%c\t%16-19g, %12-15r"},
   {ARM_CEXT_XSCALE, 0x0e130170, 0x0f3f0ff8, "textrc%22-23w%c\t%12-15r, #%0-2d"},
@@ -134,11 +142,11 @@ static const struct opcode32 coprocessor_opcodes[] =
   {ARM_CEXT_XSCALE, 0x0e100110, 0x0ff00ff0, "tmrc%c\t%12-15r, %16-19G"},
   {ARM_CEXT_XSCALE, 0x0c500000, 0x0ff00ff0, "tmrrc%c\t%12-15r, %16-19r, %0-3g"},
   {ARM_CEXT_XSCALE, 0x0e130150, 0x0f3f0fff, "torc%22-23w%c\t%12-15r"},
-  {ARM_CEXT_XSCALE, 0x0e130190, 0x0f3f0fff, "torvsc%22-23w%c\t%12-15r"},
+  {ARM_CEXT_XSCALE, 0x0e120190, 0x0f3f0fff, "torvsc%22-23w%c\t%12-15r"},
   {ARM_CEXT_XSCALE, 0x0e2001c0, 0x0f300fff, "wabs%22-23w%c\t%12-15g, %16-19g"},
   {ARM_CEXT_XSCALE, 0x0e0001c0, 0x0f300fff, "wacc%22-23w%c\t%12-15g, %16-19g"},
   {ARM_CEXT_XSCALE, 0x0e000180, 0x0f000ff0, "wadd%20-23w%c\t%12-15g, %16-19g, %0-3g"},
-  {ARM_CEXT_XSCALE, 0x0e2001a0, 0x0f300ff0, "waddbhus%22?ml%c\t%12-15g, %16-19g, %0-3g"},
+  {ARM_CEXT_XSCALE, 0x0e2001a0, 0x0fb00ff0, "waddbhus%22?ml%c\t%12-15g, %16-19g, %0-3g"},
   {ARM_CEXT_XSCALE, 0x0ea001a0, 0x0ff00ff0, "waddsubhx%c\t%12-15g, %16-19g, %0-3g"},
   {ARM_CEXT_XSCALE, 0x0e000020, 0x0f800ff0, "waligni%c\t%12-15g, %16-19g, %0-3g, #%20-22d"},
   {ARM_CEXT_XSCALE, 0x0e800020, 0x0fc00ff0, "walignr%20-21d%c\t%12-15g, %16-19g, %0-3g"},
@@ -195,8 +203,9 @@ static const struct opcode32 coprocessor_opcodes[] =
   {ARM_CEXT_XSCALE, 0x0e1000c0, 0x0f300ff0, "wunpckih%22-23w%c\t%12-15g, %16-19g, %0-3g"},
   {ARM_CEXT_XSCALE, 0x0e1000e0, 0x0f300ff0, "wunpckil%22-23w%c\t%12-15g, %16-19g, %0-3g"},
   {ARM_CEXT_XSCALE, 0x0e100000, 0x0ff00ff0, "wxor%c\t%12-15g, %16-19g, %0-3g"},
+  { 0, SENTINEL_IWMMXT_END, 0, "" },
 
-  /* Floating point coprocessor (FPA) instructions */
+  /* Floating point coprocessor (FPA) instructions.  */
   {FPU_FPA_EXT_V1, 0x0e000100, 0x0ff08f10, "adf%c%P%R\t%12-14f, %16-18f, %0-3f"},
   {FPU_FPA_EXT_V1, 0x0e100100, 0x0ff08f10, "muf%c%P%R\t%12-14f, %16-18f, %0-3f"},
   {FPU_FPA_EXT_V1, 0x0e200100, 0x0ff08f10, "suf%c%P%R\t%12-14f, %16-18f, %0-3f"},
@@ -238,10 +247,10 @@ static const struct opcode32 coprocessor_opcodes[] =
   {FPU_FPA_EXT_V1, 0x0ef0f110, 0x0ff8fff0, "cnfe%c\t%16-18f, %0-3f"},
   {FPU_FPA_EXT_V1, 0x0c000100, 0x0e100f00, "stf%c%Q\t%12-14f, %A"},
   {FPU_FPA_EXT_V1, 0x0c100100, 0x0e100f00, "ldf%c%Q\t%12-14f, %A"},
-  {FPU_FPA_EXT_V2, 0x0c000200, 0x0e100f00, "sfm%c\t%12-14f, %F, %A"},
-  {FPU_FPA_EXT_V2, 0x0c100200, 0x0e100f00, "lfm%c\t%12-14f, %F, %A"},
+  {FPU_FPA_EXT_V2, 0x0c000200, 0x0e100f00, "sfm%c\t%12-14f, %F, %A\t; (stc%22'l%c %8-11d, cr%12-15d, %A)"},
+  {FPU_FPA_EXT_V2, 0x0c100200, 0x0e100f00, "lfm%c\t%12-14f, %F, %A\t; (ldc%22'l%c %8-11d, cr%12-15d, %A)"},
 
-  /* Register load/store */
+  /* Register load/store.  */
   {FPU_VFP_EXT_V1xD | FPU_NEON_EXT_V1, 0x0d2d0b00, 0x0fbf0f01, "vpush%c\t%B"},
   {FPU_VFP_EXT_V1xD | FPU_NEON_EXT_V1, 0x0d200b00, 0x0fb00f01, "vstmdb%c\t%16-19r!, %B"},
   {FPU_VFP_EXT_V1xD | FPU_NEON_EXT_V1, 0x0d300b00, 0x0fb00f01, "vldmdb%c\t%16-19r!, %B"},
@@ -264,7 +273,7 @@ static const struct opcode32 coprocessor_opcodes[] =
   {FPU_VFP_EXT_V1xD, 0x0c800b01, 0x0f900f01, "fstmiax%c\t%16-19r%21'!, %z3\t;@ Deprecated"},
   {FPU_VFP_EXT_V1xD, 0x0c900b01, 0x0f900f01, "fldmiax%c\t%16-19r%21'!, %z3\t;@ Deprecated"},
 
-  /* Data transfer between ARM and NEON registers */
+  /* Data transfer between ARM and NEON registers.  */
   {FPU_NEON_EXT_V1, 0x0e800b10, 0x0ff00f70, "vdup%c.32\t%16-19,7D, %12-15r"},
   {FPU_NEON_EXT_V1, 0x0e800b30, 0x0ff00f70, "vdup%c.16\t%16-19,7D, %12-15r"},
   {FPU_NEON_EXT_V1, 0x0ea00b10, 0x0ff00f70, "vdup%c.32\t%16-19,7Q, %12-15r"},
@@ -283,7 +292,7 @@ static const struct opcode32 coprocessor_opcodes[] =
   {FPU_NEON_FP16,   0x0eb20a40, 0x0fbf0f50, "vcvt%7?tb%c.f32.f16\t%y1, %y0"},
   {FPU_NEON_FP16,   0x0eb30a40, 0x0fbf0f50, "vcvt%7?tb%c.f16.f32\t%y1, %y0"},
 
-  /* Floating point coprocessor (VFP) instructions */
+  /* Floating point coprocessor (VFP) instructions.  */
   {FPU_VFP_EXT_V1xD, 0x0ee00a10, 0x0fff0fff, "vmsr%c\tfpsid, %12-15r"},
   {FPU_VFP_EXT_V1xD, 0x0ee10a10, 0x0fff0fff, "vmsr%c\tfpscr, %12-15r"},
   {FPU_VFP_EXT_V1xD, 0x0ee60a10, 0x0fff0fff, "vmsr%c\tmvfr1, %12-15r"},
@@ -438,20 +447,21 @@ static const struct opcode32 coprocessor_opcodes[] =
   {ARM_CEXT_MAVERICK, 0x0e200600, 0x0ff00f10, "cfmadda32%c\tmvax%5-7d, mvax%12-15d, mvfx%16-19d, mvfx%0-3d"},
   {ARM_CEXT_MAVERICK, 0x0e300600, 0x0ff00f10, "cfmsuba32%c\tmvax%5-7d, mvax%12-15d, mvfx%16-19d, mvfx%0-3d"},
 
-  /* Generic coprocessor instructions */
-  {ARM_EXT_V2, 0x0c400000, 0x0ff00000, "mcrr%c\t%8-11d, %4-7d, %12-15r, %16-19r, cr%0-3d"},
-  {ARM_EXT_V2, 0x0c500000, 0x0ff00000, "mrrc%c\t%8-11d, %4-7d, %12-15r, %16-19r, cr%0-3d"},
+  /* Generic coprocessor instructions.  */
+  { 0, SENTINEL_GENERIC_START, 0, "" },
+  {ARM_EXT_V5E, 0x0c400000, 0x0ff00000, "mcrr%c\t%8-11d, %4-7d, %12-15r, %16-19r, cr%0-3d"},
+  {ARM_EXT_V5E, 0x0c500000, 0x0ff00000, "mrrc%c\t%8-11d, %4-7d, %12-15r, %16-19r, cr%0-3d"},
   {ARM_EXT_V2, 0x0e000000, 0x0f000010, "cdp%c\t%8-11d, %20-23d, cr%12-15d, cr%16-19d, cr%0-3d, {%5-7d}"},
   {ARM_EXT_V2, 0x0e100010, 0x0f100010, "mrc%c\t%8-11d, %21-23d, %12-15r, cr%16-19d, cr%0-3d, {%5-7d}"},
   {ARM_EXT_V2, 0x0e000010, 0x0f100010, "mcr%c\t%8-11d, %21-23d, %12-15r, cr%16-19d, cr%0-3d, {%5-7d}"},
   {ARM_EXT_V2, 0x0c000000, 0x0e100000, "stc%22'l%c\t%8-11d, cr%12-15d, %A"},
   {ARM_EXT_V2, 0x0c100000, 0x0e100000, "ldc%22'l%c\t%8-11d, cr%12-15d, %A"},
 
-  /* V6 coprocessor instructions */
+  /* V6 coprocessor instructions.  */
   {ARM_EXT_V6, 0xfc500000, 0xfff00000, "mrrc2%c\t%8-11d, %4-7d, %12-15r, %16-19r, cr%0-3d"},
   {ARM_EXT_V6, 0xfc400000, 0xfff00000, "mcrr2%c\t%8-11d, %4-7d, %12-15r, %16-19r, cr%0-3d"},
 
-  /* V5 coprocessor instructions */
+  /* V5 coprocessor instructions.  */
   {ARM_EXT_V5, 0xfc100000, 0xfe100000, "ldc2%22'l%c\t%8-11d, cr%12-15d, %A"},
   {ARM_EXT_V5, 0xfc000000, 0xfe100000, "stc2%22'l%c\t%8-11d, cr%12-15d, %A"},
   {ARM_EXT_V5, 0xfe000000, 0xff000010, "cdp2%c\t%8-11d, %20-23d, cr%12-15d, cr%16-19d, cr%0-3d, {%5-7d}"},
@@ -489,20 +499,20 @@ static const struct opcode32 coprocessor_opcodes[] =
    
    %<bitfield>'c	print specified char iff bitfield is all ones
    %<bitfield>`c	print specified char iff bitfield is all zeroes
-   %<bitfield>?ab...    select from array of values in big endian order  */
+   %<bitfield>?ab...    select from array of values in big endian order.  */
 
 static const struct opcode32 neon_opcodes[] =
 {
-  /* Extract */
+  /* Extract.  */
   {FPU_NEON_EXT_V1, 0xf2b00840, 0xffb00850, "vext%c.8\t%12-15,22R, %16-19,7R, %0-3,5R, #%8-11d"},
   {FPU_NEON_EXT_V1, 0xf2b00000, 0xffb00810, "vext%c.8\t%12-15,22R, %16-19,7R, %0-3,5R, #%8-11d"},
 
-  /* Move data element to all lanes */
+  /* Move data element to all lanes.  */
   {FPU_NEON_EXT_V1, 0xf3b40c00, 0xffb70f90, "vdup%c.32\t%12-15,22R, %0-3,5D[%19d]"},
   {FPU_NEON_EXT_V1, 0xf3b20c00, 0xffb30f90, "vdup%c.16\t%12-15,22R, %0-3,5D[%18-19d]"},
   {FPU_NEON_EXT_V1, 0xf3b10c00, 0xffb10f90, "vdup%c.8\t%12-15,22R, %0-3,5D[%17-19d]"},
 
-  /* Table lookup */
+  /* Table lookup.  */
   {FPU_NEON_EXT_V1, 0xf3b00800, 0xffb00c50, "vtbl%c.8\t%12-15,22D, %F, %0-3,5D"},
   {FPU_NEON_EXT_V1, 0xf3b00840, 0xffb00c50, "vtbx%c.8\t%12-15,22D, %F, %0-3,5D"},
   
@@ -510,7 +520,7 @@ static const struct opcode32 neon_opcodes[] =
   {FPU_NEON_FP16,   0xf3b60600, 0xffbf0fd0, "vcvt%c.f16.f32\t%12-15,22D, %0-3,5Q"},
   {FPU_NEON_FP16,   0xf3b60700, 0xffbf0fd0, "vcvt%c.f32.f16\t%12-15,22Q, %0-3,5D"},
 
-  /* Two registers, miscellaneous */
+  /* Two registers, miscellaneous.  */
   {FPU_NEON_EXT_V1, 0xf2880a10, 0xfebf0fd0, "vmovl%c.%24?us8\t%12-15,22Q, %0-3,5D"},
   {FPU_NEON_EXT_V1, 0xf2900a10, 0xfebf0fd0, "vmovl%c.%24?us16\t%12-15,22Q, %0-3,5D"},
   {FPU_NEON_EXT_V1, 0xf2a00a10, 0xfebf0fd0, "vmovl%c.%24?us32\t%12-15,22Q, %0-3,5D"},
@@ -545,7 +555,7 @@ static const struct opcode32 neon_opcodes[] =
   {FPU_NEON_EXT_V1, 0xf3b00600, 0xffb30f10, "vpadal%c.%7?us%18-19S2\t%12-15,22R, %0-3,5R"},
   {FPU_NEON_EXT_V1, 0xf3b30600, 0xffb30e10, "vcvt%c.%7-8?usff%18-19Sa.%7-8?ffus%18-19Sa\t%12-15,22R, %0-3,5R"},
 
-  /* Three registers of the same length */
+  /* Three registers of the same length.  */
   {FPU_NEON_EXT_V1, 0xf2000110, 0xffb00f10, "vand%c\t%12-15,22R, %16-19,7R, %0-3,5R"},
   {FPU_NEON_EXT_V1, 0xf2100110, 0xffb00f10, "vbic%c\t%12-15,22R, %16-19,7R, %0-3,5R"},
   {FPU_NEON_EXT_V1, 0xf2200110, 0xffb00f10, "vorr%c\t%12-15,22R, %16-19,7R, %0-3,5R"},
@@ -600,7 +610,7 @@ static const struct opcode32 neon_opcodes[] =
   {FPU_NEON_EXT_V1, 0xf2000a00, 0xfe800f10, "vpmax%c.%24?us%20-21S2\t%12-15,22R, %16-19,7R, %0-3,5R"},
   {FPU_NEON_EXT_V1, 0xf2000a10, 0xfe800f10, "vpmin%c.%24?us%20-21S2\t%12-15,22R, %16-19,7R, %0-3,5R"},
 
-  /* One register and an immediate value */
+  /* One register and an immediate value.  */
   {FPU_NEON_EXT_V1, 0xf2800e10, 0xfeb80fb0, "vmov%c.i8\t%12-15,22R, %E"},
   {FPU_NEON_EXT_V1, 0xf2800e30, 0xfeb80fb0, "vmov%c.i64\t%12-15,22R, %E"},
   {FPU_NEON_EXT_V1, 0xf2800f10, 0xfeb80fb0, "vmov%c.f32\t%12-15,22R, %E"},
@@ -615,7 +625,7 @@ static const struct opcode32 neon_opcodes[] =
   {FPU_NEON_EXT_V1, 0xf2800010, 0xfeb808b0, "vmov%c.i32\t%12-15,22R, %E"},
   {FPU_NEON_EXT_V1, 0xf2800030, 0xfeb808b0, "vmvn%c.i32\t%12-15,22R, %E"},
 
-  /* Two registers and a shift amount */
+  /* Two registers and a shift amount.  */
   {FPU_NEON_EXT_V1, 0xf2880810, 0xffb80fd0, "vshrn%c.i16\t%12-15,22D, %0-3,5Q, #%16-18e"},
   {FPU_NEON_EXT_V1, 0xf2880850, 0xffb80fd0, "vrshrn%c.i16\t%12-15,22D, %0-3,5Q, #%16-18e"},
   {FPU_NEON_EXT_V1, 0xf2880810, 0xfeb80fd0, "vqshrun%c.s16\t%12-15,22D, %0-3,5Q, #%16-18e"},
@@ -651,10 +661,10 @@ static const struct opcode32 neon_opcodes[] =
   {FPU_NEON_EXT_V1, 0xf2900210, 0xfeb00f90, "vrshr%c.%24?us16\t%12-15,22R, %0-3,5R, #%16-19e"},
   {FPU_NEON_EXT_V1, 0xf2900310, 0xfeb00f90, "vrsra%c.%24?us16\t%12-15,22R, %0-3,5R, #%16-19e"},
   {FPU_NEON_EXT_V1, 0xf2900710, 0xfeb00f90, "vqshl%c.%24?us16\t%12-15,22R, %0-3,5R, #%16-19d"},
-  {FPU_NEON_EXT_V1, 0xf2800810, 0xfec00fd0, "vqshrun%c.s64\t%12-15,22D, %0-3,5Q, #%16-20e"},
-  {FPU_NEON_EXT_V1, 0xf2800850, 0xfec00fd0, "vqrshrun%c.s64\t%12-15,22D, %0-3,5Q, #%16-20e"},
-  {FPU_NEON_EXT_V1, 0xf2800910, 0xfec00fd0, "vqshrn%c.%24?us64\t%12-15,22D, %0-3,5Q, #%16-20e"},
-  {FPU_NEON_EXT_V1, 0xf2800950, 0xfec00fd0, "vqrshrn%c.%24?us64\t%12-15,22D, %0-3,5Q, #%16-20e"},
+  {FPU_NEON_EXT_V1, 0xf2a00810, 0xfea00fd0, "vqshrun%c.s64\t%12-15,22D, %0-3,5Q, #%16-20e"},
+  {FPU_NEON_EXT_V1, 0xf2a00850, 0xfea00fd0, "vqrshrun%c.s64\t%12-15,22D, %0-3,5Q, #%16-20e"},
+  {FPU_NEON_EXT_V1, 0xf2a00910, 0xfea00fd0, "vqshrn%c.%24?us64\t%12-15,22D, %0-3,5Q, #%16-20e"},
+  {FPU_NEON_EXT_V1, 0xf2a00950, 0xfea00fd0, "vqrshrn%c.%24?us64\t%12-15,22D, %0-3,5Q, #%16-20e"},
   {FPU_NEON_EXT_V1, 0xf2a00510, 0xffa00f90, "vshl%c.%24?us32\t%12-15,22R, %0-3,5R, #%16-20d"},
   {FPU_NEON_EXT_V1, 0xf3a00410, 0xffa00f90, "vsri%c.32\t%12-15,22R, %0-3,5R, #%16-20e"},
   {FPU_NEON_EXT_V1, 0xf3a00510, 0xffa00f90, "vsli%c.32\t%12-15,22R, %0-3,5R, #%16-20d"},
@@ -675,7 +685,7 @@ static const struct opcode32 neon_opcodes[] =
   {FPU_NEON_EXT_V1, 0xf2800790, 0xfe800f90, "vqshl%c.%24?us64\t%12-15,22R, %0-3,5R, #%16-21d"},
   {FPU_NEON_EXT_V1, 0xf2a00e10, 0xfea00e90, "vcvt%c.%24,8?usff32.%24,8?ffus32\t%12-15,22R, %0-3,5R, #%16-20e"},
 
-  /* Three registers of different lengths */
+  /* Three registers of different lengths.  */
   {FPU_NEON_EXT_V1, 0xf2800e00, 0xfea00f50, "vmull%c.p%20S0\t%12-15,22Q, %16-19,7D, %0-3,5D"},
   {FPU_NEON_EXT_V1, 0xf2800400, 0xff800f50, "vaddhn%c.i%20-21T2\t%12-15,22D, %16-19,7Q, %0-3,5Q"},
   {FPU_NEON_EXT_V1, 0xf2800600, 0xff800f50, "vsubhn%c.i%20-21T2\t%12-15,22D, %16-19,7Q, %0-3,5Q"},
@@ -694,7 +704,7 @@ static const struct opcode32 neon_opcodes[] =
   {FPU_NEON_EXT_V1, 0xf2800a00, 0xfe800f50, "vmlsl%c.%24?us%20-21S2\t%12-15,22Q, %16-19,7D, %0-3,5D"},
   {FPU_NEON_EXT_V1, 0xf2800c00, 0xfe800f50, "vmull%c.%24?us%20-21S2\t%12-15,22Q, %16-19,7D, %0-3,5D"},
 
-  /* Two registers and a scalar */
+  /* Two registers and a scalar.  */
   {FPU_NEON_EXT_V1, 0xf2800040, 0xff800f50, "vmla%c.i%20-21S6\t%12-15,22D, %16-19,7D, %D"},
   {FPU_NEON_EXT_V1, 0xf2800140, 0xff800f50, "vmla%c.f%20-21Sa\t%12-15,22D, %16-19,7D, %D"},
   {FPU_NEON_EXT_V1, 0xf2800340, 0xff800f50, "vqdmlal%c.s%20-21S6\t%12-15,22Q, %16-19,7D, %D"},
@@ -718,7 +728,7 @@ static const struct opcode32 neon_opcodes[] =
   {FPU_NEON_EXT_V1, 0xf2800640, 0xfe800f50, "vmlsl%c.%24?us%20-21S6\t%12-15,22Q, %16-19,7D, %D"},
   {FPU_NEON_EXT_V1, 0xf2800a40, 0xfe800f50, "vmull%c.%24?us%20-21S6\t%12-15,22Q, %16-19,7D, %D"},
 
-  /* Element and structure load/store */
+  /* Element and structure load/store.  */
   {FPU_NEON_EXT_V1, 0xf4a00fc0, 0xffb00fc0, "vld4%c.32\t%C"},
   {FPU_NEON_EXT_V1, 0xf4a00c00, 0xffb00f00, "vld1%c.%6-7S2\t%C"},
   {FPU_NEON_EXT_V1, 0xf4a00d00, 0xffb00f00, "vld2%c.%6-7S2\t%C"},
@@ -780,7 +790,7 @@ static const struct opcode32 neon_opcodes[] =
 static const struct opcode32 arm_opcodes[] =
 {
   /* ARM instructions.  */
-  {ARM_EXT_V1, 0xe1a00000, 0xffffffff, "nop\t\t\t(mov r0,r0)"},
+  {ARM_EXT_V1, 0xe1a00000, 0xffffffff, "nop\t\t\t; (mov r0, r0)"},
   {ARM_EXT_V4T | ARM_EXT_V5, 0x012FFF10, 0x0ffffff0, "bx%c\t%0-3r"},
   {ARM_EXT_V2, 0x00000090, 0x0fe000f0, "mul%20's%c\t%16-19r, %0-3r, %8-11r"},
   {ARM_EXT_V2, 0x00200090, 0x0fe000f0, "mla%20's%c\t%16-19r, %0-3r, %8-11r, %12-15r"},
@@ -825,7 +835,7 @@ static const struct opcode32 arm_opcodes[] =
   {ARM_EXT_V6K, 0x0320f004, 0x0fffffff, "sev%c"},
   {ARM_EXT_V6K, 0x0320f000, 0x0fffff00, "nop%c\t{%0-7d}"},
 
-  /* ARM V6 instructions. */
+  /* ARM V6 instructions.  */
   {ARM_EXT_V6, 0xf1080000, 0xfffffe3f, "cpsie\t%8'a%7'i%6'f"},
   {ARM_EXT_V6, 0xf10a0000, 0xfffffe20, "cpsie\t%8'a%7'i%6'f,#%0-4d"},
   {ARM_EXT_V6, 0xf10C0000, 0xfffffe3f, "cpsid\t%8'a%7'i%6'f"},
@@ -989,23 +999,72 @@ static const struct opcode32 arm_opcodes[] =
   {ARM_EXT_V5ExP, 0x01600050, 0x0ff00ff0, "qdsub%c\t%12-15r, %0-3r, %16-19r"},
 
   /* ARM Instructions.  */
-  {ARM_EXT_V1, 0x00000090, 0x0e100090, "str%6's%5?hb%c\t%12-15r, %s"},
-  {ARM_EXT_V1, 0x00100090, 0x0e100090, "ldr%6's%5?hb%c\t%12-15r, %s"},
-  {ARM_EXT_V1, 0x00000000, 0x0de00000, "and%20's%c\t%12-15r, %16-19r, %o"},
-  {ARM_EXT_V1, 0x00200000, 0x0de00000, "eor%20's%c\t%12-15r, %16-19r, %o"},
-  {ARM_EXT_V1, 0x00400000, 0x0de00000, "sub%20's%c\t%12-15r, %16-19r, %o"},
-  {ARM_EXT_V1, 0x00600000, 0x0de00000, "rsb%20's%c\t%12-15r, %16-19r, %o"},
-  {ARM_EXT_V1, 0x00800000, 0x0de00000, "add%20's%c\t%12-15r, %16-19r, %o"},
-  {ARM_EXT_V1, 0x00a00000, 0x0de00000, "adc%20's%c\t%12-15r, %16-19r, %o"},
-  {ARM_EXT_V1, 0x00c00000, 0x0de00000, "sbc%20's%c\t%12-15r, %16-19r, %o"},
-  {ARM_EXT_V1, 0x00e00000, 0x0de00000, "rsc%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x052d0004, 0x0fff0fff, "push%c\t{%12-15r}\t\t; (str%c %12-15r, %a)"},
+  {ARM_EXT_V1, 0x04000000, 0x0e100000, "str%22'b%t%c\t%12-15r, %a"},
+  {ARM_EXT_V1, 0x06000000, 0x0e100ff0, "str%22'b%t%c\t%12-15r, %a"},
+  {ARM_EXT_V1, 0x04000000, 0x0c100010, "str%22'b%t%c\t%12-15r, %a"},
+  {ARM_EXT_V1, 0x04400000, 0x0e500000, "strb%c\t%12-15r, %a"},
+  {ARM_EXT_V1, 0x06400000, 0x0e500010, "strb%c\t%12-15r, %a"},
+  {ARM_EXT_V1, 0x004000b0, 0x0e5000f0, "strh%c\t%12-15r, %s"},
+  {ARM_EXT_V1, 0x000000b0, 0x0e500ff0, "strh%c\t%12-15r, %s"},
+  {ARM_EXT_V1, 0x00500090, 0x0e500090, "ldr%6's%5?hb%c\t%12-15r, %s"},
+  {ARM_EXT_V1, 0x00100090, 0x0e500f90, "ldr%6's%5?hb%c\t%12-15r, %s"},
+
+  {ARM_EXT_V1, 0x02000000, 0x0fe00000, "and%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00000000, 0x0fe00010, "and%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00000010, 0x0fe00090, "and%20's%c\t%12-15r, %16-19r, %o"},
+
+  {ARM_EXT_V1, 0x02200000, 0x0fe00000, "eor%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00200000, 0x0fe00010, "eor%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00200010, 0x0fe00090, "eor%20's%c\t%12-15r, %16-19r, %o"},
+
+  {ARM_EXT_V1, 0x02400000, 0x0fe00000, "sub%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00400000, 0x0fe00010, "sub%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00400010, 0x0fe00090, "sub%20's%c\t%12-15r, %16-19r, %o"},
+
+  {ARM_EXT_V1, 0x02600000, 0x0fe00000, "rsb%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00600000, 0x0fe00010, "rsb%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00600010, 0x0fe00090, "rsb%20's%c\t%12-15r, %16-19r, %o"},
+
+  {ARM_EXT_V1, 0x02800000, 0x0fe00000, "add%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00800000, 0x0fe00010, "add%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00800010, 0x0fe00090, "add%20's%c\t%12-15r, %16-19r, %o"},
+
+  {ARM_EXT_V1, 0x02a00000, 0x0fe00000, "adc%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00a00000, 0x0fe00010, "adc%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00a00010, 0x0fe00090, "adc%20's%c\t%12-15r, %16-19r, %o"},
+
+  {ARM_EXT_V1, 0x02c00000, 0x0fe00000, "sbc%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00c00000, 0x0fe00010, "sbc%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00c00010, 0x0fe00090, "sbc%20's%c\t%12-15r, %16-19r, %o"},
+
+  {ARM_EXT_V1, 0x02e00000, 0x0fe00000, "rsc%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00e00000, 0x0fe00010, "rsc%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x00e00010, 0x0fe00090, "rsc%20's%c\t%12-15r, %16-19r, %o"},
+
   {ARM_EXT_V3, 0x0120f000, 0x0db0f000, "msr%c\t%22?SCPSR%C, %o"},
   {ARM_EXT_V3, 0x010f0000, 0x0fbf0fff, "mrs%c\t%12-15r, %22?SCPSR"},
-  {ARM_EXT_V1, 0x01000000, 0x0de00000, "tst%p%c\t%16-19r, %o"},
-  {ARM_EXT_V1, 0x01200000, 0x0de00000, "teq%p%c\t%16-19r, %o"},
-  {ARM_EXT_V1, 0x01400000, 0x0de00000, "cmp%p%c\t%16-19r, %o"},
-  {ARM_EXT_V1, 0x01600000, 0x0de00000, "cmn%p%c\t%16-19r, %o"},
-  {ARM_EXT_V1, 0x01800000, 0x0de00000, "orr%20's%c\t%12-15r, %16-19r, %o"},
+
+  {ARM_EXT_V1, 0x03000000, 0x0fe00000, "tst%p%c\t%16-19r, %o"},
+  {ARM_EXT_V1, 0x01000000, 0x0fe00010, "tst%p%c\t%16-19r, %o"},
+  {ARM_EXT_V1, 0x01000010, 0x0fe00090, "tst%p%c\t%16-19r, %o"},
+
+  {ARM_EXT_V1, 0x03200000, 0x0fe00000, "teq%p%c\t%16-19r, %o"},
+  {ARM_EXT_V1, 0x01200000, 0x0fe00010, "teq%p%c\t%16-19r, %o"},
+  {ARM_EXT_V1, 0x01200010, 0x0fe00090, "teq%p%c\t%16-19r, %o"},
+
+  {ARM_EXT_V1, 0x03400000, 0x0fe00000, "cmp%p%c\t%16-19r, %o"},
+  {ARM_EXT_V1, 0x01400000, 0x0fe00010, "cmp%p%c\t%16-19r, %o"},
+  {ARM_EXT_V1, 0x01400010, 0x0fe00090, "cmp%p%c\t%16-19r, %o"},
+
+  {ARM_EXT_V1, 0x03600000, 0x0fe00000, "cmn%p%c\t%16-19r, %o"},
+  {ARM_EXT_V1, 0x01600000, 0x0fe00010, "cmn%p%c\t%16-19r, %o"},
+  {ARM_EXT_V1, 0x01600010, 0x0fe00090, "cmn%p%c\t%16-19r, %o"},
+
+  {ARM_EXT_V1, 0x03800000, 0x0fe00000, "orr%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x01800000, 0x0fe00010, "orr%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x01800010, 0x0fe00090, "orr%20's%c\t%12-15r, %16-19r, %o"},
+
   {ARM_EXT_V1, 0x03a00000, 0x0fef0000, "mov%20's%c\t%12-15r, %o"},
   {ARM_EXT_V1, 0x01a00000, 0x0def0ff0, "mov%20's%c\t%12-15r, %0-3r"},
   {ARM_EXT_V1, 0x01a00000, 0x0def0060, "lsl%20's%c\t%12-15r, %q"},
@@ -1013,13 +1072,16 @@ static const struct opcode32 arm_opcodes[] =
   {ARM_EXT_V1, 0x01a00040, 0x0def0060, "asr%20's%c\t%12-15r, %q"},
   {ARM_EXT_V1, 0x01a00060, 0x0def0ff0, "rrx%20's%c\t%12-15r, %0-3r"},
   {ARM_EXT_V1, 0x01a00060, 0x0def0060, "ror%20's%c\t%12-15r, %q"},
-  {ARM_EXT_V1, 0x01c00000, 0x0de00000, "bic%20's%c\t%12-15r, %16-19r, %o"},
-  {ARM_EXT_V1, 0x01e00000, 0x0de00000, "mvn%20's%c\t%12-15r, %o"},
-  {ARM_EXT_V1, 0x052d0004, 0x0fff0fff, "push%c\t{%12-15r}\t\t; (str%c %12-15r, %a)"},
-  {ARM_EXT_V1, 0x04000000, 0x0e100000, "str%22'b%t%c\t%12-15r, %a"},
-  {ARM_EXT_V1, 0x06000000, 0x0e100ff0, "str%22'b%t%c\t%12-15r, %a"},
-  {ARM_EXT_V1, 0x04000000, 0x0c100010, "str%22'b%t%c\t%12-15r, %a"},
-  {ARM_EXT_V1, 0x06000010, 0x0e000010, "undefined"},
+
+  {ARM_EXT_V1, 0x03c00000, 0x0fe00000, "bic%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x01c00000, 0x0fe00010, "bic%20's%c\t%12-15r, %16-19r, %o"},
+  {ARM_EXT_V1, 0x01c00010, 0x0fe00090, "bic%20's%c\t%12-15r, %16-19r, %o"},
+
+  {ARM_EXT_V1, 0x03e00000, 0x0fe00000, "mvn%20's%c\t%12-15r, %o"},
+  {ARM_EXT_V1, 0x01e00000, 0x0fe00010, "mvn%20's%c\t%12-15r, %o"},
+  {ARM_EXT_V1, 0x01e00010, 0x0fe00090, "mvn%20's%c\t%12-15r, %o"},
+
+  {ARM_EXT_V1, 0x06000010, 0x0e000010, UNDEFINED_INSTRUCTION},
   {ARM_EXT_V1, 0x049d0004, 0x0fff0fff, "pop%c\t{%12-15r}\t\t; (ldr%c %12-15r, %a)"},
   {ARM_EXT_V1, 0x04100000, 0x0c100000, "ldr%22'b%t%c\t%12-15r, %a"},
   {ARM_EXT_V1, 0x092d0000, 0x0fff0000, "push%c\t%m"},
@@ -1032,7 +1094,7 @@ static const struct opcode32 arm_opcodes[] =
   {ARM_EXT_V1, 0x0f000000, 0x0f000000, "svc%c\t%0-23x"},
 
   /* The rest.  */
-  {ARM_EXT_V1, 0x00000000, 0x00000000, "undefined instruction %0-31x"},
+  {ARM_EXT_V1, 0x00000000, 0x00000000, UNDEFINED_INSTRUCTION},
   {0, 0x00000000, 0x00000000, 0}
 };
 
@@ -1097,7 +1159,7 @@ static const struct opcode16 thumb_opcodes[] =
   /* This is BLX(2).  BLX(1) is a 32-bit instruction.  */
   {ARM_EXT_V5T, 0x4780, 0xff87, "blx%c\t%3-6r%x"},	/* note: 4 bit register number.  */
   /* ARM V4T ISA (Thumb v1).  */
-  {ARM_EXT_V4T, 0x46C0, 0xFFFF, "nop%c\t\t\t(mov r8, r8)"},
+  {ARM_EXT_V4T, 0x46C0, 0xFFFF, "nop%c\t\t\t; (mov r8, r8)"},
   /* Format 4.  */
   {ARM_EXT_V4T, 0x4000, 0xFFC0, "and%C\t%0-2r, %3-5r"},
   {ARM_EXT_V4T, 0x4040, 0xFFC0, "eor%C\t%0-2r, %3-5r"},
@@ -1148,7 +1210,7 @@ static const struct opcode16 thumb_opcodes[] =
   {ARM_EXT_V4T, 0x3000, 0xF800, "add%C\t%8-10r, #%0-7d"},
   {ARM_EXT_V4T, 0x3800, 0xF800, "sub%C\t%8-10r, #%0-7d"},
   /* format 6 */
-  {ARM_EXT_V4T, 0x4800, 0xF800, "ldr%c\t%8-10r, [pc, #%0-7W]\t(%0-7a)"},  /* TODO: Disassemble PC relative "LDR rD,=<symbolic>" */
+  {ARM_EXT_V4T, 0x4800, 0xF800, "ldr%c\t%8-10r, [pc, #%0-7W]\t; (%0-7a)"},  /* TODO: Disassemble PC relative "LDR rD,=<symbolic>" */
   /* format 9 */
   {ARM_EXT_V4T, 0x6000, 0xF800, "str%c\t%0-2r, [%3-5r, #%6-10W]"},
   {ARM_EXT_V4T, 0x6800, 0xF800, "ldr%c\t%0-2r, [%3-5r, #%6-10W]"},
@@ -1161,7 +1223,7 @@ static const struct opcode16 thumb_opcodes[] =
   {ARM_EXT_V4T, 0x9000, 0xF800, "str%c\t%8-10r, [sp, #%0-7W]"},
   {ARM_EXT_V4T, 0x9800, 0xF800, "ldr%c\t%8-10r, [sp, #%0-7W]"},
   /* format 12 */
-  {ARM_EXT_V4T, 0xA000, 0xF800, "add%c\t%8-10r, pc, #%0-7W\t(adr %8-10r, %0-7a)"},
+  {ARM_EXT_V4T, 0xA000, 0xF800, "add%c\t%8-10r, pc, #%0-7W\t; (adr %8-10r, %0-7a)"},
   {ARM_EXT_V4T, 0xA800, 0xF800, "add%c\t%8-10r, sp, #%0-7W"},
   /* format 15 */
   {ARM_EXT_V4T, 0xC000, 0xF800, "stmia%c\t%8-10r!, %M"},
@@ -1169,7 +1231,7 @@ static const struct opcode16 thumb_opcodes[] =
   /* format 17 */
   {ARM_EXT_V4T, 0xDF00, 0xFF00, "svc%c\t%0-7d"},
   /* format 16 */
-  {ARM_EXT_V4T, 0xDE00, 0xFE00, "undefined"},
+  {ARM_EXT_V4T, 0xDE00, 0xFE00, UNDEFINED_INSTRUCTION},
   {ARM_EXT_V4T, 0xD000, 0xF000, "b%8-11c.n\t%0-7B%X"},
   /* format 18 */
   {ARM_EXT_V4T, 0xE000, 0xF800, "b%c.n\t%0-10B%x"},
@@ -1178,7 +1240,7 @@ static const struct opcode16 thumb_opcodes[] =
      32-bit table, because even in pre-V6T2 ISAs, BL and BLX(1) pairs
      are processed via that table.  Thus, we can never encounter a
      bare "second half of BL/BLX(1)" instruction here.  */
-  {ARM_EXT_V1,  0x0000, 0x0000, "undefined"},
+  {ARM_EXT_V1,  0x0000, 0x0000, UNDEFINED_INSTRUCTION},
   {0, 0, 0, 0}
 };
 
@@ -1245,7 +1307,7 @@ static const struct opcode32 thumb32_opcodes[] =
   {ARM_EXT_V6T2, 0xf3af8001, 0xffffffff, "yield%c.w"},
   {ARM_EXT_V6T2, 0xf3af8002, 0xffffffff, "wfe%c.w"},
   {ARM_EXT_V6T2, 0xf3af8003, 0xffffffff, "wfi%c.w"},
-  {ARM_EXT_V6T2, 0xf3af9004, 0xffffffff, "sev%c.w"},
+  {ARM_EXT_V6T2, 0xf3af8004, 0xffffffff, "sev%c.w"},
   {ARM_EXT_V6T2, 0xf3af8000, 0xffffff00, "nop%c.w\t{%0-7d}"},
 
   {ARM_EXT_V6T2, 0xf3bf8f2f, 0xffffffff, "clrex%c"},
@@ -1432,7 +1494,7 @@ static const struct opcode32 thumb32_opcodes[] =
   {ARM_EXT_V4T,  0xf000d000, 0xf800d000, "bl%c\t%B%x"},
 
   /* Fallback.  */
-  {ARM_EXT_V1,   0x00000000, 0x00000000, "undefined"},
+  {ARM_EXT_V1,   0x00000000, 0x00000000, UNDEFINED_INSTRUCTION},
   {0, 0, 0, 0}
 };
    
@@ -1508,7 +1570,8 @@ static bfd_vma ifthen_address;
 #define IFTHEN_COND ((ifthen_state >> 4) & 0xf)
 
 /* Cached mapping symbol state.  */
-enum map_type {
+enum map_type
+{
   MAP_ARM,
   MAP_THUMB,
   MAP_DATA
@@ -1535,7 +1598,9 @@ set_arm_regname_option (int option)
 }
 
 int
-get_arm_regnames (int option, const char **setname, const char **setdescription,
+get_arm_regnames (int option,
+		  const char **setname,
+		  const char **setdescription,
 		  const char *const **register_names)
 {
   *setname = regnames[option].name;
@@ -1547,11 +1612,13 @@ get_arm_regnames (int option, const char **setname, const char **setdescription,
 /* Decode a bitfield of the form matching regexp (N(-N)?,)*N(-N)?.
    Returns pointer to following character of the format string and
    fills in *VALUEP and *WIDTHP with the extracted value and number of
-   bits extracted.  WIDTHP can be NULL. */
+   bits extracted.  WIDTHP can be NULL.  */
 
 static const char *
-arm_decode_bitfield (const char *ptr, unsigned long insn,
-		     unsigned long *valuep, int *widthp)
+arm_decode_bitfield (const char *ptr,
+		     unsigned long insn,
+		     unsigned long *valuep,
+		     int *widthp)
 {
   unsigned long value = 0;
   int width = 0;
@@ -1583,7 +1650,7 @@ arm_decode_bitfield (const char *ptr, unsigned long insn,
 
 static void
 arm_decode_shift (long given, fprintf_ftype func, void *stream,
-		  int print_shift)
+		  bfd_boolean print_shift)
 {
   func (stream, "%s", arm_regnames[given & 0xf]);
 
@@ -1610,6 +1677,8 @@ arm_decode_shift (long given, fprintf_ftype func, void *stream,
 	  else
 	    func (stream, ", #%d", amount);
 	}
+      else if ((given & 0x80) == 0x80)
+	func (stream, ", <illegal shifter operand>");
       else if (print_shift)
 	func (stream, ", %s %s", arm_shift[(given & 0x60) >> 5],
 	      arm_regnames[(given & 0xf00) >> 8]);
@@ -1623,7 +1692,9 @@ arm_decode_shift (long given, fprintf_ftype func, void *stream,
    recognised coprocessor instruction.  */
 
 static bfd_boolean
-print_insn_coprocessor (bfd_vma pc, struct disassemble_info *info, long given,
+print_insn_coprocessor (bfd_vma pc,
+			struct disassemble_info *info,
+			long given,
 			bfd_boolean thumb)
 {
   const struct opcode32 *insn;
@@ -1631,15 +1702,36 @@ print_insn_coprocessor (bfd_vma pc, struct disassemble_info *info, long given,
   fprintf_ftype func = info->fprintf_func;
   unsigned long mask;
   unsigned long value;
+  unsigned long allowed_arches = ((arm_feature_set *) info->private_data)->coproc;
   int cond;
 
   for (insn = coprocessor_opcodes; insn->assembler; insn++)
     {
-      if (insn->value == FIRST_IWMMXT_INSN
-	  && info->mach != bfd_mach_arm_XScale
-	  && info->mach != bfd_mach_arm_iWMMXt
-	  && info->mach != bfd_mach_arm_iWMMXt2)
-	insn = insn + IWMMXT_INSN_COUNT;
+      signed long value_in_comment = 0;
+      const char *c;
+
+      if (insn->arch == 0)
+	switch (insn->value)
+	  {
+	  case SENTINEL_IWMMXT_START:
+	    if (info->mach != bfd_mach_arm_XScale
+		&& info->mach != bfd_mach_arm_iWMMXt
+		&& info->mach != bfd_mach_arm_iWMMXt2)
+	      do
+		insn++;
+	      while (insn->arch != 0 && insn->value != SENTINEL_IWMMXT_END);
+	    continue;
+
+	  case SENTINEL_IWMMXT_END:
+	    continue;
+
+	  case SENTINEL_GENERIC_START:
+	    allowed_arches = ((arm_feature_set *) info->private_data)->core;
+	    continue;
+
+	  default:
+	    abort ();
+	  }
 
       mask = insn->mask;
       value = insn->value;
@@ -1671,461 +1763,485 @@ print_insn_coprocessor (bfd_vma pc, struct disassemble_info *info, long given,
 		cond = 16;
 	    }
 	}
-      if ((given & mask) == value)
+      
+      if ((given & mask) != value)
+	continue;
+
+      if ((insn->arch & allowed_arches) == 0)
+	continue;
+
+      for (c = insn->assembler; *c; c++)
 	{
-	  const char *c;
-
-	  for (c = insn->assembler; *c; c++)
+	  if (*c == '%')
 	    {
-	      if (*c == '%')
+	      switch (*++c)
 		{
-		  switch (*++c)
-		    {
-		    case '%':
-		      func (stream, "%%");
-		      break;
+		case '%':
+		  func (stream, "%%");
+		  break;
 
-		    case 'A':
-		      func (stream, "[%s", arm_regnames [(given >> 16) & 0xf]);
+		case 'A':
+		  {
+		    int offset = given & 0xff;
 
-		      if ((given & (1 << 24)) != 0)
-			{
-			  int offset = given & 0xff;
+		    func (stream, "[%s", arm_regnames [(given >> 16) & 0xf]);
 
-			  if (offset)
-			    func (stream, ", #%s%d]%s",
-				  ((given & 0x00800000) == 0 ? "-" : ""),
-				  offset * 4,
-				  ((given & 0x00200000) != 0 ? "!" : ""));
-			  else
-			    func (stream, "]");
-			}
-		      else
-			{
-			  int offset = given & 0xff;
-
-			  func (stream, "]");
-
-			  if (given & (1 << 21))
-			    {
-			      if (offset)
-				func (stream, ", #%s%d",
-				      ((given & 0x00800000) == 0 ? "-" : ""),
-				      offset * 4);
-			    }
-			  else
-			    func (stream, ", {%d}", offset);
-			}
-		      break;
-
-		    case 'B':
+		    value_in_comment = offset * 4;
+		    if ((given & 0x00800000) == 0)
+		      value_in_comment = - value_in_comment;
+		    
+		    if ((given & (1 << 24)) != 0)
 		      {
-			int regno = ((given >> 12) & 0xf) | ((given >> (22 - 4)) & 0x10);
-			int offset = (given >> 1) & 0x3f;
-			
-			if (offset == 1)
-			  func (stream, "{d%d}", regno);
-			else if (regno + offset > 32)
-			  func (stream, "{d%d-<overflow reg d%d>}", regno, regno + offset - 1);
-			else
-			  func (stream, "{d%d-d%d}", regno, regno + offset - 1);
-		      }
-		      break;
-		      
-		    case 'C':
-		      {
-			int rn = (given >> 16) & 0xf;
-			int offset = (given & 0xff) * 4;
-			int add = (given >> 23) & 1;
-			
-			func (stream, "[%s", arm_regnames[rn]);
-			
 			if (offset)
-			  {
-			    if (!add)
-			      offset = -offset;
-			    func (stream, ", #%d", offset);
-			  }
+			  func (stream, ", #%d]%s",
+				value_in_comment,
+				((given & 0x00200000) != 0 ? "!" : ""));
+			else
+			  func (stream, "]");
+		      }
+		    else
+		      {
 			func (stream, "]");
-			if (rn == 15)
+
+			if (given & (1 << 21))
 			  {
-			    func (stream, "\t; ");
-                            /* FIXME: Unsure if info->bytes_per_chunk is the
-                               right thing to use here.  */
-			    info->print_address_func (offset + pc
-                              + info->bytes_per_chunk * 2, info);
+			    if (offset)
+			      func (stream, ", #%d", value_in_comment);
+			  }
+			else
+			  {
+			    func (stream, ", {%d}", offset);
+			    value_in_comment = offset;
 			  }
 		      }
-		      break;
+		  }
+		  break;
 
-		    case 'c':
-		      func (stream, "%s", arm_conditional[cond]);
-		      break;
+		case 'B':
+		  {
+		    int regno = ((given >> 12) & 0xf) | ((given >> (22 - 4)) & 0x10);
+		    int offset = (given >> 1) & 0x3f;
 
-		    case 'I':
-		      /* Print a Cirrus/DSP shift immediate.  */
-		      /* Immediates are 7bit signed ints with bits 0..3 in
-			 bits 0..3 of opcode and bits 4..6 in bits 5..7
-			 of opcode.  */
+		    if (offset == 1)
+		      func (stream, "{d%d}", regno);
+		    else if (regno + offset > 32)
+		      func (stream, "{d%d-<overflow reg d%d>}", regno, regno + offset - 1);
+		    else
+		      func (stream, "{d%d-d%d}", regno, regno + offset - 1);
+		  }
+		  break;
+
+		case 'C':
+		  {
+		    int rn = (given >> 16) & 0xf;
+		    int offset = (given & 0xff) * 4;
+		    int add = (given >> 23) & 1;
+
+		    func (stream, "[%s", arm_regnames[rn]);
+
+		    if (offset)
 		      {
-			int imm;
-
-			imm = (given & 0xf) | ((given & 0xe0) >> 1);
-
-			/* Is ``imm'' a negative number?  */
-			if (imm & 0x40)
-			  imm |= (-1 << 7);
-
-			func (stream, "%d", imm);
+			if (!add)
+			  offset = -offset;
+			func (stream, ", #%d", offset);
+			if (rn != 15)
+			  value_in_comment = offset;
 		      }
-
-		      break;
-
-		    case 'F':
-		      switch (given & 0x00408000)
-			{
-			case 0:
-			  func (stream, "4");
-			  break;
-			case 0x8000:
-			  func (stream, "1");
-			  break;
-			case 0x00400000:
-			  func (stream, "2");
-			  break;
-			default:
-			  func (stream, "3");
-			}
-		      break;
-
-		    case 'P':
-		      switch (given & 0x00080080)
-			{
-			case 0:
-			  func (stream, "s");
-			  break;
-			case 0x80:
-			  func (stream, "d");
-			  break;
-			case 0x00080000:
-			  func (stream, "e");
-			  break;
-			default:
-			  func (stream, _("<illegal precision>"));
-			  break;
-			}
-		      break;
-		    case 'Q':
-		      switch (given & 0x00408000)
-			{
-			case 0:
-			  func (stream, "s");
-			  break;
-			case 0x8000:
-			  func (stream, "d");
-			  break;
-			case 0x00400000:
-			  func (stream, "e");
-			  break;
-			default:
-			  func (stream, "p");
-			  break;
-			}
-		      break;
-		    case 'R':
-		      switch (given & 0x60)
-			{
-			case 0:
-			  break;
-			case 0x20:
-			  func (stream, "p");
-			  break;
-			case 0x40:
-			  func (stream, "m");
-			  break;
-			default:
-			  func (stream, "z");
-			  break;
-			}
-		      break;
-
-		    case '0': case '1': case '2': case '3': case '4':
-		    case '5': case '6': case '7': case '8': case '9':
+		    func (stream, "]");
+		    if (rn == 15)
 		      {
-			int width;
-			unsigned long value;
+			func (stream, "\t; ");
+			/* FIXME: Unsure if info->bytes_per_chunk is the
+			   right thing to use here.  */
+			info->print_address_func (offset + pc
+						  + info->bytes_per_chunk * 2, info);
+		      }
+		  }
+		  break;
 
-			c = arm_decode_bitfield (c, given, &value, &width);
+		case 'c':
+		  func (stream, "%s", arm_conditional[cond]);
+		  break;
 
-			switch (*c)
-			  {
-			  case 'r':
-			    func (stream, "%s", arm_regnames[value]);
-			    break;
-			  case 'D':
-			    func (stream, "d%ld", value);
-			    break;
-			  case 'Q':
-			    if (value & 1)
-			      func (stream, "<illegal reg q%ld.5>", value >> 1);
-			    else
-			      func (stream, "q%ld", value >> 1);
-			    break;
-			  case 'd':
-			    func (stream, "%ld", value);
-			    break;
-                          case 'k':
-                            {
-                              int from = (given & (1 << 7)) ? 32 : 16;
-                              func (stream, "%ld", from - value);
-                            }
-                            break;
-                            
-			  case 'f':
-			    if (value > 7)
-			      func (stream, "#%s", arm_fp_const[value & 7]);
-			    else
-			      func (stream, "f%ld", value);
-			    break;
+		case 'I':
+		  /* Print a Cirrus/DSP shift immediate.  */
+		  /* Immediates are 7bit signed ints with bits 0..3 in
+		     bits 0..3 of opcode and bits 4..6 in bits 5..7
+		     of opcode.  */
+		  {
+		    int imm;
 
-			  case 'w':
-			    if (width == 2)
-			      func (stream, "%s", iwmmxt_wwnames[value]);
-			    else
-			      func (stream, "%s", iwmmxt_wwssnames[value]);
-			    break;
+		    imm = (given & 0xf) | ((given & 0xe0) >> 1);
 
-			  case 'g':
-			    func (stream, "%s", iwmmxt_regnames[value]);
-			    break;
-			  case 'G':
-			    func (stream, "%s", iwmmxt_cregnames[value]);
-			    break;
+		    /* Is ``imm'' a negative number?  */
+		    if (imm & 0x40)
+		      imm |= (-1 << 7);
 
-			  case 'x':
-			    func (stream, "0x%lx", value);
-			    break;
+		    func (stream, "%d", imm);
+		  }
 
-			  case '`':
-			    c++;
-			    if (value == 0)
-			      func (stream, "%c", *c);
-			    break;
-			  case '\'':
-			    c++;
-			    if (value == ((1ul << width) - 1))
-			      func (stream, "%c", *c);
-			    break;
-			  case '?':
-			    func (stream, "%c", c[(1 << width) - (int)value]);
-			    c += 1 << width;
-			    break;
-			  default:
-			    abort ();
-			  }
-			break;
+		  break;
 
-		      case 'y':
-		      case 'z':
-			{
-			  int single = *c++ == 'y';
-			  int regno;
-			  
-			  switch (*c)
-			    {
-			    case '4': /* Sm pair */
-			    case '0': /* Sm, Dm */
-			      regno = given & 0x0000000f;
-			      if (single)
-				{
-				  regno <<= 1;
-				  regno += (given >> 5) & 1;
-				}
-                              else
-                                regno += ((given >> 5) & 1) << 4;
-			      break;
+		case 'F':
+		  switch (given & 0x00408000)
+		    {
+		    case 0:
+		      func (stream, "4");
+		      break;
+		    case 0x8000:
+		      func (stream, "1");
+		      break;
+		    case 0x00400000:
+		      func (stream, "2");
+		      break;
+		    default:
+		      func (stream, "3");
+		    }
+		  break;
 
-			    case '1': /* Sd, Dd */
-			      regno = (given >> 12) & 0x0000000f;
-			      if (single)
-				{
-				  regno <<= 1;
-				  regno += (given >> 22) & 1;
-				}
-                              else
-                                regno += ((given >> 22) & 1) << 4;
-			      break;
+		case 'P':
+		  switch (given & 0x00080080)
+		    {
+		    case 0:
+		      func (stream, "s");
+		      break;
+		    case 0x80:
+		      func (stream, "d");
+		      break;
+		    case 0x00080000:
+		      func (stream, "e");
+		      break;
+		    default:
+		      func (stream, _("<illegal precision>"));
+		      break;
+		    }
+		  break;
 
-			    case '2': /* Sn, Dn */
-			      regno = (given >> 16) & 0x0000000f;
-			      if (single)
-				{
-				  regno <<= 1;
-				  regno += (given >> 7) & 1;
-				}
-                              else
-                                regno += ((given >> 7) & 1) << 4;
-			      break;
-			      
-			    case '3': /* List */
-			      func (stream, "{");
-			      regno = (given >> 12) & 0x0000000f;
-			      if (single)
-				{
-				  regno <<= 1;
-				  regno += (given >> 22) & 1;
-				}
-                              else
-                                regno += ((given >> 22) & 1) << 4;
-			      break;
-			      
-			    default:
-			      abort ();
-			    }
+		case 'Q':
+		  switch (given & 0x00408000)
+		    {
+		    case 0:
+		      func (stream, "s");
+		      break;
+		    case 0x8000:
+		      func (stream, "d");
+		      break;
+		    case 0x00400000:
+		      func (stream, "e");
+		      break;
+		    default:
+		      func (stream, "p");
+		      break;
+		    }
+		  break;
 
-			  func (stream, "%c%d", single ? 's' : 'd', regno);
+		case 'R':
+		  switch (given & 0x60)
+		    {
+		    case 0:
+		      break;
+		    case 0x20:
+		      func (stream, "p");
+		      break;
+		    case 0x40:
+		      func (stream, "m");
+		      break;
+		    default:
+		      func (stream, "z");
+		      break;
+		    }
+		  break;
 
-			  if (*c == '3')
-			    {
-			      int count = given & 0xff;
-			      
-			      if (single == 0)
-				count >>= 1;
-			      
-			      if (--count)
-				{
-				  func (stream, "-%c%d",
-					single ? 's' : 'd',
-					regno + count);
-				}
-			      
-			      func (stream, "}");
-			    }
-			  else if (*c == '4')
-			    func (stream, ", %c%d", single ? 's' : 'd',
-				  regno + 1);
-			}
-			break;
+		case '0': case '1': case '2': case '3': case '4':
+		case '5': case '6': case '7': case '8': case '9':
+		  {
+		    int width;
+		    unsigned long value;
 
-		      case 'L':
-			switch (given & 0x00400100)
-			  {
-			  case 0x00000000: func (stream, "b"); break;
-			  case 0x00400000: func (stream, "h"); break;
-			  case 0x00000100: func (stream, "w"); break;
-			  case 0x00400100: func (stream, "d"); break;
-			  default:
-			    break;
-			  }
-			break;
+		    c = arm_decode_bitfield (c, given, &value, &width);
 
-		      case 'Z':
-			{
-			  int value;
-			  /* given (20, 23) | given (0, 3) */
-			  value = ((given >> 16) & 0xf0) | (given & 0xf);
-			  func (stream, "%d", value);
-			}
-			break;
-
-		      case 'l':
-			/* This is like the 'A' operator, except that if
-			   the width field "M" is zero, then the offset is
-			   *not* multiplied by four.  */
-			{
-			  int offset = given & 0xff;
-			  int multiplier = (given & 0x00000100) ? 4 : 1;
-
-			  func (stream, "[%s", arm_regnames [(given >> 16) & 0xf]);
-
-			  if (offset)
-			    {
-			      if ((given & 0x01000000) != 0)
-				func (stream, ", #%s%d]%s",
-				      ((given & 0x00800000) == 0 ? "-" : ""),
-				      offset * multiplier,
-				      ((given & 0x00200000) != 0 ? "!" : ""));
-			      else
-				func (stream, "], #%s%d",
-				      ((given & 0x00800000) == 0 ? "-" : ""),
-				      offset * multiplier);
-			    }
-			  else
-			    func (stream, "]");
-			}
-			break;
-
+		    switch (*c)
+		      {
 		      case 'r':
+			func (stream, "%s", arm_regnames[value]);
+			break;
+		      case 'D':
+			func (stream, "d%ld", value);
+			break;
+		      case 'Q':
+			if (value & 1)
+			  func (stream, "<illegal reg q%ld.5>", value >> 1);
+			else
+			  func (stream, "q%ld", value >> 1);
+			break;
+		      case 'd':
+			func (stream, "%ld", value);
+			value_in_comment = value;
+			break;
+		      case 'k':
 			{
-			  int imm4 = (given >> 4) & 0xf;
-			  int puw_bits = ((given >> 22) & 6) | ((given >> 21) & 1);
-			  int ubit = (given >> 23) & 1;
-			  const char *rm = arm_regnames [given & 0xf];
-			  const char *rn = arm_regnames [(given >> 16) & 0xf];
-
-			  switch (puw_bits)
-			    {
-			    case 1:
-			      /* fall through */
-			    case 3:
-			      func (stream, "[%s], %c%s", rn, ubit ? '+' : '-', rm);
-			      if (imm4)
-				func (stream, ", lsl #%d", imm4);
-			      break;
-
-			    case 4:
-			      /* fall through */
-			    case 5:
-			      /* fall through */
-			    case 6:
-			      /* fall through */
-			    case 7:
-			      func (stream, "[%s, %c%s", rn, ubit ? '+' : '-', rm);
-			      if (imm4 > 0)
-				func (stream, ", lsl #%d", imm4);
-			      func (stream, "]");
-			      if (puw_bits == 5 || puw_bits == 7)
-				func (stream, "!");
-			      break;
-
-			    default:
-			      func (stream, "INVALID");
-			    }
+			  int from = (given & (1 << 7)) ? 32 : 16;
+			  func (stream, "%ld", from - value);
 			}
 			break;
 
-		      case 'i':
-			{
-			  long imm5;
-			  imm5 = ((given & 0x100) >> 4) | (given & 0xf);
-			  func (stream, "%ld", (imm5 == 0) ? 32 : imm5);
-			}
+		      case 'f':
+			if (value > 7)
+			  func (stream, "#%s", arm_fp_const[value & 7]);
+			else
+			  func (stream, "f%ld", value);
 			break;
 
+		      case 'w':
+			if (width == 2)
+			  func (stream, "%s", iwmmxt_wwnames[value]);
+			else
+			  func (stream, "%s", iwmmxt_wwssnames[value]);
+			break;
+
+		      case 'g':
+			func (stream, "%s", iwmmxt_regnames[value]);
+			break;
+		      case 'G':
+			func (stream, "%s", iwmmxt_cregnames[value]);
+			break;
+
+		      case 'x':
+			func (stream, "0x%lx", (value & 0xffffffffUL));
+			break;
+
+		      case '`':
+			c++;
+			if (value == 0)
+			  func (stream, "%c", *c);
+			break;
+		      case '\'':
+			c++;
+			if (value == ((1ul << width) - 1))
+			  func (stream, "%c", *c);
+			break;
+		      case '?':
+			func (stream, "%c", c[(1 << width) - (int) value]);
+			c += 1 << width;
+			break;
 		      default:
 			abort ();
 		      }
+		    break;
+
+		  case 'y':
+		  case 'z':
+		    {
+		      int single = *c++ == 'y';
+		      int regno;
+
+		      switch (*c)
+			{
+			case '4': /* Sm pair */
+			case '0': /* Sm, Dm */
+			  regno = given & 0x0000000f;
+			  if (single)
+			    {
+			      regno <<= 1;
+			      regno += (given >> 5) & 1;
+			    }
+			  else
+			    regno += ((given >> 5) & 1) << 4;
+			  break;
+
+			case '1': /* Sd, Dd */
+			  regno = (given >> 12) & 0x0000000f;
+			  if (single)
+			    {
+			      regno <<= 1;
+			      regno += (given >> 22) & 1;
+			    }
+			  else
+			    regno += ((given >> 22) & 1) << 4;
+			  break;
+
+			case '2': /* Sn, Dn */
+			  regno = (given >> 16) & 0x0000000f;
+			  if (single)
+			    {
+			      regno <<= 1;
+			      regno += (given >> 7) & 1;
+			    }
+			  else
+			    regno += ((given >> 7) & 1) << 4;
+			  break;
+
+			case '3': /* List */
+			  func (stream, "{");
+			  regno = (given >> 12) & 0x0000000f;
+			  if (single)
+			    {
+			      regno <<= 1;
+			      regno += (given >> 22) & 1;
+			    }
+			  else
+			    regno += ((given >> 22) & 1) << 4;
+			  break;
+
+			default:
+			  abort ();
+			}
+
+		      func (stream, "%c%d", single ? 's' : 'd', regno);
+
+		      if (*c == '3')
+			{
+			  int count = given & 0xff;
+
+			  if (single == 0)
+			    count >>= 1;
+
+			  if (--count)
+			    {
+			      func (stream, "-%c%d",
+				    single ? 's' : 'd',
+				    regno + count);
+			    }
+
+			  func (stream, "}");
+			}
+		      else if (*c == '4')
+			func (stream, ", %c%d", single ? 's' : 'd',
+			      regno + 1);
 		    }
+		    break;
+
+		  case 'L':
+		    switch (given & 0x00400100)
+		      {
+		      case 0x00000000: func (stream, "b"); break;
+		      case 0x00400000: func (stream, "h"); break;
+		      case 0x00000100: func (stream, "w"); break;
+		      case 0x00400100: func (stream, "d"); break;
+		      default:
+			break;
+		      }
+		    break;
+
+		  case 'Z':
+		    {
+		      int value;
+		      /* given (20, 23) | given (0, 3) */
+		      value = ((given >> 16) & 0xf0) | (given & 0xf);
+		      func (stream, "%d", value);
+		    }
+		    break;
+
+		  case 'l':
+		    /* This is like the 'A' operator, except that if
+		       the width field "M" is zero, then the offset is
+		       *not* multiplied by four.  */
+		    {
+		      int offset = given & 0xff;
+		      int multiplier = (given & 0x00000100) ? 4 : 1;
+
+		      func (stream, "[%s", arm_regnames [(given >> 16) & 0xf]);
+
+		      if (multiplier > 1)
+			{
+			  value_in_comment = offset * multiplier;
+			  if ((given & 0x00800000) == 0)
+			    value_in_comment = - value_in_comment;
+			}
+
+		      if (offset)
+			{
+			  if ((given & 0x01000000) != 0)
+			    func (stream, ", #%s%d]%s",
+				  ((given & 0x00800000) == 0 ? "-" : ""),
+				  offset * multiplier,
+				  ((given & 0x00200000) != 0 ? "!" : ""));
+			  else
+			    func (stream, "], #%s%d",
+				  ((given & 0x00800000) == 0 ? "-" : ""),
+				  offset * multiplier);
+			}
+		      else
+			func (stream, "]");
+		    }
+		    break;
+
+		  case 'r':
+		    {
+		      int imm4 = (given >> 4) & 0xf;
+		      int puw_bits = ((given >> 22) & 6) | ((given >> 21) & 1);
+		      int ubit = (given >> 23) & 1;
+		      const char *rm = arm_regnames [given & 0xf];
+		      const char *rn = arm_regnames [(given >> 16) & 0xf];
+
+		      switch (puw_bits)
+			{
+			case 1:
+			case 3:
+			  func (stream, "[%s], %c%s", rn, ubit ? '+' : '-', rm);
+			  if (imm4)
+			    func (stream, ", lsl #%d", imm4);
+			  break;
+
+			case 4:
+			case 5:
+			case 6:
+			case 7:
+			  func (stream, "[%s, %c%s", rn, ubit ? '+' : '-', rm);
+			  if (imm4 > 0)
+			    func (stream, ", lsl #%d", imm4);
+			  func (stream, "]");
+			  if (puw_bits == 5 || puw_bits == 7)
+			    func (stream, "!");
+			  break;
+
+			default:
+			  func (stream, "INVALID");
+			}
+		    }
+		    break;
+
+		  case 'i':
+		    {
+		      long imm5;
+		      imm5 = ((given & 0x100) >> 4) | (given & 0xf);
+		      func (stream, "%ld", (imm5 == 0) ? 32 : imm5);
+		    }
+		    break;
+
+		  default:
+		    abort ();
+		  }
 		}
-	      else
-		func (stream, "%c", *c);
 	    }
-	  return TRUE;
+	  else
+	    func (stream, "%c", *c);
 	}
+
+      if (value_in_comment > 32 || value_in_comment < -16)
+	func (stream, "\t; 0x%lx", (value_in_comment & 0xffffffffUL));
+
+      return TRUE;
     }
   return FALSE;
 }
 
-static void
+/* Decodes and prints ARM addressing modes.  Returns the offset
+   used in the address, if any, if it is worthwhile printing the
+   offset as a hexadecimal value in a comment at the end of the
+   line of disassembly.  */
+
+static signed long
 print_arm_address (bfd_vma pc, struct disassemble_info *info, long given)
 {
   void *stream = info->stream;
   fprintf_ftype func = info->fprintf_func;
+  int offset = 0;
 
   if (((given & 0x000f0000) == 0x000f0000)
       && ((given & 0x02000000) == 0))
     {
-      int offset = given & 0xfff;
+      offset = given & 0xfff;
 
       func (stream, "[pc");
 
@@ -2157,6 +2273,7 @@ print_arm_address (bfd_vma pc, struct disassemble_info *info, long given)
 
       func (stream, "\t; ");
       info->print_address_func (offset, info);
+      offset = 0;
     }
   else
     {
@@ -2166,7 +2283,7 @@ print_arm_address (bfd_vma pc, struct disassemble_info *info, long given)
 	{
 	  if ((given & 0x02000000) == 0)
 	    {
-	      int offset = given & 0xfff;
+	      offset = given & 0xfff;
 	      if (offset)
 		func (stream, ", #%s%d",
 		      (((given & 0x00800000) == 0)
@@ -2177,7 +2294,7 @@ print_arm_address (bfd_vma pc, struct disassemble_info *info, long given)
 	      func (stream, ", %s",
 		    (((given & 0x00800000) == 0)
 		     ? "-" : ""));
-	      arm_decode_shift (given, func, stream, 1);
+	      arm_decode_shift (given, func, stream, TRUE);
 	    }
 
 	  func (stream, "]%s",
@@ -2187,7 +2304,7 @@ print_arm_address (bfd_vma pc, struct disassemble_info *info, long given)
 	{
 	  if ((given & 0x02000000) == 0)
 	    {
-	      int offset = given & 0xfff;
+	      offset = given & 0xfff;
 	      if (offset)
 		func (stream, "], #%s%d",
 		      (((given & 0x00800000) == 0)
@@ -2200,10 +2317,12 @@ print_arm_address (bfd_vma pc, struct disassemble_info *info, long given)
 	      func (stream, "], %s",
 		    (((given & 0x00800000) == 0)
 		     ? "-" : ""));
-	      arm_decode_shift (given, func, stream, 1);
+	      arm_decode_shift (given, func, stream, TRUE);
 	    }
 	}
     }
+
+  return (signed long) offset;
 }
 
 /* Print one neon instruction on INFO->STREAM.
@@ -2221,7 +2340,7 @@ print_insn_neon (struct disassemble_info *info, long given, bfd_boolean thumb)
     {
       if ((given & 0xef000000) == 0xef000000)
 	{
-	  /* move bit 28 to bit 24 to translate Thumb2 to ARM encoding.  */
+	  /* Move bit 28 to bit 24 to translate Thumb2 to ARM encoding.  */
 	  unsigned long bit28 = given & (1 << 28);
 
 	  given &= 0x00ffffff;
@@ -2240,6 +2359,7 @@ print_insn_neon (struct disassemble_info *info, long given, bfd_boolean thumb)
     {
       if ((given & insn->mask) == insn->value)
 	{
+	  signed long value_in_comment = 0;
 	  const char *c;
 
 	  for (c = insn->assembler; *c; c++)
@@ -2432,7 +2552,7 @@ print_insn_neon (struct disassemble_info *info, long given, bfd_boolean thumb)
 		      break;
 		      
 		    case 'E':
-		      /* Neon encoded constant for mov, mvn, vorr, vbic */
+		      /* Neon encoded constant for mov, mvn, vorr, vbic.  */
 		      {
 			int bits = 0;
 			int cmode = (given >> 8) & 0xf;
@@ -2449,19 +2569,19 @@ print_insn_neon (struct disassemble_info *info, long given, bfd_boolean thumb)
 			if (cmode < 8)
 			  {
 			    shift = (cmode >> 1) & 3;
-			    value = (unsigned long)bits << (8 * shift);
+			    value = (unsigned long) bits << (8 * shift);
                             size = 32;
 			  }
 			else if (cmode < 12)
 			  {
 			    shift = (cmode >> 1) & 1;
-			    value = (unsigned long)bits << (8 * shift);
+			    value = (unsigned long) bits << (8 * shift);
                             size = 16;
 			  }
 			else if (cmode < 14)
 			  {
 			    shift = (cmode & 1) + 1;
-			    value = (unsigned long)bits << (8 * shift);
+			    value = (unsigned long) bits << (8 * shift);
 			    value |= (1ul << (8 * shift)) - 1;
                             size = 32;
 			  }
@@ -2469,7 +2589,7 @@ print_insn_neon (struct disassemble_info *info, long given, bfd_boolean thumb)
 			  {
 			    if (op)
 			      {
-				/* bit replication into bytes */
+				/* Bit replication into bytes.  */
 				int ix;
 				unsigned long mask;
 				
@@ -2487,20 +2607,20 @@ print_insn_neon (struct disassemble_info *info, long given, bfd_boolean thumb)
 			      }
                             else
                               {
-                                /* byte replication */
-                                value = (unsigned long)bits;
+                                /* Byte replication.  */
+                                value = (unsigned long) bits;
                                 size = 8;
                               }
 			  }
 			else if (!op)
 			  {
-			    /* floating point encoding */
+			    /* Floating point encoding.  */
 			    int tmp;
 			    
-			    value = (unsigned long)(bits & 0x7f) << 19;
-			    value |= (unsigned long)(bits & 0x80) << 24;
+			    value = (unsigned long)  (bits & 0x7f) << 19;
+			    value |= (unsigned long) (bits & 0x80) << 24;
 			    tmp = bits & 0x40 ? 0x3c : 0x40;
-			    value |= (unsigned long)tmp << 24;
+			    value |= (unsigned long) tmp << 24;
                             size = 32;
                             isfloat = 1;
 			  }
@@ -2587,6 +2707,7 @@ print_insn_neon (struct disassemble_info *info, long given, bfd_boolean thumb)
 			    break;
 			  case 'd':
 			    func (stream, "%ld", value);
+			    value_in_comment = value;
 			    break;
 			  case 'e':
 			    func (stream, "%ld", (1ul << width) - value);
@@ -2595,7 +2716,7 @@ print_insn_neon (struct disassemble_info *info, long given, bfd_boolean thumb)
 			  case 'S':
 			  case 'T':
 			  case 'U':
-			    /* various width encodings */
+			    /* Various width encodings.  */
 			    {
 			      int base = 8 << (*c - 'S'); /* 8,16 or 32 */
 			      int limit;
@@ -2643,7 +2764,7 @@ print_insn_neon (struct disassemble_info *info, long given, bfd_boolean thumb)
 			      func (stream, "%c", *c);
 			    break;
 			  case '?':
-			    func (stream, "%c", c[(1 << width) - (int)value]);
+			    func (stream, "%c", c[(1 << width) - (int) value]);
 			    c += 1 << width;
 			    break;
 			  default:
@@ -2659,6 +2780,10 @@ print_insn_neon (struct disassemble_info *info, long given, bfd_boolean thumb)
 	      else
 		func (stream, "%c", *c);
 	    }
+
+	  if (value_in_comment > 32 || value_in_comment < -16)
+	    func (stream, "\t; 0x%lx", value_in_comment);
+
 	  return TRUE;
 	}
     }
@@ -2682,19 +2807,20 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 
   for (insn = arm_opcodes; insn->assembler; insn++)
     {
-      if (insn->value == FIRST_IWMMXT_INSN
-	  && info->mach != bfd_mach_arm_XScale
-	  && info->mach != bfd_mach_arm_iWMMXt)
-	insn = insn + IWMMXT_INSN_COUNT;
+      if ((given & insn->mask) != insn->value)
+	continue;
+    
+      if ((insn->arch & ((arm_feature_set *) info->private_data)->core) == 0)
+	continue;
 
-      if ((given & insn->mask) == insn->value
-	  /* Special case: an instruction with all bits set in the condition field
-	     (0xFnnn_nnnn) is only matched if all those bits are set in insn->mask,
-	     or by the catchall at the end of the table.  */
-	  && ((given & 0xF0000000) != 0xF0000000
-	      || (insn->mask & 0xF0000000) == 0xF0000000
-	      || (insn->mask == 0 && insn->value == 0)))
+      /* Special case: an instruction with all bits set in the condition field
+	 (0xFnnn_nnnn) is only matched if all those bits are set in insn->mask,
+	 or by the catchall at the end of the table.  */
+      if ((given & 0xF0000000) != 0xF0000000
+	  || (insn->mask & 0xF0000000) == 0xF0000000
+	  || (insn->mask == 0 && insn->value == 0))
 	{
+	  signed long value_in_comment = 0;
 	  const char *c;
 
 	  for (c = insn->assembler; *c; c++)
@@ -2708,13 +2834,13 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 		      break;
 
 		    case 'a':
-		      print_arm_address (pc, info, given);
+		      value_in_comment = print_arm_address (pc, info, given);
 		      break;
 
 		    case 'P':
 		      /* Set P address bit and use normal address
 			 printing routine.  */
-		      print_arm_address (pc, info, given | (1 << 24));
+		      value_in_comment = print_arm_address (pc, info, given | (1 << 24));
 		      break;
 
 		    case 's':
@@ -2731,26 +2857,29 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 			}
 		      else
 			{
+			  bfd_boolean negative = (given & 0x00800000) == 0;
+			  int offset = ((given & 0xf00) >> 4) | (given & 0xf);
+
+			  if (negative)
+			    offset = -offset;
+
 			  func (stream, "[%s",
 				arm_regnames[(given >> 16) & 0xf]);
+
 			  if ((given & 0x01000000) != 0)
 			    {
                               /* Pre-indexed.  */
 			      if ((given & 0x00400000) == 0x00400000)
 				{
                                   /* Immediate.  */
-                                  int offset = ((given & 0xf00) >> 4) | (given & 0xf);
 				  if (offset)
-				    func (stream, ", #%s%d",
-					  (((given & 0x00800000) == 0)
-					   ? "-" : ""), offset);
+				    func (stream, ", #%d", offset);
+				  value_in_comment = offset;
 				}
 			      else
 				{
                                   /* Register.  */
-				  func (stream, ", %s%s",
-					(((given & 0x00800000) == 0)
-					 ? "-" : ""),
+				  func (stream, ", %s%s", negative ? "-" : "",
                                         arm_regnames[given & 0xf]);
 				}
 
@@ -2763,20 +2892,17 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 			      if ((given & 0x00400000) == 0x00400000)
 				{
                                   /* Immediate.  */
-                                  int offset = ((given & 0xf00) >> 4) | (given & 0xf);
 				  if (offset)
-				    func (stream, "], #%s%d",
-					  (((given & 0x00800000) == 0)
-					   ? "-" : ""), offset);
+				    func (stream, "], #%d", offset);
 				  else
 				    func (stream, "]");
+
+				  value_in_comment = offset;
 				}
 			      else
 				{
                                   /* Register.  */
-				  func (stream, "], %s%s",
-					(((given & 0x00800000) == 0)
-					 ? "-" : ""),
+				  func (stream, "], %s%s", negative ? "-" : "",
                                         arm_regnames[given & 0xf]);
 				}
 			    }
@@ -2786,7 +2912,7 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 		    case 'b':
 		      {
 			int disp = (((given & 0xffffff) ^ 0x800000) - 0x800000);
-			info->print_address_func (disp*4 + pc + 8, info);
+			info->print_address_func (disp * 4 + pc + 8, info);
 		      }
 		      break;
 
@@ -2815,7 +2941,7 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 		      break;
 
 		    case 'q':
-		      arm_decode_shift (given, func, stream, 0);
+		      arm_decode_shift (given, func, stream, FALSE);
 		      break;
 
 		    case 'o':
@@ -2823,12 +2949,14 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 			{
 			  int rotate = (given & 0xf00) >> 7;
 			  int immed = (given & 0xff);
+
 			  immed = (((immed << (32 - rotate))
 				    | (immed >> rotate)) & 0xffffffff);
-			  func (stream, "#%d\t; 0x%x", immed, immed);
+			  func (stream, "#%d", immed);
+			  value_in_comment = immed;
 			}
 		      else
-			arm_decode_shift (given, func, stream, 1);
+			arm_decode_shift (given, func, stream, TRUE);
 		      break;
 
 		    case 'p':
@@ -2842,36 +2970,40 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 		      break;
 
 		    case 'A':
-		      func (stream, "[%s", arm_regnames [(given >> 16) & 0xf]);
+		      {
+			int offset = given & 0xff;
 
-		      if ((given & (1 << 24)) != 0)
-			{
-			  int offset = given & 0xff;
+			value_in_comment = offset * 4;
+			if ((given & 0x00800000) == 0)
+			  value_in_comment = - value_in_comment;
 
-			  if (offset)
-			    func (stream, ", #%s%d]%s",
-				  ((given & 0x00800000) == 0 ? "-" : ""),
-				  offset * 4,
-				  ((given & 0x00200000) != 0 ? "!" : ""));
-			  else
+			func (stream, "[%s", arm_regnames [(given >> 16) & 0xf]);
+
+			if ((given & (1 << 24)) != 0)
+			  {
+			    if (offset)
+			      func (stream, ", #%d]%s",
+				    value_in_comment,
+				    ((given & 0x00200000) != 0 ? "!" : ""));
+			    else
+			      func (stream, "]");
+			  }
+			else
+			  {
 			    func (stream, "]");
-			}
-		      else
-			{
-			  int offset = given & 0xff;
 
-			  func (stream, "]");
-
-			  if (given & (1 << 21))
-			    {
-			      if (offset)
-				func (stream, ", #%s%d",
-				      ((given & 0x00800000) == 0 ? "-" : ""),
-				      offset * 4);
-			    }
-			  else
-			    func (stream, ", {%d}", offset);
-			}
+			    if (given & (1 << 21))
+			      {
+				if (offset)
+				  func (stream, ", #%d", value_in_comment);
+			      }
+			    else
+			      {
+				func (stream, ", {%d}", offset);
+				value_in_comment = offset;
+			      }
+			  }
+		      }
 		      break;
 
 		    case 'B':
@@ -2912,12 +3044,12 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 		    case 'U':
 		      switch (given & 0xf)
 			{
-			case 0xf: func(stream, "sy"); break;
-			case 0x7: func(stream, "un"); break;
-			case 0xe: func(stream, "st"); break;
-			case 0x6: func(stream, "unst"); break;
+			case 0xf: func (stream, "sy"); break;
+			case 0x7: func (stream, "un"); break;
+			case 0xe: func (stream, "st"); break;
+			case 0x6: func (stream, "unst"); break;
 			default:
-			  func(stream, "#%d", (int)given & 0xf);
+			  func (stream, "#%d", (int) given & 0xf);
 			  break;
 			}
 		      break;
@@ -2937,12 +3069,15 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 			    break;
 			  case 'd':
 			    func (stream, "%ld", value);
+			    value_in_comment = value;
 			    break;
 			  case 'b':
 			    func (stream, "%ld", value * 8);
+			    value_in_comment = value * 8;
 			    break;
 			  case 'W':
 			    func (stream, "%ld", value + 1);
+			    value_in_comment = value + 1;
 			    break;
 			  case 'x':
 			    func (stream, "0x%08lx", value);
@@ -2956,6 +3091,7 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 			    break;
 			  case 'X':
 			    func (stream, "%01lx", value & 0xf);
+			    value_in_comment = value;
 			    break;
 			  case '`':
 			    c++;
@@ -2968,7 +3104,7 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 			      func (stream, "%c", *c);
 			    break;
 			  case '?':
-			    func (stream, "%c", c[(1 << width) - (int)value]);
+			    func (stream, "%c", c[(1 << width) - (int) value]);
 			    c += 1 << width;
 			    break;
 			  default:
@@ -2982,6 +3118,7 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 
 			  imm = (given & 0xf) | ((given & 0xfff00) >> 4);
 			  func (stream, "%d", imm);
+			  value_in_comment = imm;
 			}
 			break;
 
@@ -2991,8 +3128,8 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 			{
 			  long msb = (given & 0x001f0000) >> 16;
 			  long lsb = (given & 0x00000f80) >> 7;
-
 			  long width = msb - lsb + 1;
+
 			  if (width > 0)
 			    func (stream, "#%lu, #%lu", lsb, width);
 			  else
@@ -3007,7 +3144,9 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 			  long hi = (given & 0x000f0000) >> 4;
 			  long lo = (given & 0x00000fff);
 			  long imm16 = hi | lo;
-			  func (stream, "#%lu\t; 0x%lx", imm16, imm16);
+
+			  func (stream, "#%lu", imm16);
+			  value_in_comment = imm16;
 			}
 			break;
 
@@ -3019,6 +3158,9 @@ print_insn_arm (bfd_vma pc, struct disassemble_info *info, long given)
 	      else
 		func (stream, "%c", *c);
 	    }
+
+	  if (value_in_comment > 32 || value_in_comment < -16)
+	    func (stream, "\t; 0x%lx", (value_in_comment & 0xffffffffUL));
 	  return;
 	}
     }
@@ -3037,7 +3179,9 @@ print_insn_thumb16 (bfd_vma pc, struct disassemble_info *info, long given)
   for (insn = thumb_opcodes; insn->assembler; insn++)
     if ((given & insn->mask) == insn->value)
       {
+	signed long value_in_comment = 0;
 	const char *c = insn->assembler;
+
 	for (; *c; c++)
 	  {
 	    int domaskpc = 0;
@@ -3209,14 +3353,17 @@ print_insn_thumb16 (bfd_vma pc, struct disassemble_info *info, long given)
 
 			  case 'd':
 			    func (stream, "%ld", reg);
+			    value_in_comment = reg;
 			    break;
 
 			  case 'H':
 			    func (stream, "%ld", reg << 1);
+			    value_in_comment = reg << 1;
 			    break;
 
 			  case 'W':
 			    func (stream, "%ld", reg << 2);
+			    value_in_comment = reg << 2;
 			    break;
 
 			  case 'a':
@@ -3225,6 +3372,7 @@ print_insn_thumb16 (bfd_vma pc, struct disassemble_info *info, long given)
 			       before the calculation.  */
 			    info->print_address_func
 			      (((pc + 4) & ~3) + (reg << 2), info);
+			    value_in_comment = 0;
 			    break;
 
 			  case 'x':
@@ -3234,6 +3382,7 @@ print_insn_thumb16 (bfd_vma pc, struct disassemble_info *info, long given)
 			  case 'B':
 			    reg = ((reg ^ (1 << bitend)) - (1 << bitend));
 			    info->print_address_func (reg * 2 + pc + 4, info);
+			    value_in_comment = 0;
 			    break;
 
 			  case 'c':
@@ -3270,6 +3419,9 @@ print_insn_thumb16 (bfd_vma pc, struct disassemble_info *info, long given)
 		abort ();
 	      }
 	  }
+
+	if (value_in_comment > 32 || value_in_comment < -16)
+	  func (stream, "\t; 0x%lx", value_in_comment);
 	return;
       }
 
@@ -3278,6 +3430,7 @@ print_insn_thumb16 (bfd_vma pc, struct disassemble_info *info, long given)
 }
 
 /* Return the name of an V7M special register.  */
+
 static const char *
 psr_name (int regno)
 {
@@ -3319,7 +3472,9 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
   for (insn = thumb32_opcodes; insn->assembler; insn++)
     if ((given & insn->mask) == insn->value)
       {
+	signed long value_in_comment = 0;
 	const char *c = insn->assembler;
+
 	for (; *c; c++)
 	  {
 	    if (*c != '%')
@@ -3353,16 +3508,19 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 	      case 'I':
 		{
 		  unsigned int imm12 = 0;
+
 		  imm12 |= (given & 0x000000ffu);
 		  imm12 |= (given & 0x00007000u) >> 4;
 		  imm12 |= (given & 0x04000000u) >> 15;
-		  func (stream, "#%u\t; 0x%x", imm12, imm12);
+		  func (stream, "#%u", imm12);
+		  value_in_comment = imm12;
 		}
 		break;
 
 	      case 'M':
 		{
 		  unsigned int bits = 0, imm, imm8, mod;
+
 		  bits |= (given & 0x000000ffu);
 		  bits |= (given & 0x00007000u) >> 4;
 		  bits |= (given & 0x04000000u) >> 15;
@@ -3379,28 +3537,33 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 		      imm8 = (bits & 0x07f) | 0x80;
 		      imm  = (((imm8 << (32 - mod)) | (imm8 >> mod)) & 0xffffffff);
 		    }
-		  func (stream, "#%u\t; 0x%x", imm, imm);
+		  func (stream, "#%u", imm);
+		  value_in_comment = imm;
 		}
 		break;
 		  
 	      case 'J':
 		{
 		  unsigned int imm = 0;
+
 		  imm |= (given & 0x000000ffu);
 		  imm |= (given & 0x00007000u) >> 4;
 		  imm |= (given & 0x04000000u) >> 15;
 		  imm |= (given & 0x000f0000u) >> 4;
-		  func (stream, "#%u\t; 0x%x", imm, imm);
+		  func (stream, "#%u", imm);
+		  value_in_comment = imm;
 		}
 		break;
 
 	      case 'K':
 		{
 		  unsigned int imm = 0;
+
 		  imm |= (given & 0x000f0000u) >> 16;
 		  imm |= (given & 0x00000ff0u) >> 0;
 		  imm |= (given & 0x0000000fu) << 12;
-		  func (stream, "#%u\t; 0x%x", imm, imm);
+		  func (stream, "#%u", imm);
+		  value_in_comment = imm;
 		}
 		break;
 
@@ -3452,14 +3615,19 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 		  int offset = 0;
 
 		  func (stream, "[%s", arm_regnames[Rn]);
-		  if (U) /* 12-bit positive immediate offset */
-		    offset = i12;
-		  else if (Rn == 15) /* 12-bit negative immediate offset */
-		    offset = -(int)i12;
-		  else if (op == 0x0) /* shifted register offset */
+		  if (U) /* 12-bit positive immediate offset.  */
+		    {
+		      offset = i12;
+		      if (Rn != 15)
+			value_in_comment = offset;
+		    }
+		  else if (Rn == 15) /* 12-bit negative immediate offset.  */
+		    offset = - (int) i12;
+		  else if (op == 0x0) /* Shifted register offset.  */
 		    {
 		      unsigned int Rm = (i8 & 0x0f);
 		      unsigned int sh = (i8 & 0x30) >> 4;
+
 		      func (stream, ", %s", arm_regnames[Rm]);
 		      if (sh)
 			func (stream, ", lsl #%u", sh);
@@ -3468,30 +3636,30 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 		    }
 		  else switch (op)
 		    {
-		    case 0xE:  /* 8-bit positive immediate offset */
+		    case 0xE:  /* 8-bit positive immediate offset.  */
 		      offset = i8;
 		      break;
 
-		    case 0xC:  /* 8-bit negative immediate offset */
+		    case 0xC:  /* 8-bit negative immediate offset.  */
 		      offset = -i8;
 		      break;
 
-		    case 0xF:  /* 8-bit + preindex with wb */
+		    case 0xF:  /* 8-bit + preindex with wb.  */
 		      offset = i8;
 		      writeback = TRUE;
 		      break;
 
-		    case 0xD:  /* 8-bit - preindex with wb */
+		    case 0xD:  /* 8-bit - preindex with wb.  */
 		      offset = -i8;
 		      writeback = TRUE;
 		      break;
 
-		    case 0xB:  /* 8-bit + postindex */
+		    case 0xB:  /* 8-bit + postindex.  */
 		      offset = i8;
 		      postind = TRUE;
 		      break;
 
-		    case 0x9:  /* 8-bit - postindex */
+		    case 0x9:  /* 8-bit - postindex.  */
 		      offset = -i8;
 		      postind = TRUE;
 		      break;
@@ -3531,7 +3699,10 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 		  if (P)
 		    {
 		      if (off || !U)
-			func (stream, ", #%c%u", U ? '+' : '-', off * 4);
+			{
+			  func (stream, ", #%c%u", U ? '+' : '-', off * 4);
+			  value_in_comment = off * 4 * U ? 1 : -1;
+			}
 		      func (stream, "]");
 		      if (W)
 			func (stream, "!");
@@ -3540,9 +3711,15 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 		    {
 		      func (stream, "], ");
 		      if (W)
-			func (stream, "#%c%u", U ? '+' : '-', off * 4);
+			{
+			  func (stream, "#%c%u", U ? '+' : '-', off * 4);
+			  value_in_comment = off * 4 * U ? 1 : -1;
+			}
 		      else
-			func (stream, "{%u}", off);
+			{
+			  func (stream, "{%u}", off);
+			  value_in_comment = off;
+			}
 		    }
 		}
 		break;
@@ -3551,6 +3728,7 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 		{
 		  unsigned int Sbit = (given & 0x01000000) >> 24;
 		  unsigned int type = (given & 0x00600000) >> 21;
+
 		  switch (type)
 		    {
 		    case 0: func (stream, Sbit ? "sb" : "b"); break;
@@ -3588,6 +3766,7 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 		{
 		  unsigned int msb = (given & 0x0000001f);
 		  unsigned int lsb = 0;
+
 		  lsb |= (given & 0x000000c0u) >> 6;
 		  lsb |= (given & 0x00007000u) >> 10;
 		  func (stream, "#%u, #%u", lsb, msb - lsb + 1);
@@ -3598,6 +3777,7 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 		{
 		  unsigned int width = (given & 0x0000001f) + 1;
 		  unsigned int lsb = 0;
+
 		  lsb |= (given & 0x000000c0u) >> 6;
 		  lsb |= (given & 0x00007000u) >> 10;
 		  func (stream, "#%u, #%u", lsb, width);
@@ -3648,6 +3828,7 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 	      case 's':
 		{
 		  unsigned int shift = 0;
+
 		  shift |= (given & 0x000000c0u) >> 6;
 		  shift |= (given & 0x00007000u) >> 10;
 		  if (given & 0x00200000u)
@@ -3661,6 +3842,7 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 	      case 'R':
 		{
 		  unsigned int rot = (given & 0x00000030) >> 4;
+
 		  if (rot)
 		    func (stream, ", ror #%u", rot * 8);
 		}
@@ -3669,12 +3851,12 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 	      case 'U':
 		switch (given & 0xf)
 		  {
-		  case 0xf: func(stream, "sy"); break;
-		  case 0x7: func(stream, "un"); break;
-		  case 0xe: func(stream, "st"); break;
-		  case 0x6: func(stream, "unst"); break;
+		  case 0xf: func (stream, "sy"); break;
+		  case 0x7: func (stream, "un"); break;
+		  case 0xe: func (stream, "st"); break;
+		  case 0x6: func (stream, "unst"); break;
 		  default:
-		    func(stream, "#%d", (int)given & 0xf);
+		    func (stream, "#%d", (int) given & 0xf);
 		    break;
 		  }
 		break;
@@ -3715,8 +3897,14 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 			
 		  switch (*c)
 		    {
-		    case 'd': func (stream, "%lu", val); break;
-		    case 'W': func (stream, "%lu", val * 4); break;
+		    case 'd':
+		      func (stream, "%lu", val);
+		      value_in_comment = val;
+		      break;
+		    case 'W':
+		      func (stream, "%lu", val * 4);
+		      value_in_comment = val * 4;
+		      break;
 		    case 'r': func (stream, "%s", arm_regnames[val]); break;
 
 		    case 'c':
@@ -3736,7 +3924,7 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 		      break;
 
 		    case '?':
-		      func (stream, "%c", c[(1 << width) - (int)val]);
+		      func (stream, "%c", c[(1 << width) - (int) val]);
 		      c += 1 << width;
 		      break;
 
@@ -3750,6 +3938,9 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 		abort ();
 	      }
 	  }
+
+	if (value_in_comment > 32 || value_in_comment < -16)
+	  func (stream, "\t; 0x%lx", value_in_comment);
 	return;
       }
 
@@ -3760,7 +3951,8 @@ print_insn_thumb32 (bfd_vma pc, struct disassemble_info *info, long given)
 /* Print data bytes on INFO->STREAM.  */
 
 static void
-print_insn_data (bfd_vma pc ATTRIBUTE_UNUSED, struct disassemble_info *info,
+print_insn_data (bfd_vma pc ATTRIBUTE_UNUSED,
+		 struct disassemble_info *info,
 		 long given)
 {
   switch (info->bytes_per_chunk)
@@ -3856,8 +4048,10 @@ parse_disassembler_options (char *options)
 
 /* Search back through the insn stream to determine if this instruction is
    conditionally executed.  */
+
 static void
-find_ifthen_state (bfd_vma pc, struct disassemble_info *info,
+find_ifthen_state (bfd_vma pc,
+		   struct disassemble_info *info,
 		   bfd_boolean little)
 {
   unsigned char b[2];
@@ -3882,7 +4076,7 @@ find_ifthen_state (bfd_vma pc, struct disassemble_info *info,
      IT instruction until we find a definite instruction boundary.  */
   for (;;)
     {
-      if (addr == 0 || info->symbol_at_address_func(addr, info))
+      if (addr == 0 || info->symbol_at_address_func (addr, info))
 	{
 	  /* A symbol must be on an instruction boundary, and will not
 	     be within an IT block.  */
@@ -3892,7 +4086,7 @@ find_ifthen_state (bfd_vma pc, struct disassemble_info *info,
 	  return;
 	}
       addr -= 2;
-      status = info->read_memory_func (addr, (bfd_byte *)b, 2, info);
+      status = info->read_memory_func (addr, (bfd_byte *) b, 2, info);
       if (status)
 	return;
 
@@ -3936,7 +4130,8 @@ find_ifthen_state (bfd_vma pc, struct disassemble_info *info,
    Returns nonzero if *MAP_TYPE was set.  */
 
 static int
-get_sym_code_type (struct disassemble_info *info, int n,
+get_sym_code_type (struct disassemble_info *info,
+		   int n,
 		   enum map_type *map_type)
 {
   elf_symbol_type *es;
@@ -3954,7 +4149,7 @@ get_sym_code_type (struct disassemble_info *info, int n,
     }
 
   /* Check for mapping symbols.  */
-  name = bfd_asymbol_name(info->symtab[n]);
+  name = bfd_asymbol_name (info->symtab[n]);
   if (name[0] == '$' && (name[1] == 'a' || name[1] == 't' || name[1] == 'd')
       && (name[2] == 0 || name[2] == '.'))
     {
@@ -3966,6 +4161,47 @@ get_sym_code_type (struct disassemble_info *info, int n,
 
   return FALSE;
 }
+
+/* Given a bfd_mach_arm_XXX value, this function fills in the fields
+   of the supplied arm_feature_set structure with bitmasks indicating
+   the support base architectures and coprocessor extensions.
+
+   FIXME: This could more efficiently implemented as a constant array,
+   although it would also be less robust.  */
+
+static void
+select_arm_features (unsigned long mach,
+		     arm_feature_set * features)
+{
+#undef  ARM_FEATURE
+#define ARM_FEATURE(ARCH,CEXT) \
+  features->core = (ARCH); \
+  features->coproc = (CEXT) | FPU_FPA; \
+  return
+
+  switch (mach)
+    {
+    case bfd_mach_arm_2:       ARM_ARCH_V2;
+    case bfd_mach_arm_2a:      ARM_ARCH_V2S;
+    case bfd_mach_arm_3:       ARM_ARCH_V3;
+    case bfd_mach_arm_3M:      ARM_ARCH_V3M;
+    case bfd_mach_arm_4:       ARM_ARCH_V4;
+    case bfd_mach_arm_4T:      ARM_ARCH_V4T;
+    case bfd_mach_arm_5:       ARM_ARCH_V5;
+    case bfd_mach_arm_5T:      ARM_ARCH_V5T;
+    case bfd_mach_arm_5TE:     ARM_ARCH_V5TE;
+    case bfd_mach_arm_XScale:  ARM_ARCH_XSCALE;
+    case bfd_mach_arm_ep9312:  ARM_FEATURE (ARM_AEXT_V4T, ARM_CEXT_MAVERICK | FPU_MAVERICK);
+    case bfd_mach_arm_iWMMXt:  ARM_ARCH_IWMMXT;
+    case bfd_mach_arm_iWMMXt2: ARM_ARCH_IWMMXT2;
+      /* If the machine type is unknown allow all
+	 architecture types and all extensions.  */
+    case bfd_mach_arm_unknown: ARM_FEATURE (-1UL, -1UL);
+    default:
+      abort ();
+    }
+}
+
 
 /* NOTE: There are no checks in these routines that
    the relevant number of data bytes exist.  */
@@ -3991,14 +4227,47 @@ print_insn (bfd_vma pc, struct disassemble_info *info, bfd_boolean little)
       info->disassembler_options = NULL;
     }
 
+  /* PR 10288: Control which instructions will be disassembled.  */
+  if (info->private_data == NULL)
+    {
+      static arm_feature_set features;
+
+      if ((info->flags & USER_SPECIFIED_MACHINE_TYPE) == 0)
+	/* If the user did not use the -m command line switch then default to
+	   disassembling all types of ARM instruction.
+	   
+	   The info->mach value has to be ignored as this will be based on
+	   the default archictecture for the target and/or hints in the notes
+	   section, but it will never be greater than the current largest arm
+	   machine value (iWMMXt2), which is only equivalent to the V5TE
+	   architecture.  ARM architectures have advanced beyond the machine
+	   value encoding, and these newer architectures would be ignored if
+	   the machine value was used.
+
+	   Ie the -m switch is used to restrict which instructions will be
+	   disassembled.  If it is necessary to use the -m switch to tell
+	   objdump that an ARM binary is being disassembled, eg because the
+	   input is a raw binary file, but it is also desired to disassemble
+	   all ARM instructions then use "-marm".  This will select the
+	   "unknown" arm architecture which is compatible with any ARM
+	   instruction.  */
+	  info->mach = bfd_mach_arm_unknown;
+
+      /* Compute the architecture bitmask from the machine number.
+	 Note: This assumes that the machine number will not change
+	 during disassembly....  */
+      select_arm_features (info->mach, & features);
+
+      info->private_data = & features;
+    }
+  
   /* Decide if our code is going to be little-endian, despite what the
      function argument might say.  */
   little_code = ((info->endian_code == BFD_ENDIAN_LITTLE) || little);
 
   /* First check the full symtab for a mapping symbol, even if there
      are no usable non-mapping symbols for this address.  */
-  if (info->symtab != NULL
-      && * info->symtab
+  if (info->symtab_size != 0
       && bfd_asymbol_flavour (*info->symtab) == bfd_target_elf_flavour)
     {
       bfd_vma addr;
@@ -4041,7 +4310,9 @@ print_insn (bfd_vma pc, struct disassemble_info *info, bfd_boolean little)
 	     for a preceeding one.  */
 	  for (; n >= 0; n--)
 	    {
-	      if (get_sym_code_type (info, n, &type))
+	      if ((info->section == NULL
+		   || info->section == info->symtab[n]->section)
+		  && get_sym_code_type (info, n, &type))
 		{
 		  last_sym = n;
 		  found = TRUE;
@@ -4111,18 +4382,23 @@ print_insn (bfd_vma pc, struct disassemble_info *info, bfd_boolean little)
   if (force_thumb)
     is_thumb = TRUE;
 
-  info->display_endian = little ? BFD_ENDIAN_LITTLE : BFD_ENDIAN_BIG;
+  if (is_data)
+    info->display_endian = little ? BFD_ENDIAN_LITTLE : BFD_ENDIAN_BIG;
+  else
+    info->display_endian = little_code ? BFD_ENDIAN_LITTLE : BFD_ENDIAN_BIG;
+
   info->bytes_per_line = 4;
 
-  if (is_data)
+  /* PR 10263: Disassemble data if requested to do so by the user.  */
+  if (is_data && ((info->flags & DISASSEMBLE_DATA) == 0))
     {
       int i;
 
-      /* size was already set above.  */
+      /* Size was already set above.  */
       info->bytes_per_chunk = size;
       printer = print_insn_data;
 
-      status = info->read_memory_func (pc, (bfd_byte *)b, size, info);
+      status = info->read_memory_func (pc, (bfd_byte *) b, size, info);
       given = 0;
       if (little)
 	for (i = size - 1; i >= 0; i--)
@@ -4139,7 +4415,7 @@ print_insn (bfd_vma pc, struct disassemble_info *info, bfd_boolean little)
       info->bytes_per_chunk = 4;
       size = 4;
 
-      status = info->read_memory_func (pc, (bfd_byte *)b, 4, info);
+      status = info->read_memory_func (pc, (bfd_byte *) b, 4, info);
       if (little_code)
 	given = (b[0]) | (b[1] << 8) | (b[2] << 16) | (b[3] << 24);
       else
@@ -4155,7 +4431,7 @@ print_insn (bfd_vma pc, struct disassemble_info *info, bfd_boolean little)
       info->bytes_per_chunk = 2;
       size = 2;
 
-      status = info->read_memory_func (pc, (bfd_byte *)b, 2, info);
+      status = info->read_memory_func (pc, (bfd_byte *) b, 2, info);
       if (little_code)
 	given = (b[0]) | (b[1] << 8);
       else
@@ -4169,7 +4445,7 @@ print_insn (bfd_vma pc, struct disassemble_info *info, bfd_boolean little)
 	      || (given & 0xF800) == 0xF000
 	      || (given & 0xF800) == 0xE800)
 	    {
-	      status = info->read_memory_func (pc + 2, (bfd_byte *)b, 2, info);
+	      status = info->read_memory_func (pc + 2, (bfd_byte *) b, 2, info);
 	      if (little_code)
 		given = (b[0]) | (b[1] << 8) | (given << 16);
 	      else
@@ -4181,7 +4457,7 @@ print_insn (bfd_vma pc, struct disassemble_info *info, bfd_boolean little)
 	}
 
       if (ifthen_address != pc)
-	find_ifthen_state(pc, info, little_code);
+	find_ifthen_state (pc, info, little_code);
 
       if (ifthen_state)
 	{
