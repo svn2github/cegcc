@@ -1,5 +1,6 @@
 /* Xtensa-specific support for 32-bit ELF.
-   Copyright 2003, 2004, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
+   Copyright 2003, 2004, 2005, 2006, 2007, 2008, 2009
+   Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -1404,6 +1405,7 @@ elf_xtensa_create_dynamic_sections (bfd *dynobj, struct bfd_link_info *info)
   htab->srelplt = bfd_get_section_by_name (dynobj, ".rela.plt");
   htab->sgot = bfd_get_section_by_name (dynobj, ".got");
   htab->sgotplt = bfd_get_section_by_name (dynobj, ".got.plt");
+  htab->srelgot = bfd_get_section_by_name (dynobj, ".rela.got");
 
   /* Create any extra PLT sections in case check_relocs has already
      been called on all the non-dynamic input files.  */
@@ -1417,12 +1419,6 @@ elf_xtensa_create_dynamic_sections (bfd *dynobj, struct bfd_link_info *info)
   /* Mark the ".got.plt" section READONLY.  */
   if (htab->sgotplt == NULL
       || ! bfd_set_section_flags (dynobj, htab->sgotplt, flags))
-    return FALSE;
-
-  /* Create ".rela.got".  */
-  htab->srelgot = bfd_make_section_with_flags (dynobj, ".rela.got", flags);
-  if (htab->srelgot == NULL
-      || ! bfd_set_section_alignment (dynobj, htab->srelgot, 2))
     return FALSE;
 
   /* Create ".got.loc" (literal tables for use by dynamic linker).  */
@@ -5478,12 +5474,20 @@ text_action_add (text_action_list *l,
   for (m_p = &l->head; *m_p && (*m_p)->offset <= offset; m_p = &(*m_p)->next)
     {
       text_action *t = *m_p;
-      /* When the action is another fill at the same address,
-	 just increase the size.  */
-      if (t->offset == offset && t->action == ta_fill && action == ta_fill)
+      
+      if (action == ta_fill) 
 	{
-	  t->removed_bytes += removed;
-	  return;
+	  /* When the action is another fill at the same address,
+	     just increase the size.  */
+	  if (t->offset == offset && t->action == ta_fill)
+	    {
+	      t->removed_bytes += removed;
+	      return;
+	    }
+	  /* Fills need to happen before widens so that we don't
+	     insert fill bytes into the instruction stream.  */
+	  if (t->offset == offset && t->action == ta_widen_insn)
+	    break;
 	}
     }
 
@@ -10007,12 +10011,7 @@ relax_property_section (bfd *abfd,
 	  if (remove_this_rel)
 	    {
 	      offset_rel->r_info = ELF32_R_INFO (0, R_XTENSA_NONE);
-	      /* In case this is the last entry, move the relocation offset
-		 to the previous entry, if there is one.  */
-	      if (offset_rel->r_offset >= bytes_to_remove)
-		offset_rel->r_offset -= bytes_to_remove;
-	      else
-		offset_rel->r_offset = 0;
+	      offset_rel->r_offset = 0;
 	    }
 
 	  if (bytes_to_remove != 0)

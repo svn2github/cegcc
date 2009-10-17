@@ -1,5 +1,5 @@
 /* BFD back-end for TMS320C30 a.out binaries.
-   Copyright 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007
+   Copyright 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007, 2009
    Free Software Foundation, Inc.
    Contributed by Steven Haworth (steve@pm.cse.rmit.edu.au)
 
@@ -949,6 +949,9 @@ tic30_aout_set_arch_mach (bfd *abfd,
 #ifndef MY_section_already_linked
 #define MY_section_already_linked \
   _bfd_generic_section_already_linked
+#endif
+#ifndef MY_bfd_define_common_symbol
+#define MY_bfd_define_common_symbol bfd_generic_define_common_symbol
 #endif
 #ifndef MY_bfd_reloc_type_lookup
 #define MY_bfd_reloc_type_lookup tic30_aout_reloc_type_lookup

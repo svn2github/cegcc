@@ -1,5 +1,5 @@
 /* BFD back-end for IBM RS/6000 "XCOFF64" files.
-   Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
+   Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
    Written Clinton Popetz.
    Contributed by Cygnus Support.
@@ -353,11 +353,11 @@ _bfd_xcoff64_swap_sym_out (abfd, inp, extp)
 }
 
 static void
-_bfd_xcoff64_swap_aux_in (abfd, ext1, type, class, indx, numaux, in1)
+_bfd_xcoff64_swap_aux_in (abfd, ext1, type, in_class, indx, numaux, in1)
      bfd *abfd;
      PTR ext1;
      int type;
-     int class;
+     int in_class;
      int indx;
      int numaux;
      PTR in1;
@@ -365,7 +365,7 @@ _bfd_xcoff64_swap_aux_in (abfd, ext1, type, class, indx, numaux, in1)
   union external_auxent *ext = (union external_auxent *) ext1;
   union internal_auxent *in = (union internal_auxent *) in1;
 
-  switch (class)
+  switch (in_class)
     {
     case C_FILE:
       if (ext->x_file.x_n.x_zeroes[0] == 0)
@@ -381,6 +381,7 @@ _bfd_xcoff64_swap_aux_in (abfd, ext1, type, class, indx, numaux, in1)
 
       /* RS/6000 "csect" auxents */
     case C_EXT:
+    case C_AIX_WEAKEXT:
     case C_HIDEXT:
       if (indx + 1 == numaux)
 	{
@@ -419,7 +420,8 @@ _bfd_xcoff64_swap_aux_in (abfd, ext1, type, class, indx, numaux, in1)
       break;
     }
 
-  if (class == C_BLOCK || class == C_FCN || ISFCN (type) || ISTAG (class))
+  if (in_class == C_BLOCK || in_class == C_FCN || ISFCN (type)
+      || ISTAG (in_class))
     {
       in->x_sym.x_fcnary.x_fcn.x_lnnoptr
 	= H_GET_64 (abfd, ext->x_sym.x_fcnary.x_fcn.x_lnnoptr);
@@ -443,11 +445,11 @@ _bfd_xcoff64_swap_aux_in (abfd, ext1, type, class, indx, numaux, in1)
 }
 
 static unsigned int
-_bfd_xcoff64_swap_aux_out (abfd, inp, type, class, indx, numaux, extp)
+_bfd_xcoff64_swap_aux_out (abfd, inp, type, in_class, indx, numaux, extp)
      bfd *abfd;
      PTR inp;
      int type;
-     int class;
+     int in_class;
      int indx ATTRIBUTE_UNUSED;
      int numaux ATTRIBUTE_UNUSED;
      PTR extp;
@@ -456,7 +458,7 @@ _bfd_xcoff64_swap_aux_out (abfd, inp, type, class, indx, numaux, extp)
   union external_auxent *ext = (union external_auxent *) extp;
 
   memset ((PTR) ext, 0, bfd_coff_auxesz (abfd));
-  switch (class)
+  switch (in_class)
     {
     case C_FILE:
       if (in->x_file.x_n.x_zeroes == 0)
@@ -473,6 +475,7 @@ _bfd_xcoff64_swap_aux_out (abfd, inp, type, class, indx, numaux, extp)
 
       /* RS/6000 "csect" auxents */
     case C_EXT:
+    case C_AIX_WEAKEXT:
     case C_HIDEXT:
       if (indx + 1 == numaux)
 	{
@@ -504,7 +507,8 @@ _bfd_xcoff64_swap_aux_out (abfd, inp, type, class, indx, numaux, extp)
       break;
     }
 
-  if (class == C_BLOCK || class == C_FCN || ISFCN (type) || ISTAG (class))
+  if (in_class == C_BLOCK || in_class == C_FCN || ISFCN (type)
+      || ISTAG (in_class))
     {
       H_PUT_64 (abfd, in->x_sym.x_fcnary.x_fcn.x_lnnoptr,
 	       ext->x_sym.x_fcnary.x_fcn.x_lnnoptr);
@@ -767,7 +771,6 @@ xcoff64_write_object_contents (abfd)
   file_ptr sym_base;
   unsigned long reloc_size = 0;
   unsigned long lnno_size = 0;
-  bfd_boolean long_section_names;
   asection *text_sec = ((void *) 0);
   asection *data_sec = ((void *) 0);
   asection *bss_sec = ((void *) 0);
@@ -837,7 +840,6 @@ xcoff64_write_object_contents (abfd)
   if (bfd_seek (abfd, scn_base, SEEK_SET) != 0)
     return FALSE;
 
-  long_section_names = FALSE;
   for (current = abfd->sections; current != NULL; current = current->next)
     {
       struct internal_scnhdr section;
@@ -1050,6 +1052,8 @@ xcoff64_write_object_contents (abfd)
 	    case bfd_arch_powerpc:
 	      if (bfd_get_mach (abfd) == bfd_mach_ppc)
 		internal_a.o_cputype = 3;
+	      else if (bfd_get_mach (abfd) == bfd_mach_ppc_620)
+		internal_a.o_cputype = 2;
 	      else
 		internal_a.o_cputype = 1;
 	      break;
@@ -1117,11 +1121,13 @@ xcoff64_reloc_type_br (input_bfd, input_section, output_bfd, rel, sym, howto,
      bfd_byte *contents;
 {
   struct xcoff_link_hash_entry *h;
+  bfd_vma section_offset;
 
   if (0 > rel->r_symndx)
     return FALSE;
 
   h = obj_xcoff_sym_hashes (input_bfd)[rel->r_symndx];
+  section_offset = rel->r_vaddr - input_section->vma;
 
   /* If we see an R_BR or R_RBR reloc which is jumping to global
      linkage code, and it is followed by an appropriate cror nop
@@ -1131,13 +1137,14 @@ xcoff64_reloc_type_br (input_bfd, input_section, output_bfd, rel, sym, howto,
      going to global linkage code, we can replace the load with a
      cror.  */
   if (NULL != h
-      && bfd_link_hash_defined == h->root.type
-      && rel->r_vaddr - input_section->vma + 8 <= input_section->size)
+      && (bfd_link_hash_defined == h->root.type
+	  || bfd_link_hash_defweak == h->root.type)
+      && section_offset + 8 <= input_section->size)
     {
       bfd_byte *pnext;
       unsigned long next;
 
-      pnext = contents + (rel->r_vaddr - input_section->vma) + 4;
+      pnext = contents + section_offset + 4;
       next = bfd_get_32 (input_bfd, pnext);
 
       /* The _ptrgl function is magic.  It is used by the AIX compiler to call
@@ -1166,16 +1173,42 @@ xcoff64_reloc_type_br (input_bfd, input_section, output_bfd, rel, sym, howto,
       howto->complain_on_overflow = complain_overflow_dont;
     }
 
-  howto->pc_relative = TRUE;
+  /* The original PC-relative relocation is biased by -r_vaddr, so adding
+     the value below will give the absolute target address.  */
+  *relocation = val + addend + rel->r_vaddr;
+
   howto->src_mask &= ~3;
   howto->dst_mask = howto->src_mask;
 
-  /* A PC relative reloc includes the section address.  */
-  addend += input_section->vma;
+  if (h != NULL
+      && (h->root.type == bfd_link_hash_defined
+	  || h->root.type == bfd_link_hash_defweak)
+      && bfd_is_abs_section (h->root.u.def.section)
+      && section_offset + 4 <= input_section->size)
+    {
+      bfd_byte *ptr;
+      bfd_vma insn;
 
-  *relocation = val + addend;
-  *relocation -= (input_section->output_section->vma
-		  + input_section->output_offset);
+      /* Turn the relative branch into an absolute one by setting the
+	 AA bit.  */
+      ptr = contents + section_offset;
+      insn = bfd_get_32 (input_bfd, ptr);
+      insn |= 2;
+      bfd_put_32 (input_bfd, insn, ptr);
+
+      /* Make the howto absolute too.  */
+      howto->pc_relative = FALSE;
+      howto->complain_on_overflow = complain_overflow_bitfield;
+    }
+  else
+    {
+      /* Use a PC-relative howto and subtract the instruction's address
+	 from the target address we calculated above.  */
+      howto->pc_relative = TRUE;
+      *relocation -= (input_section->output_section->vma
+		      + input_section->output_offset
+		      + section_offset);
+    }
   return TRUE;
 }
 
@@ -1266,6 +1299,17 @@ xcoff64_ppc_relocate_section (output_bfd, info, input_bfd,
 	    }
 	  else
 	    {
+	      if (info->unresolved_syms_in_objects != RM_IGNORE
+		  && (h->flags & XCOFF_WAS_UNDEFINED) != 0)
+		{
+		  if (! ((*info->callbacks->undefined_symbol)
+			 (info, h->root.root.string,
+			  input_bfd, input_section,
+			  rel->r_vaddr - input_section->vma,
+			  (info->unresolved_syms_in_objects
+			   == RM_GENERATE_ERROR))))
+		    return FALSE;
+		}
 	      if (h->root.type == bfd_link_hash_defined
 		  || h->root.type == bfd_link_hash_defweak)
 		{
@@ -1280,17 +1324,11 @@ xcoff64_ppc_relocate_section (output_bfd, info, input_bfd,
 		  val = (sec->output_section->vma
 			 + sec->output_offset);
 		}
-	      else if ((0 == (h->flags & (XCOFF_DEF_DYNAMIC | XCOFF_IMPORT)))
-		       && ! info->relocatable)
+	      else
 		{
-		  if (! ((*info->callbacks->undefined_symbol)
-			 (info, h->root.root.string, input_bfd, input_section,
-			  rel->r_vaddr - input_section->vma, TRUE)))
-		    return FALSE;
-
-		  /* Don't try to process the reloc.  It can't help, and
-		     it may generate another error.  */
-		  continue;
+		  BFD_ASSERT (info->relocatable
+			      || (h->flags & XCOFF_DEF_DYNAMIC) != 0
+			      || (h->flags & XCOFF_IMPORT) != 0);
 		}
 	    }
 	}
@@ -2561,7 +2599,7 @@ static const struct xcoff_backend_data_rec bfd_xcoff_backend_data =
       LINESZ,
       FILNMLEN,
       TRUE,			/* _bfd_coff_long_filenames */
-      FALSE,			/* _bfd_coff_long_section_names */
+      XCOFF_NO_LONG_SECTION_NAMES,  /* _bfd_coff_long_section_names */
       3,			/* _bfd_coff_default_section_alignment_power */
       TRUE,			/* _bfd_coff_force_symnames_in_strings */
       4,			/* _bfd_coff_debug_string_prefix_length */
@@ -2769,6 +2807,7 @@ const bfd_target rs6000coff64_vec =
     bfd_generic_is_group_section,
     bfd_generic_discard_group,
     _bfd_generic_section_already_linked,
+    _bfd_xcoff_define_common_symbol,
 
     /* Dynamic */
     _bfd_xcoff_get_dynamic_symtab_upper_bound,
@@ -2815,7 +2854,7 @@ static const struct xcoff_backend_data_rec bfd_xcoff_aix5_backend_data =
       LINESZ,
       FILNMLEN,
       TRUE,			/* _bfd_coff_long_filenames */
-      FALSE,			/* _bfd_coff_long_section_names */
+      XCOFF_NO_LONG_SECTION_NAMES,  /* _bfd_coff_long_section_names */
       3,			/* _bfd_coff_default_section_alignment_power */
       TRUE,			/* _bfd_coff_force_symnames_in_strings */
       4,			/* _bfd_coff_debug_string_prefix_length */
@@ -3022,6 +3061,7 @@ const bfd_target aix5coff64_vec =
     bfd_generic_is_group_section,
     bfd_generic_discard_group,
     _bfd_generic_section_already_linked,
+    _bfd_xcoff_define_common_symbol,
 
     /* Dynamic */
     _bfd_xcoff_get_dynamic_symtab_upper_bound,

@@ -1,5 +1,5 @@
 /* MIPS-specific support for 64-bit ELF
-   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2006, 2007
+   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2005, 2006, 2007
    Free Software Foundation, Inc.
    Ian Lance Taylor, Cygnus Support
    Linker support added by Mark Mitchell, CodeSourcery, LLC.
@@ -95,13 +95,13 @@ bfd_elf64_archive_slurp_armap (bfd *abfd)
   ptrsize = 8 * nsymz;
 
   amt = carsym_size + stringsize + 1;
-  ardata->symdefs = bfd_zalloc (abfd, amt);
+  ardata->symdefs = (struct carsym *) bfd_zalloc (abfd, amt);
   if (ardata->symdefs == NULL)
     return FALSE;
   carsyms = ardata->symdefs;
   stringbase = ((char *) ardata->symdefs) + carsym_size;
 
-  raw_armap = bfd_alloc (abfd, ptrsize);
+  raw_armap = (bfd_byte *) bfd_alloc (abfd, ptrsize);
   if (raw_armap == NULL)
     goto release_symdefs;
 

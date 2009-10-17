@@ -1,5 +1,5 @@
 /* MMIX-specific support for 64-bit ELF.
-   Copyright 2001, 2002, 2003, 2004, 2005, 2006, 2007
+   Copyright 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2009
    Free Software Foundation, Inc.
    Contributed by Hans-Peter Nilsson <hp@bitrange.com>
 
@@ -159,7 +159,7 @@ struct bpo_greg_section_info
     struct bpo_reloc_request *reloc_request;
   };
 
-static bfd_boolean mmix_elf_link_output_symbol_hook
+static int mmix_elf_link_output_symbol_hook
   PARAMS ((struct bfd_link_info *, const char *, Elf_Internal_Sym *,
 	   asection *, struct elf_link_hash_entry *));
 
@@ -2082,7 +2082,7 @@ _bfd_mmix_check_all_relocs (abfd, info)
    the register section, and scale them down to correspond to the register
    number.  */
 
-static bfd_boolean
+static int
 mmix_elf_link_output_symbol_hook (info, name, sym, input_sec, h)
      struct bfd_link_info *info ATTRIBUTE_UNUSED;
      const char *name ATTRIBUTE_UNUSED;
@@ -2099,7 +2099,7 @@ mmix_elf_link_output_symbol_hook (info, name, sym, input_sec, h)
       sym->st_shndx = SHN_REGISTER;
     }
 
-  return TRUE;
+  return 1;
 }
 
 /* We fake a register section that holds values that are register numbers.
@@ -2557,7 +2557,7 @@ mmix_dump_bpo_gregs (link_info, pf)
    when the last such reloc is done, an index-array is sorted according to
    the values and iterated over to produce register numbers (indexed by 0
    from the first allocated register number) and offsets for use in real
-   relocation.
+   relocation.  (N.B.: Relocatable runs are handled, not just punted.)
 
    PUSHJ stub accounting is also done here.
 

@@ -1,6 +1,6 @@
 /* BFD back-end for ALPHA Extended-Coff files.
    Copyright 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005, 2007, 2008 Free Software Foundation, Inc.
+   2003, 2004, 2005, 2007, 2008, 2009 Free Software Foundation, Inc.
    Modified from coff-mips.c by Steve Chamberlain <sac@cygnus.com> and
    Ian Lance Taylor <ian@cygnus.com>.
 
@@ -2120,6 +2120,7 @@ alpha_ecoff_get_elt_at_filepos (archive, filepos)
   bfd_byte *buf, *p;
   struct bfd_in_memory *bim;
 
+  buf = NULL;
   nbfd = _bfd_get_elt_at_filepos (archive, filepos);
   if (nbfd == NULL)
     goto error_return;
@@ -2151,16 +2152,14 @@ alpha_ecoff_get_elt_at_filepos (archive, filepos)
     goto error_return;
   size = H_GET_64 (nbfd, ab);
 
-  if (size == 0)
-    buf = NULL;
-  else
+  if (size != 0)
     {
       bfd_size_type left;
       bfd_byte dict[4096];
       unsigned int h;
       bfd_byte b;
 
-      buf = (bfd_byte *) bfd_alloc (nbfd, size);
+      buf = (bfd_byte *) bfd_malloc (size);
       if (buf == NULL)
 	goto error_return;
       p = buf;
@@ -2214,7 +2213,7 @@ alpha_ecoff_get_elt_at_filepos (archive, filepos)
 
   /* Now the uncompressed file contents are in buf.  */
   bim = ((struct bfd_in_memory *)
-	 bfd_alloc (nbfd, (bfd_size_type) sizeof (struct bfd_in_memory)));
+	 bfd_malloc ((bfd_size_type) sizeof (struct bfd_in_memory)));
   if (bim == NULL)
     goto error_return;
   bim->size = size;
@@ -2230,6 +2229,8 @@ alpha_ecoff_get_elt_at_filepos (archive, filepos)
   return nbfd;
 
  error_return:
+  if (buf != NULL)
+    free (buf);
   if (nbfd != NULL)
     bfd_close (nbfd);
   return NULL;
@@ -2297,7 +2298,8 @@ static const struct ecoff_backend_data alpha_ecoff_backend_data =
     (unsigned (*) PARAMS ((bfd *,PTR,PTR))) bfd_void, /* reloc_out */
     alpha_ecoff_swap_filehdr_out, alpha_ecoff_swap_aouthdr_out,
     alpha_ecoff_swap_scnhdr_out,
-    FILHSZ, AOUTSZ, SCNHSZ, 0, 0, 0, 0, FILNMLEN, TRUE, FALSE, 4, FALSE, 2,
+    FILHSZ, AOUTSZ, SCNHSZ, 0, 0, 0, 0, FILNMLEN, TRUE, 
+    ECOFF_NO_LONG_SECTION_NAMES, 4, FALSE, 2,
     alpha_ecoff_swap_filehdr_in, alpha_ecoff_swap_aouthdr_in,
     alpha_ecoff_swap_scnhdr_in, NULL,
     alpha_ecoff_bad_format_hook, _bfd_ecoff_set_arch_mach_hook,
@@ -2397,6 +2399,7 @@ static const struct ecoff_backend_data alpha_ecoff_backend_data =
 #define _bfd_ecoff_bfd_discard_group bfd_generic_discard_group
 #define _bfd_ecoff_section_already_linked \
   _bfd_generic_section_already_linked
+#define _bfd_ecoff_bfd_define_common_symbol bfd_generic_define_common_symbol
 
 const bfd_target ecoffalpha_little_vec =
 {

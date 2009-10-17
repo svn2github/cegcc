@@ -1,6 +1,6 @@
 /* BFD back-end for ieee-695 objects.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
+   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2009
    Free Software Foundation, Inc.
 
    Written by Steve Chamberlain of Cygnus Support.
@@ -3627,12 +3627,12 @@ static asymbol *
 ieee_make_empty_symbol (bfd *abfd)
 {
   bfd_size_type amt = sizeof (ieee_symbol_type);
-  ieee_symbol_type *new = bfd_zalloc (abfd, amt);
+  ieee_symbol_type *new_symbol = (ieee_symbol_type *) bfd_zalloc (abfd, amt);
 
-  if (!new)
+  if (!new_symbol)
     return NULL;
-  new->symbol.the_bfd = abfd;
-  return &new->symbol;
+  new_symbol->symbol.the_bfd = abfd;
+  return &new_symbol->symbol;
 }
 
 static bfd *
@@ -3770,6 +3770,7 @@ ieee_sizeof_headers (bfd *abfd ATTRIBUTE_UNUSED,
 #define ieee_bfd_discard_group bfd_generic_discard_group
 #define ieee_section_already_linked \
   _bfd_generic_section_already_linked
+#define ieee_bfd_define_common_symbol bfd_generic_define_common_symbol
 #define ieee_bfd_link_hash_table_create _bfd_generic_link_hash_table_create
 #define ieee_bfd_link_hash_table_free _bfd_generic_link_hash_table_free
 #define ieee_bfd_link_add_symbols _bfd_generic_link_add_symbols

@@ -1,7 +1,7 @@
 /* Low-level I/O routines for BFDs.
 
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
+   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    Written by Cygnus Support.
@@ -102,13 +102,21 @@ real_fopen (const char *filename, const char *modes)
     }
   else
     {
-      /* Attribute found - rebuild modes.  */
-      size_t modes_len = vms_attr - modes;
+      /* Attributes found.  Split.  */
+      size_t modes_len = strlen (modes) + 1;
+      char attrs[modes_len + 1];
+      char *at[3];
+      int i;
 
-      BFD_ASSERT (modes_len < sizeof (vms_modes));
-      memcpy (vms_modes, modes, modes_len);
-      vms_modes[modes_len] = 0;
-      return close_on_exec (fopen (filename, vms_modes, vms_attr + 1));
+      memcpy (attrs, modes, modes_len);
+      at[0] = attrs;
+      for (i = 0; i < 2; i++)
+	{
+	  at[i + 1] = strchr (at[i], ',');
+	  BFD_ASSERT (at[i + 1] != NULL);
+	  *(at[i + 1]++) = 0; /* Replace ',' with a nul, and skip it.  */
+	}
+      return close_on_exec (fopen (filename, at[0], at[1], at[2]));
     }
 #else /* !VMS */
 #if defined (HAVE_FOPEN64)
@@ -150,6 +158,9 @@ DESCRIPTION
 .  int (*bclose) (struct bfd *abfd);
 .  int (*bflush) (struct bfd *abfd);
 .  int (*bstat) (struct bfd *abfd, struct stat *sb);
+.  {* Just like mmap: (void*)-1 on failure, mmapped address on success.  *}
+.  void *(*bmmap) (struct bfd *abfd, void *addr, bfd_size_type len,
+.                  int prot, int flags, file_ptr offset);
 .};
 
 */
@@ -176,7 +187,7 @@ bfd_bread (void *ptr, bfd_size_type size, bfd *abfd)
       struct bfd_in_memory *bim;
       bfd_size_type get;
 
-      bim = abfd->iostream;
+      bim = (struct bfd_in_memory *) abfd->iostream;
       get = size;
       if (abfd->where + get > bim->size)
 	{
@@ -208,7 +219,7 @@ bfd_bwrite (const void *ptr, bfd_size_type size, bfd *abfd)
 
   if ((abfd->flags & BFD_IN_MEMORY) != 0)
     {
-      struct bfd_in_memory *bim = abfd->iostream;
+      struct bfd_in_memory *bim = (struct bfd_in_memory *) abfd->iostream;
 
       size = (size_t) size;
       if (abfd->where + size > bim->size)
@@ -221,12 +232,15 @@ bfd_bwrite (const void *ptr, bfd_size_type size, bfd *abfd)
 	  newsize = (bim->size + 127) & ~(bfd_size_type) 127;
 	  if (newsize > oldsize)
 	    {
-	      bim->buffer = bfd_realloc_or_free (bim->buffer, newsize);
+	      bim->buffer = (bfd_byte *) bfd_realloc_or_free (bim->buffer,
+                                                              newsize);
 	      if (bim->buffer == NULL)
 		{
 		  bim->size = 0;
 		  return 0;
 		}
+	      if (newsize > bim->size)
+		memset (bim->buffer + bim->size, 0, newsize - bim->size);
 	    }
 	}
       memcpy (bim->buffer + abfd->where, ptr, (size_t) size);
@@ -325,7 +339,7 @@ bfd_seek (bfd *abfd, file_ptr position, int direction)
     {
       struct bfd_in_memory *bim;
 
-      bim = abfd->iostream;
+      bim = (struct bfd_in_memory *) abfd->iostream;
 
       if (direction == SEEK_SET)
 	abfd->where = position;
@@ -334,8 +348,8 @@ bfd_seek (bfd *abfd, file_ptr position, int direction)
 
       if (abfd->where > bim->size)
 	{
-	  if ((abfd->direction == write_direction) ||
-	      (abfd->direction == both_direction))
+	  if (abfd->direction == write_direction
+	      || abfd->direction == both_direction)
 	    {
 	      bfd_size_type newsize, oldsize;
 
@@ -345,12 +359,14 @@ bfd_seek (bfd *abfd, file_ptr position, int direction)
 	      newsize = (bim->size + 127) & ~(bfd_size_type) 127;
 	      if (newsize > oldsize)
 	        {
-		  bim->buffer = bfd_realloc_or_free (bim->buffer, newsize);
+		  bim->buffer = (bfd_byte *) bfd_realloc_or_free (bim->buffer,
+                                                                  newsize);
 		  if (bim->buffer == NULL)
 		    {
 		      bim->size = 0;
 		      return -1;
 		    }
+		  memset (bim->buffer + oldsize, 0, newsize - oldsize);
 	        }
 	    }
 	  else
@@ -499,4 +515,32 @@ bfd_get_size (bfd *abfd)
     return 0;
 
   return buf.st_size;
+}
+
+
+/*
+FUNCTION
+	bfd_mmap
+
+SYNOPSIS
+	void *bfd_mmap (bfd *abfd, void *addr, bfd_size_type len,
+	                int prot, int flags, file_ptr offset);
+
+DESCRIPTION
+	Return mmap()ed region of the file, if possible and implemented.
+
+*/
+
+void *
+bfd_mmap (bfd *abfd, void *addr, bfd_size_type len,
+	  int prot, int flags, file_ptr offset)
+{
+  void *ret = (void *)-1;
+  if ((abfd->flags & BFD_IN_MEMORY) != 0)
+    return ret;
+
+  if (abfd->iovec == NULL)
+    return ret;
+
+  return abfd->iovec->bmmap (abfd, addr, len, prot, flags, offset);
 }

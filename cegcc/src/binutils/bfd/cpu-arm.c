@@ -1,5 +1,5 @@
 /* BFD support for the ARM processor
-   Copyright 1994, 1997, 1999, 2000, 2002, 2003, 2004, 2005, 2007
+   Copyright 1994, 1997, 1999, 2000, 2002, 2003, 2004, 2005, 2006, 2007, 2009
    Free Software Foundation, Inc.
    Contributed by Richard Earnshaw (rwe@pegasus.esprit.ec.org)
 
@@ -187,7 +187,7 @@ bfd_arm_merge_machines (bfd *ibfd, bfd *obfd)
 	       || out == bfd_mach_arm_iWMMXt2))
     {
       _bfd_error_handler (_("\
-ERROR: %B is compiled for the EP9312, whereas %B is compiled for XScale"),
+error: %B is compiled for the EP9312, whereas %B is compiled for XScale"),
 			  ibfd, obfd);
       bfd_set_error (bfd_error_wrong_format);
       return FALSE;
@@ -198,7 +198,7 @@ ERROR: %B is compiled for the EP9312, whereas %B is compiled for XScale"),
 	       || in == bfd_mach_arm_iWMMXt2))
     {
       _bfd_error_handler (_("\
-ERROR: %B is compiled for the EP9312, whereas %B is compiled for XScale"),
+error: %B is compiled for the EP9312, whereas %B is compiled for XScale"),
 			  obfd, ibfd);
       bfd_set_error (bfd_error_wrong_format);
       return FALSE;

@@ -1,6 +1,6 @@
 /* BFD back-end for HP PA-RISC ELF files.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1999, 2000, 2001,
-   2002, 2003, 2004, 2005, 2006, 2007, 2008
+   2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    Original code by
@@ -301,8 +301,8 @@ struct elf32_hppa_link_hash_table
   /* Set if we need a .plt stub to support lazy dynamic linking.  */
   unsigned int need_plt_stub:1;
 
-  /* Small local sym to section mapping cache.  */
-  struct sym_sec_cache sym_sec;
+  /* Small local sym cache.  */
+  struct sym_cache sym_cache;
 
   /* Data for LDM relocations.  */
   union
@@ -460,7 +460,7 @@ elf32_hppa_link_hash_table_create (bfd *abfd)
   htab->has_17bit_branch = 0;
   htab->has_22bit_branch = 0;
   htab->need_plt_stub = 0;
-  htab->sym_sec.abfd = NULL;
+  htab->sym_cache.abfd = NULL;
   htab->tls_ldm_got.refcount = 0;
 
   return &htab->etab.root;
@@ -1011,16 +1011,7 @@ elf32_hppa_create_dynamic_sections (bfd *abfd, struct bfd_link_info *info)
   htab->srelplt = bfd_get_section_by_name (abfd, ".rela.plt");
 
   htab->sgot = bfd_get_section_by_name (abfd, ".got");
-  htab->srelgot = bfd_make_section_with_flags (abfd, ".rela.got",
-					       (SEC_ALLOC
-						| SEC_LOAD
-						| SEC_HAS_CONTENTS
-						| SEC_IN_MEMORY
-						| SEC_LINKER_CREATED
-						| SEC_READONLY));
-  if (htab->srelgot == NULL
-      || ! bfd_set_section_alignment (abfd, htab->srelgot, 2))
-    return FALSE;
+  htab->srelgot = bfd_get_section_by_name (abfd, ".rela.got");
 
   htab->sdynbss = bfd_get_section_by_name (abfd, ".dynbss");
   htab->srelbss = bfd_get_section_by_name (abfd, ".rela.bss");
@@ -1112,6 +1103,38 @@ elf32_hppa_optimized_tls_reloc (struct bfd_link_info *info ATTRIBUTE_UNUSED,
   /* For now we don't support linker optimizations.  */
   return r_type;
 }
+
+/* Return a pointer to the local GOT, PLT and TLS reference counts
+   for ABFD.  Returns NULL if the storage allocation fails.  */
+
+static bfd_signed_vma *
+hppa32_elf_local_refcounts (bfd *abfd)
+{
+  Elf_Internal_Shdr *symtab_hdr = &elf_tdata (abfd)->symtab_hdr;
+  bfd_signed_vma *local_refcounts;
+                  
+  local_refcounts = elf_local_got_refcounts (abfd);
+  if (local_refcounts == NULL)
+    {
+      bfd_size_type size;
+
+      /* Allocate space for local GOT and PLT reference
+	 counts.  Done this way to save polluting elf_obj_tdata
+	 with another target specific pointer.  */
+      size = symtab_hdr->sh_info;
+      size *= 2 * sizeof (bfd_signed_vma);
+      /* Add in space to store the local GOT TLS types.  */
+      size += symtab_hdr->sh_info;
+      local_refcounts = bfd_zalloc (abfd, size);
+      if (local_refcounts == NULL)
+	return NULL;
+      elf_local_got_refcounts (abfd) = local_refcounts;
+      memset (hppa_elf_local_got_tls_type (abfd), GOT_UNKNOWN,
+	      symtab_hdr->sh_info);
+    }
+  return local_refcounts;
+}
+
 
 /* Look through the relocs for a section during the first phase, and
    calculate needed space in the global offset table, procedure linkage
@@ -1359,26 +1382,9 @@ elf32_hppa_check_relocs (bfd *abfd,
 	          bfd_signed_vma *local_got_refcounts;
 		  
 	          /* This is a global offset table entry for a local symbol.  */
-	          local_got_refcounts = elf_local_got_refcounts (abfd);
+	          local_got_refcounts = hppa32_elf_local_refcounts (abfd);
 	          if (local_got_refcounts == NULL)
-		    {
-		      bfd_size_type size;
-
-		      /* Allocate space for local got offsets and local
-		         plt offsets.  Done this way to save polluting
-		         elf_obj_tdata with another target specific
-		         pointer.  */
-		      size = symtab_hdr->sh_info;
-		      size *= 2 * sizeof (bfd_signed_vma);
-		      /* Add in space to store the local GOT TLS types.  */
-		      size += symtab_hdr->sh_info;
-		      local_got_refcounts = bfd_zalloc (abfd, size);
-		      if (local_got_refcounts == NULL)
-		        return FALSE;
-		      elf_local_got_refcounts (abfd) = local_got_refcounts;
-		      memset (hppa_elf_local_got_tls_type (abfd),
-		    	  GOT_UNKNOWN, symtab_hdr->sh_info);
-		    }
+		    return FALSE;
 	          local_got_refcounts[r_symndx] += 1;
 
 	          old_tls_type = hppa_elf_local_got_tls_type (abfd) [r_symndx];
@@ -1425,22 +1431,9 @@ elf32_hppa_check_relocs (bfd *abfd,
 		  bfd_signed_vma *local_got_refcounts;
 		  bfd_signed_vma *local_plt_refcounts;
 
-		  local_got_refcounts = elf_local_got_refcounts (abfd);
+		  local_got_refcounts = hppa32_elf_local_refcounts (abfd);
 		  if (local_got_refcounts == NULL)
-		    {
-		      bfd_size_type size;
-
-		      /* Allocate space for local got offsets and local
-			 plt offsets.  */
-		      size = symtab_hdr->sh_info;
-		      size *= 2 * sizeof (bfd_signed_vma);
-		      /* Add in space to store the local GOT TLS types.  */
-		      size += symtab_hdr->sh_info;
-		      local_got_refcounts = bfd_zalloc (abfd, size);
-		      if (local_got_refcounts == NULL)
-			return FALSE;
-		      elf_local_got_refcounts (abfd) = local_got_refcounts;
-		    }
+		    return FALSE;
 		  local_plt_refcounts = (local_got_refcounts
 					 + symtab_hdr->sh_info);
 		  local_plt_refcounts[r_symndx] += 1;
@@ -1529,14 +1522,18 @@ elf32_hppa_check_relocs (bfd *abfd,
 		  /* Track dynamic relocs needed for local syms too.
 		     We really need local syms available to do this
 		     easily.  Oh well.  */
-
 		  asection *sr;
 		  void *vpp;
+		  Elf_Internal_Sym *isym;
 
-		  sr = bfd_section_from_r_symndx (abfd, &htab->sym_sec,
-						       sec, r_symndx);
-		  if (sr == NULL)
+		  isym = bfd_sym_from_r_symndx (&htab->sym_cache,
+						abfd, r_symndx);
+		  if (isym == NULL)
 		    return FALSE;
+
+		  sr = bfd_section_from_elf_index (abfd, isym->st_shndx);
+		  if (sr == NULL)
+		    sr = sec;
 
 		  vpp = &elf_section_data (sr)->local_dynrel;
 		  hdh_head = (struct elf32_hppa_dyn_reloc_entry **) vpp;
@@ -3409,7 +3406,7 @@ final_link_relocate (asection *input_section,
 	      (_("%B(%A+0x%lx): %s fixup for insn 0x%x is not supported in a non-shared link"),
 	       input_bfd,
 	       input_section,
-	       offset,
+	       (long) offset,
 	       howto->name,
 	       insn);
 	}
@@ -3573,7 +3570,7 @@ final_link_relocate (asection *input_section,
 	(_("%B(%A+0x%lx): cannot reach %s, recompile with -ffunction-sections"),
 	 input_bfd,
 	 input_section,
-	 offset,
+	 (long) offset,
 	 hsh->bh_root.string);
       bfd_set_error (bfd_error_bad_value);
       return bfd_reloc_notsupported;

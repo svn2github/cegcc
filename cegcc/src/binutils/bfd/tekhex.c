@@ -1,6 +1,6 @@
 /* BFD backend for Extended Tektronix Hex Format  objects.
    Copyright 1992, 1993, 1994, 1995, 1996, 1998, 1999, 2000, 2001, 2002,
-   2003, 2004, 2007 Free Software Foundation, Inc.
+   2003, 2004, 2005, 2006, 2007, 2009 Free Software Foundation, Inc.
    Written by Steve Chamberlain of Cygnus Support <sac@cygnus.com>.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -324,7 +324,8 @@ find_chunk (bfd *abfd, bfd_vma vma)
   if (!d)
     {
       /* No chunk for this address, so make one up.  */
-      d = bfd_zalloc (abfd, (bfd_size_type) sizeof (struct data_struct));
+      d = (struct data_struct *)
+          bfd_zalloc (abfd, (bfd_size_type) sizeof (struct data_struct));
 
       if (!d)
 	return NULL;
@@ -383,7 +384,7 @@ first_phase (bfd *abfd, int type, char *src)
       section = bfd_get_section_by_name (abfd, sym);
       if (section == NULL)
 	{
-	  char *n = bfd_alloc (abfd, (bfd_size_type) len + 1);
+	  char *n = (char *) bfd_alloc (abfd, (bfd_size_type) len + 1);
 
 	  if (!n)
 	    return FALSE;
@@ -415,31 +416,33 @@ first_phase (bfd *abfd, int type, char *src)
 	      /* Symbols, add to section.  */
 	      {
 		bfd_size_type amt = sizeof (tekhex_symbol_type);
-		tekhex_symbol_type *new = bfd_alloc (abfd, amt);
+		tekhex_symbol_type *new_symbol = (tekhex_symbol_type *)
+                    bfd_alloc (abfd, amt);
 		char stype = (*src);
 
-		if (!new)
+		if (!new_symbol)
 		  return FALSE;
-		new->symbol.the_bfd = abfd;
+		new_symbol->symbol.the_bfd = abfd;
 		src++;
 		abfd->symcount++;
 		abfd->flags |= HAS_SYMS;
-		new->prev = abfd->tdata.tekhex_data->symbols;
-		abfd->tdata.tekhex_data->symbols = new;
+		new_symbol->prev = abfd->tdata.tekhex_data->symbols;
+		abfd->tdata.tekhex_data->symbols = new_symbol;
 		if (!getsym (sym, &src, &len))
 		  return FALSE;
-		new->symbol.name = bfd_alloc (abfd, (bfd_size_type) len + 1);
-		if (!new->symbol.name)
+		new_symbol->symbol.name = (const char *)
+                    bfd_alloc (abfd, (bfd_size_type) len + 1);
+		if (!new_symbol->symbol.name)
 		  return FALSE;
-		memcpy ((char *) (new->symbol.name), sym, len + 1);
-		new->symbol.section = section;
+		memcpy ((char *) (new_symbol->symbol.name), sym, len + 1);
+		new_symbol->symbol.section = section;
 		if (stype <= '4')
-		  new->symbol.flags = (BSF_GLOBAL | BSF_EXPORT);
+		  new_symbol->symbol.flags = (BSF_GLOBAL | BSF_EXPORT);
 		else
-		  new->symbol.flags = BSF_LOCAL;
+		  new_symbol->symbol.flags = BSF_LOCAL;
 		if (!getvalue (&src, &val))
 		  return FALSE;
-		new->symbol.value = val - section->vma;
+		new_symbol->symbol.value = val - section->vma;
 		break;
 	      }
 	    default:
@@ -532,7 +535,7 @@ tekhex_mkobject (bfd *abfd)
 {
   tdata_type *tdata;
 
-  tdata = bfd_alloc (abfd, (bfd_size_type) sizeof (tdata_type));
+  tdata = (tdata_type *) bfd_alloc (abfd, (bfd_size_type) sizeof (tdata_type));
   if (!tdata)
     return FALSE;
   abfd->tdata.tekhex_data = tdata;
@@ -880,13 +883,14 @@ static asymbol *
 tekhex_make_empty_symbol (bfd *abfd)
 {
   bfd_size_type amt = sizeof (struct tekhex_symbol_struct);
-  tekhex_symbol_type *new = bfd_zalloc (abfd, amt);
+  tekhex_symbol_type *new_symbol = (tekhex_symbol_type *) bfd_zalloc (abfd,
+                                                                      amt);
 
-  if (!new)
+  if (!new_symbol)
     return NULL;
-  new->symbol.the_bfd = abfd;
-  new->prev =  NULL;
-  return &(new->symbol);
+  new_symbol->symbol.the_bfd = abfd;
+  new_symbol->prev =  NULL;
+  return &(new_symbol->symbol);
 }
 
 static void
@@ -943,6 +947,7 @@ tekhex_print_symbol (bfd *abfd,
 #define tekhex_bfd_is_group_section                 bfd_generic_is_group_section
 #define tekhex_bfd_discard_group                    bfd_generic_discard_group
 #define tekhex_section_already_linked               _bfd_generic_section_already_linked
+#define tekhex_bfd_define_common_symbol             bfd_generic_define_common_symbol
 #define tekhex_bfd_link_hash_table_create           _bfd_generic_link_hash_table_create
 #define tekhex_bfd_link_hash_table_free             _bfd_generic_link_hash_table_free
 #define tekhex_bfd_link_add_symbols                 _bfd_generic_link_add_symbols

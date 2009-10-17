@@ -20,7 +20,6 @@ AC_DEFUN([BFD_HAVE_SYS_PROCFS_TYPE],
  AC_MSG_RESULT($bfd_cv_have_sys_procfs_type_$1)
 ])
 
-
 dnl Check for existence of member $2 in type $1 in sys/procfs.h
 
 AC_DEFUN([BFD_HAVE_SYS_PROCFS_TYPE_MEMBER],

@@ -1,6 +1,6 @@
 /* Support for the generic parts of PE/PEI; the common executable parts.
    Copyright 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
-   2005, 2006, 2007, 2008  Free Software Foundation, Inc.
+   2005, 2006, 2007, 2008, 2009  Free Software Foundation, Inc.
    Written by Cygnus Solutions.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -129,6 +129,9 @@ _bfd_XXi_swap_sym_in (bfd * abfd, void * ext1, void * in1)
      they will be handled somewhat correctly in the bfd code.  */
   if (in->n_sclass == C_SECTION)
     {
+      char namebuf[SYMNMLEN + 1];
+      const char *name = NULL;
+
       in->n_value = 0x0;
 
       /* Create synthetic empty sections as needed.  DJ */
@@ -136,33 +139,38 @@ _bfd_XXi_swap_sym_in (bfd * abfd, void * ext1, void * in1)
 	{
 	  asection *sec;
 
-	  for (sec = abfd->sections; sec; sec = sec->next)
-	    {
-	      if (strcmp (sec->name, in->n_name) == 0)
-		{
-		  in->n_scnum = sec->target_index;
-		  break;
-		}
-	    }
+	  name = _bfd_coff_internal_syment_name (abfd, in, namebuf);
+	  if (name == NULL)
+	    /* FIXME: Return error.  */
+	    abort ();
+	  sec = bfd_get_section_by_name (abfd, name);
+	  if (sec != NULL)
+	    in->n_scnum = sec->target_index;
 	}
 
       if (in->n_scnum == 0)
 	{
 	  int unused_section_number = 0;
 	  asection *sec;
-	  char *name;
 	  flagword flags;
 
 	  for (sec = abfd->sections; sec; sec = sec->next)
 	    if (unused_section_number <= sec->target_index)
 	      unused_section_number = sec->target_index + 1;
 
-	  name = bfd_alloc (abfd, (bfd_size_type) strlen (in->n_name) + 10);
-	  if (name == NULL)
-	    return;
-	  strcpy (name, in->n_name);
+	  if (name == namebuf)
+	    {
+	      name = (const char *) bfd_alloc (abfd, strlen (namebuf) + 1);
+	      if (name == NULL)
+		/* FIXME: Return error.  */
+		abort ();
+	      strcpy ((char *) name, namebuf);
+	    }
 	  flags = SEC_HAS_CONTENTS | SEC_ALLOC | SEC_DATA | SEC_LOAD;
 	  sec = bfd_make_section_anyway_with_flags (abfd, name, flags);
+	  if (sec == NULL)
+	    /* FIXME: Return error.  */
+	    abort ();
 
 	  sec->vma = 0;
 	  sec->lma = 0;
@@ -223,7 +231,7 @@ void
 _bfd_XXi_swap_aux_in (bfd *	abfd,
 		      void *	ext1,
 		      int       type,
-		      int       class,
+		      int       in_class,
 		      int	indx ATTRIBUTE_UNUSED,
 		      int	numaux ATTRIBUTE_UNUSED,
 		      void * 	in1)
@@ -231,7 +239,7 @@ _bfd_XXi_swap_aux_in (bfd *	abfd,
   AUXENT *ext = (AUXENT *) ext1;
   union internal_auxent *in = (union internal_auxent *) in1;
 
-  switch (class)
+  switch (in_class)
     {
     case C_FILE:
       if (ext->x_file.x_fname[0] == 0)
@@ -262,7 +270,8 @@ _bfd_XXi_swap_aux_in (bfd *	abfd,
   in->x_sym.x_tagndx.l = H_GET_32 (abfd, ext->x_sym.x_tagndx);
   in->x_sym.x_tvndx = H_GET_16 (abfd, ext->x_sym.x_tvndx);
 
-  if (class == C_BLOCK || class == C_FCN || ISFCN (type) || ISTAG (class))
+  if (in_class == C_BLOCK || in_class == C_FCN || ISFCN (type)
+      || ISTAG (in_class))
     {
       in->x_sym.x_fcnary.x_fcn.x_lnnoptr = GET_FCN_LNNOPTR (abfd, ext);
       in->x_sym.x_fcnary.x_fcn.x_endndx.l = GET_FCN_ENDNDX (abfd, ext);
@@ -294,7 +303,7 @@ unsigned int
 _bfd_XXi_swap_aux_out (bfd *  abfd,
 		       void * inp,
 		       int    type,
-		       int    class,
+		       int    in_class,
 		       int    indx ATTRIBUTE_UNUSED,
 		       int    numaux ATTRIBUTE_UNUSED,
 		       void * extp)
@@ -304,7 +313,7 @@ _bfd_XXi_swap_aux_out (bfd *  abfd,
 
   memset (ext, 0, AUXESZ);
 
-  switch (class)
+  switch (in_class)
     {
     case C_FILE:
       if (in->x_file.x_fname[0] == 0)
@@ -336,7 +345,8 @@ _bfd_XXi_swap_aux_out (bfd *  abfd,
   H_PUT_32 (abfd, in->x_sym.x_tagndx.l, ext->x_sym.x_tagndx);
   H_PUT_16 (abfd, in->x_sym.x_tvndx, ext->x_sym.x_tvndx);
 
-  if (class == C_BLOCK || class == C_FCN || ISFCN (type) || ISTAG (class))
+  if (in_class == C_BLOCK || in_class == C_FCN || ISFCN (type)
+      || ISTAG (in_class))
     {
       PUT_FCN_LNNOPTR (abfd, in->x_sym.x_fcnary.x_fcn.x_lnnoptr,  ext);
       PUT_FCN_ENDNDX  (abfd, in->x_sym.x_fcnary.x_fcn.x_endndx.l, ext);
@@ -540,17 +550,6 @@ _bfd_XXi_swap_aouthdr_out (bfd * abfd, void * in, void * out)
   bfd_vma sa, fa, ib;
   IMAGE_DATA_DIRECTORY idata2, idata5, tls;
   
-  if (pe->force_minimum_alignment)
-    {
-      if (!extra->FileAlignment)
-	extra->FileAlignment = PE_DEF_FILE_ALIGNMENT;
-      if (!extra->SectionAlignment)
-	extra->SectionAlignment = PE_DEF_SECTION_ALIGNMENT;
-    }
-
-  if (extra->Subsystem == IMAGE_SUBSYSTEM_UNKNOWN)
-    extra->Subsystem = pe->target_subsystem;
-
   sa = extra->SectionAlignment;
   fa = extra->FileAlignment;
   ib = extra->ImageBase;
@@ -879,7 +878,7 @@ _bfd_XXi_swap_scnhdr_out (bfd * abfd, void * in, void * out)
      sometimes).  */
   if ((scnhdr_int->s_flags & IMAGE_SCN_CNT_UNINITIALIZED_DATA) != 0)
     {
-      if (bfd_pe_executable_p (abfd))
+      if (bfd_pei_p (abfd))
 	{
 	  ps = scnhdr_int->s_size;
 	  ss = 0;
@@ -892,7 +891,7 @@ _bfd_XXi_swap_scnhdr_out (bfd * abfd, void * in, void * out)
     }
   else
     {
-      if (bfd_pe_executable_p (abfd))
+      if (bfd_pei_p (abfd))
 	ps = scnhdr_int->s_paddr;
       else
 	ps = 0;
@@ -1264,7 +1263,7 @@ pe_print_idata (bfd * abfd, void * vfile)
 	      else
 		{
 		  ft_idx = first_thunk - (ft_section->vma - extra->ImageBase);
-		  ft_data = bfd_malloc (datasize);
+		  ft_data = (bfd_byte *) bfd_malloc (datasize);
 		  if (ft_data == NULL)
 		    continue;
 
@@ -1433,7 +1432,7 @@ pe_print_edata (bfd * abfd, void * vfile)
   fprintf (file, _("\nThere is an export table in %s at 0x%lx\n"),
 	   section->name, (unsigned long) addr);
 
-  data = bfd_malloc (datasize);
+  data = (bfd_byte *) bfd_malloc (datasize);
   if (data == NULL)
     return FALSE;
 
@@ -1472,7 +1471,7 @@ pe_print_edata (bfd * abfd, void * vfile)
 
   fprintf (file,
 	   _("Name \t\t\t\t"));
-  fprintf_vma (file, edt.name);
+  bfd_fprintf_vma (abfd, file, edt.name);
   fprintf (file,
 	   " %s\n", data + edt.name - adj);
 
@@ -1494,17 +1493,17 @@ pe_print_edata (bfd * abfd, void * vfile)
 
   fprintf (file,
 	   _("\tExport Address Table \t\t"));
-  fprintf_vma (file, edt.eat_addr);
+  bfd_fprintf_vma (abfd, file, edt.eat_addr);
   fprintf (file, "\n");
 
   fprintf (file,
 	   _("\tName Pointer Table \t\t"));
-  fprintf_vma (file, edt.npt_addr);
+  bfd_fprintf_vma (abfd, file, edt.npt_addr);
   fprintf (file, "\n");
 
   fprintf (file,
 	   _("\tOrdinal Table \t\t\t"));
-  fprintf_vma (file, edt.ot_addr);
+  bfd_fprintf_vma (abfd, file, edt.ot_addr);
   fprintf (file, "\n");
 
   /* The next table to find is the Export Address Table. It's basically
@@ -1669,14 +1668,14 @@ pe_print_pdata (bfd * abfd, void * vfile)
       prolog_end_addr &= ~(bfd_vma) 0x3;
 
       fputc (' ', file);
-      fprintf_vma (file, i + section->vma); fputc ('\t', file);
-      fprintf_vma (file, begin_addr); fputc (' ', file);
-      fprintf_vma (file, end_addr); fputc (' ', file);
-      fprintf_vma (file, eh_handler);
+      bfd_fprintf_vma (abfd, file, i + section->vma); fputc ('\t', file);
+      bfd_fprintf_vma (abfd, file, begin_addr); fputc (' ', file);
+      bfd_fprintf_vma (abfd, file, end_addr); fputc (' ', file);
+      bfd_fprintf_vma (abfd, file, eh_handler);
 #if !defined(COFF_WITH_pep) || defined(COFF_WITH_pex64)
       fputc (' ', file);
-      fprintf_vma (file, eh_data); fputc (' ', file);
-      fprintf_vma (file, prolog_end_addr);
+      bfd_fprintf_vma (abfd, file, eh_data); fputc (' ', file);
+      bfd_fprintf_vma (abfd, file, prolog_end_addr);
       fprintf (file, "   %x", em_data);
 #endif
 
@@ -1737,7 +1736,7 @@ slurp_symtab (bfd *abfd, sym_cache *psc)
   if (storage < 0)
     return NULL;
   if (storage)
-    sy = bfd_malloc (storage);
+    sy = (asymbol **) bfd_malloc (storage);
 
   psc->symcount = bfd_canonicalize_symtab (abfd, sy);
   if (psc->symcount < 0)
@@ -1841,10 +1840,10 @@ _bfd_XX_print_ce_compressed_pdata (bfd * abfd, void * vfile)
       exception_flag = (int)((other_data & 0x80000000) >> 31);
 
       fputc (' ', file);
-      fprintf_vma (file, i + section->vma); fputc ('\t', file);
-      fprintf_vma (file, begin_addr); fputc (' ', file);
-      fprintf_vma (file, prolog_length); fputc (' ', file);
-      fprintf_vma (file, function_length); fputc (' ', file);
+      bfd_fprintf_vma (abfd, file, i + section->vma); fputc ('\t', file);
+      bfd_fprintf_vma (abfd, file, begin_addr); fputc (' ', file);
+      bfd_fprintf_vma (abfd, file, prolog_length); fputc (' ', file);
+      bfd_fprintf_vma (abfd, file, function_length); fputc (' ', file);
       fprintf (file, "%2d  %2d   ", flag32bit, exception_flag);
 
       /* Get the exception handler's address and the data passed from the
@@ -1858,7 +1857,7 @@ _bfd_XX_print_ce_compressed_pdata (bfd * abfd, void * vfile)
 	    {
 	      int xx = (begin_addr - 8) - tsection->vma;
 
-	      tdata = bfd_malloc (8);
+	      tdata = (bfd_byte *) bfd_malloc (8);
 	      if (bfd_get_section_contents (abfd, tsection, tdata, (bfd_vma) xx, 8))
 		{
 		  bfd_vma eh, eh_data;
@@ -1894,6 +1893,7 @@ _bfd_XX_print_ce_compressed_pdata (bfd * abfd, void * vfile)
   return TRUE;
 #undef PDATA_ROW_SIZE
 }
+
 
 #define IMAGE_REL_BASED_HIGHADJ 4
 static const char * const tbl[] =
@@ -2070,21 +2070,21 @@ _bfd_XX_print_private_bfd_data_common (bfd * abfd, void * vfile)
   fprintf (file, "SizeOfUninitializedData\t%08lx\n",
 	   (unsigned long) i->SizeOfUninitializedData);
   fprintf (file, "AddressOfEntryPoint\t");
-  fprintf_vma (file, i->AddressOfEntryPoint);
+  bfd_fprintf_vma (abfd, file, i->AddressOfEntryPoint);
   fprintf (file, "\nBaseOfCode\t\t");
-  fprintf_vma (file, i->BaseOfCode);
+  bfd_fprintf_vma (abfd, file, i->BaseOfCode);
 #if !defined(COFF_WITH_pep) && !defined(COFF_WITH_pex64)
   /* PE32+ does not have BaseOfData member!  */
   fprintf (file, "\nBaseOfData\t\t");
-  fprintf_vma (file, i->BaseOfData);
+  bfd_fprintf_vma (abfd, file, i->BaseOfData);
 #endif
 
   fprintf (file, "\nImageBase\t\t");
-  fprintf_vma (file, i->ImageBase);
+  bfd_fprintf_vma (abfd, file, i->ImageBase);
   fprintf (file, "\nSectionAlignment\t");
-  fprintf_vma (file, i->SectionAlignment);
+  bfd_fprintf_vma (abfd, file, i->SectionAlignment);
   fprintf (file, "\nFileAlignment\t\t");
-  fprintf_vma (file, i->FileAlignment);
+  bfd_fprintf_vma (abfd, file, i->FileAlignment);
   fprintf (file, "\nMajorOSystemVersion\t%d\n", i->MajorOperatingSystemVersion);
   fprintf (file, "MinorOSystemVersion\t%d\n", i->MinorOperatingSystemVersion);
   fprintf (file, "MajorImageVersion\t%d\n", i->MajorImageVersion);
@@ -2116,6 +2116,7 @@ _bfd_XX_print_private_bfd_data_common (bfd * abfd, void * vfile)
     case IMAGE_SUBSYSTEM_WINDOWS_CE_GUI:
       subsystem_name = "Wince CUI";
       break;
+    // These are from UEFI Platform Initialization Specification 1.1.
     case IMAGE_SUBSYSTEM_EFI_APPLICATION:
       subsystem_name = "EFI application";
       break;
@@ -2125,10 +2126,10 @@ _bfd_XX_print_private_bfd_data_common (bfd * abfd, void * vfile)
     case IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER:
       subsystem_name = "EFI runtime driver";
       break;
-    // These are from revision 8.0 of the MS PE/COFF spec
-    case IMAGE_SUBSYSTEM_EFI_ROM:
-      subsystem_name = "EFI ROM";
+    case IMAGE_SUBSYSTEM_SAL_RUNTIME_DRIVER:
+      subsystem_name = "SAL runtime driver";
       break;
+    // This is from revision 8.0 of the MS PE/COFF spec
     case IMAGE_SUBSYSTEM_XBOX:
       subsystem_name = "XBOX";
       break;
@@ -2142,13 +2143,13 @@ _bfd_XX_print_private_bfd_data_common (bfd * abfd, void * vfile)
     fprintf (file, "\t(%s)", subsystem_name);
   fprintf (file, "\nDllCharacteristics\t%08x\n", i->DllCharacteristics);
   fprintf (file, "SizeOfStackReserve\t");
-  fprintf_vma (file, i->SizeOfStackReserve);
+  bfd_fprintf_vma (abfd, file, i->SizeOfStackReserve);
   fprintf (file, "\nSizeOfStackCommit\t");
-  fprintf_vma (file, i->SizeOfStackCommit);
+  bfd_fprintf_vma (abfd, file, i->SizeOfStackCommit);
   fprintf (file, "\nSizeOfHeapReserve\t");
-  fprintf_vma (file, i->SizeOfHeapReserve);
+  bfd_fprintf_vma (abfd, file, i->SizeOfHeapReserve);
   fprintf (file, "\nSizeOfHeapCommit\t");
-  fprintf_vma (file, i->SizeOfHeapCommit);
+  bfd_fprintf_vma (abfd, file, i->SizeOfHeapCommit);
   fprintf (file, "\nLoaderFlags\t\t%08lx\n", (unsigned long) i->LoaderFlags);
   fprintf (file, "NumberOfRvaAndSizes\t%08lx\n",
 	   (unsigned long) i->NumberOfRvaAndSizes);
@@ -2157,7 +2158,7 @@ _bfd_XX_print_private_bfd_data_common (bfd * abfd, void * vfile)
   for (j = 0; j < IMAGE_NUMBEROF_DIRECTORY_ENTRIES; j++)
     {
       fprintf (file, "Entry %1x ", j);
-      fprintf_vma (file, i->DataDirectory[j].VirtualAddress);
+      bfd_fprintf_vma (abfd, file, i->DataDirectory[j].VirtualAddress);
       fprintf (file, " %08lx ", (unsigned long) i->DataDirectory[j].Size);
       fprintf (file, "%s\n", dir_names[j]);
     }
@@ -2189,7 +2190,7 @@ _bfd_XX_bfd_copy_private_bfd_data_common (bfd * ibfd, bfd * obfd)
   ipe = pe_data (ibfd);
   ope = pe_data (obfd);
  
-  ope->pe_opthdr = ipe->pe_opthdr;
+  /* pe_opthdr is copied in copy_object.  */
   ope->dll = ipe->dll;
 
   /* Don't copy input subsystem if output is different from input.  */
@@ -2277,7 +2278,9 @@ _bfd_XXi_final_link_postscript (bfd * abfd, struct coff_final_link_info *pfinfo)
       /* PR ld/2729: We cannot rely upon all the output sections having been 
 	 created properly, so check before referencing them.  Issue a warning
 	 message for any sections tht could not be found.  */
-      if (h1->root.u.def.section != NULL
+      if ((h1->root.type == bfd_link_hash_defined
+	   || h1->root.type == bfd_link_hash_defweak)
+	  && h1->root.u.def.section != NULL
 	  && h1->root.u.def.section->output_section != NULL)
 	pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_TABLE].VirtualAddress =
 	  (h1->root.u.def.value
@@ -2294,6 +2297,8 @@ _bfd_XXi_final_link_postscript (bfd * abfd, struct coff_final_link_info *pfinfo)
       h1 = coff_link_hash_lookup (coff_hash_table (info),
 				  ".idata$4", FALSE, FALSE, TRUE);
       if (h1 != NULL
+	  && (h1->root.type == bfd_link_hash_defined
+	   || h1->root.type == bfd_link_hash_defweak)
 	  && h1->root.u.def.section != NULL
 	  && h1->root.u.def.section->output_section != NULL)
 	pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_TABLE].Size =
@@ -2314,6 +2319,8 @@ _bfd_XXi_final_link_postscript (bfd * abfd, struct coff_final_link_info *pfinfo)
       h1 = coff_link_hash_lookup (coff_hash_table (info),
 				  ".idata$5", FALSE, FALSE, TRUE);
       if (h1 != NULL
+	  && (h1->root.type == bfd_link_hash_defined
+	   || h1->root.type == bfd_link_hash_defweak)
 	  && h1->root.u.def.section != NULL
 	  && h1->root.u.def.section->output_section != NULL)
 	pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_ADDRESS_TABLE].VirtualAddress =
@@ -2331,6 +2338,8 @@ _bfd_XXi_final_link_postscript (bfd * abfd, struct coff_final_link_info *pfinfo)
       h1 = coff_link_hash_lookup (coff_hash_table (info),
 				  ".idata$6", FALSE, FALSE, TRUE);
       if (h1 != NULL
+	  && (h1->root.type == bfd_link_hash_defined
+	   || h1->root.type == bfd_link_hash_defweak)
 	  && h1->root.u.def.section != NULL
 	  && h1->root.u.def.section->output_section != NULL)
 	pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_ADDRESS_TABLE].Size =
@@ -2351,7 +2360,9 @@ _bfd_XXi_final_link_postscript (bfd * abfd, struct coff_final_link_info *pfinfo)
 			      "__tls_used", FALSE, FALSE, TRUE);
   if (h1 != NULL)
     {
-      if (h1->root.u.def.section != NULL
+      if ((h1->root.type == bfd_link_hash_defined
+	   || h1->root.type == bfd_link_hash_defweak)
+	  && h1->root.u.def.section != NULL
 	  && h1->root.u.def.section->output_section != NULL)
 	pe_data (abfd)->pe_opthdr.DataDirectory[PE_TLS_TABLE].VirtualAddress =
 	  (h1->root.u.def.value

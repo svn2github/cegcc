@@ -1,5 +1,5 @@
 /* BFD back-end for AMD 64 COFF files.
-   Copyright 2006, 2007, 2008  Free Software Foundation, Inc.
+   Copyright 2006, 2007, 2008, 2009  Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -24,6 +24,10 @@
 #define COFF_WITH_pex64
 #endif
 
+/* Note we have to make sure not to include headers twice.
+   Not all headers are wrapped in #ifdef guards, so we define
+   PEI_HEADERS to prevent double including here.  */
+#ifndef PEI_HEADERS
 #include "sysdep.h"
 #include "bfd.h"
 #include "libbfd.h"
@@ -32,6 +36,7 @@
 #include "coff/pe.h"
 #include "libcoff.h"
 #include "libiberty.h"
+#endif
 
 #define BADMAG(x) AMD64BADMAG(x)
 
@@ -712,7 +717,7 @@ coff_amd64_is_local_label_name (bfd *abfd, const char *name)
 #endif /* TARGET_UNDERSCORE */
 
 #ifndef bfd_pe_print_pdata
-#define bfd_pe_print_pdata	NULL
+#define bfd_pe_print_pdata   NULL
 #endif
 
 #include "coffcode.h"

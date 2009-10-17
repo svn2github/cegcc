@@ -1,6 +1,6 @@
 /* Generic BFD library interface and support routines.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
+   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
    Written by Cygnus Support.
 
@@ -34,6 +34,14 @@ SECTION
 	to the rest of the data.
 
 CODE_FRAGMENT
+.
+.enum bfd_direction
+.  {
+.    no_direction = 0,
+.    read_direction = 1,
+.    write_direction = 2,
+.    both_direction = 3
+.  };
 .
 .struct bfd
 .{
@@ -69,14 +77,7 @@ CODE_FRAGMENT
 .  bfd_format format;
 .
 .  {* The direction with which the BFD was opened.  *}
-.  enum bfd_direction
-.    {
-.      no_direction = 0,
-.      read_direction = 1,
-.      write_direction = 2,
-.      both_direction = 3
-.    }
-.  direction;
+.  enum bfd_direction direction;
 .
 .  {* Format_specific flags.  *}
 .  flagword flags;
@@ -144,6 +145,11 @@ CODE_FRAGMENT
 .  {* This BFD has been created by the linker and doesn't correspond
 .     to any input file.  *}
 .#define BFD_LINKER_CREATED 0x2000
+.
+.  {* This may be set before writing out a BFD to request that it
+.     be written using values for UIDs, GIDs, timestamps, etc. that
+.     will be consistent from run to run.  *}
+.#define BFD_DETERMINISTIC_OUTPUT 0x4000
 .
 .  {* Currently my_archive is tested before adding origin to
 .     anything. I believe that this can become always an add of
@@ -215,6 +221,7 @@ CODE_FRAGMENT
 .      struct ieee_data_struct *ieee_data;
 .      struct ieee_ar_data_struct *ieee_ar_data;
 .      struct srec_data_struct *srec_data;
+.      struct verilog_data_struct *verilog_data;
 .      struct ihex_data_struct *ihex_data;
 .      struct tekhex_data_struct *tekhex_data;
 .      struct elf_obj_tdata *elf_obj_data;
@@ -235,6 +242,7 @@ CODE_FRAGMENT
 .      struct netbsd_core_struct *netbsd_core_data;
 .      struct mach_o_data_struct *mach_o_data;
 .      struct mach_o_fat_data_struct *mach_o_fat_data;
+.      struct plugin_data_struct *plugin_data;
 .      struct bfd_pef_data_struct *pef_data;
 .      struct bfd_pef_xlib_data_struct *pef_xlib_data;
 .      struct bfd_sym_data_struct *sym_data;
@@ -431,7 +439,7 @@ bfd_set_error (bfd_error_type error_tag, ...)
 
       va_start (ap, error_tag);
       input_bfd = va_arg (ap, bfd *);
-      input_error = va_arg (ap, int);
+      input_error = (bfd_error_type) va_arg (ap, int);
       if (input_error >= bfd_error_on_input)
 	abort ();
       va_end (ap);
@@ -1441,7 +1449,7 @@ bfd_record_phdr (bfd *abfd,
 
   amt = sizeof (struct elf_segment_map);
   amt += ((bfd_size_type) count - 1) * sizeof (asection *);
-  m = bfd_zalloc (abfd, amt);
+  m = (struct elf_segment_map *) bfd_zalloc (abfd, amt);
   if (m == NULL)
     return FALSE;
 
@@ -1696,8 +1704,7 @@ DESCRIPTION
 	emulation.
 
 RETURNS
-	Returns the maximum page size in bytes for ELF, abort
-	otherwise.
+	Returns the maximum page size in bytes for ELF, 0 otherwise.
 */
 
 bfd_vma
@@ -1710,7 +1717,6 @@ bfd_emul_get_maxpagesize (const char *emul)
       && target->flavour == bfd_target_elf_flavour)
     return xvec_get_elf_backend_data (target)->maxpagesize;
 
-  abort ();
   return 0;
 }
 
@@ -1769,7 +1775,7 @@ DESCRIPTION
 	emulation.
 
 RETURNS
-	Returns the common page size in bytes for ELF, abort otherwise.
+	Returns the common page size in bytes for ELF, 0 otherwise.
 */
 
 bfd_vma
@@ -1782,7 +1788,6 @@ bfd_emul_get_commonpagesize (const char *emul)
       && target->flavour == bfd_target_elf_flavour)
     return xvec_get_elf_backend_data (target)->commonpagesize;
 
-  abort ();
   return 0;
 }
 
@@ -1854,7 +1859,7 @@ bfd_demangle (bfd *abfd, const char *name, int options)
   suf = strchr (name, '@');
   if (suf != NULL)
     {
-      alloc = bfd_malloc (suf - name + 1);
+      alloc = (char *) bfd_malloc (suf - name + 1);
       if (alloc == NULL)
 	return NULL;
       memcpy (alloc, name, suf - name);
@@ -1872,7 +1877,7 @@ bfd_demangle (bfd *abfd, const char *name, int options)
       if (skip_lead)
 	{
 	  size_t len = strlen (pre) + 1;
-	  alloc = bfd_malloc (len);
+	  alloc = (char *) bfd_malloc (len);
 	  if (alloc == NULL)
 	    return NULL;
 	  memcpy (alloc, pre, len);
@@ -1892,7 +1897,7 @@ bfd_demangle (bfd *abfd, const char *name, int options)
       if (suf == NULL)
 	suf = res + len;
       suf_len = strlen (suf) + 1;
-      final = bfd_malloc (pre_len + len + suf_len);
+      final = (char *) bfd_malloc (pre_len + len + suf_len);
       if (final != NULL)
 	{
 	  memcpy (final, pre, pre_len);

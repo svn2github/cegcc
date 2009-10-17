@@ -1,5 +1,5 @@
 /* Infineon XC16X-specific support for 16-bit ELF.
-   Copyright 2006, 2007  Free Software Foundation, Inc.
+   Copyright 2006, 2007, 2009  Free Software Foundation, Inc.
    Contributed by KPIT Cummins Infosystems 
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -24,7 +24,7 @@
 #include "libbfd.h"
 #include "elf-bfd.h"
 #include "elf/xc16x.h"
-#include "elf/dwarf2.h"
+#include "dwarf2.h"
 #include "libiberty.h"
 
 static reloc_howto_type xc16x_elf_howto_table [] =

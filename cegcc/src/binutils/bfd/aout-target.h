@@ -1,6 +1,6 @@
 /* Define a target vector and some small routines for a variant of a.out.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2007
+   2000, 2001, 2002, 2003, 2004, 2005, 2007, 2009
    Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -492,6 +492,9 @@ MY_bfd_final_link (bfd *abfd, struct bfd_link_info *info)
 #ifndef MY_section_already_linked
 #define MY_section_already_linked \
   _bfd_generic_section_already_linked
+#endif
+#ifndef MY_bfd_define_common_symbol
+#define MY_bfd_define_common_symbol bfd_generic_define_common_symbol
 #endif
 #ifndef MY_bfd_reloc_type_lookup
 #define MY_bfd_reloc_type_lookup NAME (aout, reloc_type_lookup)

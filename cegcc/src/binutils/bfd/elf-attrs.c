@@ -1,5 +1,5 @@
 /* ELF attributes support (based on ARM EABI attributes).
-   Copyright 2005, 2006, 2007
+   Copyright 2005, 2006, 2007, 2009
    Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -307,10 +307,10 @@ _bfd_elf_attr_strdup (bfd *abfd, const char * s)
 {
   char * p;
   int len;
-  
+
   len = strlen (s) + 1;
   p = (char *) bfd_alloc (abfd, len);
-  return memcpy (p, s, len);
+  return (char *) memcpy (p, s, len);
 }
 
 /* Add a string object attribute.  */
@@ -428,7 +428,7 @@ _bfd_elf_parse_attributes (bfd *abfd, Elf_Internal_Shdr * hdr)
   bfd_vma len;
   const char *std_section;
 
-  contents = bfd_malloc (hdr->sh_size);
+  contents = (bfd_byte *) bfd_malloc (hdr->sh_size);
   if (!contents)
     return;
   if (!bfd_get_section_contents (abfd, hdr->bfd_section, contents, 0,
@@ -564,7 +564,7 @@ _bfd_elf_merge_object_attributes (bfd *ibfd, bfd *obfd)
       if (in_attr->i > 0 && strcmp (in_attr->s, "gnu") != 0)
 	{
 	  _bfd_error_handler
-		(_("ERROR: %B: Must be processed by '%s' toolchain"),
+		(_("error: %B: Must be processed by '%s' toolchain"),
 		 ibfd, in_attr->s);
 	  return FALSE;
 	}
@@ -572,7 +572,7 @@ _bfd_elf_merge_object_attributes (bfd *ibfd, bfd *obfd)
       if (in_attr->i != out_attr->i
 	  || (in_attr->i != 0 && strcmp (in_attr->s, out_attr->s) != 0))
 	{
-	  _bfd_error_handler (_("ERROR: %B: Object tag '%d, %s' is "
+	  _bfd_error_handler (_("error: %B: Object tag '%d, %s' is "
 				"incompatible with tag '%d, %s'"),
 			      ibfd,
 			      in_attr->i, in_attr->s ? in_attr->s : "",

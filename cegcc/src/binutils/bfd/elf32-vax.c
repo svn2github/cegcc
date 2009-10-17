@@ -1,6 +1,6 @@
 /* VAX series support for 32-bit ELF
    Copyright 1993, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-   2004, 2005, 2006, 2007, 2008  Free Software Foundation, Inc.
+   2004, 2005, 2006, 2007, 2008, 2009  Free Software Foundation, Inc.
    Contributed by Matt Thomas <matt@3am-software.com>.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -47,6 +47,8 @@ static bfd_boolean elf_vax_finish_dynamic_symbol (bfd *, struct bfd_link_info *,
 						  Elf_Internal_Sym *);
 static bfd_boolean elf_vax_finish_dynamic_sections (bfd *,
 						    struct bfd_link_info *);
+static bfd_vma elf_vax_plt_sym_val (bfd_vma, const asection *,
+				    const arelent *);
 
 static bfd_boolean elf32_vax_set_private_flags (bfd *, flagword);
 static bfd_boolean elf32_vax_merge_private_bfd_data (bfd *, bfd *);
@@ -368,7 +370,7 @@ static const bfd_byte elf_vax_plt0_entry[PLT_ENTRY_SIZE] =
 
 static const bfd_byte elf_vax_plt_entry[PLT_ENTRY_SIZE] =
 {
-  0x40, 0x00,		/* .word ^M<r6> */
+  0xfc, 0x0f,		/* .word ^M<r11:r2> */
   0x16,	0xef,		/* jsb L^(pc) */
   0, 0, 0, 0,		/* replaced with offset to start of .plt  */
   0, 0, 0, 0,		/* index into .rela.plt */
@@ -599,8 +601,15 @@ elf_vax_check_relocs (bfd *abfd, struct bfd_link_info *info, asection *sec,
       switch (ELF32_R_TYPE (rel->r_info))
 	{
 	case R_VAX_GOT32:
-	  if (h != NULL
-	      && strcmp (h->root.root.string, "_GLOBAL_OFFSET_TABLE_") == 0)
+	  BFD_ASSERT (h != NULL);
+	  if (h->forced_local
+	      || h == elf_hash_table (info)->hgot
+	      || h == elf_hash_table (info)->hplt)
+	    break;
+
+	  /* If this is a local symbol, we resolve it directly without
+	     creating a global offset table entry.  */
+	  if (h == NULL || ELF_ST_VISIBILITY (h->other) != STV_DEFAULT)
 	    break;
 
 	  /* This symbol requires a global offset table entry.  */
@@ -654,10 +663,11 @@ elf_vax_check_relocs (bfd *abfd, struct bfd_link_info *info, asection *sec,
 		  h->got.refcount++;
 		  if (eh->got_addend != (bfd_vma) rel->r_addend)
 		    (*_bfd_error_handler)
-		      (_("%s: warning: GOT addend of %ld to `%s' does not match previous GOT addend of %ld"),
-			      bfd_get_filename (abfd), rel->r_addend,
-			      h->root.root.string,
-			      eh->got_addend);
+		      (_("%s: warning: GOT addend of %ld to `%s' does"
+			 " not match previous GOT addend of %ld"),
+			 bfd_get_filename (abfd), rel->r_addend,
+			 h->root.root.string,
+			 eh->got_addend);
 
 		}
 	    }
@@ -673,8 +683,9 @@ elf_vax_check_relocs (bfd *abfd, struct bfd_link_info *info, asection *sec,
 
 	  /* If this is a local symbol, we resolve it directly without
 	     creating a procedure linkage table entry.  */
-	  if (h == NULL)
-	    continue;
+	  BFD_ASSERT (h != NULL);
+	  if (ELF_ST_VISIBILITY (h->other) != STV_DEFAULT || h->forced_local)
+	    break;
 
 	  h->needs_plt = 1;
 	  if (h->plt.refcount == -1)
@@ -702,7 +713,9 @@ elf_vax_check_relocs (bfd *abfd, struct bfd_link_info *info, asection *sec,
 		&& (!info->symbolic
 		    || !h->def_regular)))
 	    {
-	      if (h != NULL)
+	      if (h != NULL
+		  && ELF_ST_VISIBILITY (h->other) == STV_DEFAULT
+		  && !h->forced_local)
 		{
 		  /* Make sure a plt entry is created for this symbol if
 		     it turns out to be a function defined by a dynamic
@@ -714,11 +727,17 @@ elf_vax_check_relocs (bfd *abfd, struct bfd_link_info *info, asection *sec,
 		}
 	      break;
 	    }
+	  /* If this is a local symbol, we can resolve it directly.  */
+	  if (h != NULL
+	      && (ELF_ST_VISIBILITY (h->other) != STV_DEFAULT
+		  || h->forced_local))
+	    break;
+
 	  /* Fall through.  */
 	case R_VAX_8:
 	case R_VAX_16:
 	case R_VAX_32:
-	  if (h != NULL)
+	  if (h != NULL && ELF_ST_VISIBILITY (h->other) == STV_DEFAULT)
 	    {
 	      /* Make sure a plt entry is created for this symbol if it
 		 turns out to be a function defined by a dynamic object.  */
@@ -1305,7 +1324,8 @@ elf_vax_instantiate_got_entries (struct elf_link_hash_entry *h, PTR infoptr)
   srelgot = bfd_get_section_by_name (dynobj, ".rela.got");
 
   if (!elf_hash_table (info)->dynamic_sections_created
-      || (info->shared && info->symbolic))
+      || (info->shared && info->symbolic)
+      || h->forced_local)
     {
       h->got.refcount = 0;
       h->got.offset = (bfd_vma) -1;
@@ -1314,6 +1334,8 @@ elf_vax_instantiate_got_entries (struct elf_link_hash_entry *h, PTR infoptr)
     }
   else if (h->got.refcount > 0)
     {
+      bfd_boolean dyn;
+
       /* Make sure this symbol is output as a dynamic symbol.  */
       if (h->dynindx == -1)
 	{
@@ -1321,9 +1343,15 @@ elf_vax_instantiate_got_entries (struct elf_link_hash_entry *h, PTR infoptr)
 	    return FALSE;
 	}
 
+      dyn = elf_hash_table (info)->dynamic_sections_created;
       /* Allocate space in the .got and .rela.got sections.  */
-      sgot->size += 4;
-      srelgot->size += sizeof (Elf32_External_Rela);
+      if (ELF_ST_VISIBILITY (h->other) == STV_DEFAULT
+	  && (info->shared
+	      || WILL_CALL_FINISH_DYNAMIC_SYMBOL (dyn, 0, h)))
+	{
+	  sgot->size += 4;
+	  srelgot->size += sizeof (Elf32_External_Rela);
+	}
     }
 
   return TRUE;
@@ -1409,10 +1437,11 @@ elf_vax_relocate_section (bfd *output_bfd,
 	      || h->root.type == bfd_link_hash_defweak)
 	      && ((r_type == R_VAX_PLT32
 		   && h->plt.offset != (bfd_vma) -1
+		   && !h->forced_local
 		   && elf_hash_table (info)->dynamic_sections_created)
 		  || (r_type == R_VAX_GOT32
-		      && strcmp (h->root.root.string,
-				 "_GLOBAL_OFFSET_TABLE_") != 0
+		      && h->got.offset != (bfd_vma) -1
+		      && !h->forced_local
 		      && elf_hash_table (info)->dynamic_sections_created
 		      && (! info->shared
 			  || (! info->symbolic && h->dynindx != -1)
@@ -1430,10 +1459,7 @@ elf_vax_relocate_section (bfd *output_bfd,
 			      && h->def_dynamic))
 		      && (r_type == R_VAX_8
 			  || r_type == R_VAX_16
-			  || r_type == R_VAX_32
-			  || r_type == R_VAX_PC8
-			  || r_type == R_VAX_PC16
-			  || r_type == R_VAX_PC32))))
+			  || r_type == R_VAX_32))))
 	    /* In these cases, we don't need the relocation
 	       value.  We check specially because in some
 	       obscure cases sec->output_section will be NULL.  */
@@ -1459,13 +1485,17 @@ elf_vax_relocate_section (bfd *output_bfd,
 	case R_VAX_GOT32:
 	  /* Relocation is to the address of the entry for this symbol
 	     in the global offset table.  */
-	  if (h == NULL || h->got.offset == (bfd_vma) -1)
+	  if (h == NULL
+	      || ELF_ST_VISIBILITY (h->other) != STV_DEFAULT
+	      || h->got.offset == (bfd_vma) -1
+	      || h->forced_local)
 	    break;
 
 	  /* Relocation is the offset of the entry for this symbol in
 	     the global offset table.  */
 
 	  {
+	    bfd_boolean dyn;
 	    bfd_vma off;
 
 	    if (sgot == NULL)
@@ -1479,9 +1509,10 @@ elf_vax_relocate_section (bfd *output_bfd,
 	    BFD_ASSERT (off != (bfd_vma) -1);
 	    BFD_ASSERT (off < sgot->size);
 
-	    if (info->shared
-		&& h->dynindx == -1
-		&& h->def_regular)
+	    dyn = elf_hash_table (info)->dynamic_sections_created;
+	    if (! WILL_CALL_FINISH_DYNAMIC_SYMBOL (dyn, info->shared, h)
+		|| (info->shared
+		    && SYMBOL_REFERENCES_LOCAL (info, h)))
 	      {
 		/* The symbol was forced to be local
 		   because of a version file..  We must initialize
@@ -1515,13 +1546,23 @@ elf_vax_relocate_section (bfd *output_bfd,
 	  }
 	  break;
 
+	case R_VAX_PC32:
+	  /* If we are creating an executable and the function this
+	     reloc refers to is in a shared lib, then we made a PLT
+	     entry for this symbol and need to handle the reloc like
+	     a PLT reloc.  */
+	  if (info->shared)
+	     goto r_vax_pc32_shared;
+	  /* Fall through.  */
 	case R_VAX_PLT32:
 	  /* Relocation is to the entry for this symbol in the
 	     procedure linkage table.  */
 
 	  /* Resolve a PLTxx reloc against a local symbol directly,
 	     without using the procedure linkage table.  */
-	  if (h == NULL)
+	  if (h == NULL
+	      || ELF_ST_VISIBILITY (h->other) != STV_DEFAULT
+	      || h->forced_local)
 	    break;
 
 	  if (h->plt.offset == (bfd_vma) -1
@@ -1574,8 +1615,10 @@ elf_vax_relocate_section (bfd *output_bfd,
 
 	case R_VAX_PC8:
 	case R_VAX_PC16:
-	case R_VAX_PC32:
-	  if (h == NULL)
+	r_vax_pc32_shared:
+	  if (h == NULL
+	      || ELF_ST_VISIBILITY (h->other) != STV_DEFAULT
+	      || h->forced_local)
 	    break;
 	  /* Fall through.  */
 	case R_VAX_8:
@@ -2034,6 +2077,29 @@ elf_vax_finish_dynamic_sections (bfd *output_bfd, struct bfd_link_info *info)
   return TRUE;
 }
 
+static enum elf_reloc_type_class
+elf_vax_reloc_type_class (const Elf_Internal_Rela *rela)
+{
+  switch ((int) ELF32_R_TYPE (rela->r_info))
+    {
+    case R_VAX_RELATIVE:
+      return reloc_class_relative;
+    case R_VAX_JMP_SLOT:
+      return reloc_class_plt;
+    case R_VAX_COPY:
+      return reloc_class_copy;
+    default:
+      return reloc_class_normal;
+    }
+}
+
+static bfd_vma
+elf_vax_plt_sym_val (bfd_vma i, const asection *plt,
+		     const arelent *rel ATTRIBUTE_UNUSED)
+{
+  return plt->vma + (i + 1) * PLT_ENTRY_SIZE;
+}
+
 #define TARGET_LITTLE_SYM		bfd_elf32_vax_vec
 #define TARGET_LITTLE_NAME		"elf32-vax"
 #define ELF_MACHINE_CODE		EM_VAX
@@ -2056,8 +2122,10 @@ elf_vax_finish_dynamic_sections (bfd *output_bfd, struct bfd_link_info *info)
 					elf_vax_finish_dynamic_symbol
 #define elf_backend_finish_dynamic_sections \
 					elf_vax_finish_dynamic_sections
+#define elf_backend_reloc_type_class	elf_vax_reloc_type_class
 #define elf_backend_gc_mark_hook	elf_vax_gc_mark_hook
 #define elf_backend_gc_sweep_hook	elf_vax_gc_sweep_hook
+#define elf_backend_plt_sym_val		elf_vax_plt_sym_val
 #define bfd_elf32_bfd_merge_private_bfd_data \
                                         elf32_vax_merge_private_bfd_data
 #define bfd_elf32_bfd_set_private_flags \

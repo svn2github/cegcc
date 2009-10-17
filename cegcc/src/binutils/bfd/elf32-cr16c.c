@@ -1,5 +1,5 @@
 /* BFD back-end for National Semiconductor's CR16C ELF
-   Copyright 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
+   Copyright 2004, 2005, 2006, 2007, 2009 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -927,7 +927,7 @@ elf32_cr16c_add_symbol_hook (bfd *abfd,
   return TRUE;
 }
 
-static bfd_boolean
+static int
 elf32_cr16c_link_output_symbol_hook (struct bfd_link_info *info ATTRIBUTE_UNUSED,
 				     const char *name ATTRIBUTE_UNUSED,
 				     Elf_Internal_Sym *sym,
@@ -946,7 +946,7 @@ elf32_cr16c_link_output_symbol_hook (struct bfd_link_info *info ATTRIBUTE_UNUSED
 	sym->st_shndx = SHN_CR16C_NCOMMON;
     }
 
-  return TRUE;
+  return 1;
 }
 
 /* Definitions for setting CR16C target vector.  */

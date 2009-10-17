@@ -1,5 +1,5 @@
 /* FRV-specific support for 32-bit ELF.
-   Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008
+   Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -24,7 +24,7 @@
 #include "libbfd.h"
 #include "elf-bfd.h"
 #include "elf/frv.h"
-#include "elf/dwarf2.h"
+#include "dwarf2.h"
 #include "hashtab.h"
 
 /* Forward declarations.  */
@@ -5737,6 +5737,10 @@ elf32_frvfdpic_relax_section (bfd *abfd ATTRIBUTE_UNUSED, asection *sec,
 			      struct bfd_link_info *info, bfd_boolean *again)
 {
   struct _frvfdpic_dynamic_got_plt_info gpinfo;
+
+  if (info->relocatable)
+    (*info->callbacks->einfo)
+      (_("%P%F: --relax and -r may not be used together\n"));
 
   /* If we return early, we didn't change anything.  */
   *again = FALSE;

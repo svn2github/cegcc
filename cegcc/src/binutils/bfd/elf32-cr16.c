@@ -1,5 +1,5 @@
 /* BFD back-end for National Semiconductor's CR16 ELF
-   Copyright 2007 Free Software Foundation, Inc.
+   Copyright 2007, 2008, 2009 Free Software Foundation, Inc.
    Written by M R Swami Reddy.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -1259,6 +1259,21 @@ cr16_elf_final_link_relocate (reloc_howto_type *howto,
                             | (bfd_get_32 (input_bfd, hit_data) & 0xf0ff));
 
               }
+            else if (r_type == R_CR16_NUM32)
+              {
+                 Rvalue1 = (bfd_get_32 (input_bfd, hit_data)); 
+
+                 /* Add or subtract the offset value */
+                 if (Rvalue1 & 0x80000000)
+                   Rvalue -= (~Rvalue1 + 1) & 0xffffffff;
+                 else
+                   Rvalue += Rvalue1;
+
+                /* Check for Ranga */
+                if (Rvalue > 0xffffffff)
+                  return bfd_reloc_overflow;
+              }
+
             bfd_put_32 (input_bfd, Rvalue, hit_data);
           }
         break;
@@ -1416,9 +1431,6 @@ elf32_cr16_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
   struct elf_link_hash_entry **sym_hashes;
   Elf_Internal_Rela *rel, *relend;
 
-  if (info->relocatable)
-    return TRUE;
-
   symtab_hdr = &elf_tdata (input_bfd)->symtab_hdr;
   sym_hashes = elf_sym_hashes (input_bfd);
 
@@ -1457,6 +1469,20 @@ elf32_cr16_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
                                    h, sec, relocation,
                                    unresolved_reloc, warned);
         }
+
+      if (sec != NULL && elf_discarded_section (sec))
+       {
+         /* For relocs against symbols from removed linkonce sections,
+            or sections discarded by a linker script, we just want the
+            section contents zeroed.  Avoid any special processing.  */
+         _bfd_clear_contents (howto, input_bfd, contents + rel->r_offset);
+         rel->r_info = 0;
+         rel->r_addend = 0;
+         continue;
+       }
+
+      if (info->relocatable)
+        continue;
 
       r = cr16_elf_final_link_relocate (howto, input_bfd, output_bfd,
                                         input_section,

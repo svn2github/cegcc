@@ -1,7 +1,7 @@
 /* BFD library -- caching of file descriptors.
 
    Copyright 1990, 1991, 1992, 1993, 1994, 1996, 2000, 2001, 2002,
-   2003, 2004, 2005, 2007 Free Software Foundation, Inc.
+   2003, 2004, 2005, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    Hacked by Steve Chamberlain of Cygnus Support (steve@cygnus.com).
 
@@ -45,6 +45,10 @@ SUBSECTION
 #include "bfd.h"
 #include "libbfd.h"
 #include "libiberty.h"
+
+#ifdef HAVE_MMAP
+#include <sys/mman.h>
+#endif
 
 /* In some cases we can optimize cache operation when reopening files.
    For instance, a flush is entirely unnecessary if the file is already
@@ -236,7 +240,7 @@ cache_btell (struct bfd *abfd)
 static int
 cache_bseek (struct bfd *abfd, file_ptr offset, int whence)
 {
-  FILE *f = bfd_cache_lookup (abfd, whence != SEEK_CUR ? CACHE_NO_SEEK : 0);
+  FILE *f = bfd_cache_lookup (abfd, whence != SEEK_CUR ? CACHE_NO_SEEK : CACHE_NORMAL);
   if (f == NULL)
     return -1;
   return real_fseek (f, offset, whence);
@@ -266,7 +270,7 @@ cache_bread_1 (struct bfd *abfd, void *buf, file_ptr nbytes)
   if (nbytes == 0)
     return 0;
 
-  f = bfd_cache_lookup (abfd, 0);
+  f = bfd_cache_lookup (abfd, CACHE_NORMAL);
   if (f == NULL)
     return 0;
 
@@ -341,7 +345,7 @@ static file_ptr
 cache_bwrite (struct bfd *abfd, const void *where, file_ptr nbytes)
 {
   file_ptr nwrite;
-  FILE *f = bfd_cache_lookup (abfd, 0);
+  FILE *f = bfd_cache_lookup (abfd, CACHE_NORMAL);
 
   if (f == NULL)
     return 0;
@@ -388,10 +392,38 @@ cache_bstat (struct bfd *abfd, struct stat *sb)
   return sts;
 }
 
+static void *
+cache_bmmap (struct bfd *abfd ATTRIBUTE_UNUSED,
+	     void *addr ATTRIBUTE_UNUSED,
+	     bfd_size_type len ATTRIBUTE_UNUSED,
+	     int prot ATTRIBUTE_UNUSED,
+	     int flags ATTRIBUTE_UNUSED,
+	     file_ptr offset ATTRIBUTE_UNUSED)
+{
+  void *ret = (void *) -1;
+
+  if ((abfd->flags & BFD_IN_MEMORY) != 0)
+    abort ();
+#ifdef HAVE_MMAP
+  else
+    {
+      FILE *f = bfd_cache_lookup (abfd, CACHE_NO_SEEK_ERROR);
+      if (f == NULL)
+	return ret;
+
+      ret = mmap (addr, len, prot, flags, fileno (f), offset);
+      if (ret == (void *) -1)
+	bfd_set_error (bfd_error_system_call);
+    }
+#endif
+
+  return ret;
+}
+
 static const struct bfd_iovec cache_iovec =
 {
   &cache_bread, &cache_bwrite, &cache_btell, &cache_bseek,
-  &cache_bclose, &cache_bflush, &cache_bstat
+  &cache_bclose, &cache_bflush, &cache_bstat, &cache_bmmap
 };
 
 /*

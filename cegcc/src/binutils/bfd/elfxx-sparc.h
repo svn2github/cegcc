@@ -1,5 +1,5 @@
 /* SPARC ELF specific backend routines.
-   Copyright 2005, 2007 Free Software Foundation, Inc.
+   Copyright 2005, 2006, 2007, 2009 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -59,8 +59,8 @@ struct _bfd_sparc_elf_link_hash_table
     bfd_vma offset;
   } tls_ldm_got;
 
-  /* Small local sym to section mapping cache.  */
-  struct sym_sec_cache sym_sec;
+  /* Small local sym cache.  */
+  struct sym_cache sym_cache;
 
   /* True if the target system is VxWorks.  */
   int is_vxworks;

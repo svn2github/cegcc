@@ -1,5 +1,5 @@
 /* PEF support for BFD.
-   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
+   Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -52,6 +52,7 @@
 #define bfd_pef_bfd_is_group_section		    bfd_generic_is_group_section
 #define bfd_pef_bfd_discard_group                   bfd_generic_discard_group
 #define bfd_pef_section_already_linked	            _bfd_generic_section_already_linked
+#define bfd_pef_bfd_define_common_symbol            bfd_generic_define_common_symbol
 #define bfd_pef_bfd_link_hash_table_create          _bfd_generic_link_hash_table_create
 #define bfd_pef_bfd_link_hash_table_free            _bfd_generic_link_hash_table_free
 #define bfd_pef_bfd_link_add_symbols                _bfd_generic_link_add_symbols
@@ -360,7 +361,7 @@ bfd_pef_parse_imported_symbol (bfd *abfd ATTRIBUTE_UNUSED,
   BFD_ASSERT (len == 4);
 
   value = bfd_getb32 (buf);
-  symbol->class = value >> 24;
+  symbol->symbol_class = value >> 24;
   symbol->name = value & 0x00ffffff;
 
   return 0;

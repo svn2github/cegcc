@@ -1,5 +1,5 @@
 /* BFD back-end for mmo objects (MMIX-specific object-format).
-   Copyright 2001, 2002, 2003, 2004, 2005, 2006, 2007
+   Copyright 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2009
    Free Software Foundation, Inc.
    Written by Hans-Peter Nilsson (hp@bitrange.com).
    Infrastructure and other bits originally copied from srec.c and
@@ -3211,6 +3211,7 @@ mmo_write_object_contents (bfd *abfd)
 #define mmo_bfd_discard_group bfd_generic_discard_group
 #define mmo_section_already_linked \
   _bfd_generic_section_already_linked
+#define mmo_bfd_define_common_symbol bfd_generic_define_common_symbol
 
 /* We want to copy time of creation, otherwise we'd use
    BFD_JUMP_TABLE_COPY (_bfd_generic).  */

@@ -1,5 +1,5 @@
 /* Motorola 68HC11/68HC12-specific support for 32-bit ELF
-   Copyright 2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
+   Copyright 2003, 2004, 2005, 2006, 2007, 2009 Free Software Foundation, Inc.
    Contributed by Stephane Carrez (stcarrez@nerim.fr)
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -120,8 +120,8 @@ struct m68hc11_elf_link_hash_table
   int top_index;
   asection **input_list;
 
-  /* Small local sym to section mapping cache.  */
-  struct sym_sec_cache sym_sec;
+  /* Small local sym cache.  */
+  struct sym_cache sym_cache;
 
   bfd_boolean (* size_one_stub) PARAMS((struct bfd_hash_entry*, void*));
   bfd_boolean (* build_one_stub) PARAMS((struct bfd_hash_entry*, void*));

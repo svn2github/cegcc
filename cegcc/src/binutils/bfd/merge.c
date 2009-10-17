@@ -1,5 +1,5 @@
 /* SEC_MERGE support.
-   Copyright 2001, 2002, 2003, 2004, 2005, 2006, 2007
+   Copyright 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
    Written by Jakub Jelinek <jakub@redhat.com>.
 
@@ -108,7 +108,8 @@ sec_merge_hash_newfunc (struct bfd_hash_entry *entry,
   /* Allocate the structure if it has not already been allocated by a
      subclass.  */
   if (entry == NULL)
-    entry = bfd_hash_allocate (table, sizeof (struct sec_merge_hash_entry));
+    entry = (struct bfd_hash_entry *)
+        bfd_hash_allocate (table, sizeof (struct sec_merge_hash_entry));
   if (entry == NULL)
     return NULL;
 
@@ -235,7 +236,7 @@ sec_merge_init (unsigned int entsize, bfd_boolean strings)
 {
   struct sec_merge_hash *table;
 
-  table = bfd_malloc (sizeof (struct sec_merge_hash));
+  table = (struct sec_merge_hash *) bfd_malloc (sizeof (struct sec_merge_hash));
   if (table == NULL)
     return NULL;
 
@@ -293,7 +294,7 @@ sec_merge_emit (bfd *abfd, struct sec_merge_hash_entry *entry)
 
   if (alignment_power)
     {
-      pad = bfd_zmalloc ((bfd_size_type) 1 << alignment_power);
+      pad = (char *) bfd_zmalloc ((bfd_size_type) 1 << alignment_power);
       if (pad == NULL)
 	return FALSE;
     }
@@ -390,7 +391,8 @@ _bfd_add_merge_section (bfd *abfd, void **psinfo, asection *sec,
   if (sinfo == NULL)
     {
       /* Initialize the information we need to keep track of.  */
-      sinfo = bfd_alloc (abfd, sizeof (struct sec_merge_info));
+      sinfo = (struct sec_merge_info *)
+          bfd_alloc (abfd, sizeof (struct sec_merge_info));
       if (sinfo == NULL)
 	goto error_return;
       sinfo->next = (struct sec_merge_info *) *psinfo;
@@ -601,7 +603,7 @@ merge_strings (struct sec_merge_info *sinfo)
 
   /* Now sort the strings */
   amt = sinfo->htab->size * sizeof (struct sec_merge_hash_entry *);
-  array = bfd_malloc (amt);
+  array = (struct sec_merge_hash_entry **) bfd_malloc (amt);
   if (array == NULL)
     goto alloc_failure;
 
@@ -792,6 +794,7 @@ _bfd_write_merged_section (bfd *output_bfd, asection *sec, void *psecinfo)
   if (secinfo->first_str == NULL)
     return TRUE;
 
+  /* FIXME: octets_per_byte.  */
   pos = sec->output_section->filepos + sec->output_offset;
   if (bfd_seek (output_bfd, pos, SEEK_SET) != 0)
     return FALSE;

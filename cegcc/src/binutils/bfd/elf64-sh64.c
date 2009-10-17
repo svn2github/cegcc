@@ -1,5 +1,5 @@
 /* SuperH SH64-specific support for 64-bit ELF
-   Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
+   Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -2879,7 +2879,7 @@ sh64_elf64_add_symbol_hook (bfd *abfd, struct bfd_link_info *info,
    we don't need to look up and make sure to emit the main symbol for each
    DataLabel symbol.  */
 
-static bfd_boolean
+static int
 sh64_elf64_link_output_symbol_hook (struct bfd_link_info *info,
 				    const char *cname,
 				    Elf_Internal_Sym *sym,
@@ -2894,7 +2894,7 @@ sh64_elf64_link_output_symbol_hook (struct bfd_link_info *info,
 	name[strlen (name) - strlen (DATALABEL_SUFFIX)] = 0;
     }
 
-  return TRUE;
+  return 1;
 }
 
 /* Set bit 0 on the entry address; it always points to SHmedia code.  This

@@ -1,6 +1,6 @@
 /* BFD back-end for Intel 960 b.out binaries.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
+   2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
    Free Software Foundation, Inc.
    Written by Cygnus Support.
 
@@ -1145,6 +1145,10 @@ b_out_bfd_relax_section (bfd *abfd,
   arelent **reloc_vector = NULL;
   long reloc_size = bfd_get_reloc_upper_bound (input_bfd, input_section);
 
+  if (link_info->relocatable)
+    (*link_info->callbacks->einfo)
+      (_("%P%F: --relax and -r may not be used together\n"));
+
   if (reloc_size < 0)
     return FALSE;
 
@@ -1389,6 +1393,7 @@ b_out_bfd_get_relocated_section_contents (bfd *output_bfd,
 #define b_out_bfd_is_group_section             bfd_generic_is_group_section
 #define b_out_bfd_discard_group                bfd_generic_discard_group
 #define b_out_section_already_linked           _bfd_generic_section_already_linked
+#define b_out_bfd_define_common_symbol         bfd_generic_define_common_symbol
 #define aout_32_get_section_contents_in_window _bfd_generic_get_section_contents_in_window
 
 extern const bfd_target b_out_vec_little_host;

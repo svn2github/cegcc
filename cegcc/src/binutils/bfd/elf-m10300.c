@@ -1,6 +1,6 @@
 /* Matsushita 10300 specific support for 32-bit ELF
    Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-   2006, 2007 Free Software Foundation, Inc.
+   2006, 2007, 2008, 2009 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -1493,7 +1493,7 @@ mn10300_elf_relocate_section (bfd *output_bfd,
 		      /* _32 relocs in executables force _COPY relocs,
 			 such that the address of the symbol ends up
 			 being local.  */
-		      && !info->executable		      
+		      && !info->executable
 		      && !SYMBOL_REFERENCES_LOCAL (info, hh)
 		      && ((input_section->flags & SEC_ALLOC) != 0
 			  /* DWARF will emit R_MN10300_32 relocations
@@ -2072,6 +2072,10 @@ mn10300_elf_relax_section (bfd *abfd,
   struct elf32_mn10300_link_hash_table *hash_table;
   asection *section = sec;
   bfd_vma align_gap_adjustment;
+
+  if (link_info->relocatable)
+    (*link_info->callbacks->einfo)
+      (_("%P%F: --relax and -r may not be used together\n"));
 
   /* Assume nothing changes.  */
   *again = FALSE;
@@ -2777,14 +2781,32 @@ mn10300_elf_relax_section (bfd *abfd,
 						      isym->st_name);
 
 	  if ((sym_sec->flags & SEC_MERGE)
-	      && ELF_ST_TYPE (isym->st_info) == STT_SECTION
 	      && sym_sec->sec_info_type == ELF_INFO_TYPE_MERGE)
 	    {
-	      symval = isym->st_value + irel->r_addend;
+	      symval = isym->st_value;
+
+	      /* GAS may reduce relocations against symbols in SEC_MERGE
+		 sections to a relocation against the section symbol when
+		 the original addend was zero.  When the reloc is against
+		 a section symbol we should include the addend in the
+		 offset passed to _bfd_merged_section_offset, since the
+		 location of interest is the original symbol.  On the
+		 other hand, an access to "sym+addend" where "sym" is not
+		 a section symbol should not include the addend;  Such an
+		 access is presumed to be an offset from "sym";  The
+		 location of interest is just "sym".  */
+	      if (ELF_ST_TYPE (isym->st_info) == STT_SECTION)
+		symval += irel->r_addend;
+
 	      symval = _bfd_merged_section_offset (abfd, & sym_sec,
 						   elf_section_data (sym_sec)->sec_info,
 						   symval);
-	      symval += sym_sec->output_section->vma + sym_sec->output_offset - irel->r_addend;
+
+	      if (ELF_ST_TYPE (isym->st_info) != STT_SECTION)
+		symval += irel->r_addend;
+
+	      symval += sym_sec->output_section->vma
+		+ sym_sec->output_offset - irel->r_addend;
 	    }
 	  else
 	    symval = (isym->st_value
