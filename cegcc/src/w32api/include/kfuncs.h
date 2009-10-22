@@ -97,4 +97,15 @@ static inline BOOL WINAPI TlsFree(DWORD x)
   return (TlsCall(TLS_FUNCFREE, x));
 }
 
+/*
+ * Take the special cases out of winbase.h
+ */
+#if defined (__arm__)
+# define DebugBreak() __asm__( ".word 0xe6000010" )
+#elif defined (__i386__) || defined (__x86_64__)
+# define DebugBreak() __asm__( ".byte 0xcc" )
+#else
+  /* externally supplied for an unsupported architecture */
+  extern void DebugBreak(void);
+#endif
 #endif

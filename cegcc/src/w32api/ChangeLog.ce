@@ -1,3 +1,9 @@
+2009-10-22  Danny Backx  <dannybackx@users.sourceforge.net>,
+            Ivan Maidanski <ivmai@mail.ru>
+
+	* include/winbase.h, include/kfuncs.h (DebugBreak): Define a function
+	only when not CE. If CE, define as macros in kfuncs.h for arm and x86.
+
 2009-09-07  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/shlobj.h (IShellExecuteHookA): Replace UNDER_CE guard by

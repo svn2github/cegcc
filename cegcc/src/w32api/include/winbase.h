@@ -1359,8 +1359,8 @@ WINBASEAPI BOOL WINAPI DebugActiveProcess(DWORD);
 #if (_WIN32_WINNT >= 0x0501)
 WINBASEAPI BOOL WINAPI DebugActiveProcessStop(DWORD);
 #endif
-#if defined (_WIN32_WCE) && defined (__arm__)
-# define DebugBreak() __asm__( ".word 0xe6000010" )
+#if defined (_WIN32_WCE)
+/* defined as macro in kfuncs.h */
 #else
 WINBASEAPI void WINAPI DebugBreak(void);
 #endif
