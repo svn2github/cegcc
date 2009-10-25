@@ -191,7 +191,8 @@ build_binutils()
 	--prefix=${PREFIX}      \
 	--host=${HOST}          \
 	--target=${TARGET}      \
-	--disable-nls
+	--disable-nls		\
+	--disable-werror
 
     make ${PARALLELISM}
     make install

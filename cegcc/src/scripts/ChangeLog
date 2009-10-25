@@ -1,3 +1,8 @@
+2009-10-25  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* build-cegcc.sh, build-mingw32ce.sh, build-x86.sh (build_binutils) :
+	add --disable-werror .
+
 2009-08-15  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* build-cegcc.sh : Disable building libssp.
