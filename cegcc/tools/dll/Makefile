@@ -19,4 +19,4 @@ testapi2.exe:	testapi2.c
 	${CC} -o $@ $<
 
 clean:
-	-rm -f *.o dllverify.exe
+	-rm -f *.o dllverify.exe testapi.exe testapi2.exe

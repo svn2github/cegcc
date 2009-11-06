@@ -8,11 +8,14 @@
  * dialogs on the Windows CE console.
  *
  * File format : a single entry on each line.
- * First line mentions the name of the dll to be loaded (e.g. coredll).
+ * Each line starting with an asterisk (*) starts working on a new DLL.
+ * First line should mention the name of the dll to be loaded (e.g. coredll).
  * All next lines mention the name of a function that the DLL will be
  * searched for (e.g. AppendMenuW).
+ * Until a line starting with a * is encountered of course.
  *
  * Copyright (c) 2009 by Danny Backx.
+ * Expanded with the * line stuff, based on idea and implementation by Rob Dunning.
  */
 #include <windows.h>
 #include <stdio.h>
@@ -20,8 +23,8 @@
 
 void (WINAPI *fun)(void);
 
-char	*input = "\\temp\\testapi.in.txt",
-	*output = "\\temp\\testapi.out.txt";
+char	*input = "/storage card/testapi/testapi.in.txt",
+	*output = "/storage card/testapi/testapi.out.txt";
 
 int main(int argc, char *argv[])
 {
@@ -45,33 +48,37 @@ int main(int argc, char *argv[])
 		exit(2);
 	}
 
-	fscanf(infile, "%s\n", &field);
-	mbstowcs(dllname, field, 64);
-	strcpy(dllnm, field);
-	dll = LoadLibrary(dllname);
-	if (! dll) {
-		DWORD	e = GetLastError();
-		fprintf(outfile, "LoadLibrary(%s) : cannot load DLL -> error %d\n", dllnm, e);
-		fclose(outfile);
-		exit(1);
-	}
-	fprintf(outfile, "Testapi2 started (%s)\n", field);
-
 	r = fscanf(infile, "%s\n", &field);
 	while (r != EOF) {
-		if (count++ > 2000) {
-			printf("Terminating\n");
-			fprintf(outfile, "Terminating\n");
-			fclose(outfile);
-			exit(1);
-		}
-		mbstowcs(wapi, field, 64);
-		*(FARPROC *)&fun = GetProcAddress(dll, wapi);
-		if (fun) {
-			fprintf(outfile, "\t%s implements %s (0x%08X)\n", dllnm, field, fun);
-		} else {
-			DWORD	e = GetLastError();
-			fprintf(outfile, "%s doesn't know about %s\n", dllnm, field);
+		if (field[0] == '*') {
+			/* Read a library */
+			mbstowcs(dllname, field+1, 64);
+			strcpy(dllnm, field+1);
+			dll = LoadLibrary(dllname);
+			if (! dll) {
+				DWORD	e = GetLastError();
+				fprintf(outfile, "LoadLibrary(%s) : cannot load DLL -> error %d\n", dllnm, e);
+			}
+			else {
+				fprintf(outfile, "Started processing DLL(%s)\n", dllnm);
+			}
+
+		} else if (dll) {
+			/* Search the library, but only if it's open */
+			if (count++ > 2000) {
+				printf("Terminating\n");
+				fprintf(outfile, "Terminating\n");
+				fclose(outfile);
+				exit(1);
+			}
+			mbstowcs(wapi, field, 64);
+			*(FARPROC *)&fun = GetProcAddress(dll, wapi);
+			if (fun) {
+				fprintf(outfile, "\t%s implements %s (0x%08X)\n", dllnm, field, fun);
+			} else {
+				DWORD	e = GetLastError();
+				fprintf(outfile, "\t%s doesn't know about %s\n", dllnm, field);
+			}
 		}
 		r = fscanf(infile, "%s\n", &field);
 	}
