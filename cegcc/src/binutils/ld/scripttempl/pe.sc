@@ -23,13 +23,14 @@ if test "${RELOCATING}"; then
     R_RDATA='*(.rdata)
              *(SORT(.rdata$*))'
   fi
-  R_IDATA='
+  R_IDATA234='
     SORT(*)(.idata$2)
     SORT(*)(.idata$3)
     /* These zeroes mark the end of the import list.  */
     LONG (0); LONG (0); LONG (0); LONG (0); LONG (0);
-    SORT(*)(.idata$4)
-    SORT(*)(.idata$5)
+    SORT(*)(.idata$4)'
+  R_IDATA5='SORT(*)(.idata$5)'
+  R_IDATA67='
     SORT(*)(.idata$6)
     SORT(*)(.idata$7)'
   R_CRT_XC='*(SORT(.CRT$XC*))  /* C initialization */'
@@ -46,7 +47,9 @@ else
   R_TEXT=
   R_DATA=
   R_RDATA='*(.rdata)'
-  R_IDATA=
+  R_IDATA234=
+  R_IDATA5=
+  R_IDATA67=
   R_CRT=
   R_RSRC=
 fi
@@ -62,6 +65,7 @@ SECTIONS
 {
   ${RELOCATING+/* Make the virtual address and file offset synced if the alignment is}
   ${RELOCATING+   lower than the target page size. */}
+  ${RELOCATING+/* Yow pe.sc */}
   ${RELOCATING+. = SIZEOF_HEADERS;}
   ${RELOCATING+. = ALIGN(__section_alignment__);}
   .text ${RELOCATING+ __image_base__ + ( __section_alignment__ < ${TARGET_PAGE_SIZE} ? . : __section_alignment__ )} : 
@@ -98,6 +102,13 @@ SECTIONS
     *(.jcr)
     ${RELOCATING+__data_end__ = . ;}
     ${RELOCATING+*(.data_cygwin_nocopy)}
+
+  /* Stuff copied from BSS */
+    ${RELOCATING+__bss_start__ = . ;}
+    *(.bss)
+    *(COMMON)
+    ${RELOCATING+__bss_end__ = . ;}
+  /* End stuff from BSS */
   }
 
   .rdata ${RELOCATING+BLOCK(__section_alignment__)} :
@@ -108,6 +119,13 @@ SECTIONS
     *(.rdata_runtime_pseudo_reloc)
     ${RELOCATING+___RUNTIME_PSEUDO_RELOC_LIST_END__ = .;}
     ${RELOCATING+__RUNTIME_PSEUDO_RELOC_LIST_END__ = .;}
+
+  /* Moved .edata */
+  /* End moved .edata */
+
+  /* Moved .idata */
+	/* Moving idata appears to cause a crash even in d2.exe */
+  /* End moved .idata */
   }
 
   .eh_frame ${RELOCATING+BLOCK(__section_alignment__)} :
@@ -118,14 +136,6 @@ SECTIONS
   .pdata ${RELOCATING+BLOCK(__section_alignment__)} :
   {
     *(.pdata)
-  }
-
-  .bss ${RELOCATING+BLOCK(__section_alignment__)} :
-  {
-    ${RELOCATING+__bss_start__ = . ;}
-    *(.bss)
-    *(COMMON)
-    ${RELOCATING+__bss_end__ = . ;}
   }
 
   .edata ${RELOCATING+BLOCK(__section_alignment__)} :
@@ -145,8 +155,13 @@ SECTIONS
   {
     /* This cannot currently be handled with grouped sections.
 	See pe.em:sort_sections.  */
-    ${R_IDATA}
+    ${R_IDATA234}
+    ${RELOCATING+__idata5_start__ = .;}
+    ${R_IDATA5}
+    ${RELOCATING+__idata5_end__ = .;}
+    ${R_IDATA67}
   }
+
   .CRT ${RELOCATING+BLOCK(__section_alignment__)} :
   { 					
     ${RELOCATING+___crt_xc_start__ = . ;}

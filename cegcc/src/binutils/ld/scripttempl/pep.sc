@@ -1,4 +1,5 @@
 # Linker script for PE.
+echo "Yow in scripttempl/pep.sc"
 
 if test -z "${RELOCATEABLE_OUTPUT_FORMAT}"; then
   RELOCATEABLE_OUTPUT_FORMAT=${OUTPUT_FORMAT}
@@ -23,13 +24,14 @@ if test "${RELOCATING}"; then
     R_RDATA='*(.rdata)
              *(SORT(.rdata$*))'
   fi
-  R_IDATA='
+  R_IDATA234='
     SORT(*)(.idata$2)
     SORT(*)(.idata$3)
     /* These zeroes mark the end of the import list.  */
     LONG (0); LONG (0); LONG (0); LONG (0); LONG (0);
-    SORT(*)(.idata$4)
-    SORT(*)(.idata$5)
+    SORT(*)(.idata$4)'
+  R_IDATA5='SORT(*)(.idata$5)'
+  R_IDATA67='
     SORT(*)(.idata$6)
     SORT(*)(.idata$7)'
   R_CRT_XC='*(SORT(.CRT$XC*))  /* C initialization */'
@@ -46,7 +48,9 @@ else
   R_TEXT=
   R_DATA=
   R_RDATA='*(.rdata)'
-  R_IDATA=
+  R_IDATA234=
+  R_IDATA5=
+  R_IDATA67=
   R_CRT=
   R_RSRC=
 fi
@@ -62,6 +66,7 @@ SECTIONS
 {
   ${RELOCATING+/* Make the virtual address and file offset synced if the alignment is}
   ${RELOCATING+   lower than the target page size. */}
+  ${RELOCATING+/* Yow pep.sc */}
   ${RELOCATING+. = SIZEOF_HEADERS;}
   ${RELOCATING+. = ALIGN(__section_alignment__);}
   .text ${RELOCATING+ __image_base__ + ( __section_alignment__ < ${TARGET_PAGE_SIZE} ? . : __section_alignment__ )} : 
@@ -146,8 +151,13 @@ SECTIONS
   {
     /* This cannot currently be handled with grouped sections.
 	See pep.em:sort_sections.  */
-    ${R_IDATA}
+	${R_IDATA234}
+	${RELOCATING+__idata5_start__ = .;}
+    ${R_IDATA5}
+	${RELOCATING+__idata5_end__ = .;}
+    ${R_IDATA67}
   }
+
   .CRT ${RELOCATING+BLOCK(__section_alignment__)} :
   { 					
     ${RELOCATING+___crt_xc_start__ = . ;}

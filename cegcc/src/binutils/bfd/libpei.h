@@ -323,9 +323,13 @@
 #define coff_swap_aouthdr_out _bfd_XXi_swap_aouthdr_out
 #define coff_swap_scnhdr_out  _bfd_XXi_swap_scnhdr_out
 
-#ifndef coff_final_link_postscript
-#define coff_final_link_postscript _bfd_XXi_final_link_postscript
+#ifdef coff_final_link_postscript
+#undef coff_final_link_postscript
 #endif
+#define coff_final_link_postscript _bfd_XXi_final_link_postscript
+// #ifndef coff_final_link_postscript
+// #define coff_final_link_postscript _bfd_XXi_final_link_postscript
+// #endif
 
 void        _bfd_XXi_swap_sym_in (bfd *, void *, void *);
 unsigned    _bfd_XXi_swap_sym_out (bfd *, void *, void *);

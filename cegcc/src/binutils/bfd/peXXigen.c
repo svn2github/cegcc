@@ -2270,7 +2270,7 @@ _bfd_XXi_final_link_postscript (bfd * abfd, struct coff_final_link_info *pfinfo)
      they are in the symbol table, so get them from there.  */
 
   /* The import directory.  This is the address of .idata$2, with size
-     of .idata$2 + .idata$3.  */
+     of .idata$2 + .idata$3. */
   h1 = coff_link_hash_lookup (coff_hash_table (info),
 			      ".idata$2", FALSE, FALSE, TRUE);
   if (h1 != NULL)
@@ -2296,6 +2296,9 @@ _bfd_XXi_final_link_postscript (bfd * abfd, struct coff_final_link_info *pfinfo)
 
       h1 = coff_link_hash_lookup (coff_hash_table (info),
 				  ".idata$4", FALSE, FALSE, TRUE);
+      if (!h1)
+	h1 = coff_link_hash_lookup (coff_hash_table (info),
+				    "__idata_4", FALSE, FALSE, TRUE);
       if (h1 != NULL
 	  && (h1->root.type == bfd_link_hash_defined
 	   || h1->root.type == bfd_link_hash_defweak)
@@ -2322,12 +2325,12 @@ _bfd_XXi_final_link_postscript (bfd * abfd, struct coff_final_link_info *pfinfo)
 	  && (h1->root.type == bfd_link_hash_defined
 	   || h1->root.type == bfd_link_hash_defweak)
 	  && h1->root.u.def.section != NULL
-	  && h1->root.u.def.section->output_section != NULL)
+	  && h1->root.u.def.section->output_section != NULL) {
 	pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_ADDRESS_TABLE].VirtualAddress =
 	  (h1->root.u.def.value
 	   + h1->root.u.def.section->output_section->vma
 	   + h1->root.u.def.section->output_offset);
-      else
+    } else
 	{
 	  _bfd_error_handler
 	    (_("%B: unable to fill in DataDictionary[12] because .idata$5 is missing"), 
@@ -2354,6 +2357,40 @@ _bfd_XXi_final_link_postscript (bfd * abfd, struct coff_final_link_info *pfinfo)
 	     abfd);
 	  result = FALSE;
 	}
+    }
+  else
+    {
+      h1 = coff_link_hash_lookup (coff_hash_table (info),
+				  "__idata5_start__", FALSE, FALSE, TRUE);
+      if (h1 != NULL
+	  && h1->root.u.def.section != NULL
+	  && h1->root.u.def.section->output_section != NULL)
+        {
+	  pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_ADDRESS_TABLE].VirtualAddress =
+	    (h1->root.u.def.value
+	    + h1->root.u.def.section->output_section->vma
+	    + h1->root.u.def.section->output_offset);
+	  
+	  h1 = coff_link_hash_lookup (coff_hash_table (info),
+				      "__idata5_end__", FALSE, FALSE, TRUE);
+	  if (h1 != NULL
+	      && h1->root.u.def.section != NULL
+	      && h1->root.u.def.section->output_section != NULL)
+	    {
+	      pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_ADDRESS_TABLE].Size =
+	        ((h1->root.u.def.value
+		  + h1->root.u.def.section->output_section->vma
+		  + h1->root.u.def.section->output_offset)
+		 - pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_ADDRESS_TABLE].VirtualAddress);
+	    }
+	  else
+	    {
+	      _bfd_error_handler
+		(_("%B: unable to fill in DataDictionary[PE_IMPORT_ADDRESS_TABLE (12)] because .idata$6 is missing"),
+		 abfd);
+	      result = FALSE;
+	    }
+        }
     }
 
   h1 = coff_link_hash_lookup (coff_hash_table (info),

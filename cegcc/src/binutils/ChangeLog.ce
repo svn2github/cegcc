@@ -1,3 +1,18 @@
+2009-12-06  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* ld/emultempl/pe.em, ld/scripttempl/armcoff.sc,
+	ld/scripttempl/pep.sc, bfd/peXXigen.c: Work by Kai Tietz to fix
+	so-called version 2 pseudo relocation.
+	* ld/scripttempl/pe.sc: port Kai's work to the pe.sc file.
+	* ld/scripttempl/pe.sc: move the BSS stuff inside the .data section
+	instead of in its own .bss . This appears to be a Windows Mobile 6.1
+	requirement.
+	* bfd/coff-arm.c, bfd/libpei.h: Avoid calling the
+	coff_arm_final_link_postscript, we need
+	bfd_coff_final_link_postscript.
+	* bfd/cofflink.c: Don't use bfd_coff_link_output_has_begun(), it forgets
+	to output the debug_info field of the first file linked.
+
 2009-10-20  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* binutils/windres.c : Fix "windres can't detect
