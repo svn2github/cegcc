@@ -1,5 +1,5 @@
-2009-10-22  Danny Backx  <dannybackx@users.sourceforge.net>,
-            Ivan Maidanski <ivmai@mail.ru>
+2009-10-22  Danny Backx  <dannybackx@users.sourceforge.net>
+	    Ivan Maidanski <ivmai@mail.ru>
 
 	* include/winbase.h, include/kfuncs.h (DebugBreak): Define a function
 	only when not CE. If CE, define as macros in kfuncs.h for arm and x86.
@@ -8,7 +8,7 @@
 
 	* include/shlobj.h (IShellExecuteHookA): Replace UNDER_CE guard by
 	_WIN32_WCE.
-	* libce/coredll.def : Fix alphabetic order.
+	* libce/coredll.def: Fix alphabetic order.
 
 2009-09-07  Pedro Alves  <pedroalves@users.sourceforge.net>
 
@@ -43,7 +43,7 @@
 	the value found on MSDN.
 
 2009-05-29  Danny Backx  <dannybackx@users.sourceforge.net>
-	
+
 	* include/winnt.h (DLL_PROCESS_EXITING, DLL_SYSTEM_STARTED)
 	(FILE_ATTRIBUTE_ROMMODULE, FILE_ATTRIBUTE_INROM): Define.
 	* include/dbgapi.h: New file.
@@ -108,7 +108,7 @@
 
 	* include/cegcc.h.in (__CEGCC_VERSION__): Add backslashes at the
 	end of lines to allow line continuation.
-	
+
 	* include/kfuncs.h (TlsAlloc, TlsFree, PulseEvent, ResetEvent)
 	(SetEvent, GetCurrentThread, GetCurrentProcess)
 	(GetCurrentThreadId, GetCurrentProcessId): Change them from macros
@@ -277,9 +277,9 @@
 	* include/cegcc.h.in: Add file to provide version tracking macros.
 
 2007-11-25  Pedro Alves  <pedro_alves@portugalmail.pt>
-            Danny Backx  <dannybackx@users.sourceforge.net>
+	    Danny Backx  <dannybackx@users.sourceforge.net>
 
-        * libce/icmplib.def: Remove proxy for icmplib, MSDN says it's a
+	* libce/icmplib.def: Remove proxy for icmplib, MSDN says it's a
 	static library only.
 
 2007-11-16  Danny Backx  <dannybackx@users.sourceforge.net>
@@ -384,7 +384,7 @@
 
 	* include/winbase.h (LocalFlags, LocalHandle, LocalLock)
 	(LocalUnlock): Define for WinCE.
-	
+
 2007-08-06  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* include/winbase.h (LocalLock):
@@ -454,7 +454,7 @@
 	map to the W counterparts.
 
 2007-03-26  Pedro Alves  <pedro_alves@portugalmail.pt>
-	
+
 	* libce/coredll.def: Add 'keep in sync' warning.
 
 2007-03-26  Pedro Alves  <pedro_alves@portugalmail.pt>
@@ -540,7 +540,7 @@
 	* aclocal.m4 (LIB_AC_PROG_CC_GNU, LIB_AC_PROG_CC)
 	(LIB_AC_PROG_CXX): Define.
 	* configure.in: Use LIB_AC_PROG_CC instead of AC_CHECK_TOOL.
-	Output libce/Makefile. 
+	Output libce/Makefile.
 	* configure: Regenerate.
 
 2006-12-02  Kevin O'Connor  <kevin@koconnor.net>
@@ -558,12 +558,12 @@
 
 2006-11-26  Kevin O'Connor  <kevin@koconnor.net>
 
-        * include/winbase.h: Add SYSTEM_POWER_STATUS_EX2 structure.
+	* include/winbase.h: Add SYSTEM_POWER_STATUS_EX2 structure.
 	Add GetSystemPowerStatusEx2 function definition.
 
 2006-11-26  Kevin O'Connor  <kevin@koconnor.net>
 
-        * include/tlhelp32.h (MODULEENTRY32): szModule is of MAX_PATH
+	* include/tlhelp32.h (MODULEENTRY32): szModule is of MAX_PATH
 	size on CE.
 
 	* include/tlhelp32.h: define TH32CS_GETALLMODS.
@@ -620,7 +620,7 @@
 	Frame or crEffect members in CE version.
 	(ImageList_Duplicate, ImageList_SetImageCount, ImageList_Copy,
 	ImageList_DrawIndirect): Enable on Windows CE >= 2.
-	
+
 2006-11-12  Kevin O'Connor  <kevin@koconnor.net>
 
 	* include/winuser.h (SPI_GETOEMINFO, SPI_GETPLATFORMTYPE): Define.
