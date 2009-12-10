@@ -601,6 +601,9 @@ typedef struct _BY_HANDLE_FILE_INFORMATION {
 	DWORD	nNumberOfLinks;
 	DWORD	nFileIndexHigh;
 	DWORD	nFileIndexLow;
+#ifdef _WIN32_WCE
+	DWORD	dwOID;
+#endif
 } BY_HANDLE_FILE_INFORMATION,*LPBY_HANDLE_FILE_INFORMATION;
 typedef struct _DCB {
 	DWORD DCBlength;

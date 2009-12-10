@@ -1,3 +1,8 @@
+2009-12-10  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	* include/winbase.h (struct _BY_HANDLE_FILE_INFORMATION): Add
+	missing `dwOID' field on CE.
+
 2009-10-22  Danny Backx  <dannybackx@users.sourceforge.net>
 	    Ivan Maidanski <ivmai@mail.ru>
 
