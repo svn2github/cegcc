@@ -562,7 +562,6 @@ create_child (char *program,
 	  /* Close the previously succeeded pipes.  */
 	  for (j = 0; j < i; j++)
 	    {
-	      wchar_t devname[MAX_PATH];
 	      SafeCloseHandle (&child->readh[j]);
 	      SafeCloseHandle (&child->writeh[j]);
 	    }
@@ -914,7 +913,7 @@ handle_connection (void *arg)
 		    && (GetExitCodeThread (h, &ec) && ec == 1));
 
 	  {
-	    int m;
+	    size_t m;
 	    const struct
 	    {
 	      HANDLE h;
