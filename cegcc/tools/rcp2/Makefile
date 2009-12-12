@@ -1,4 +1,4 @@
-TARGET=arm-wince-mingw32ce
+TARGET=arm-mingw32ce
 CFLAGS=-O0 -g3
 WARNFLAGS=-Wall -Wextra
 
