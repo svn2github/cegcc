@@ -1,4 +1,4 @@
-TARGET=arm-wince-mingw32ce
+TARGET=arm-mingw32ce
 
 LDFLAGS=
 CFLAGS=-O0 -g3 

@@ -1,3 +1,7 @@
+2009-12-12  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	* Makefile (TARGET): Default to arm-mingw32ce.
+
 2007-09-08  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* rshd.c (create_child): On pipe creation failure, close the pipes
