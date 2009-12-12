@@ -1,5 +1,10 @@
 2009-12-12  Pedro Alves  <pedroalves@users.sourceforge.net>
 
+	* TestClient/Makefile (TARGET): Default to arm-mingw32ce.
+	* PipeTest/Makefile (TARGET): Default to arm-mingw32ce.
+
+2009-12-12  Pedro Alves  <pedroalves@users.sourceforge.net>
+
 	* Makefile (TARGET): Default to arm-mingw32ce.
 	* PipeDev.cpp (LOG, LOGSCOPE): Avoid empty statement.
 
