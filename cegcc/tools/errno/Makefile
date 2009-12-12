@@ -1,4 +1,4 @@
-TARGET=arm-wince-mingw32ce
+TARGET=arm-mingw32ce
 
 CC=$(TARGET)-gcc
 AR=$(TARGET)-ar
