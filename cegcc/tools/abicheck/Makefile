@@ -1,4 +1,4 @@
-TARGET=arm-wince-mingw32ce
+TARGET=arm-mingw32ce
 CXX=$(TARGET)-g++
 STRIP=$(TARGET)-strip
 CXXFLAGS=-O3
