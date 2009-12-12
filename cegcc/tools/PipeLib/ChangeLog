@@ -1,3 +1,8 @@
+2009-12-12  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	* Makefile (TARGET): Default to arm-mingw32ce.
+	* PipeDev.cpp (LOG, LOGSCOPE): Avoid empty statement.
+
 2007-09-02  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* PipeLib.cpp (Read): Switch to IsBadWritePtr.  Only set last

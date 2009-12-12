@@ -112,8 +112,8 @@ struct LogScope
 # define LOG(MSG, ...) LogMessage (__FUNCTION__, __LINE__, MSG, ## __VA_ARGS__)
 # define LOGSCOPE(MSG) LogScope scope ## __LINE__(__FUNCTION__, MSG)
 #else
-# define LOG(MSG, ...) do; while (0)
-# define LOGSCOPE(MSG) do; while (0)
+# define LOG(MSG, ...) do {} while (0)
+# define LOGSCOPE(MSG) do {} while (0)
 #endif
 
 class CSWrapper
