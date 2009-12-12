@@ -1,3 +1,7 @@
+2009-12-12  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	* Makefile (TARGET): Default to arm-mingw32ce.
+
 2007-07-01  Pedro Alves  <pedro_alves@portugalmail.pt>
 
 	* rcp.c (LogThread): Use Sleep instead of WaitForSingleObject.
