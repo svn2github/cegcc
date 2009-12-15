@@ -28,4 +28,7 @@
 
 #define LOCAL_LABEL_PREFIX "."
 
+#undef  bfd_pe_print_pdata
+#define	bfd_pe_print_pdata   _bfd_pe_print_ce_compressed_pdata
+
 #include "pei-arm.c"

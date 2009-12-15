@@ -1,3 +1,8 @@
+2009-12-15  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* bfd/pei-arm-wince.c (bfd_pe_print_pdata): Define so
+	_bfd_pe_print_ce_compressed_pdata gets called.
+
 2009-12-06  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* ld/emultempl/pe.em, ld/scripttempl/armcoff.sc,
