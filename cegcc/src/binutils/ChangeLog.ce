@@ -1,3 +1,20 @@
+2009-12-28  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* ld/emultempl/pe.em: Change default to pseudo-relocation v2.
+	* ld/scripttempl/pe.sc: Move edata and idata section contents into the
+	rdata section, and remove the edata and idata sections.
+	* ld/pe-dll.c (ERVA): Change macro definition to take edata section
+	offset into account.
+	* bfd/cofflink.c: Remove commented out old command.
+	* bfd/peXXigen.c (_bfd_XXi_swap_aouthdr_out): Save and restore the
+	PE_EXPORT_TABLE field of DataDirectory too.
+	* ld/scripttempl/pe.sc: Add symbols __idata_start__, __idata_end__,
+	__edata_start__, __edata_end__ that _bfd_XXi_swap_aouthdr_out will
+	look for.
+	* bfd/peXXigen.c (_bfd_XXi_swap_aouthdr_out): Get the newly defined
+	symbols like __edata_start__ and use them to initialize the
+	DataDirectory entries for PE_EXPORT_TABLE and PE_IMPORT_TABLE.
+
 2009-12-15  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* bfd/pei-arm-wince.c (bfd_pe_print_pdata): Define so

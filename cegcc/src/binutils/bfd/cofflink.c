@@ -902,7 +902,7 @@ _bfd_coff_final_link (bfd *abfd,
 	      && bfd_family_coff (p->u.indirect.section->owner))
 	    {
 	      sub = p->u.indirect.section->owner;
-//	      if (! bfd_coff_link_output_has_begun (sub, & finfo))
+
 	      if (! sub->output_has_begun)
 		{
 		  if (! _bfd_coff_link_input_bfd (&finfo, sub))

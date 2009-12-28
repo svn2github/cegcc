@@ -728,7 +728,7 @@ gld${EMULATION_NAME}_handle_option (int optc)
       link_info.pei386_auto_import = 0;
       break;
     case OPTION_DLL_ENABLE_RUNTIME_PSEUDO_RELOC:
-      link_info.pei386_runtime_pseudo_reloc = 1;
+      link_info.pei386_runtime_pseudo_reloc = 2;
       break;
     case OPTION_DLL_ENABLE_RUNTIME_PSEUDO_RELOC_V1:
       link_info.pei386_runtime_pseudo_reloc = 1;

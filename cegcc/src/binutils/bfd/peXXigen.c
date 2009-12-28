@@ -92,6 +92,7 @@
    the code is in peigen.c.  PowerPC NT is said to be dead.  If
    anybody wants to revive the code, you will have to figure out how
    to handle those issues.  */
+
 
 void
 _bfd_XXi_swap_sym_in (bfd * abfd, void * ext1, void * in1)
@@ -548,13 +549,14 @@ _bfd_XXi_swap_aouthdr_out (bfd * abfd, void * in, void * out)
   struct internal_extra_pe_aouthdr *extra = &pe->pe_opthdr;
   PEAOUTHDR *aouthdr_out = (PEAOUTHDR *) out;
   bfd_vma sa, fa, ib;
-  IMAGE_DATA_DIRECTORY idata2, idata5, tls;
+  IMAGE_DATA_DIRECTORY idata2, idata5, tls, xport;
   
   sa = extra->SectionAlignment;
   fa = extra->FileAlignment;
   ib = extra->ImageBase;
 
   idata2 = pe->pe_opthdr.DataDirectory[PE_IMPORT_TABLE];
+  xport = pe->pe_opthdr.DataDirectory[PE_EXPORT_TABLE];
   idata5 = pe->pe_opthdr.DataDirectory[PE_IMPORT_ADDRESS_TABLE];
   tls = pe->pe_opthdr.DataDirectory[PE_TLS_TABLE];
   
@@ -606,6 +608,7 @@ _bfd_XXi_swap_aouthdr_out (bfd * abfd, void * in, void * out)
 
      So - we copy the input values into the output values, and then, if
      a final link is going to be performed, it can overwrite them.  */
+  extra->DataDirectory[PE_EXPORT_TABLE]  = xport;
   extra->DataDirectory[PE_IMPORT_TABLE]  = idata2;
   extra->DataDirectory[PE_IMPORT_ADDRESS_TABLE] = idata5;
   extra->DataDirectory[PE_TLS_TABLE] = tls;
@@ -1583,6 +1586,9 @@ pe_print_edata (bfd * abfd, void * vfile)
    covers and the address of the corresponding unwind info data. 
 
    On ARM and SH-4, a compressed PDATA structure is used :
+#undef  bfd_pe_print_pdata
+#define	bfd_pe_print_pdata   _bfd_pe_print_ce_compressed_pdata
+
    _IMAGE_CE_RUNTIME_FUNCTION_ENTRY, whereas MIPS is documented to use
    _IMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY.
    See http://msdn2.microsoft.com/en-us/library/ms253988(VS.80).aspx .
@@ -2417,8 +2423,76 @@ _bfd_XXi_final_link_postscript (bfd * abfd, struct coff_final_link_info *pfinfo)
       pe_data (abfd)->pe_opthdr.DataDirectory[PE_TLS_TABLE].Size = 0x18;
     }
 
+  h1 = coff_link_hash_lookup (coff_hash_table (info),
+		  "__idata_start__", FALSE, FALSE, TRUE);
+  if (h1 != NULL
+      && pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_TABLE].VirtualAddress == 0)
+    {
+      struct coff_link_hash_entry *h2;
+      int sz;
+
+      h2 = coff_link_hash_lookup (coff_hash_table (info),
+		  "__idata_end__", FALSE, FALSE, TRUE);
+      if (h2 != NULL)
+	{
+	  sz = (int) ((int)h2) - ((int)h1);
+	  pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_TABLE].VirtualAddress =
+	    h1->root.u.def.value
+    	    + h1->root.u.def.section->output_section->vma
+	    + h1->root.u.def.section->output_offset
+	    - pe_data (abfd)->pe_opthdr.ImageBase;
+	  pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_TABLE].Size = sz;
+
+//	  fprintf(stderr, "Yow import %p 0x%04x\n", (void *)pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_TABLE].VirtualAddress, sz);
+	}
+      else
+        {
+	  _bfd_error_handler
+	    (_("%B: unable to fill in DataDictionary[0] because __idata_end__ is missing"), 
+	     abfd);
+	  result = FALSE;
+	}
+    }
+
+  h1 = coff_link_hash_lookup (coff_hash_table (info),
+		  "__edata_start__", FALSE, FALSE, TRUE);
+  if (h1 != NULL
+      && pe_data (abfd)->pe_opthdr.DataDirectory[PE_EXPORT_TABLE].VirtualAddress == 0)
+    {
+      struct coff_link_hash_entry *h2;
+
+      h2 = coff_link_hash_lookup (coff_hash_table (info),
+		  "__edata_end__", FALSE, FALSE, TRUE);
+      if (h2 != NULL)
+	{
+	  int a1, a2;
+	  a1 = h1->root.u.def.value
+    	    + h1->root.u.def.section->output_section->vma
+	    + h1->root.u.def.section->output_offset
+	    - pe_data (abfd)->pe_opthdr.ImageBase;
+	  a2 = h2->root.u.def.value
+    	    + h2->root.u.def.section->output_section->vma
+	    + h2->root.u.def.section->output_offset
+	    - pe_data (abfd)->pe_opthdr.ImageBase;
+
+	  pe_data (abfd)->pe_opthdr.DataDirectory[PE_EXPORT_TABLE].VirtualAddress = a1;
+	  pe_data (abfd)->pe_opthdr.DataDirectory[PE_EXPORT_TABLE].Size = a2 - a1;
+
+//	  fprintf(stderr, "Yow export %p 0x%04x\n", (void *)pe_data (abfd)->pe_opthdr.DataDirectory[PE_EXPORT_TABLE].VirtualAddress, a2-a1);
+	}
+      else
+        {
+	  _bfd_error_handler
+	    (_("%B: unable to fill in DataDictionary[0] because __edata_end__ is missing"), 
+	     abfd);
+	  result = FALSE;
+	}
+
+    }
+
   /* If we couldn't find idata$2, we either have an excessively
      trivial program or are in DEEP trouble; we have to assume trivial
      program....  */
+
   return result;
 }

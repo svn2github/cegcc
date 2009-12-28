@@ -1092,6 +1092,7 @@ fill_exported_offsets (bfd *abfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
   int i;
   struct bfd_link_hash_entry *blhe;
 
+//  fprintf(stderr, "Yow fill_exported_offsets(%p %s,%p)\n", abfd, abfd->filename, info);
   for (i = 0; i < pe_def_file->num_exports; i++)
     {
       char *name;
@@ -1140,7 +1141,7 @@ fill_edata (bfd *abfd, struct bfd_link_info *info ATTRIBUTE_UNUSED)
   enamestr = (char *) eordinals + 2 * count_exported_byname;
 
 #define ERVA(ptr) (((unsigned char *)(ptr) - edata_d) \
-		   + edata_s->output_section->vma - image_base)
+		   + edata_s->output_section->vma - image_base + edata_s->output_offset)
 
   memset (edata_d, 0, edata_sz);
   bfd_put_32 (abfd, now, edata_d + 4);
