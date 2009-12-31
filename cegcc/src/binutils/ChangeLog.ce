@@ -1,14 +1,14 @@
 2009-12-31  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	ld/
-	emultempl/pe.em (NT_DLL_IMAGE_BASE) [TARGET_IS_arm_wince_pe]:
+	* emultempl/pe.em (NT_DLL_IMAGE_BASE) [TARGET_IS_arm_wince_pe]:
 	Revert special casing.
 
 2009-12-31  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	bfd/
-	peXXigen.c (_bfd_XXi_final_link_postscript): Fix import directory
-	size.  Remove debug printfs.
+	* peXXigen.c (_bfd_XXi_final_link_postscript): Fix import
+	directory size.  Remove debug printfs.
 
 2009-12-28  Danny Backx  <dannybackx@users.sourceforge.net>
 
@@ -59,23 +59,25 @@
 	* binutils/windres.c : Fix "windres can't detect
 	architecture" problem again, after binutils 2.20 import.
 
-2009-04-28 Alan Modra <amodra@bigpond.net.au>
+2009-04-28 Alan Modra  <amodra@bigpond.net.au>
 
-        * ld/deffilep.y (STACKSIZE_K): Rename from STACKSIZE.
+	ld/
+	* deffilep.y (STACKSIZE_K): Rename from STACKSIZE.
 	Fix upstream, invoked by Ismail Khatib <ikhatib@imail.de>.
 	This should fix the problem.  We add _K for quite a few tokens in
 	ldgram.y, for exactly the same reason.  Committed.
 
-2009-02-08  Rikky <rikky@users.sourceforge.net>
+2009-02-08  Rikky  <rikky@users.sourceforge.net>
 
-	* binutils/windres.c : Fix [ 2574606 ] "windres can't detect
+	binutils/
+	* windres.c : Fix [ 2574606 ] "windres can't detect
 	architecture" problem.
 
-2009-02-04  Pedro Alves <pedroalves@users.sourceforge.net>
+2009-02-04  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	Merge from FSF head.
 
-2008-12-19  mosfet <forumer@smartmobili.com>
+2008-12-19  mosfet  <forumer@smartmobili.com>
 
 	binutils/
 	* rcparse.y: Allow extra comma at the end of data lists.
