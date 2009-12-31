@@ -2429,21 +2429,28 @@ _bfd_XXi_final_link_postscript (bfd * abfd, struct coff_final_link_info *pfinfo)
       && pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_TABLE].VirtualAddress == 0)
     {
       struct coff_link_hash_entry *h2;
-      int sz;
 
       h2 = coff_link_hash_lookup (coff_hash_table (info),
 		  "__idata_end__", FALSE, FALSE, TRUE);
       if (h2 != NULL)
 	{
-	  sz = (int) ((int)h2) - ((int)h1);
+	  int a1, a2;
+
+	  a1 = h1->root.u.def.value
+    	    + h1->root.u.def.section->output_section->vma
+	    + h1->root.u.def.section->output_offset
+	    - pe_data (abfd)->pe_opthdr.ImageBase;
+	  a2 = h2->root.u.def.value
+    	    + h2->root.u.def.section->output_section->vma
+	    + h2->root.u.def.section->output_offset
+	    - pe_data (abfd)->pe_opthdr.ImageBase;
+
 	  pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_TABLE].VirtualAddress =
 	    h1->root.u.def.value
     	    + h1->root.u.def.section->output_section->vma
 	    + h1->root.u.def.section->output_offset
 	    - pe_data (abfd)->pe_opthdr.ImageBase;
-	  pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_TABLE].Size = sz;
-
-//	  fprintf(stderr, "Yow import %p 0x%04x\n", (void *)pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_TABLE].VirtualAddress, sz);
+	  pe_data (abfd)->pe_opthdr.DataDirectory[PE_IMPORT_TABLE].Size = a2 - a1;
 	}
       else
         {
@@ -2477,8 +2484,6 @@ _bfd_XXi_final_link_postscript (bfd * abfd, struct coff_final_link_info *pfinfo)
 
 	  pe_data (abfd)->pe_opthdr.DataDirectory[PE_EXPORT_TABLE].VirtualAddress = a1;
 	  pe_data (abfd)->pe_opthdr.DataDirectory[PE_EXPORT_TABLE].Size = a2 - a1;
-
-//	  fprintf(stderr, "Yow export %p 0x%04x\n", (void *)pe_data (abfd)->pe_opthdr.DataDirectory[PE_EXPORT_TABLE].VirtualAddress, a2-a1);
 	}
       else
         {

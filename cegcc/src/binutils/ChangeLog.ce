@@ -1,3 +1,9 @@
+2009-12-31  Pedro Alves <pedroalves@users.sourceforge.net>
+
+	bfd/
+	peXXigen.c (_bfd_XXi_final_link_postscript): Fix import directory
+	size.  Remove debug printfs.
+
 2009-12-28  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* ld/emultempl/pe.em: Change default to pseudo-relocation v2.
