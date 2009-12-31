@@ -118,13 +118,6 @@ fragment <<EOF
 #define PE_DEF_FILE_ALIGNMENT		0x00000200
 #endif
 
-#if defined(TARGET_IS_arm_wince_pe)
-/* Windows CE ignores the image base, but we want to
-   be compatible with MSFT's tools.  */
-#undef NT_DLL_IMAGE_BASE
-#define NT_DLL_IMAGE_BASE		0x00010000
-#endif
-
 #define U(S) ${INITIAL_SYMBOL_CHAR} S
 
 static struct internal_extra_pe_aouthdr pe;

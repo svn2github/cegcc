@@ -1,4 +1,10 @@
-2009-12-31  Pedro Alves <pedroalves@users.sourceforge.net>
+2009-12-31  Pedro Alves  <pedroalves@users.sourceforge.net>
+
+	ld/
+	emultempl/pe.em (NT_DLL_IMAGE_BASE) [TARGET_IS_arm_wince_pe]:
+	Revert special casing.
+
+2009-12-31  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	bfd/
 	peXXigen.c (_bfd_XXi_final_link_postscript): Fix import directory
@@ -6,39 +12,46 @@
 
 2009-12-28  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* ld/emultempl/pe.em: Change default to pseudo-relocation v2.
-	* ld/scripttempl/pe.sc: Move edata and idata section contents into the
+	ld/
+	* emultempl/pe.em: Change default to pseudo-relocation v2.
+	* scripttempl/pe.sc: Move edata and idata section contents into the
 	rdata section, and remove the edata and idata sections.
-	* ld/pe-dll.c (ERVA): Change macro definition to take edata section
+	* pe-dll.c (ERVA): Change macro definition to take edata section
 	offset into account.
-	* bfd/cofflink.c: Remove commented out old command.
-	* bfd/peXXigen.c (_bfd_XXi_swap_aouthdr_out): Save and restore the
-	PE_EXPORT_TABLE field of DataDirectory too.
-	* ld/scripttempl/pe.sc: Add symbols __idata_start__, __idata_end__,
+	* scripttempl/pe.sc: Add symbols __idata_start__, __idata_end__,
 	__edata_start__, __edata_end__ that _bfd_XXi_swap_aouthdr_out will
 	look for.
-	* bfd/peXXigen.c (_bfd_XXi_swap_aouthdr_out): Get the newly defined
+
+	bfd/
+	* cofflink.c: Remove commented out old command.
+	* peXXigen.c (_bfd_XXi_swap_aouthdr_out): Save and restore the
+	PE_EXPORT_TABLE field of DataDirectory too.
+	* peXXigen.c (_bfd_XXi_swap_aouthdr_out): Get the newly defined
 	symbols like __edata_start__ and use them to initialize the
 	DataDirectory entries for PE_EXPORT_TABLE and PE_IMPORT_TABLE.
 
 2009-12-15  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* bfd/pei-arm-wince.c (bfd_pe_print_pdata): Define so
+	bfd/
+	* pei-arm-wince.c (bfd_pe_print_pdata): Define so
 	_bfd_pe_print_ce_compressed_pdata gets called.
 
 2009-12-06  Danny Backx  <dannybackx@users.sourceforge.net>
 
-	* ld/emultempl/pe.em, ld/scripttempl/armcoff.sc,
+	ld/
+	* emultempl/pe.em, ld/scripttempl/armcoff.sc,
 	ld/scripttempl/pep.sc, bfd/peXXigen.c: Work by Kai Tietz to fix
 	so-called version 2 pseudo relocation.
-	* ld/scripttempl/pe.sc: port Kai's work to the pe.sc file.
-	* ld/scripttempl/pe.sc: move the BSS stuff inside the .data section
+	* scripttempl/pe.sc: port Kai's work to the pe.sc file.
+	* scripttempl/pe.sc: move the BSS stuff inside the .data section
 	instead of in its own .bss . This appears to be a Windows Mobile 6.1
 	requirement.
-	* bfd/coff-arm.c, bfd/libpei.h: Avoid calling the
+
+	bfd/
+	* coff-arm.c, bfd/libpei.h: Avoid calling the
 	coff_arm_final_link_postscript, we need
 	bfd_coff_final_link_postscript.
-	* bfd/cofflink.c: Don't use bfd_coff_link_output_has_begun(), it forgets
+	* cofflink.c: Don't use bfd_coff_link_output_has_begun(), it forgets
 	to output the debug_info field of the first file linked.
 
 2009-10-20  Danny Backx  <dannybackx@users.sourceforge.net>
