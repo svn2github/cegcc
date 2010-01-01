@@ -65,7 +65,6 @@ SECTIONS
 {
   ${RELOCATING+/* Make the virtual address and file offset synced if the alignment is}
   ${RELOCATING+   lower than the target page size. */}
-  ${RELOCATING+/* Yow pe.sc */}
   ${RELOCATING+. = SIZEOF_HEADERS;}
   ${RELOCATING+. = ALIGN(__section_alignment__);}
   .text ${RELOCATING+ __image_base__ + ( __section_alignment__ < ${TARGET_PAGE_SIZE} ? . : __section_alignment__ )} : 
