@@ -1,3 +1,9 @@
+2009-12-31  Pedro Alves  <pedroalves@users.sourceforge.net>,
+	    Danny Backx  <dannybackx@users.sourceforge.net>
+
+	ld/
+	* scripttempl/pe.sc: Define __text_start__ and __text_end__.
+
 2009-12-31  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	ld/

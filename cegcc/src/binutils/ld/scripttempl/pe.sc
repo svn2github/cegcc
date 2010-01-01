@@ -70,6 +70,7 @@ SECTIONS
   ${RELOCATING+. = ALIGN(__section_alignment__);}
   .text ${RELOCATING+ __image_base__ + ( __section_alignment__ < ${TARGET_PAGE_SIZE} ? . : __section_alignment__ )} : 
   {
+    ${RELOCATING+__text_start__ = .;}
     ${RELOCATING+ *(.init)}
     *(.text)
     ${R_TEXT}
@@ -85,6 +86,7 @@ SECTIONS
     ${RELOCATING+ *(.gcc_exc)}
     ${RELOCATING+PROVIDE (etext = .);}
     ${RELOCATING+ *(.gcc_except_table)}
+    ${RELOCATING+__text_end__ = .;}
   }
 
   /* The Cygwin32 library uses a section to avoid copying certain data
