@@ -4,6 +4,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <locale.h>
 
 char *XCEFixPathA(const char *pathin, char *pathout);
 wchar_t *XCEFixPathW(const wchar_t *wpathin, wchar_t *wpathout);
@@ -14,17 +15,18 @@ XCEFixPathA(const char *pathin, char *pathout)
 {
   wchar_t wpathin[MAX_PATH];
   wchar_t wpathout[MAX_PATH];
+  int old_locale;
 
   //printf("FixPathA: %s\n", pathin);
 
-  MultiByteToWideChar(CP_ACP, 0, pathin, -1, wpathin, MAX_PATH);
+  old_locale = setlocale(LC_ALL, "C");
+  (void) setlocale(LC_ALL, old_locale);
+
+  MultiByteToWideChar(old_locale, 0, pathin, -1, wpathin, MAX_PATH);
 
   XCEFixPathW(wpathin, wpathout);
 
-  WideCharToMultiByte(CP_ACP, 0, 
-		      wpathout, -1, 
-		      pathout, MAX_PATH, 
-		      NULL, NULL);
+  WideCharToMultiByte(old_locale, 0, wpathout, -1, pathout, MAX_PATH, NULL, NULL);
 
   return pathout;
 }
