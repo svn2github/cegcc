@@ -3,7 +3,7 @@ This is an errno <-> {Get|Set}LastError mapper.
 <describe here the technique used>
 
 Do *not* install errno.h into
-/opt/mingw32ce/arm-wince-mingw32ce/include.
+/opt/mingw32ce/arm-mingw32ce/include.
 
 You have been warned.
 
@@ -24,5 +24,5 @@ See the file LICENSE in the various directories, for a description of
 the license the software is license in.
 
 REPORTING BUGS:
-cegcc-devel@sourceforge.net
+cegcc-devel@lists.sourceforge.net
 pedro_alves@portugalmail.pt
