@@ -7,11 +7,11 @@ similar to unnamed pipes on desktop Windows.  Namelly, pipes are
 created with CreatePipe and the pipe ends are manipulated with the normal
 ReadFileW/WriteFileW/CloseHandle coredll.dll functions.
 
-To build the lib and the driver you will need the arm-wince-mingw32ce
+To build the lib and the driver you will need the arm-mingw32ce
 toolchain.  An early version of PipeLib was also tested with MSVC2005,
 but project files aren't presently included.
 
-To build, ensure you have arm-wince-mingw32ce-gcc in your $PATH, and
+To build, ensure you have arm-mingw32ce-gcc in your $PATH, and
 type:
 
 make
@@ -41,5 +41,5 @@ Pedro Alves
 See the file LICENSE in the various directories, for a description of
 the license the software is license in.
 
-REPORTING BUGS: cegcc-devel@sourceforge.net
+REPORTING BUGS: cegcc-devel@lists.sourceforge.net
 pedro_alves@portugalmail.pt
