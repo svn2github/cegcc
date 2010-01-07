@@ -1,3 +1,16 @@
+2010-01-07  Liu Yubao  <yubao.liu@accesschina.com.cn>
+
+	Implement PeekNamedPipe.
+
+	* PipeDev.cpp (MapCallerPtr): Declare.
+	(class PipeDeviceContext): Add new `peekBytes' method.
+	(IOControl): Handle PIPE_IOCTL_PEEK_NAMED_PIPE.
+	* PipeDev.h (PIPE_IOCTL_PEEK_NAMED_PIPE): Define.
+	(struct PeekStruct): New, moved from PipeLib.cpp.
+	* PipeLib.cpp (PeekNamedPipe): Don't #if 0.  Adjust, fix typo and
+	and return TRUE on success.
+	* PipeLib.h (PeekNamedPipe): Declare.
+
 2009-12-12  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	* TestClient/Makefile (TARGET): Default to arm-mingw32ce.

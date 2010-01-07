@@ -191,19 +191,6 @@ CreatePipe (PHANDLE hReadPipe,
   return TRUE;
 }
 
-#if 0
-
-struct PeekStruct
-{
-  DWORD Size; /* for future extension */
-  PVOID lpBuffer,
-    DWORD nBufferSize,
-
-    /* TODO: We need to use MapPtr for this to work */
-    LPDWORD lpBytesRead,
-    LPDWORD lpTotalBytesAvail,
-    LPDWORD lpBytesLeftThisMessage
-    };
 
 PIPELIB_API BOOL
 PeekNamedPipe (HANDLE hNamedPipe,
@@ -211,30 +198,26 @@ PeekNamedPipe (HANDLE hNamedPipe,
 	       DWORD nBufferSize,
 	       LPDWORD lpBytesRead,
 	       LPDWORD lpTotalBytesAvail,
-	       LPDWORD lpBytesLeftThisMessage
-	       )
+	       LPDWORD lpBytesLeftThisMessage)
 {
-  DWORD avail;
   DWORD actual;
 
   PeekStruct data;
-  data.Size = sizeof (PeekStruct);
+  data.dwSize = sizeof (PeekStruct);
   data.lpBuffer = lpBuffer;
   data.nBufferSize = nBufferSize;
   data.lpBytesRead = lpBytesRead;
   data.lpTotalBytesAvail = lpTotalBytesAvail;
   data.lpBytesLeftThisMessage = lpBytesLeftThisMessage;
 
-  if (!DeviceIoControl (hNamedPipe, PIPE_IOCTRL_PEEK_NAMED_PIPE,
+  if (!DeviceIoControl (hNamedPipe, PIPE_IOCTL_PEEK_NAMED_PIPE,
 			NULL, 0,
-			(LPVOID)&data, sizeof (PeekStruct), &actual, NULL))
+			(LPVOID) &data, sizeof (PeekStruct), &actual, NULL))
     return FALSE;
 
-  /* We can detect here if we are talking to an older driver.  */ 
-  if (actual != data.Size)
+  /* We can detect here if we are talking to an older driver.  */
+  if (actual != data.dwSize)
     return FALSE;
 
-  return FALSE;
+  return TRUE;
 }
-
-#endif

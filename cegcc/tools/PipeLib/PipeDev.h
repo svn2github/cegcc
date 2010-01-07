@@ -39,6 +39,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  */
 #define PIPE_IOCTL_SET_PIPE_TAG \
 	CTL_CODE(FILE_DEVICE_STREAMS, 2050, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
+#define PIPE_IOCTL_PEEK_NAMED_PIPE \
+	CTL_CODE(FILE_DEVICE_STREAMS, 2051, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
 #define DEVICE_DLL_NAME L"PipeDev.dll"
+
+struct PeekStruct
+{
+    DWORD dwSize; /* for future extension */
+    LPVOID lpBuffer;
+    DWORD nBufferSize;
+    LPDWORD lpBytesRead;
+    LPDWORD lpTotalBytesAvail;
+    LPDWORD lpBytesLeftThisMessage;
+};
 
 #endif

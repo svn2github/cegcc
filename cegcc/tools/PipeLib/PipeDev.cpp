@@ -31,6 +31,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  */
 #include <set>
 #include <string>
 
+extern "C" LPVOID MapCallerPtr(LPVOID ptr, DWORD dwLen);
+
 #ifndef min
 #define min(A, B) ((A) < (B) ? (A) : (B))
 #endif
@@ -350,6 +352,14 @@ public:
 #ifdef DEBUG_MODE
     TotalRead += fit;
 #endif
+    return fit;
+  }
+
+  DWORD peekBytes (BYTE* buf, DWORD bsize)
+  {
+    DWORD fit = min (bsize, size ());
+    for (DWORD i = 0; i < fit; i++)
+      buf[i] = buffer[(head + i) & (sizeof (buffer) - 1)];
     return fit;
   }
 
@@ -933,6 +943,57 @@ IOControl (PipeOpenContext* pOpenContext, DWORD dwCode,
     case PIPE_IOCTL_GET_PIPE_NAME:
       wcscpy ( (WCHAR*)pBufOut, dev->DeviceName);
       *pdwActualOut = (wcslen (dev->DeviceName) + 1) * sizeof (WCHAR);
+      bRet = TRUE;
+      break;
+    case PIPE_IOCTL_PEEK_NAMED_PIPE:
+      if (dwLenOut != sizeof (PeekStruct))
+	break; /* unknown version? */
+
+      PeekStruct* data = (PeekStruct *) pBufOut;
+      if (data->dwSize != sizeof (PeekStruct))
+	break; /* unknown version? */
+
+      *pdwActualOut = sizeof (PeekStruct);
+
+      DWORD actual = 0;
+      if (data->nBufferSize > 0 && data->lpBuffer != NULL)
+	{
+	  LPVOID lpBuffer = MapCallerPtr (data->lpBuffer, data->nBufferSize);
+	  if (NULL == lpBuffer)
+	    break;
+
+	  actual = dev->peekBytes ((BYTE *) lpBuffer, data->nBufferSize);
+
+	  if (data->lpBytesRead != NULL)
+	    {
+	      LPDWORD lpBytesRead
+		= (LPDWORD) MapCallerPtr (data->lpBytesRead, sizeof (LPDWORD));
+	      if (NULL == lpBytesRead)
+		break;
+	      *lpBytesRead = actual;
+	    }
+	}
+
+      if (data->lpTotalBytesAvail != NULL)
+	{
+	  LPDWORD lpTotalBytesAvail
+	    = (LPDWORD) MapCallerPtr (data->lpTotalBytesAvail,
+				      sizeof (LPDWORD));
+	  if (NULL == lpTotalBytesAvail)
+	    break;
+	  *lpTotalBytesAvail = dev->size ();
+	}
+
+      if (data->lpBytesLeftThisMessage != NULL)
+	{
+	  LPDWORD lpBytesLeftThisMessage
+	    = (LPDWORD) MapCallerPtr (data->lpBytesLeftThisMessage,
+				      sizeof (LPDWORD));
+	  if (NULL == lpBytesLeftThisMessage)
+	    break;
+	  *lpBytesLeftThisMessage = dev->size () - actual;
+	}
+
       bRet = TRUE;
       break;
     }
