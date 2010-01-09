@@ -1,3 +1,7 @@
+2010-01-09 Danny Backx  dannybackx@users.sourceforge.net>
+
+	* libgcc/config/arm/t-wince-pe: Remove duplicate definitions.
+
 2009-08-18 Danny Backx  dannybackx@users.sourceforge.net>
 
 	* gcc/config/i386/mingw32ce.h (__GXX_MERGED_TYPEINFO_NAMES) : Remove
