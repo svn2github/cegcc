@@ -6,7 +6,7 @@ cegcc1.o: $(srcdir)/config/arm/cegcc1.c $(CONFIG_H) $(SYSTEM_H) coretypes.h \
 #Needed because we include <windows.h>
 TARGET_LIBGCC2_CFLAGS += -mwin32
 
-# Version for mingw32ce 
-#SHLIB_LC = -lmingw32 -lmingwex -lceoldname -lcoredll
 # Version for cegcc
-SHLIB_LC = -lc -lcoredll
+#SHLIB_LC = -lc -lcoredll
+#SHLIB_LC = $(prefix)/$(host_noncanonical)/lib/libc.a -lcoredll
+SHLIB_LC = $(prefix)/arm-cegcc/lib/libc.a -lcoredll
