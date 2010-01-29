@@ -1,3 +1,7 @@
+2010-01-29  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/wingdi.h (TransparentBlt): Add dependency on _WIN32_WCE.
+
 2009-12-10  Pedro Alves  <pedroalves@users.sourceforge.net>
 
 	* include/winbase.h (struct _BY_HANDLE_FILE_INFORMATION): Add

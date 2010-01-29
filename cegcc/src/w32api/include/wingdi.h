@@ -3100,6 +3100,8 @@ WINGDIAPI BOOL WINAPI wglUseFontOutlinesW(HDC,DWORD,DWORD,DWORD,FLOAT,FLOAT,int,
 #if (WINVER >= 0x0410)
 WINGDIAPI BOOL WINAPI AlphaBlend(HDC,int,int,int,int,HDC,int,int,int,int,BLENDFUNCTION);
 WINGDIAPI BOOL WINAPI GradientFill(HDC,PTRIVERTEX,ULONG,PVOID,ULONG,ULONG);
+#endif
+#if (WINVER >= 0x0410) || (_WIN32_WCE >= 0x0400)
 WINGDIAPI BOOL WINAPI TransparentBlt(HDC,int,int,int,int,HDC,int,int,int,int,UINT);
 #endif
 #if (_WIN32_WINNT >= 0x0500)
