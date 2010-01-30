@@ -1,3 +1,8 @@
+2010-01-30  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* build-{mingw32ce,cegcc,x86}.sh (build_gcc) : don't install limits.h from
+	fixincludes.
+
 2009-10-25  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* build-cegcc.sh, build-mingw32ce.sh, build-x86.sh (build_binutils) :

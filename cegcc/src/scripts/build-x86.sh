@@ -358,6 +358,17 @@ build_gcc()
     make ${PARALLELISM}
     make install
 
+    #
+    # Clean up one file
+    #
+    if [ -f ${PREFIX}/lib/gcc/${TARGET}/4.4.0/include-fixed/limits.h ]; then
+      echo "Removing ${PREFIX}/lib/gcc/${TARGET}/4.4.0/include-fixed/limits.h"
+      rm -f ${PREFIX}/lib/gcc/${TARGET}/4.4.0/include-fixed/limits.h
+    else
+      echo "Huh ? no ${PREFIX}/lib/gcc/${TARGET}/4.4.0/include-fixed/limits.h found"
+      exit 1
+    fi
+
     cd ${BUILD_DIR}
 }
 
