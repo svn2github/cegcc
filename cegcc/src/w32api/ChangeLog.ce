@@ -1,3 +1,8 @@
+2010-02-03  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/phone.h, include/sms.h, include/simmgr.h: Add with minimal
+	set of definitions.
+
 2010-01-29  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/wingdi.h (TransparentBlt): Add dependency on _WIN32_WCE.
