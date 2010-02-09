@@ -1,3 +1,8 @@
+2010-02-10  Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/winuser.h (MonitorFromPoint, MonitorFromRect,
+	MonitorFromWindow) : Define for Windows CE also.
+
 2010-02-03  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/phone.h, include/sms.h, include/simmgr.h: Add with minimal
