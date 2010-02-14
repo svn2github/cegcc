@@ -8088,7 +8088,7 @@ echo "$as_me: error: bug URL not specified" >&2;}
 	   ;;
      esac
 else
-  BUGURL="http://gcc.gnu.org/bugs.html"
+  BUGURL="http://sourceforge.net/tracker/?func=add&group_id=173455&atid=865514"
 
 fi;
   case ${BUGURL} in

@@ -781,7 +781,7 @@ esac],
 AC_SUBST(onestep)
 
 ACX_PKGVERSION([GCC])
-ACX_BUGURL([http://gcc.gnu.org/bugs.html])
+ACX_BUGURL([http://sourceforge.net/tracker/?func=add&group_id=173455&atid=865514])
 
 # Sanity check enable_languages in case someone does not run the toplevel
 # configure # script.
