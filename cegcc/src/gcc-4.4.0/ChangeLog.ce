@@ -3,6 +3,12 @@
 	* gcc/configure gcc/configure.ac (BUG_URL) : Point to cegcc bug
 	tracker instead of original gnu gcc bugzilla.
 
+2010-01-09 Danny Backx  dannybackx@users.sourceforge.net>
+
+	* gcc/config/arm/t-wince-cegcc: Workaround for configuration error.
+	* gcc/config/arm/t-wince-{pe,cegcc}: Remove dead code.
+	* libgcc/config/arm/t-wince-pe: Remove duplicate definitions.
+
 2009-08-18 Danny Backx  dannybackx@users.sourceforge.net>
 
 	* gcc/config/i386/mingw32ce.h (__GXX_MERGED_TYPEINFO_NAMES) : Remove
