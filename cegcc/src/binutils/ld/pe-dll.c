@@ -2972,6 +2972,7 @@ pe_implied_import_dll (const char *filename)
       bfd_vma secptr1 = secptr + 40 * i;
       bfd_vma vsize = pe_get32 (dll, secptr1 + 8);
       bfd_vma vaddr = pe_get32 (dll, secptr1 + 12);
+      bfd_vma rdptr = pe_get32 (dll, secptr1 + 20);
       bfd_vma flags = pe_get32 (dll, secptr1 + 36);
       char sec_name[9];
 
@@ -3009,7 +3010,21 @@ pe_implied_import_dll (const char *filename)
 		    __FUNCTION__, sec_name, (unsigned long) vaddr,
 		    (unsigned long) (vaddr + vsize), (unsigned long) flags);
 	}
+      else if (strcmp (sec_name,".edata") == 0)
+        {
+	  export_size = vsize;
+	  export_rva = vaddr;
+  	  expptr = rdptr;
+
+  	  if (pe_dll_extra_pe_debug)
+	    printf ("%s %s: 0x%08lx-0x%08lx (0x%08lx) fileptr 0x%08lx\n", 
+	      __FUNCTION__, sec_name, (unsigned long) vaddr,
+	      (unsigned long) (vaddr + vsize), (unsigned long) flags, expptr);
+	}
     }
+ 
+   if (export_size < 40)        /* Matches the offset+size of ordinals */
+     return FALSE;
 
   expdata = xmalloc (export_size);
   bfd_seek (dll, (file_ptr) expptr, SEEK_SET);
