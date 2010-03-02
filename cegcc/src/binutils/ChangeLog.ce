@@ -1,5 +1,11 @@
 2010-02-27  Danny Backx  <dannybackx@users.sourceforge.net>
 
+	* ld/pe-dll.c (make_singleton_name_imp) : Fix three issues with this
+	function, probably the result of a too sloppy copy of
+	make_singleton_name_thunk.
+
+2010-02-27  Danny Backx  <dannybackx@users.sourceforge.net>
+
 	* ld/pe-dll.c (pe_implied_import_dll) : Analyze .edata segment for
 	those cases where optional header data directory doesn't have the
 	equivalent info.

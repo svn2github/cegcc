@@ -2216,7 +2216,7 @@ make_one (def_file_export *exp, bfd *parent, bfd_boolean include_jmp_stub)
 static bfd *
 make_singleton_name_imp (const char *import, bfd *parent)
 {
-  /* Name thunks go to idata$4.  */
+  /* Name thunks go to idata$5.  */
   asection *id5;
   unsigned char *d5;
   char *oname;
@@ -2243,12 +2243,12 @@ make_singleton_name_imp (const char *import, bfd *parent)
   d5 = xmalloc (PE_IDATA5_SIZE * 2);
   id5->contents = d5;
   memset (d5, 0, PE_IDATA5_SIZE * 2);
-  quick_reloc (abfd, 0, BFD_RELOC_RVA, 2);
+  quick_reloc (abfd, 0, BFD_RELOC_RVA, 1);
   save_relocs (id5);
 
   bfd_set_symtab (abfd, symtab, symptr);
 
-  bfd_set_section_contents (abfd, id5, d5, 0, PE_IDATA4_SIZE * 2);
+  bfd_set_section_contents (abfd, id5, d5, 0, PE_IDATA5_SIZE * 2);
 
   bfd_make_readable (abfd);
   return abfd;
