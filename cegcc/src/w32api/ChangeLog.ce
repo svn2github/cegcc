@@ -1,3 +1,8 @@
+2010-03-14 Danny Backx  <dannybackx@users.sourceforge.net>
+
+	* include/ws2tcpip.h (freeaddrinfo, getaddrinfo, getnameinfo) : Define
+	also for Windows CE.
+
 2010-02-10  Danny Backx  <dannybackx@users.sourceforge.net>
 
 	* include/winuser.h (MonitorFromPoint, MonitorFromRect,

@@ -307,7 +307,7 @@ struct addrinfo {
 	struct addrinfo  *ai_next;
 };
 
-#if (_WIN32_WINNT >= 0x0501)
+#if (_WIN32_WINNT >= 0x0501) || (_WIN32_WCE > 0x0400)
 void WSAAPI freeaddrinfo (struct addrinfo*);
 int WSAAPI getaddrinfo (const char*,const char*,const struct addrinfo*,
 		        struct addrinfo**);
