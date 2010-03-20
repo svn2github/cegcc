@@ -30,7 +30,7 @@
 
 HINSTANCE	MainInstance = NULL;
 HWND		MainWindow = 0, CmdBar = NULL, list = NULL, Status = NULL;
-HWND		button1 = NULL, button2 = NULL, button3 = NULL;
+HWND		button1 = NULL, button2 = NULL, button3 = NULL, button4 = NULL;
 HWND		tf1 = NULL, tf2 = NULL, tf3 = NULL;
 RECT		rect, cbrect;
 DWORD		font;
@@ -223,6 +223,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLin
 			NULL);
 	SendMessage(button3, WM_SETFONT, font, TRUE);
 
+	button4 = CreateWindow(L"BUTTON", L"Browse",
+			WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_DEFPUSHBUTTON,
+			ww - 80, wy + 126, 70, 20,
+			MainWindow, NULL,
+			MainInstance,
+			NULL);
+	SendMessage(button4, WM_SETFONT, font, TRUE);
+
 	Status = CreateWindow(L"EDIT", L"",
 			WS_CHILD | WS_VISIBLE | WS_TABSTOP,
 			wx + 10, wy + 74, ww - 50, 20,
@@ -339,6 +347,29 @@ static void ButtonHandlerStop(void)
 	exit(0);
 }
 
+static void ButtonHandlerStartBrowse(void)
+{
+	OPENFILENAME	ofn;
+	wchar_t		*fn;
+	
+	memset((void *)&ofn, 0, sizeof(ofn));
+	fn = malloc(MAX_PATH);
+	ofn.lStructSize = sizeof(ofn);
+	ofn.lpstrFilter = L"File to debug\0*.exe\0Dlls\0*.dll\0";
+	ofn.lpstrFile = fn;
+	ofn.nMaxFile = MAX_PATH;
+	ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST;
+	ofn.lpstrDefExt = L"exe";
+
+	ofn.lpstrInitialDir = L"\\Temp";
+
+	if (GetOpenFileName(&ofn) == 0) {
+		/* The user cancelled */
+		return;
+	}
+	SetWindowText(tf1, ofn.lpstrFile);
+}
+
 static void Paint(HWND h, UINT msg, WPARAM w, LPARAM l)
 {
 	PAINTSTRUCT	ps;
@@ -377,6 +408,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		if ((HWND)lParam == button3) {
 			ButtonHandlerStartMulti();
+			return 0;
+		}
+		if ((HWND)lParam == button4) {
+			ButtonHandlerStartBrowse();
 			return 0;
 		}
 
