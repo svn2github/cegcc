@@ -1,0 +1,31 @@
+#include "wgdbs.h"
+#include <windows.h>
+#include <commctrl.h>
+#include <aygshell.h>
+
+IDR_MAINMENU MENU DISCARDABLE 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "About",			IDM_ABOUT
+        MENUITEM "E&xit",                       IDM_FILE_EXIT
+    END
+END
+
+GDB_ICON	ICON	DISCARDABLE	"archer-fish.ico"
+GDB_BIG_ICON	ICON	DISCARDABLE	"archer.ico"
+
+#if 0
+IDD_DIALOG DIALOG DISCARDABLE 0, 0, 120, 100
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | DS_CENTER
+EXSTYLE 0x80000000L
+CAPTION "Details"
+FONT 8, "System"
+BEGIN
+	EDITTEXT	ID_EDITTEXT, 2, 2, 118, 98, ES_MULTILINE|ES_READONLY
+END
+#endif
+
+#ifdef _WIN32_WCE
+HI_RES_AWARE CEUX {1}
+#endif
